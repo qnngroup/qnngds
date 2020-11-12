@@ -696,8 +696,34 @@ def pads_adam_fill(style = 'right',layer = 1):
     pad_cover.add_port(name=1,port=p1.ports[1])
     return pad_cover
 
-
+def resistor_pos(size=(6,20), width=20, length=40, overhang=10, pos_outline=.5, layer=1, rlayer=2):
+        rwidth=size[0]
+        rlength=size[1]
+        spacing=rlength-overhang
+        res = pg.straight((rwidth,rlength),layer=rlayer)       
+        s1 = pg.outline(pg.straight((width, length+spacing)),
+                        distance=pos_outline, layer=layer, open_ports=pos_outline)
         
+        rout = pg.straight((width+pos_outline*2,
+                            rlength-overhang),
+                           layer=layer)     
+        rout.move(rout.ports[2],s1.ports[1])
+        
+        res.move(res.center,rout.center)
+        
+        s2 = pg.outline(pg.straight((width,length+spacing)),
+                        distance=pos_outline, layer=layer, open_ports=2)
+        
+        s2.move(s2.ports[2],rout.ports[1])
+        
+        D = Device('resistor')
+        D.add_ref([res,s1, rout, s2])
+        D.flatten()
+        D.add_port(s1.ports[2])
+        D.add_port(s2.ports[1])
+        qp(D)
+        return D
+
 def packer(
         D_list,
         text_letter,
@@ -1574,14 +1600,16 @@ def resistor_pad_bilayer(parameters=None, sheet_inductance = 300):
                 'pad_width': 200,
                 'pad_outline': 7,
                 'pad_taper_length': 40,
-                'ground_taper_length': 10,
-                'ground_taper_width': 20,
+                'ground_taper_length': 20,
+                'ground_taper_width': 100,
+                'straight_width':3,
                 'straight_outline': 0.2,
-                'r_width':np.array([20]),
-                'r_length':np.array([40]),
+                'r_width':np.array([1]),
+                'r_length':np.array([6]),
+                'r_over': 2,
                 'straight_layer': 1,
                 'pad_layer': 2,
-                'r_layer':1
+                'r_layer':3
                 }
     
     """ Get length of parameters """ 
@@ -1612,49 +1640,47 @@ def resistor_pad_bilayer(parameters=None, sheet_inductance = 300):
         
         
         ######################################################################
-        print(n.r_layer)
-        res = pg.straight(n.r_width[i],n.r_length[i],layer=n.r_layer)        
-                
-        # detector = outline(pg.straight((n.straight_width[i],n.straight_length[i])),distance=n.straight_outline, open_ports=2)
-        
-        
-        
-        # pad = pad_U(pad_width= n.pad_width, layer=n.pad_layer)
-        # pad.rotate(180)
 
-        # pad_taper = outline(hyper_taper(40, n.pad_width+n.pad_outline,n.straight_width[i]*step_scale),distance=n.straight_outline, open_ports=2)
-        # pad_taper.move(pad_taper.ports['wide'], pad.ports[1]).movex(10)
+        r = resistor_pos(size=(n.r_width[i],n.r_length[i]), 
+                         width=n.straight_width, 
+                         length=n.r_length[i], 
+                         overhang=n.r_over, 
+                         pos_outline=n.straight_outline, layer=n.straight_layer, rlayer=n.r_layer)
         
-        # step1 = outline(pg.optimal_step(n.straight_width[i]*step_scale,n.straight_width[i]),distance=n.straight_outline, open_ports=3)
-        # step1.rotate(180)
-        # step1.move(step1.ports[1],pad_taper.ports['narrow'])
+        step1 = pg.outline(pg.optimal_step(n.straight_width*step_scale,n.straight_width, symmetric=True),distance=n.straight_outline,layer=n.straight_layer, open_ports=n.straight_outline)
+        step1.rotate(-90)
+        step1.move(step1.ports[2],r.ports[1])
         
-        # detector.rotate(90)
-        # detector.move(origin=detector.ports[2],destination=step1.ports[2])
+        step2 = pg.outline(pg.optimal_step(n.straight_width*step_scale,n.straight_width, symmetric=True),distance=n.straight_outline,layer=n.straight_layer, open_ports=n.straight_outline)
+        step2.rotate(90)
+        step2.move(step2.ports[2],r.ports[2])
         
-        # step2 = outline(pg.optimal_step(n.straight_width[i]*step_scale,n.straight_width[i]),distance=n.straight_outline, open_ports=3)
-        # step2.move(step2.ports[2],detector.ports[1])
-             
-        # ground_taper = outline(hyper_taper(n.ground_taper_length, n.ground_taper_width, n.straight_width[i]*step_scale), distance= n.straight_outline, open_ports=2)
-        # ground_taper.rotate(180)
-        # ground_taper.move(ground_taper.ports['narrow'],step2.ports[1])
+        pad_taper = pg.outline(hyper_taper(40, n.pad_width+n.pad_outline,n.straight_width*step_scale),distance=n.straight_outline,layer=n.straight_layer, open_ports=n.straight_outline)
+        pad_taper.rotate(-90)
+        pad_taper.move(pad_taper.ports['narrow'], step2.ports[1])
+        
+        pad = pad_U(pad_width= n.pad_width, layer=n.pad_layer)
+        pad.rotate(90)
+        pad.move(pad.ports[1], pad_taper.ports['wide']).movey(10)
+        
+        ground_taper = outline(hyper_taper(n.ground_taper_length, n.ground_taper_width, n.straight_width*step_scale), distance= n.straight_outline, open_ports=2)
+        ground_taper.rotate(90)
+        ground_taper.move(ground_taper.ports['narrow'],step1.ports[1])
 
-        qp([res])
-        # D.add_ref([pad_taper,detector, step1, step2, ground_taper])
-        # D.flatten(single_layer=n.straight_layer)
-        # D.add_ref(pad)
-        # D.rotate(-90)
-        # D.move(D.bbox[0],destination=(0,0))
-        
-        
-        # """ Attach dynamical parameters to device object. """
-        # D.width = n.straight_width[i]
-        # D.squares = straight_squares
-        # D.parameters = parameters
-        # D.type = 'resistor'
 
-        # device_list.append(D)
+
+        D.add_ref([r, step1, step2, pad_taper, pad, ground_taper])
+        D.flatten()
+        D.move(D.bbox[0],destination=(0,0))
         
+        
+        # # """ Attach dynamical parameters to device object. """
+        D.squares = (n.r_length[i]-n.r_over)/n.r_width[i]
+        D.parameters = parameters
+        D.type = 'resistor'
+
+        device_list.append(D)
+        qp(D)
     # """ Attach squares calculation to parameters """
     # parameters['snspd_squares']=np.array(device_squares_list)
     return device_list
