@@ -1,0 +1,25 @@
+Dimensionality 
+
+Name:
+  ID:
+  type: snspd
+  
+Layout:
+  squares:
+  width:
+  pitch:
+  area:
+  
+Deposition:
+  sample:
+  run_num:
+  material1:
+  material2:
+  substrate:
+  resistance:
+  thickness:
+  Tc:
+  
+Measurement:
+  ic:
+  T:
