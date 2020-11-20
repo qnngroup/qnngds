@@ -376,7 +376,7 @@ def snspd_pad_bilayer(parameters=None, sheet_inductance = 300):
     parameters['snspd_squares']=np.array(device_squares_list)
     return device_list
 
-snspd_pad_bilayer()
+
 
 def snspd_2pad_bilayer(parameters=None, sheet_inductance = 80):
     """
@@ -553,7 +553,7 @@ def straight_snspd_pad_bilayer(parameters=None, sheet_inductance = 300):
         ground_taper.move(origin=ground_taper.ports['narrow'],destination=bend2.ports[1])
         
 
-        D.add_ref([pad_taper,detector,bend1, step1, STRAIGHT, step2, bend2, ground_taper])#,bend1,STRAIGHT, bend2, ground_taper])
+        D.add_ref([pad_taper,detector,bend1, step1, STRAIGHT, step2, bend2, ground_taper])
         D.flatten(single_layer=n.snspd_layer)
         D.add_ref(pad)
         D.rotate(-90)
@@ -569,7 +569,7 @@ def straight_snspd_pad_bilayer(parameters=None, sheet_inductance = 300):
         device_list.append(D)
         
     # """ Attach squares calculation to parameters """
-    # parameters['snspd_squares']=np.array(device_squares_list)
+    parameters['snspd_squares']=np.array(device_squares_list)
     return device_list
 
 def straight_snspd_2pad_bilayer(parameters=None, sheet_inductance = 300):
@@ -984,135 +984,75 @@ def four_point_wire(parameters=None):
     parameters['snspd_squares']=np.array(device_squares_list)
     return device_list
 
-
-
-
-
-
-
-
-
     
     
+def ntron_single(parameters=None):
     
-    
-    
-
-
-def meander_outline(width=0.1, pitch=0.250, area=8, length=None, number_of_paths=1, outline=0.25, layer=1, terminals_same_side=False):
-    """
-                    width=0.1, pitch=0.250, area=8, length=None, number_of_paths=1, layer=1, terminals_same_side=False):
-
-    Parameters
-    ----------
-    width : FLOAT, optional
-        SNSPD wire width. The default is 0.1.
-    pitch : FLOAT, optional
-        SNSPD wire pitch. The default is 0.250.
-    area : FLOAT, optional
-        SNSPD overall Y dimension, and or snspd area if Length is not specified. The default is 8.
-    length : FLOAT, optional
-        SNSPD overall X dimension. The default is None.
-    number_of_paths : INT, optional
-        Number of times the SNSPD traverses over the Y dimension. This value is limited by the length of the SNSPD The default is 1.
-
-    Returns
-    -------
-    X : Device
-        PHIDL device object is returned.
-
-    """
-    D=Device('x')
-    X=Device('big')
-    
-    n=number_of_paths
-    if length==None:
-        length = area/number_of_paths
-    else:
-        length = (length-0.5*(number_of_paths-1))/number_of_paths
+    if parameters == None: 
+       parameters = {
+               'pad_width': 200,   
+               'pad_outline': 10,
+               'pad_taper_length': 60,
+               'device_layer': 1,
+               'pad_layer': 2,
+               'choke_w': 0.05, 
+               'choke_l': .5,
+               'gate_w': 0.2,
+               'channel_w': 0.1,
+               'source_w': 0.3,
+               'drain_w': 0.3,
+               'outline': 0.1,
+               'routing': 1
+               }
         
-        
-    S=pg.snspd(wire_width = width, wire_pitch = pitch+width, size = (length,area), terminals_same_side = terminals_same_side)
+    n = Namespace(**parameters) #This method of converting dictionary removes "Undefined name" warning
     
-    if n==1:
-        S=pg.snspd(wire_width = width, wire_pitch = pitch+width, size = (length,area), terminals_same_side = terminals_same_side)
-        s=D.add_ref(S)
-    
-    i=0    
-    while i < n:
-        s=D.add_ref(S)
-        if i==0:
-            start=s.ports[1].midpoint
-        if np.mod(i,2)!=0:
-            s.mirror((0,1),(1,1))
-        if i>0:
-            s.move(origin=s.ports[1], destination=straight.ports[2])
-        if i != n-1:
-            straight=D.add_ref(pg.straight(size=(width,0.5),  layer = 0))
-            straight.rotate(90)
-            straight.move(straight.ports[1], s.ports[2])
-        if i == n-1:
-            end=s.ports[2].midpoint
-        i=i+1
-    D.flatten(single_layer=layer)    
-    t1 = pg.straight(size=(width,outline))
-    t1.rotate(90)
-    t1.move(origin=t1.ports[1], destination=end)
-    
-    t2 = pg.straight(size=(width,outline))
-    t2.rotate(90)
-    t2.move(origin=t2.ports[2], destination=start)
+    pad = qg.pad_U(pad_width= n.pad_width, width=n.pad_outline, layer=n.pad_layer, port_yshift=-10)
+    pad_taper = qg.outline(qg.hyper_taper(n.pad_taper_length, n.pad_width+n.pad_outline,n.routing),distance=n.outline, open_ports=2)
     
     
-    X=pg.deepcopy(D)
-    X = qg.outline(X,distance=outline,precision=1e-6,layer=layer)
-    X = pg.boolean(X,t1,'A-B',1e-6,layer=layer)
-    X = pg.boolean(X,t2,'A-B',1e-6,layer=layer)
-    X.add_port(port=t1.ports[2], name=2)
-    X.add_port(port=t2.ports[1], name=1)
-    X.move(origin=X.ports[1], destination=(0,0))
-    
-    return X
+    D = Device()
+    p1 = D<<pad
+    p2 = D<<pad
+    p3 = D<<pad
+    D.distribute(direction='y', spacing=50)
+    t1 = D<<pad_taper
+    t2 = D<<pad_taper
+    t3 = D<<pad_taper
 
-    
-    
-def meander_taper(width=0.1, pitch=0.250, area=8, length=None, number_of_paths=1, taper_length=50, taper_narrow=.1, taper_wide=200, layer=1):
-    
-    X=Device('x')
-    m=meander(width=width, pitch=pitch, area=area, length=length, number_of_paths=number_of_paths, layer=layer)
-    X.add_ref(m)
-    ht = qg.hyper_taper(taper_length, taper_wide, taper_narrow, layer=layer)
-    HT1 = X.add_ref(ht)
-    HT1.rotate(180)
-    HT1.move(origin=HT1.ports['narrow'],destination=X.references[0].ports[1])
-    HT2 = X.add_ref(ht)
-    HT2.move(origin=HT2.ports['narrow'],destination=X.references[0].ports[2])
+    t1.connect(t1.ports['wide'],p1.ports[1])
+    t2.connect(t2.ports['wide'],p2.ports[1])
+    t3.connect(t3.ports['wide'],p3.ports[1])
 
-    X.add_port(name=1, midpoint = HT1.ports['wide'].midpoint, width=taper_wide, orientation=180)
-    X.add_port(name=2, midpoint = HT2.ports['wide'].midpoint, width=taper_wide, orientation=0)
-    
-    X.move(origin=X.ports[1],destination=(0,0))
-    return X
 
-def meander_taper_outline(width=0.1, pitch=0.250, area=8, length=None, number_of_paths=1, taper_length=10, taper_narrow=.1, taper_wide=100, outline=0.5, layer=1):
+    ntron = qg.outline(qg.ntron_sharp(n.choke_w, n.choke_l, n.gate_w, n.channel_w, n.source_w, n.drain_w), distance=n.outline, open_ports=3, precision=1e-8)
+    step = qg.outline(pg.optimal_step(n.routing, n.drain_w, symmetric=True, width_tol=1e-8), distance=n.outline, open_ports=2.1, precision=1e-8)
+    step1 = qg.outline(pg.optimal_step(n.routing, n.gate_w, symmetric=True, width_tol=1e-8), distance=n.outline, open_ports=2.1, precision=1e-8)
     
-    X=Device('x')
-    T=Device('t')
-    m=meander_taper(width=width, pitch=pitch, area=area, length=length, 
-                    number_of_paths=number_of_paths, taper_length=taper_length, 
-                    taper_narrow=taper_narrow, taper_wide=taper_wide, layer=layer)
-    X.add_ref(qg.outline(m,distance=outline, precision=1e-4))
-    
-    SW = (X.bbox[0,0],-X.bbox[1,1])
-    SE = (X.bbox[1,0]-outline,X.bbox[0,1])
-    ''' Trim edge of outline '''
-    t = pg.rectangle(size=(outline, X.bbox[1,1]*2))
-    t.move(destination=SE)
-    T.add_ref(t)
-    t = pg.rectangle(size=(outline, X.bbox[1,1]*2))
-    t.move(destination=SW)
-    T.add_ref(t)
-    X=pg.boolean(X,T,'A-B',precision=1e-6,layer=layer )
-    X.add_port(name=1,midpoint=m.ports[1].midpoint,width=taper_wide,orientation=180)
-    X.add_port(name=2,midpoint=m.ports[2].midpoint,width=taper_wide,orientation=0)
-    return X
+    n1 = D<<ntron
+    s1 = D<<step
+    s2 = D<<step
+    s3 = D<<step1
+
+    n1.move(origin=n1.center,destination=D.center).movex(200)
+    s1.connect(s1.ports[2], n1.ports[2])
+    s2.connect(s2.ports[2], n1.ports[3])
+    s3.connect(s3.ports[2], n1.ports[1])
+
+
+    r1 = D<<qg.outline(pr.route_manhattan(port1=t1.ports['narrow'], port2=s2.ports[1]), distance=n.outline,open_ports=3, rotate_ports=True)
+    r2 = D<<qg.outline(pr.route_basic(port1=t2.ports['narrow'], port2=s3.ports[1]), distance=n.outline,open_ports=3, rotate_ports=False)
+    r3 = D<<qg.outline(pr.route_manhattan(port1=t3.ports['narrow'], port2=s1.ports[1]), distance=n.outline,open_ports=3, rotate_ports=True)
+    D.flatten()
+    qp(D)
+    return D
+
+
+
+
+
+
+
+
+
+
