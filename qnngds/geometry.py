@@ -714,3 +714,85 @@ def resistor_pos(size=(6,20), width=20, length=40, overhang=10, pos_outline=.5, 
         D.add_port(s1.ports[2])
         D.add_port(s2.ports[1])
         return D
+
+def ntron(choke_w=0.03, gate_w=0.2, channel_w=0.1, source_w=0.3, drain_w=0.3, layer=1):
+    
+    D = Device('nTron')
+    
+    choke = pg.optimal_step(gate_w, choke_w, symmetric=True)
+    k = D<<choke
+    
+    channel = pg.compass(size=(channel_w, choke_w))
+    c = D<<channel
+    c.connect(channel.ports['W'],choke.ports[2])
+    
+    drain = pg.optimal_step(drain_w, channel_w)
+    d = D<<drain
+    d.connect(drain.ports[2], c.ports['N'])
+    
+    source = pg.optimal_step(channel_w, source_w)
+    s = D<<source
+    s.connect(source.ports[1], c.ports['S'])
+    
+    D.flatten(single_layer=layer)
+    D.add_port(name=1, port=k.ports[1])
+    D.add_port(name=2, port=d.ports[1])
+    D.add_port(name=3, port=s.ports[2])
+    return D
+   
+def ntron_sharp(choke_w=0.03, choke_l=.5, gate_w=0.2, channel_w=0.1, source_w=0.3, drain_w=0.3, layer=1):
+    
+    D = Device('nTron')
+    
+    choke = pg.taper(choke_l, gate_w, choke_w)
+    k = D<<choke
+    
+    channel = pg.compass(size=(channel_w, choke_w))
+    c = D<<channel
+    c.connect(channel.ports['W'],choke.ports[2])
+    
+    drain = pg.optimal_step(drain_w, channel_w)
+    d = D<<drain
+    d.connect(drain.ports[2], c.ports['N'])
+    
+    source = pg.optimal_step(channel_w, source_w)
+    s = D<<source
+    s.connect(source.ports[1], c.ports['S'])
+    
+    D.flatten(single_layer=layer)
+    D.add_port(name=1, port=k.ports[1])
+    D.add_port(name=2, port=d.ports[1])
+    D.add_port(name=3, port=s.ports[2])
+    return D 
+
+
+def ntron_multi_gate(num_gate=4, gate_w=.250, gate_p=.4, choke_w=0.03, choke_l=.5, channel_w=0.3, source_w=0.6, drain_w=0.6, layer=1):
+    
+    D = Device('nTron')
+    channel = pg.compass_multi(size=(channel_w, gate_p*(num_gate+1)), ports={'N':1, 'S':1, 'W':num_gate})
+    c = D<<channel
+    
+    choke = pg.taper(choke_l, gate_w, choke_w)
+    port_list=[]
+    for i in range(num_gate):
+        k = D<<choke
+        k.connect(k.ports[2],channel.ports['W'+str(i+1)])
+        port_list.append(k.ports[1])
+
+    
+    
+    drain = pg.optimal_step(drain_w, channel_w)
+    d = D<<drain
+    d.connect(drain.ports[2], c.ports['N1'])
+    # 
+    source = pg.optimal_step(channel_w, source_w)
+    s = D<<source
+    s.connect(source.ports[1], c.ports['S1'])
+    
+    D = pg.union(D, by_layer=True)
+    for i in range(len(port_list)): 
+        D.add_port(name='g'+str(i+1), port=port_list[i])
+    D.add_port(name='d', port=d.ports[1])
+    D.add_port(name='s', port=s.ports[2])
+    return D
+    
