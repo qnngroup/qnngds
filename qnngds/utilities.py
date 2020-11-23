@@ -99,6 +99,7 @@ def packer(
         
     p = p[0]
     p.name = text_letter
+    p._internal_name = text_letter
     # p.flatten() # do not flatten.
 
     return p

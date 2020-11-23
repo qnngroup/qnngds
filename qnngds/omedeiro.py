@@ -1035,24 +1035,199 @@ def ntron_single(parameters=None):
     s3 = D<<step1
 
     n1.move(origin=n1.center,destination=D.center).movex(200)
-    s1.connect(s1.ports[2], n1.ports[2])
-    s2.connect(s2.ports[2], n1.ports[3])
-    s3.connect(s3.ports[2], n1.ports[1])
+    s1.connect(s1.ports[2], n1.ports['d'])
+    s2.connect(s2.ports[2], n1.ports['s'])
+    s3.connect(s3.ports[2], n1.ports['g'])
 
 
-    r1 = D<<qg.outline(pr.route_manhattan(port1=t1.ports['narrow'], port2=s2.ports[1]), distance=n.outline,open_ports=3, rotate_ports=True)
-    r2 = D<<qg.outline(pr.route_basic(port1=t2.ports['narrow'], port2=s3.ports[1]), distance=n.outline,open_ports=3, rotate_ports=False)
-    r3 = D<<qg.outline(pr.route_manhattan(port1=t3.ports['narrow'], port2=s1.ports[1]), distance=n.outline,open_ports=3, rotate_ports=True)
-    D.flatten()
+    D<<qg.outline(pr.route_manhattan(port1=t1.ports['narrow'], port2=s2.ports[1]), distance=n.outline,open_ports=3, rotate_ports=True, precision=1e-8)
+    D<<qg.outline(pr.route_basic(port1=t2.ports['narrow'], port2=s3.ports[1]), distance=n.outline,open_ports=3, rotate_ports=False, precision=1e-8)
+    D<<qg.outline(pr.route_manhattan(port1=t3.ports['narrow'], port2=s1.ports[1]), distance=n.outline,open_ports=3, rotate_ports=True, precision=1e-8)
+    D = pg.union(D, by_layer=True)
+    return D
+
+
+def ntron_gate3(parameters=None):
+    
+    if parameters == None: 
+       parameters = {
+               'pad_width': 180,   
+               'pad_outline': 10,
+               'pad_taper_length': 60,
+               'device_layer': 1,
+               'pad_layer': 2,
+               'choke_w': 0.05, 
+               'choke_l': .1,
+               'gate_w': 0.2,
+               'gate_p': 0.4,
+               'num_gate': 3,
+               'channel_w': 0.1,
+               'source_w': 0.3,
+               'drain_w': 0.3,
+               'outline_dis': 0.3,
+               'routing': 1
+               }
+        
+    n = Namespace(**parameters) #This method of converting dictionary removes "Undefined name" warning
+
+    D=Device()
+        
+    pads = D<<qg.pads_adam_quad(layer=n.pad_layer)
+    pads.move(origin=pads.center, destination=(0,0))
+    
+
+    ntron = qg.ntron_multi_gate_fanout(n.num_gate, n.gate_w, n.gate_p, n.choke_w, 
+                            n.choke_l, n.channel_w, n.source_w, n.drain_w, 
+                            n.routing, n.outline_dis, n.device_layer)
+   
+    # DEVICE 1
+    nt1 = D<<ntron
+    nt1.rotate(90).movey(-90)
+    
+    D<<qg.outline(pr.route_basic(port1=nt1.ports[3], port2=pads.ports[2], width2=n.routing), distance=n.outline_dis,open_ports=3, rotate_ports=False, precision=1e-8, layer=n.device_layer)
+    D<<qg.outline(pr.route_manhattan(port1=nt1.ports[2], port2=pads.ports[1], radius=5), distance=n.outline_dis,open_ports=3, rotate_ports=True, precision=1e-8, layer=n.device_layer)
+    D<<qg.outline(pr.route_manhattan(port1=nt1.ports[4], port2=pads.ports[3], radius=5), distance=n.outline_dis,open_ports=3, rotate_ports=True, precision=1e-8, layer=n.device_layer)
+    D<<qg.outline(pr.route_basic(port1=nt1.ports[5], port2=pads.ports[4], width2=n.routing), distance=n.outline_dis,open_ports=3, rotate_ports=False, precision=1e-8, layer=n.device_layer)
+    D<<qg.outline(pr.route_basic(port1=nt1.ports[1], port2=pads.ports[12], width2=n.routing), distance=n.outline_dis,open_ports=3, rotate_ports=False, precision=1e-8, layer=n.device_layer)
+    taper = qg.outline(qg.hyper_taper(5, 40, n.routing, layer=n.device_layer),distance=n.outline_dis,open_ports=2, layer=n.device_layer)
+    for j in [1, 2, 3, 4, 12]:
+        t = D<<taper
+        t.connect(t.ports['narrow'], pads.ports[j])
+        t.rotate(180, center=pads.ports[j].midpoint)
+    # D.flatten()
+    
+    # DEVICE 2
+    nt1 = D<<ntron
+    nt1.rotate(-90).movey(90)
+    
+    D<<qg.outline(pr.route_basic(port1=nt1.ports[3], port2=pads.ports[8], width2=n.routing), distance=n.outline_dis,open_ports=3, rotate_ports=False, precision=1e-8, layer=n.device_layer)
+    D<<qg.outline(pr.route_manhattan(port1=nt1.ports[2], port2=pads.ports[7], radius=5), distance=n.outline_dis,open_ports=3, rotate_ports=True, precision=1e-8, layer=n.device_layer)
+    D<<qg.outline(pr.route_manhattan(port1=nt1.ports[4], port2=pads.ports[9], radius=5), distance=n.outline_dis,open_ports=3, rotate_ports=True, precision=1e-8, layer=n.device_layer)
+    D<<qg.outline(pr.route_basic(port1=nt1.ports[5], port2=pads.ports[10], width2=n.routing), distance=n.outline_dis,open_ports=3, rotate_ports=False, precision=1e-8, layer=n.device_layer)
+    D<<qg.outline(pr.route_basic(port1=nt1.ports[1], port2=pads.ports[6], width2=n.routing), distance=n.outline_dis,open_ports=3, rotate_ports=False, precision=1e-8, layer=n.device_layer)
+    taper = qg.outline(qg.hyper_taper(5, 40, n.routing, layer=n.device_layer),distance=n.outline_dis,open_ports=2, layer=n.device_layer)
+    for j in [6, 7, 8, 9, 10]:
+        t = D<<taper
+        t.connect(t.ports['narrow'], pads.ports[j])
+        t.rotate(180, center=pads.ports[j].midpoint)
+    
+    # DEVICE 3
+    taper=qg.outline(qg.hyper_taper(5, 40, n.gate_w, layer=n.device_layer),distance=n.outline_dis,open_ports=2, layer=n.device_layer)
+    t = D<<taper
+    t.connect(t.ports['narrow'], pads.ports[5])
+    t.rotate(180, center=pads.ports[5].midpoint)
+    wire = qg.outline(pg.straight(size=(n.gate_w, 30)), distance=n.outline_dis, open_ports=2, layer=n.device_layer)
+    w = D<<wire
+    w.connect(w.ports[1], t.ports['narrow'])
+    t1=D<<taper
+    t1.connect(t1.ports['narrow'], w.ports[2])
+    
+    # DEVICE 4
+    taper=qg.outline(qg.hyper_taper(5, 40, n.channel_w, layer=n.device_layer),distance=n.outline_dis,open_ports=2, layer=n.device_layer)
+    t = D<<taper
+    t.connect(t.ports['narrow'], pads.ports[11])
+    t.rotate(180, center=pads.ports[11].midpoint)
+    wire = qg.outline(pg.straight(size=(n.channel_w, 30)), distance=n.outline_dis, open_ports=2, layer=n.device_layer)
+    w = D<<wire
+    w.connect(w.ports[1], t.ports['narrow'])
+    t1=D<<taper
+    t1.connect(t1.ports['narrow'], w.ports[2])
+
+    D = pg.union(D, by_layer=True)
     qp(D)
     return D
 
 
 
+def ntron_gate1(parameters=None):
+    
+    if parameters == None: 
+       parameters = {
+               'device_layer': 1,
+               'pad_layer': 2,
+               'choke_w': 0.05, 
+               'choke_l': .1,
+               'gate_w': 0.2,
+               'gate_p': 0.4,
+               'channel_w': 0.1,
+               'source_w': 0.3,
+               'drain_w': 0.3,
+               'outline_dis': 0.3,
+               'routing': 1
+               }
+        
+    n = Namespace(**parameters) #This method of converting dictionary removes "Undefined name" warning
+
+    D=Device()
+        
+    pads = D<<qg.pads_adam_quad(layer=n.pad_layer)
+    pads.move(origin=pads.center, destination=(0,0))
+
+    for i in range(4):
+        ntron = qg.ntron_multi_gate_fanout(1, n.gate_w, n.gate_p, n.choke_w, 
+                                n.choke_l, n.channel_w, n.source_w, n.drain_w, 
+                                n.routing, n.outline_dis, n.device_layer)
+        nt1 = D<<ntron
+        nt1.rotate(90).movey(-100)
+        nt1.rotate(-90*i)
+        
+        D<<qg.outline(pr.route_basic(port1=nt1.ports[2], port2=pads.ports[i*3+2], width2=n.routing), distance=n.outline_dis,open_ports=3, rotate_ports=False, precision=1e-8, layer=n.device_layer)
+        D<<qg.outline(pr.route_manhattan(port1=nt1.ports[1], port2=pads.ports[i*3+1], radius=5), distance=n.outline_dis,open_ports=3, rotate_ports=True, precision=1e-8, layer=n.device_layer)
+        D<<qg.outline(pr.route_manhattan(port1=nt1.ports[3], port2=pads.ports[i*3+3], radius=5), distance=n.outline_dis,open_ports=3, rotate_ports=True, precision=1e-8, layer=n.device_layer)
+        
+        taper = qg.outline(qg.hyper_taper(5, 40, n.routing, layer=n.device_layer),distance=n.outline_dis,open_ports=2, layer=n.device_layer)
+        for j in [i*3+1, i*3+2, i*3+3]:
+          t = D<<taper
+          t.connect(t.ports['narrow'], pads.ports[j])
+          t.rotate(180, center=pads.ports[j].midpoint)
+        D = pg.union(D, by_layer=True)
+
+    return D
 
 
+def ntron_two_stage(parameters=None):
+        
+    if parameters == None: 
+       parameters = {
+               'device_layer': 1,
+               'pad_layer': 2,
+               'choke_w': 0.05, 
+               'choke_l': .1,
+               'gate_w': 0.2,
+               'gate_p': 0.4,
+               'channel_w': 0.2,
+               'source_w': 0.5,
+               'drain_w': 0.4,
+               'outline_dis': 0.25,
+               'routing': .5
+               }
+       n = Namespace(**parameters) #This method of converting dictionary removes "Undefined name" warning
+      
+       D = Device()
+       ntron = qg.ntron_multi_gate_fanout(1, n.gate_w, n.gate_p, n.choke_w, 
+                                n.choke_l, n.channel_w, n.source_w, n.drain_w, 
+                                n.routing, n.outline_dis, n.device_layer)
+       n1 = D<<ntron
+       
 
+       
+       inductor = meander(width = n.drain_w,
+                              pitch = n.drain_w/.50-n.drain_w,
+                              area = 10,
+                              layer = n.device_layer, terminals_same_side=False
+                              )
+       print(squares_meander_calc(n.drain_w,10, n.drain_w/.50-n.drain_w))
+       inductor= qg.outline(inductor,distance=n.outline_dis,open_ports=2, layer=n.device_layer)
+       l1 = D<<inductor
+       l1.connect(l1.ports[1],n1.ports[3])
+       
+       tee1 = pg.outline(pg.tee((n.drain_w*4, n.drain_w), (n.drain_w, n.drain_w), taper_type='fillet'), distance=n.outline_dis, open_ports=True, layer=n.device_layer)
+       t1 = D<<tee1
+       t1.connect(t1.ports[2], l1.ports[2])
 
-
-
+       res = qg.resistor_pos(size=(.2,10), width=n.routing, length=5, overhang=1, pos_outline=n.outline_dis, layer=n.device_layer, rlayer=3)
+       r1 = D<<res
+       r1.connect(r1.ports[1], n1.ports[2])
+       qp(D)
+ntron_two_stage()
 

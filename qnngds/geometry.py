@@ -589,11 +589,10 @@ def pads_adam(trim = [True,True,True],  layer = 1):
             t1 = OUT.add_ref(trimpoly)
             t1.move(origin=t1.center,destination=(-15+90*i,365))
             OUT = pg.boolean(OUT,t1,'A-B',precision=1e-4,layer=layer)
-    OUT.add_port(name = 1, midpoint=(-15,340),width=25,orientation=90)    
-    OUT.add_port(name = 2, midpoint=(75,340),width=25,orientation=90)
-    OUT.add_port(name = 3, midpoint=(165,340),width=25,orientation=90)
+    OUT.add_port(name = 1, midpoint=(-15,360),width=25,orientation=90)    
+    OUT.add_port(name = 2, midpoint=(75,360),width=25,orientation=90)
+    OUT.add_port(name = 3, midpoint=(165,360),width=25,orientation=90)
     return OUT
-
 
 def pads_adam_quad(trim = ((True,True,True),(True,True,True),(True,True,True),(True,True,True)), layer = 1):
     """
@@ -626,13 +625,14 @@ def pads_adam_quad(trim = ((True,True,True),(True,True,True),(True,True,True),(T
     for i in range(4):
         quarter = pads_adam(trim[i],layer=layer)
         quarter.move(origin=quarter.center,destination=(0,0))
-        quarter.rotate(angle = 90*i, center = (0,345))
+        quarter.rotate(angle = 90*-i, center = (0,345))
         q = quadPad.add_ref(quarter)
-        quadPad.add_port(name=str(i)+'1', port = quarter.ports[1])
-        quadPad.add_port(name=str(i)+'2', port = quarter.ports[2])
-        quadPad.add_port(name=str(i)+'3', port = quarter.ports[3])
+        quadPad.add_port(name=3*i+1, port = quarter.ports[3])
+        quadPad.add_port(name=3*i+2, port = quarter.ports[2])
+        quadPad.add_port(name=3*i+3, port = quarter.ports[1])
     return quadPad
         
+
     
 def pads_adam_fill(style = 'right',layer = 1):
     """
@@ -688,6 +688,7 @@ def pads_adam_fill(style = 'right',layer = 1):
     pad_cover.add_port(name=1,port=p1.ports[1])
     return pad_cover
 
+
 def resistor_pos(size=(6,20), width=20, length=40, overhang=10, pos_outline=.5, layer=1, rlayer=2):
         rwidth=size[0]
         rlength=size[1]
@@ -735,9 +736,9 @@ def ntron(choke_w=0.03, gate_w=0.2, channel_w=0.1, source_w=0.3, drain_w=0.3, la
     s.connect(source.ports[1], c.ports['S'])
     
     D.flatten(single_layer=layer)
-    D.add_port(name=1, port=k.ports[1])
-    D.add_port(name=2, port=d.ports[1])
-    D.add_port(name=3, port=s.ports[2])
+    D.add_port(name='g', port=k.ports[1])
+    D.add_port(name='d', port=d.ports[1])
+    D.add_port(name='s', port=s.ports[2])
     return D
    
 def ntron_sharp(choke_w=0.03, choke_l=.5, gate_w=0.2, channel_w=0.1, source_w=0.3, drain_w=0.3, layer=1):
@@ -760,13 +761,15 @@ def ntron_sharp(choke_w=0.03, choke_l=.5, gate_w=0.2, channel_w=0.1, source_w=0.
     s.connect(source.ports[1], c.ports['S'])
     
     D.flatten(single_layer=layer)
-    D.add_port(name=1, port=k.ports[1])
-    D.add_port(name=2, port=d.ports[1])
-    D.add_port(name=3, port=s.ports[2])
+    D.add_port(name='g', port=k.ports[1])
+    D.add_port(name='d', port=d.ports[1])
+    D.add_port(name='s', port=s.ports[2])
     return D 
 
 
-def ntron_multi_gate(num_gate=4, gate_w=.250, gate_p=.4, choke_w=0.03, choke_l=.5, channel_w=0.3, source_w=0.6, drain_w=0.6, layer=1):
+def ntron_multi_gate(num_gate=4, gate_w=.250, gate_p=.4, choke_w=0.03, 
+                     choke_l=.5, channel_w=0.3, source_w=0.6, drain_w=0.6, 
+                     symmetric=False, layer=1):
     
     D = Device('nTron')
     channel = pg.compass_multi(size=(channel_w, gate_p*(num_gate+1)), ports={'N':1, 'S':1, 'W':num_gate})
@@ -781,11 +784,11 @@ def ntron_multi_gate(num_gate=4, gate_w=.250, gate_p=.4, choke_w=0.03, choke_l=.
 
     
     
-    drain = pg.optimal_step(drain_w, channel_w)
+    drain = pg.optimal_step(drain_w, channel_w, symmetric=symmetric)
     d = D<<drain
     d.connect(drain.ports[2], c.ports['N1'])
     # 
-    source = pg.optimal_step(channel_w, source_w)
+    source = pg.optimal_step(channel_w, source_w,symmetric=symmetric)
     s = D<<source
     s.connect(source.ports[1], c.ports['S1'])
     
@@ -796,3 +799,83 @@ def ntron_multi_gate(num_gate=4, gate_w=.250, gate_p=.4, choke_w=0.03, choke_l=.
     D.add_port(name='s', port=s.ports[2])
     return D
     
+def ntron_multi_gate_fanout(num_gate=4, gate_w=.250, gate_p=.4, choke_w=0.03, 
+                            choke_l=.5, channel_w=0.3, source_w=0.6, drain_w=0.6, 
+                            routing=1, outline_dis=.2, layer=1):
+    
+    D=Device('ntron_multi_gate')
+
+    ntron = ntron_multi_gate(num_gate, gate_w, gate_p, choke_w, choke_l, channel_w, source_w, drain_w, layer=layer)
+    step = pg.optimal_step(routing, drain_w, symmetric=True, width_tol=1e-8)
+    
+    n1 = D<<ntron
+    s1 = D<<step
+    s2 = D<<step
+
+    s1.connect(s1.ports[2], n1.ports['d'])
+    s2.connect(s2.ports[2], n1.ports['s'])
+    
+    # FANOUT PROGRAMMING 
+    gate_ports = [x.name for x in D.get_ports() if str(x.name)[0]=='g']
+    
+    fanout_ports = []
+    fanout_ports.append(s2.ports[1])
+    
+    length=3*num_gate
+    for i in range(1, num_gate+1):
+        mid = (num_gate/2)-i+0.5
+        scalef = 1-abs(mid)/num_gate
+        flength = length*scalef
+        fan_straight = pg.straight(size=(gate_w, flength))
+
+        fs = D<<fan_straight
+        fs.connect(fs.ports[2],n1.ports[gate_ports[i-1]])
+        T = pg.optimal_90deg(width=gate_w)
+        S = pg.optimal_step(routing, gate_w, symmetric=True)
+        if mid > 0:
+            turn=D<<T
+            turn.connect(turn.ports[1],fs.ports[1])
+            step1 = D<<S
+            step1.connect(step1.ports[2],turn.ports[2])
+            fanout_ports.append(step1.ports[1])
+        if mid < 0:
+            turn=D<<T
+            turn.connect(turn.ports[2],fs.ports[1])
+            step1 = D<<S
+            step1.connect(step1.ports[2],turn.ports[1])
+            fanout_ports.append(step1.ports[1])
+        if mid == 0:
+            step1 = D<<S
+            step1.connect(step1.ports[2],fs.ports[1])
+            fanout_ports.append(step1.ports[1])
+    
+    fanout_ports.append(s1.ports[1])
+    [D.add_port(name=n+1, port=fanout_ports[n]) for n in range(len(fanout_ports))]
+    
+    D=pg.outline(D, distance=outline_dis, open_ports=outline_dis*1.5)
+    D.flatten(single_layer=1)
+
+    return D
+
+
+def ntron_multi_gate_dual(num_gate, **kwargs):
+    
+    if not np.mod(num_gate,2) == 0:
+        raise ValueError('number of gates must be even')
+    num_gateh = num_gate//2
+    ntron = ntron_multi_gate(num_gate=num_gateh, symmetric=True, **kwargs)
+    D=Device()
+    d1 = D<<ntron
+    d2 = D<<ntron
+    d2.mirror()
+    gate_ports = [x for x in D.get_ports() if str(x.name)[0]=='g']
+    sp = d1.ports['s']
+    dp = d1.ports['d']
+    D = pg.union(D)
+    [D.add_port(name='g'+str(n+1), port=gate_ports[n]) for n in range(len(gate_ports))]
+    D.add_port(name='s',port=sp)
+    D.add_port(name='d',port=dp)
+    qp(D)
+    
+    
+# ntron_multi_gate_dual(num_gate=4, gate_w=.250, gate_p=.4, choke_w=0.03, choke_l=.5, channel_w=0.3, source_w=0.6, drain_w=0.6, layer=1)
