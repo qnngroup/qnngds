@@ -370,4 +370,9 @@ def save_parameters(parameters, script_name):
     print('File Saved: '+ path)   
     
     
-    
+def squares_calc(width=0.2, pitch=0.6, size=(10,8)):
+    number_of_lines = size[1]//(pitch) 
+    squares_per_line = size[0]/width
+    squares = squares_per_line*number_of_lines
+    return squares
+ 
