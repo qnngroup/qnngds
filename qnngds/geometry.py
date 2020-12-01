@@ -22,7 +22,8 @@ from phidl.device_layout import _parse_layer, DeviceReference
 
 from argparse import Namespace    
 
-
+sys.path.append(r'Q:\qnngds')
+import qnngds.utilities as qu
 
 def outline(elements, distance = 1, precision = 1e-4, num_divisions = [1, 1],
             join = 'miter', tolerance = 2, join_first = True,
@@ -432,6 +433,50 @@ def straight_taper(width = 2,length = 10,t_length=10, t_width=100, outline = 1, 
     S.add_port(port=s.ports[2], name=1)
     return S
 
+def snspd_vert(wire_width = 0.2, wire_pitch = 0.6, size = (6,10),
+        num_squares = None, terminals_same_side = False, extend=None, layer = 0):
+    
+    D = Device('snspd_vert')
+    S = pg.snspd(wire_width = wire_width, wire_pitch = wire_pitch, size = size,
+        num_squares = num_squares, terminals_same_side = terminals_same_side, layer = layer)
+    s1 = D<<S
+    
+    HP = pg.optimal_hairpin(width = wire_width, pitch=wire_pitch, length=size[0]/2, layer=layer)
+    h1 = D<<HP
+    h1.connect(h1.ports[1], S.references[0].ports['E'])
+    h1.rotate(180, h1.ports[1])
+    
+    h2 = D<<HP
+    h2.connect(h2.ports[1], S.references[-1].ports['E'])
+    h2.rotate(180, h2.ports[1])
+    
+    T = pg.optimal_90deg(width=wire_width, layer=layer)
+    t1 = D<<T
+    T_width = t1.ports[2].midpoint[0]
+    t1.connect(t1.ports[1],h1.ports[2])
+    t1.movex(-T_width+wire_width/2)
+    
+    t2 = D<<T
+    t2.connect(t2.ports[1],h2.ports[2])
+    t2.movex(T_width-wire_width/2)
+    
+    D = pg.union(D, layer=layer)
+    D.flatten()
+    if extend:
+        E = pg.straight(size=(wire_width, extend), layer=layer)
+        e1 = D<<E
+        e1.connect(e1.ports[1],t1.ports[2])
+        e2 = D<<E
+        e2.connect(e2.ports[1],t2.ports[2])
+        D = pg.union(D, layer=layer)
+        D.add_port(name=1, port=e1.ports[2])
+        D.add_port(name=2, port=e2.ports[2])
+    else:
+        D.add_port(name=1, port=t1.ports[2])
+        D.add_port(name=2, port=t2.ports[2])
+    return D
+    
+
 def pad_taper(length=40,  pad_width=250, pad_length = 250, narrow_section=.1, w_outline=5, n_outline=0.2, layer=1):
     """
     Create a pad with tapered connection. 
@@ -714,6 +759,7 @@ def resistor_pos(size=(6,20), width=20, length=40, overhang=10, pos_outline=.5, 
         D.flatten()
         D.add_port(s1.ports[2])
         D.add_port(s2.ports[1])
+        D.squares = (size[1]-overhang)/size[0]
         return D
 
 def ntron(choke_w=0.03, gate_w=0.2, channel_w=0.1, source_w=0.3, drain_w=0.3, layer=1):
@@ -735,6 +781,7 @@ def ntron(choke_w=0.03, gate_w=0.2, channel_w=0.1, source_w=0.3, drain_w=0.3, la
     s = D<<source
     s.connect(source.ports[1], c.ports['S'])
     
+    D = pg.union(D)
     D.flatten(single_layer=layer)
     D.add_port(name='g', port=k.ports[1])
     D.add_port(name='d', port=d.ports[1])
@@ -760,12 +807,11 @@ def ntron_sharp(choke_w=0.03, choke_l=.5, gate_w=0.2, channel_w=0.1, source_w=0.
     s = D<<source
     s.connect(source.ports[1], c.ports['S'])
     
-    D.flatten(single_layer=layer)
+    D = pg.union(D)
     D.add_port(name='g', port=k.ports[1])
     D.add_port(name='d', port=d.ports[1])
     D.add_port(name='s', port=s.ports[2])
     return D 
-
 
 def ntron_multi_gate(num_gate=4, gate_w=.250, gate_p=.4, choke_w=0.03, 
                      choke_l=.5, channel_w=0.3, source_w=0.6, drain_w=0.6, 
@@ -799,9 +845,9 @@ def ntron_multi_gate(num_gate=4, gate_w=.250, gate_p=.4, choke_w=0.03,
     D.add_port(name='s', port=s.ports[2])
     return D
     
-def ntron_multi_gate_fanout(num_gate=4, gate_w=.250, gate_p=.4, choke_w=0.03, 
-                            choke_l=.5, channel_w=0.3, source_w=0.6, drain_w=0.6, 
-                            routing=1, outline_dis=.2, layer=1):
+def ntron_multi_gate_fanout(num_gate=5, gate_w=.15, gate_p=.20, choke_w=0.05, 
+                            choke_l=.3, channel_w=0.15, source_w=0.6, drain_w=0.6, 
+                            routing=1, outline_dis=.2, layer=1, gate_factor=2.5):
     
     D=Device('ntron_multi_gate')
 
@@ -821,11 +867,11 @@ def ntron_multi_gate_fanout(num_gate=4, gate_w=.250, gate_p=.4, choke_w=0.03,
     fanout_ports = []
     fanout_ports.append(s2.ports[1])
     
-    length=3*num_gate
+    length=gate_factor*num_gate
     for i in range(1, num_gate+1):
         mid = (num_gate/2)-i+0.5
         scalef = 1-abs(mid)/num_gate
-        flength = length*scalef
+        flength = length*scalef - length/2
         fan_straight = pg.straight(size=(gate_w, flength))
 
         fs = D<<fan_straight
@@ -857,9 +903,7 @@ def ntron_multi_gate_fanout(num_gate=4, gate_w=.250, gate_p=.4, choke_w=0.03,
 
     return D
 
-
 def ntron_multi_gate_dual(num_gate, **kwargs):
-    
     if not np.mod(num_gate,2) == 0:
         raise ValueError('number of gates must be even')
     num_gateh = num_gate//2
@@ -875,7 +919,148 @@ def ntron_multi_gate_dual(num_gate, **kwargs):
     [D.add_port(name='g'+str(n+1), port=gate_ports[n]) for n in range(len(gate_ports))]
     D.add_port(name='s',port=sp)
     D.add_port(name='d',port=dp)
-    qp(D)
+    return D
+
+   
+def ntron_multi_gate_dual_fanout(num_gate=10, gate_w=.15, gate_p=.20, choke_w=0.05, 
+                            choke_l=.3, channel_w=0.15, source_w=0.6, drain_w=0.6, 
+                            routing=1, outline_dis=.2, layer=1, gate_factor=2.5):
+    if not np.mod(num_gate,2) == 0:
+        raise ValueError('number of gates must be even')
+    num_gate = num_gate//2 # for half on each side
+    D=Device('ntron_multi_gate')
+
+    ntron = ntron_multi_gate(num_gate, gate_w, gate_p, choke_w, choke_l, channel_w, source_w, drain_w, layer=layer, symmetric=True)
+    step = pg.optimal_step(routing, drain_w, symmetric=True, width_tol=1e-8)
+    
+    n1 = D<<ntron
+    s1 = D<<step
+    s2 = D<<step
+
+    s1.connect(s1.ports[2], n1.ports['d'])
+    s2.connect(s2.ports[2], n1.ports['s'])
+    
+    # FANOUT PROGRAMMING 
+    gate_ports = [x.name for x in D.get_ports() if str(x.name)[0]=='g']
+    
+    fanout_ports = []
+    fanout_ports.append(s2.ports[1])
+    fanout_ports.append(s1.ports[1])
+    
+    length=gate_factor*num_gate
+    for i in range(1, num_gate+1):
+        mid = (num_gate/2)-i+0.5
+        scalef = 1-abs(mid)/num_gate
+        flength = length*scalef - length/2
+        fan_straight = pg.straight(size=(gate_w, flength))
+
+        fs = D<<fan_straight
+        fs.connect(fs.ports[2],n1.ports[gate_ports[i-1]])
+        T = pg.optimal_90deg(width=gate_w)
+        S = pg.optimal_step(routing, gate_w, symmetric=True)
+        if mid > 0:
+            turn=D<<T
+            turn.connect(turn.ports[1],fs.ports[1])
+            step1 = D<<S
+            step1.connect(step1.ports[2],turn.ports[2])
+            fanout_ports.append(step1.ports[1])
+        if mid < 0:
+            turn=D<<T
+            turn.connect(turn.ports[2],fs.ports[1])
+            step1 = D<<S
+            step1.connect(step1.ports[2],turn.ports[1])
+            fanout_ports.append(step1.ports[1])
+        if mid == 0:
+            step1 = D<<S
+            step1.connect(step1.ports[2],fs.ports[1])
+            fanout_ports.append(step1.ports[1])
+    
+
+    D = pg.union(D)
+
+    [D.add_port(name=n+1, port=fanout_ports[n]) for n in range(len(fanout_ports))]
+    E = pg.copy(D)    
+    e1 = D<<E.mirror()
+    [fanout_ports.append(e1.ports[num_gate+2-j]) for j in range(num_gate)]
+    
+    D = pg.union(D)
+    [D.add_port(name=n+1, port=fanout_ports[n]) for n in range(len(fanout_ports))]
+
+    D=pg.outline(D, distance=outline_dis, open_ports=outline_dis*1.5)
+    D.flatten(single_layer=1)
+    return D
+
+def ntron_amp(device_layer = 1,
+              pad_layer = 2,
+              choke_w = 0.05, 
+              choke_l = .3,
+              gate_w = 0.2,
+              gate_p = 0.4,
+              channel_w = 0.2,
+              source_w = .5,
+              drain_w = .5,
+              inductor_w = 0.5,
+              inductor_a1 = 20,
+              inductor_a2 = 50,
+              outline_dis = 0.1,
+              routing = .5,
+              sheet_inductance=50,
+              sheet_resistance=5):
+    D = Device()  
+    ntron = ntron_multi_gate_fanout(1, gate_w, gate_p, choke_w, 
+                            choke_l, channel_w, source_w, drain_w, 
+                            routing, outline_dis, device_layer)
+    n1 = D<<ntron
+   
+
+   
+    inductor = snspd_vert(inductor_w, inductor_w*2, 
+                             size=(inductor_a1, inductor_a2))
+    
+    print('sheet_inductance: ' + str(sheet_inductance))
+    print('Inductors ' + str(qu.squares_calc(inductor_w, inductor_w*2, 
+                       size=(inductor_a1, inductor_a2))*sheet_inductance*1e-3) +' nH' )
+    inductor= outline(inductor,distance=outline_dis,open_ports=2, layer=device_layer)
+    l1 = D<<inductor
+    l1.connect(l1.ports[1],n1.ports[3])
+   
+    tee1 = pg.outline(pg.tee((routing*4, routing), (routing, routing), taper_type='fillet'), distance=outline_dis, open_ports=True, layer=device_layer)
+    t1 = D<<tee1
+    t1.connect(t1.ports[2], l1.ports[2])
+
+
+    stepR = pg.outline(pg.optimal_step(routing, routing*2, symmetric=True), distance=outline_dis, open_ports=True, layer=device_layer)
+    s1 = D<<stepR
+    s1.connect(s1.ports[1], n1.ports[2])
+    
+    res = resistor_pos(size=(.5,3), width=routing*2, length=3, overhang=1, pos_outline=outline_dis, layer=device_layer, rlayer=3)
+    r1 = D<<res
+    r1.connect(r1.ports[1], s1.ports[2])
+    print('sheet_resistance: ' +str(sheet_resistance))
+    print('Resistors: ' + str((res.squares*sheet_resistance)) + 'Ω')
     
     
-# ntron_multi_gate_dual(num_gate=4, gate_w=.250, gate_p=.4, choke_w=0.03, choke_l=.5, channel_w=0.3, source_w=0.6, drain_w=0.6, layer=1)
+    tee2 = pg.outline(pg.tee((routing*4, routing*2), (routing, routing), taper_type='fillet'), distance=outline_dis, open_ports=True, layer=device_layer)
+    t2 = D<<tee2
+    t2.connect(t2.ports[1], r1.ports[2])
+    
+    l2 = D<<inductor
+    l2.connect(l2.ports[2], t2.ports[3])
+    
+    r2 = D<<res
+    r2.connect(r2.ports[1],t2.ports[2])
+    
+    s2 = D<<stepR
+    s2.connect(s2.ports[2],r2.ports[2])
+    
+    gtaper = pg.outline(hyper_taper(1,10,routing), distance=outline_dis, open_ports=2, layer=device_layer)
+    gt = D<<gtaper
+    gt.connect(gt.ports['narrow'], n1.ports[1])
+    
+    gt1 = D<<gtaper
+    gt1.connect(gt1.ports['narrow'], l2.ports[1])
+    D = pg.union(D, by_layer=True)
+    port_list = [s2.ports[1], t1.ports[1], t1.ports[3]]
+    [D.add_port(name=n+1, port=port_list[n]) for n in range(len(port_list))]
+    return D
+
