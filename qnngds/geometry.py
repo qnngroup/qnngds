@@ -300,7 +300,7 @@ def heat_sameSidePort(wire_width = 0.2, wire_pitch=0.6,size=(22,11),layer = 1, p
 
 
 
-def alignment_marks(locations = ((-3500, -3500), (3500, 3500), (-3500, 3500), (3500, -3500)), layer = 1):
+def alignment_marks(locations = ((-3500, -3500), (3500, 3500), (-3500, 3500), (3500, -3500)), size = (200,5), layer = 1):
     """
     Create cross-style alignment marks.
 
@@ -319,7 +319,7 @@ def alignment_marks(locations = ((-3500, -3500), (3500, 3500), (-3500, 3500), (3
 
     """
     marks = Device('Marks')
-    alignMARK=pg.cross(200,5,layer=layer)
+    alignMARK=pg.cross(size[0], size[1],layer=layer)
 
     for i in np.arange(0,len(locations),1):
         alignMark = marks.add_ref(alignMARK)
@@ -813,15 +813,87 @@ def ntron_sharp(choke_w=0.03, choke_l=.5, gate_w=0.2, channel_w=0.1, source_w=0.
     D.add_port(name='s', port=s.ports[2])
     return D 
 
+def ntron_sharp_shift(choke_w=0.03, choke_l=.5, 
+                      gate_w=0.2, channel_w=0.1, 
+                      source_w=0.3, drain_w=0.3, 
+                      layer=1, choke_shift=-.5):
+    
+    D = Device('nTron')
+    
+    choke = pg.taper(choke_l, gate_w, choke_w)
+    k = D<<choke
+    
+    channel = pg.compass(size=(channel_w, choke_w))
+    c = D<<channel
+    c.connect(channel.ports['W'],choke.ports[2])
+    
+    drain = pg.optimal_step(drain_w, channel_w)
+    d = D<<drain
+    d.connect(drain.ports[2], c.ports['N'])
+    
+    source = pg.optimal_step(channel_w, source_w)
+    s = D<<source
+    s.connect(source.ports[1], c.ports['S'])
+    
+    k.movey(choke_shift)
+    D = pg.union(D)
+    D.add_port(name='g', port=k.ports[1])
+    D.add_port(name='d', port=d.ports[1])
+    D.add_port(name='s', port=s.ports[2])
+    return D 
+
+def ntron_sharp_shift_fanout(choke_w=0.03, choke_l=.5, gate_w=0.2, channel_w=0.1, source_w=0.3, drain_w=0.3, routing=1, layer=1, choke_shift=-.5):
+    
+    D = Device('nTron')
+    
+    choke = pg.taper(choke_l, gate_w, choke_w)
+    k = D<<choke
+    
+    channel = pg.compass(size=(channel_w, choke_w))
+    c = D<<channel
+    c.connect(channel.ports['W'],choke.ports[2])
+    
+    drain = pg.optimal_step(drain_w, channel_w)
+    d = D<<drain
+    d.connect(drain.ports[2], c.ports['N'])
+    
+    source = pg.optimal_step(channel_w, source_w)
+    s = D<<source
+    s.connect(source.ports[1], c.ports['S'])
+    
+    k.movey(choke_shift)
+    
+    step = pg.optimal_step(routing, gate_w, symmetric=True, width_tol=1e-8)
+    s1 = D<<step
+    s1.connect(s1.ports[2],k.ports[1])
+    
+    step = pg.optimal_step(routing, drain_w, symmetric=True, width_tol=1e-8)
+    s2 = D<<step
+    s2.connect(s2.ports[2],d.ports[1])
+    
+    step = pg.optimal_step(routing, source_w, symmetric=True, width_tol=1e-8)
+    s3 = D<<step
+    s3.connect(s3.ports[2],s.ports[2])
+    
+    D = pg.union(D)
+    D.add_port(name='g', port=s1.ports[1])
+    D.add_port(name='d', port=s2.ports[1])
+    D.add_port(name='s', port=s3.ports[1])
+    return D 
+
+
 def ntron_multi_gate(num_gate=4, gate_w=.250, gate_p=.4, choke_w=0.03, 
                      choke_l=.5, channel_w=0.3, source_w=0.6, drain_w=0.6, 
-                     symmetric=False, layer=1):
+                     symmetric=False, layer=1, choke_taper='straight'):
     
     D = Device('nTron')
     channel = pg.compass_multi(size=(channel_w, gate_p*(num_gate+1)), ports={'N':1, 'S':1, 'W':num_gate})
     c = D<<channel
     
-    choke = pg.taper(choke_l, gate_w, choke_w)
+    if choke_taper == 'straight':
+        choke = pg.taper(choke_l, gate_w, choke_w)
+    elif choke_taper == 'optimal':
+        choke = pg.optimal_step(gate_w, choke_w, symmetric=True)
     port_list=[]
     for i in range(num_gate):
         k = D<<choke
@@ -847,11 +919,12 @@ def ntron_multi_gate(num_gate=4, gate_w=.250, gate_p=.4, choke_w=0.03,
     
 def ntron_multi_gate_fanout(num_gate=5, gate_w=.15, gate_p=.20, choke_w=0.05, 
                             choke_l=.3, channel_w=0.15, source_w=0.6, drain_w=0.6, 
-                            routing=1, outline_dis=.2, layer=1, gate_factor=2.5):
+                            routing=1, outline_dis=.2, layer=1, gate_factor=2.5,
+                            choke_taper='straight'):
     
     D=Device('ntron_multi_gate')
 
-    ntron = ntron_multi_gate(num_gate, gate_w, gate_p, choke_w, choke_l, channel_w, source_w, drain_w, layer=layer)
+    ntron = ntron_multi_gate(num_gate, gate_w, gate_p, choke_w, choke_l, channel_w, source_w, drain_w, layer=layer, choke_taper=choke_taper)
     step = pg.optimal_step(routing, drain_w, symmetric=True, width_tol=1e-8)
     
     n1 = D<<ntron
