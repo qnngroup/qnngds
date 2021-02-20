@@ -842,11 +842,14 @@ def ntron_sharp_shift(choke_w=0.03, choke_l=.5,
     D.add_port(name='s', port=s.ports[2])
     return D 
 
-def ntron_sharp_shift_fanout(choke_w=0.03, choke_l=.5, gate_w=0.2, channel_w=0.1, source_w=0.3, drain_w=0.3, routing=1, layer=1, choke_shift=-.5):
+def ntron_sharp_shift_fanout(choke_w=0.03, choke_l=.5, gate_w=0.2, channel_w=0.1, source_w=0.3, drain_w=0.3, routing=1, layer=1, choke_shift=-.5, choke_taper='optimal'):
     
     D = Device('nTron')
     
-    choke = pg.taper(choke_l, gate_w, choke_w)
+    if choke_taper == 'straight':
+        choke = pg.taper(choke_l, gate_w, choke_w)
+    elif choke_taper == 'optimal':
+        choke = pg.optimal_step(gate_w, choke_w, symmetric=True)
     k = D<<choke
     
     channel = pg.compass(size=(channel_w, choke_w))
@@ -884,7 +887,7 @@ def ntron_sharp_shift_fanout(choke_w=0.03, choke_l=.5, gate_w=0.2, channel_w=0.1
 
 def ntron_multi_gate(num_gate=4, gate_w=.250, gate_p=.4, choke_w=0.03, 
                      choke_l=.5, channel_w=0.3, source_w=0.6, drain_w=0.6, 
-                     symmetric=False, layer=1, choke_taper='straight'):
+                     symmetric=False, layer=1, choke_taper='optimal'):
     
     D = Device('nTron')
     channel = pg.compass_multi(size=(channel_w, gate_p*(num_gate+1)), ports={'N':1, 'S':1, 'W':num_gate})
@@ -920,7 +923,7 @@ def ntron_multi_gate(num_gate=4, gate_w=.250, gate_p=.4, choke_w=0.03,
 def ntron_multi_gate_fanout(num_gate=5, gate_w=.15, gate_p=.20, choke_w=0.05, 
                             choke_l=.3, channel_w=0.15, source_w=0.6, drain_w=0.6, 
                             routing=1, outline_dis=.2, layer=1, gate_factor=2.5,
-                            choke_taper='straight'):
+                            choke_taper='optimal'):
     
     D=Device('ntron_multi_gate')
 
