@@ -740,7 +740,7 @@ def resistor_pos(size=(6,20), width=20, length=40, overhang=10, pos_outline=.5, 
         spacing=rlength-overhang
         res = pg.straight((rwidth,rlength),layer=rlayer)       
         s1 = pg.outline(pg.straight((width, length+spacing)),
-                        distance=pos_outline, layer=layer, open_ports=pos_outline)
+                        distance=pos_outline, layer=layer, open_ports=pos_outline, precision=1e-6)
         
         rout = pg.straight((width+pos_outline*2,
                             rlength-overhang),
@@ -750,13 +750,13 @@ def resistor_pos(size=(6,20), width=20, length=40, overhang=10, pos_outline=.5, 
         res.move(res.center,rout.center)
         
         s2 = pg.outline(pg.straight((width,length+spacing)),
-                        distance=pos_outline, layer=layer, open_ports=2)
+                        distance=pos_outline, layer=layer, open_ports=2, precision=1e-6)
         
         s2.move(s2.ports[2],rout.ports[1])
         
         D = Device('resistor')
         D.add_ref([res,s1, rout, s2])
-        D.flatten()
+        D = pg.union(D, by_layer=True)
         D.add_port(s1.ports[2])
         D.add_port(s2.ports[1])
         D.squares = (size[1]-overhang)/size[0]
@@ -799,11 +799,11 @@ def ntron_sharp(choke_w=0.03, choke_l=.5, gate_w=0.2, channel_w=0.1, source_w=0.
     c = D<<channel
     c.connect(channel.ports['W'],choke.ports[2])
     
-    drain = pg.optimal_step(drain_w, channel_w)
+    drain = pg.taper(channel_w*5, drain_w, channel_w)
     d = D<<drain
     d.connect(drain.ports[2], c.ports['N'])
     
-    source = pg.optimal_step(channel_w, source_w)
+    source = pg.taper(channel_w*5, channel_w, source_w)
     s = D<<source
     s.connect(source.ports[1], c.ports['S'])
     
@@ -841,7 +841,6 @@ def ntron_sharp_shift(choke_w=0.03, choke_l=.5,
     D.add_port(name='d', port=d.ports[1])
     D.add_port(name='s', port=s.ports[2])
     return D 
-
 def ntron_sharp_shift_fanout(choke_w=0.03, choke_l=.5, gate_w=0.2, channel_w=0.1, source_w=0.3, drain_w=0.3, routing=1, layer=1, choke_shift=-.5, choke_taper='optimal'):
     
     D = Device('nTron')
@@ -1140,3 +1139,253 @@ def ntron_amp(device_layer = 1,
     [D.add_port(name=n+1, port=port_list[n]) for n in range(len(port_list))]
     return D
 
+def ntron_four_port(device_layer = 1,
+              pad_layer = 2,
+              choke_w = 0.05, 
+              choke_l = .3,
+              gate_w = 0.2,
+              channel_w = 0.1,
+              source_w = .2,
+              drain_w = .2,
+              inductor_w = 0.2,
+              inductor_a1 = 10,
+              inductor_a2 = 10,
+              outline_dis = 0.2,
+              routing = .5,
+              sheet_inductance=50):
+    
+    D = Device()  
+    ntron = outline(ntron_sharp(choke_w, choke_l, gate_w, channel_w, source_w, 
+                        drain_w, device_layer), distance=outline_dis, open_ports=3, layer=device_layer, precision=1e-6)
+    n1 = D<<ntron
+
+
+    tee1 = pg.outline(pg.tee((drain_w*4, drain_w), (drain_w, drain_w), taper_type='fillet'), distance=outline_dis, open_ports=3, layer=device_layer,  precision=1e-6)
+    t1 = D<<tee1
+    t1.connect(t1.ports[2], n1.ports['d'])
+    
+    inductor = snspd_vert(inductor_w, inductor_w*2, 
+                             size=(inductor_a1, inductor_a2))
+    
+    print('sheet_inductance: ' + str(sheet_inductance))
+    print('Inductors ' + str(qu.squares_calc(inductor_w, inductor_w*2, 
+                       size=(inductor_a1, inductor_a2))*sheet_inductance*1e-3) +' nH' )
+    inductor= outline(inductor,distance=outline_dis,open_ports=2, layer=device_layer)
+    l1 = D<<inductor
+    l1.connect(l1.ports[1],t1.ports[1])
+   
+
+    stepR = pg.outline(pg.optimal_step(drain_w, routing, symmetric=True), distance=outline_dis, open_ports=3, layer=device_layer)
+    s1 = D<<stepR
+    s1.connect(s1.ports[1], t1.ports[3])
+    
+    gtaper = pg.outline(pg.optimal_step(gate_w, drain_w, symmetric=True), distance=outline_dis, open_ports=3, layer=device_layer)
+    gt = D<<gtaper
+    gt.connect(gt.ports[1], n1.ports['g'])
+    
+    tee2 = pg.outline(pg.tee((drain_w*10, drain_w), (drain_w, drain_w), taper_type='fillet'), distance=outline_dis, open_ports=True, layer=device_layer)
+    t2 = D<<tee2
+    t2.connect(t2.ports[1], gt.ports[2])
+    
+    l2 = D<<inductor
+    l2.connect(l2.ports[2], t2.ports[3])
+    
+    s2 = D<<stepR
+    s2.connect(s2.ports[1],t2.ports[2])
+    
+
+    
+    # gt1 = D<<gtaper
+    # gt1.connect(gt1.ports['narrow'], l2.ports[1])
+    # D = pg.union(D, by_layer=True)
+    # port_list = [s2.ports[1], t1.ports[1], t1.ports[3]]
+    # [D.add_port(name=n+1, port=port_list[n]) for n in range(len(port_list))]
+    return D
+
+# qp(ntron_four_port())
+
+
+def memory_loop(loop_size=(1, 2), lw=0.2, rw=0.4, port=1, vert=1.5, layer=1):
+    
+    D = Device()
+    
+    left = pg.flagpole(size=(loop_size[0]+lw+rw, port/4), stub_size=(lw,rw), taper_type='fillet')
+    right = pg.flagpole(size=(loop_size[0]+lw+rw, port/4), stub_size=(rw,rw), taper_type='fillet', shape='q')
+    
+    topL = D<<left
+    topR = D<<right
+    topL.move(topL.ports[2], topR.ports[2])
+
+    branchL = pg.straight(size=(lw, loop_size[1]-2*rw))
+    bL = D<<branchL
+    bL.connect(bL.ports[1], topL.ports[1])
+    
+    branchR = pg.straight(size=(rw, loop_size[1]-2*rw))
+    bR = D<<branchR
+    bR.connect(bR.ports[1], topR.ports[1])
+    
+    bleft = pg.flagpole(size=(loop_size[0]+lw+rw, port/4), stub_size=(lw,rw), taper_type='fillet',  shape='q')
+    bottomL = D<<bleft
+    bottomL.connect(bottomL.ports[1], bL.ports[2])
+
+    bright = pg.flagpole(size=(loop_size[0]+lw+rw, port/4), stub_size=(rw,rw), taper_type='fillet',  shape='p')
+    bottomR = D<<bright
+    bottomR.connect(bottomR.ports[1], bR.ports[2])
+    
+    fake_port = D.add_port(name='top', midpoint=(-(loop_size[0]+lw+rw)/2, vert/2), orientation=-90)
+    
+    prout = pr.route_basic(topL.ports[2], fake_port, path_type='sine', width_type='sine')
+    conn1 = D<<prout
+    conn2 = D<<prout
+    conn2.connect(conn2.ports[1], bottomL.ports[2])
+    
+    D = pg.union(D)
+    D.add_port(name=1, port=conn1.ports[2])
+    D.add_port(name=2, port=conn2.ports[2])
+
+    D.flatten(single_layer=layer)
+    return D
+
+def memory(loop_size=(1, 2), lw=0.2, rw=0.4, port=.2, vert=1.5, layer=1, hwl=.1, hwr=.1, hll=.5, hlr=1.25, hrout=.75, hlayer=2):
+    D = Device()
+    #LEFT SIDE
+    heaterL = pg.flagpole(size=(hll, hwl), stub_size=(hwl, 2*hwl), taper_type='fillet', shape='p')
+    heaterR = pg.flagpole(size=(hll, hwl), stub_size=(hwl, 2*hwl), taper_type='fillet', shape='d')
+
+    h1 = D<<heaterL.rotate(-90)
+    h2 = D<<heaterR.rotate(-90)
+    h1.move(h1.ports[2], destination=(-loop_size[0]-rw-lw/2 + hwl/2, -loop_size[1]/2))
+    h2.move(h2.ports[2], h1.ports[2]).movex(-hwl)
+    
+    #RIGHT SIDE
+    heaterL = pg.flagpole(size=(hlr, hwr), stub_size=(hwr, 2*hwr), taper_type='fillet', shape='p')
+    heaterR = pg.flagpole(size=(hlr, hwr), stub_size=(hwr, 2*hwr), taper_type='fillet', shape='d')
+
+    h3 = D<<heaterL.rotate(-90)
+    h4 = D<<heaterR.rotate(-90)
+    h3.move(h3.ports[2], destination=(-rw/2 + hwr/2, -loop_size[1]/2))
+    h4.move(h4.ports[2], h3.ports[2]).movex(-hwr)
+    
+    #CENTER BIT
+    height = h3.ports[1].midpoint[1]-h2.ports[1].midpoint[1]+hwl/2+hwr/2
+    width = loop_size[0]/4
+    stubL = ((-rw-loop_size[0]/2)-h2.ports[1].midpoint[0]) - width
+    stubR = (h3.ports[1].midpoint[0]-(-rw-loop_size[0]/2)) - width
+    fpcenter = pg.flagpole(size=(height, width), stub_size=(hwl, stubL), shape='q', taper_type='fillet')
+    c1 = D<<fpcenter.rotate(-90)
+    c1.move(c1.ports[1], h2.ports[1])
+    
+    fpcenter = pg.flagpole(size=(height, width), stub_size=(hwl, stubR), shape='q', taper_type='fillet')
+    c2 = D<<fpcenter.rotate(90)
+    c2.move(c2.ports[1], h3.ports[1])
+
+    step1 = pg.optimal_step(hwl, hrout, symmetric=True, anticrowding_factor=0.5)
+    s1 = D<<step1
+    s1.connect(s1.ports[1], h1.ports[1])
+    
+    step2 = pg.optimal_step(hwr, hrout, symmetric=True, anticrowding_factor=0.5)
+    s2 = D<<step2
+    s2.connect(s2.ports[1], h4.ports[1])
+    
+    D = pg.union(D)
+    D.flatten(single_layer=hlayer)
+    outline_loop = pg.outline(memory_loop(loop_size, lw, rw, port, vert, layer=layer), distance=0.1, open_ports=True, layer=layer)
+    loop = D<<outline_loop
+    D.add_port(name=1, port=loop.ports[1])
+    D.add_port(name=2, port=loop.ports[2])
+    D.add_port(name=3, port=s1.ports[2])
+    D.add_port(name=4, port=s2.ports[2])
+    D.flatten()
+    return D
+
+def memory1(loop_size=(1, 2), lw=0.2, rw=0.4, port=1, vert=1.5, layer=1, hwl=.2, hwr=.1, hll=.5, hlr=1.25, hlayer=2):
+    
+    D = Device()
+    #LEFT SIDE
+    heaterL = pg.straight(size=(hwl, hll))
+    h1 = D<<heaterL
+    h1.rotate(-90)
+    h1.move(h1.center, destination=(-loop_size[0]-rw-lw/2, -loop_size[1]/2))
+    
+    # #RIGHT SIDE
+    h3 = D<<pg.straight(size=(hwr, hlr))
+    h3.rotate(-90)
+    # h4 = D<<heaterR.rotate(-90)
+    h3.move(h3.center, destination=(-rw/2, -loop_size[1]/2))
+    # h4.move(h4.ports[2], h3.ports[2]).movex(-hwr)
+    
+    step1 = pg.optimal_step(hwl, hwl*2, symmetric=True, anticrowding_factor=.5)
+    s1 = D<<step1
+    s1.connect(s1.ports[1], h1.ports[1])
+    s2 = D<<step1
+    s2.connect(s2.ports[1], h1.ports[2])
+    
+    step2 = pg.optimal_step(hwr, hwl*2, symmetric=True, anticrowding_factor=.5)
+    s3 = D<<step2
+    s3.connect(s3.ports[1], h3.ports[2])
+    s4 = D<<step2
+    s4.connect(s4.ports[1], h3.ports[1])
+    # height = h3.ports[1].midpoint[1]-h2.ports[1].midpoint[1]+hwl/2+hwr/2
+    # width = loop_size[0]/4
+    # stubL = ((-rw-loop_size[0]/2)-h2.ports[1].midpoint[0]) - width
+    # stubR = (h3.ports[1].midpoint[0]-(-rw-loop_size[0]/2)) - width
+    # fpcenter = pg.flagpole(size=(height, width), stub_size=(hwl, stubL), shape='q', taper_type='fillet')
+    # c1 = D<<fpcenter.rotate(-90)
+    # c1.move(c1.ports[1], h2.ports[1])
+    
+    # fpcenter = pg.flagpole(size=(height, width), stub_size=(hwl, stubR), shape='q', taper_type='fillet')
+    # c2 = D<<fpcenter.rotate(90)
+    # c2.move(c2.ports[1], h3.ports[1])
+
+    # D = pg.union(D)
+    # D.flatten(single_layer=hlayer)
+    loop = D<<memory_loop(loop_size, lw, rw, port, vert, layer=layer)
+    # D.add_port(name=1, port=loop.ports[1])
+    # D.add_port(name=2, port=loop.ports[2])
+    # D.add_port(name=3, port=h1.ports[1])
+    # D.add_port(name=4, port=h4.ports[1])
+    # D.flatten()
+    return D
+
+DEV = memory(loop_size=(1, 2), 
+             lw=0.15, 
+             rw=0.69, 
+             port=.2, 
+             vert=1.5, 
+             layer=1, 
+             hwl=.1, 
+             hwr=.1, 
+             hll=.5, 
+             hlr=1.25, 
+             hrout=.75, 
+             hlayer=2)
+DEV.move(DEV.center, (0,0))
+cell = pg.extract(DEV, [1])
+HEATER = pg.extract(DEV, [2])
+x=5
+y = cell.bbox[1][1]*2
+box = pg.rectangle((x,y),layer=3)
+box.move(box.center, (0,0))
+OUTLINE = pg.boolean(box, cell, 'A-B')
+
+D = Device()
+D<<OUTLINE
+D.write_gds(r'G:\My Drive\...Projects\_electronics\nMem\simulation\geometry\phidl_exports\nMem_comsol_outline.gds')    
+   
+D = Device()
+D<<HEATER
+D.write_gds(r'G:\My Drive\...Projects\_electronics\nMem\simulation\geometry\phidl_exports\nMem_comsol_heater.gds')    
+    
+    
+     
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
