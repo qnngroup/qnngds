@@ -372,53 +372,53 @@ def hyper_taper (length, wide_section, narrow_section, layer=1):
         HT.flatten(single_layer = layer)
     return HT
 
+# def hyper_taper_outline(length=15, wide_section=80, narrow_section=.1, outline=0.5, layer=1):
+#     """
+#     Outlined hyper taper for etch process. Derived from colang's hyper taper
 
-def hyper_taper_outline(length=15, wide_section=80, narrow_section=.1, outline=0.5, layer=1):
-    """
-    Outlined hyper taper for etch process. Derived from colang's hyper taper
-
-    Parameters
-    ----------
-    length : FLOAT, optional
-        Length of taper. The default is 50.
-    wide_section : FLOAT, optional
-        Wide width dimension. The default is 30.
-    narrow_section : FLOAT, optional
-        Narrow width dimension. The default is 5.
-    outline : FLOAT, optional
-        Width of device outline. The default is 0.5.
-    layer : INT, optional
-        Layer for device to be created on. The default is 1.
+#     Parameters
+#     ----------
+#     length : FLOAT, optional
+#         Length of taper. The default is 50.
+#     wide_section : FLOAT, optional
+#         Wide width dimension. The default is 30.
+#     narrow_section : FLOAT, optional
+#         Narrow width dimension. The default is 5.
+#     outline : FLOAT, optional
+#         Width of device outline. The default is 0.5.
+#     layer : INT, optional
+#         Layer for device to be created on. The default is 1.
         
         
-    Returns
-    -------
-    ht : DEVICE
-        PHIDL device object is returned.
+#     Returns
+#     -------
+#     ht : DEVICE
+#         PHIDL device object is returned.
 
-    """
+#     """
     
-    ht = Device('ht')
-    hyper_import = hyper_taper(length, wide_section, narrow_section)
-    hyper_outline = pg.outline(hyper_import,distance=outline,layer=layer)
-    ht.add_ref(hyper_outline)
+#     ht = Device('ht')
+#     hyper_import = hyper_taper(length, wide_section, narrow_section)
+#     hyper_outline = pg.outline(hyper_import,distance=outline,layer=layer)
+#     ht.add_ref(hyper_outline)
     
-    trim_left = pg.rectangle(size=(outline+.001,narrow_section+2*outline))
-    ht.add_ref(trim_left)
-    trim_left.move(destination=(-outline,-(narrow_section/2+outline)))
-    ht = pg.boolean(ht,trim_left,'A-B', precision=1e-6,layer=layer)
+#     trim_left = pg.rectangle(size=(outline+.001,narrow_section+2*outline))
+#     ht.add_ref(trim_left)
+#     trim_left.move(destination=(-outline,-(narrow_section/2+outline)))
+#     ht = pg.boolean(ht,trim_left,'A-B', precision=1e-6,layer=layer)
     
-    max_y_point = ht.bbox[1,1]
-    trim_right = pg.rectangle(size=(outline,2*max_y_point))
-    ht.add_ref(trim_right)
-    trim_right.move(destination=(length, -max_y_point))
-    ht = pg.boolean(ht,trim_right,'A-B', precision=1e-6,layer=layer)
+#     max_y_point = ht.bbox[1,1]
+#     trim_right = pg.rectangle(size=(outline,2*max_y_point))
+#     ht.add_ref(trim_right)
+#     trim_right.move(destination=(length, -max_y_point))
+#     ht = pg.boolean(ht,trim_right,'A-B', precision=1e-6,layer=layer)
     
-    ht.add_port(name = 'narrow', midpoint = [0, 0],  width = narrow_section, orientation = 180)
-    ht.add_port(name = 'wide', midpoint = [length, 0],  width = wide_section, orientation = 0)
-    ht.flatten(single_layer = layer)
+#     ht.add_port(name = 'narrow', midpoint = [.0015, 0],  width = narrow_section, orientation = 180)
+#     ht.add_port(name = 'wide', midpoint = [length-.0015, 0],  width = wide_section, orientation = 0)
+#     ht.flatten(single_layer = layer)
 
-    return ht
+#     return ht
+
 
 def straight_taper(width = 2,length = 10,t_length=10, t_width=100, outline = 1, layer =1):
     S = Device('straight')
@@ -733,6 +733,55 @@ def pads_adam_fill(style = 'right',layer = 1):
     pad_cover.add_port(name=1,port=p1.ports[1])
     return pad_cover
 
+def pad_array(num, size1=(100, 100), size2=(200, 250), outline=None, layer=1):
+    
+    if outline is None:
+        out_dis = 5
+    else: 
+        out_dis = outline
+        
+    D = Device('pad_array')
+    a, b = divmod(num, 4)
+    conn_side = np.tile(a, 4)
+    for i in range(b):
+        conn_side[i] = conn_side[i]+1
+    conn_side.sort()
+    conn_dict = {'W': conn_side[0],
+                 'E': conn_side[1],
+                 'S': conn_side[2],
+                 'N': conn_side[3]}
+    
+    rec1 = pg.compass_multi(size=size1, ports = conn_dict, flip_ports=False, layer = 1)
+    size2_x = max([size1[0], max(conn_side)*(size2[0]+out_dis*4)])
+    # size2_x = max(conn_side)*(size2[0]+out_dis*4)
+
+    rec2 = pg.compass_multi(size=(size2_x, size2_x), ports = conn_dict, flip_ports=False, layer = 1)
+    
+    port_list1 = rec1.get_ports()
+    port_list2 = rec2.get_ports()
+    final_ports = []
+    for prt1, prt2 in zip(port_list1, port_list2):
+        p1 = D<<pg.straight(size=(prt1.width/2-out_dis, prt1.width/2))
+        p1.connect(p1.ports[1], prt1)
+        
+        final_ports.append(p1.ports[1])
+        p2 = D<<pg.straight(size=size2)
+        p2.connect(p2.ports[1], prt2 )
+        
+        # newport1 = p1.ports[1].rotate(180).
+        D<<pr.route_basic(p1.ports[2], p2.ports[1], 
+                          path_type='straight', width_type='straight',
+                          width1 = None, width2 = p2.ports[1].width/2)
+    
+    D = pg.union(D)
+    [D.add_port(name=i, port=final_ports[i]) for i in range(len(final_ports))]
+    
+    if outline:
+        D = pg.outline(D, distance=out_dis, open_ports=True)
+    D.flatten(single_layer=layer)
+
+    return D
+qp(pad_array(7, outline=10))
 
 def resistor_pos(size=(6,20), width=20, length=40, overhang=10, pos_outline=.5, layer=1, rlayer=2):
         rwidth=size[0]
@@ -764,7 +813,7 @@ def resistor_pos(size=(6,20), width=20, length=40, overhang=10, pos_outline=.5, 
 
 def ntron(choke_w=0.03, gate_w=0.2, channel_w=0.1, source_w=0.3, drain_w=0.3, layer=1):
     
-    D = Device('nTron')
+    D = Device(name='nTron')
     
     choke = pg.optimal_step(gate_w, choke_w, symmetric=True)
     k = D<<choke
@@ -786,8 +835,12 @@ def ntron(choke_w=0.03, gate_w=0.2, channel_w=0.1, source_w=0.3, drain_w=0.3, la
     D.add_port(name='g', port=k.ports[1])
     D.add_port(name='d', port=d.ports[1])
     D.add_port(name='s', port=s.ports[2])
+    D.name = 'nTron'
+    D.info = locals()
     return D
-   
+
+
+
 def ntron_sharp(choke_w=0.03, choke_l=.5, gate_w=0.2, channel_w=0.1, source_w=0.3, drain_w=0.3, layer=1):
     
     D = Device('nTron')
@@ -795,15 +848,15 @@ def ntron_sharp(choke_w=0.03, choke_l=.5, gate_w=0.2, channel_w=0.1, source_w=0.
     choke = pg.taper(choke_l, gate_w, choke_w)
     k = D<<choke
     
-    channel = pg.compass(size=(channel_w, choke_w))
+    channel = pg.compass(size=(channel_w, choke_w/10))
     c = D<<channel
     c.connect(channel.ports['W'],choke.ports[2])
     
-    drain = pg.taper(channel_w*5, drain_w, channel_w)
+    drain = pg.taper(channel_w*6, drain_w, channel_w)
     d = D<<drain
     d.connect(drain.ports[2], c.ports['N'])
     
-    source = pg.taper(channel_w*5, channel_w, source_w)
+    source = pg.taper(channel_w*6, channel_w, source_w)
     s = D<<source
     s.connect(source.ports[1], c.ports['S'])
     
@@ -811,6 +864,8 @@ def ntron_sharp(choke_w=0.03, choke_l=.5, gate_w=0.2, channel_w=0.1, source_w=0.
     D.add_port(name='g', port=k.ports[1])
     D.add_port(name='d', port=d.ports[1])
     D.add_port(name='s', port=s.ports[2])
+    D.name = 'nTron'
+    D.info = locals()
     return D 
 
 def ntron_sharp_shift(choke_w=0.03, choke_l=.5, 
@@ -1139,51 +1194,114 @@ def ntron_amp(device_layer = 1,
     [D.add_port(name=n+1, port=port_list[n]) for n in range(len(port_list))]
     return D
 
-def ntron_four_port(device_layer = 1,
-              pad_layer = 2,
-              choke_w = 0.05, 
+
+
+# def ntron_four_port(device_layer = 1,
+#               pad_layer = 2,
+#               choke_w = 0.05, 
+#               choke_l = .3,
+#               gate_w = 0.2,
+#               channel_w = 0.1,
+#               source_w = .2,
+#               drain_w = .2,
+#               inductor_w = 0.2,
+#               inductor_a1 = 15,
+#               inductor_a2 = 5,
+#               outline_dis = 0.2,
+#               routing = .5,
+#               sheet_inductance=50):
+    
+#     D = Device('ntron')  
+#     ntron = outline(ntron_sharp(choke_w, choke_l, gate_w, channel_w, source_w, 
+#                         drain_w, device_layer), distance=outline_dis, open_ports=3, layer=device_layer, precision=1e-6)
+#     n1 = D<<ntron
+
+
+#     tee1 = pg.outline(pg.tee((drain_w*10, drain_w), (drain_w, drain_w), taper_type='fillet'), distance=outline_dis, open_ports=3, layer=device_layer,  precision=1e-6)
+#     t1 = D<<tee1
+#     t1.connect(t1.ports[2], n1.ports['d'])
+    
+#     # inductor = snspd_vert(inductor_w, inductor_w*2, 
+#     #                           size=(inductor_a1, inductor_a2))
+#     inductor = pg.snspd(inductor_w, inductor_w*2, size=(inductor_a1, inductor_a2))
+    
+#     print('sheet_inductance: ' + str(sheet_inductance))
+#     print('Inductors ' + str(qu.squares_calc(inductor_w, inductor_w*2, 
+#                        size=(inductor_a1, inductor_a2))*sheet_inductance*1e-3) +' nH' )
+#     inductor= outline(inductor,distance=outline_dis,open_ports=0, layer=device_layer)
+#     l1 = D<<inductor
+#     l1.connect(l1.ports[1],t1.ports[1])
+   
+
+#     stepR = pg.outline(pg.optimal_step(drain_w, routing, symmetric=True), distance=outline_dis, open_ports=3, layer=device_layer)
+#     s1 = D<<stepR
+#     s1.connect(s1.ports[1], t1.ports[3])
+    
+#     gtaper = pg.outline(pg.optimal_step(gate_w, drain_w, symmetric=True), distance=outline_dis, open_ports=3, layer=device_layer)
+#     gt = D<<gtaper
+#     gt.connect(gt.ports[1], n1.ports['g'])
+    
+#     tee2 = pg.outline(pg.tee((drain_w*20, drain_w), (drain_w, drain_w*5), taper_type='fillet'), distance=outline_dis, open_ports=True, layer=device_layer)
+#     t2 = D<<tee2
+#     t2.connect(t2.ports[1], gt.ports[2])
+    
+#     l2 = D<<inductor
+#     l2.connect(l2.ports[2], t2.ports[3])
+    
+#     s2 = D<<stepR
+#     s2.connect(s2.ports[1],t2.ports[2])
+    
+
+#     ground = pg.outline(hyper_taper(1, wide_section=drain_w*19, narrow_section=source_w), distance=outline_dis, open_ports=drain_w*19, layer=device_layer)
+#     gt1 = D<<ground
+#     gt1.connect(gt1.ports['narrow'], n1.ports['s'])
+#     D = pg.union(D, by_layer=True)
+#     port_list = [s2.ports[2], s1.ports[2], l1.ports[2], l2.ports[1]]
+#     [D.add_port(name=n+1, port=port_list[n]) for n in range(len(port_list))]
+    
+#     return D
+
+def ntron_four_port(choke_w = 0.05, 
               choke_l = .3,
               gate_w = 0.2,
               channel_w = 0.1,
-              source_w = .2,
-              drain_w = .2,
-              inductor_w = 0.2,
-              inductor_a1 = 10,
-              inductor_a2 = 10,
-              outline_dis = 0.2,
+              source_w = .3,
+              drain_w = .3,
+              inductor_a1 = 15,
+              inductor_a2 = 5,
               routing = .5,
+              layer=1,
               sheet_inductance=50):
     
-    D = Device()  
-    ntron = outline(ntron_sharp(choke_w, choke_l, gate_w, channel_w, source_w, 
-                        drain_w, device_layer), distance=outline_dis, open_ports=3, layer=device_layer, precision=1e-6)
+    D = Device('ntron')  
+    ntron = ntron_sharp(choke_w, choke_l, gate_w, channel_w, source_w, 
+                        drain_w, layer)
     n1 = D<<ntron
 
 
-    tee1 = pg.outline(pg.tee((drain_w*4, drain_w), (drain_w, drain_w), taper_type='fillet'), distance=outline_dis, open_ports=3, layer=device_layer,  precision=1e-6)
+    tee1 = pg.tee((drain_w*15, drain_w), (drain_w, drain_w*5), taper_type='fillet')
     t1 = D<<tee1
     t1.connect(t1.ports[2], n1.ports['d'])
     
-    inductor = snspd_vert(inductor_w, inductor_w*2, 
-                             size=(inductor_a1, inductor_a2))
+    # inductor = snspd_vert(inductor_w, inductor_w*2, 
+    #                           size=(inductor_a1, inductor_a2))
+    inductor = pg.snspd(drain_w, drain_w*2, size=(inductor_a1, inductor_a2))
     
     print('sheet_inductance: ' + str(sheet_inductance))
-    print('Inductors ' + str(qu.squares_calc(inductor_w, inductor_w*2, 
-                       size=(inductor_a1, inductor_a2))*sheet_inductance*1e-3) +' nH' )
-    inductor= outline(inductor,distance=outline_dis,open_ports=2, layer=device_layer)
+    print('Inductors ' + str(float(inductor.info['num_squares'])*sheet_inductance*1e-3) +' nH' )
     l1 = D<<inductor
     l1.connect(l1.ports[1],t1.ports[1])
    
 
-    stepR = pg.outline(pg.optimal_step(drain_w, routing, symmetric=True), distance=outline_dis, open_ports=3, layer=device_layer)
+    stepR = pg.optimal_step(drain_w, routing, symmetric=True, anticrowding_factor=3)
     s1 = D<<stepR
     s1.connect(s1.ports[1], t1.ports[3])
     
-    gtaper = pg.outline(pg.optimal_step(gate_w, drain_w, symmetric=True), distance=outline_dis, open_ports=3, layer=device_layer)
+    gtaper = pg.optimal_step(gate_w, drain_w, symmetric=True)
     gt = D<<gtaper
     gt.connect(gt.ports[1], n1.ports['g'])
     
-    tee2 = pg.outline(pg.tee((drain_w*10, drain_w), (drain_w, drain_w), taper_type='fillet'), distance=outline_dis, open_ports=True, layer=device_layer)
+    tee2 = pg.tee((drain_w*20, drain_w), (drain_w, drain_w*5), taper_type='fillet')
     t2 = D<<tee2
     t2.connect(t2.ports[1], gt.ports[2])
     
@@ -1193,16 +1311,24 @@ def ntron_four_port(device_layer = 1,
     s2 = D<<stepR
     s2.connect(s2.ports[1],t2.ports[2])
     
-
+    s3 = D<<pg.optimal_step(drain_w, routing, symmetric=True, anticrowding_factor=3)
+    s3.connect(s3.ports[1], l1.ports[2])
+    s4 = D<<pg.optimal_step(drain_w, routing, symmetric=True, anticrowding_factor=3)
+    s4.connect(s4.ports[1], l2.ports[1])
     
-    # gt1 = D<<gtaper
-    # gt1.connect(gt1.ports['narrow'], l2.ports[1])
-    # D = pg.union(D, by_layer=True)
-    # port_list = [s2.ports[1], t1.ports[1], t1.ports[3]]
-    # [D.add_port(name=n+1, port=port_list[n]) for n in range(len(port_list))]
+    straight = pg.straight(size=(source_w, drain_w*7.5))
+    st = D<<straight
+    st.connect(st.ports[1], n1.ports['s'])
+    ground = hyper_taper(1, wide_section=drain_w*15, narrow_section=source_w)
+    
+    gt1 = D<<ground
+    gt1.connect(gt1.ports['narrow'], st.ports[2])
+    D.flatten(single_layer=layer)
+    D = pg.union(D, by_layer=False)
+    port_list = [s2.ports[2], s1.ports[2], s3.ports[2], s4.ports[2], gt1.ports['wide']]
+    [D.add_port(name=n+1, port=port_list[n]) for n in range(len(port_list))]
+    
     return D
-
-# qp(ntron_four_port())
 
 
 def memory_loop(loop_size=(1, 2), lw=0.2, rw=0.4, port=1, vert=1.5, layer=1):
@@ -1347,34 +1473,34 @@ def memory1(loop_size=(1, 2), lw=0.2, rw=0.4, port=1, vert=1.5, layer=1, hwl=.2,
     # D.flatten()
     return D
 
-DEV = memory(loop_size=(1, 2), 
-             lw=0.15, 
-             rw=0.69, 
-             port=.2, 
-             vert=1.5, 
-             layer=1, 
-             hwl=.1, 
-             hwr=.1, 
-             hll=.5, 
-             hlr=1.25, 
-             hrout=.75, 
-             hlayer=2)
-DEV.move(DEV.center, (0,0))
-cell = pg.extract(DEV, [1])
-HEATER = pg.extract(DEV, [2])
-x=5
-y = cell.bbox[1][1]*2
-box = pg.rectangle((x,y),layer=3)
-box.move(box.center, (0,0))
-OUTLINE = pg.boolean(box, cell, 'A-B')
+# DEV = memory(loop_size=(1, 2), 
+#              lw=0.15, 
+#              rw=0.69, 
+#              port=.2, 
+#              vert=1.5, 
+#              layer=1, 
+#              hwl=.1, 
+#              hwr=.1, 
+#              hll=.5, 
+#              hlr=1.25, 
+#              hrout=.75, 
+#              hlayer=2)
+# DEV.move(DEV.center, (0,0))
+# cell = pg.extract(DEV, [1])
+# HEATER = pg.extract(DEV, [2])
+# x=5
+# y = cell.bbox[1][1]*2
+# box = pg.rectangle((x,y),layer=3)
+# box.move(box.center, (0,0))
+# OUTLINE = pg.boolean(box, cell, 'A-B')
 
-D = Device()
-D<<OUTLINE
-D.write_gds(r'G:\My Drive\...Projects\_electronics\nMem\simulation\geometry\phidl_exports\nMem_comsol_outline.gds')    
+# D = Device()
+# D<<OUTLINE
+# D.write_gds(r'G:\My Drive\...Projects\_electronics\nMem\simulation\geometry\phidl_exports\nMem_comsol_outline.gds')    
    
-D = Device()
-D<<HEATER
-D.write_gds(r'G:\My Drive\...Projects\_electronics\nMem\simulation\geometry\phidl_exports\nMem_comsol_heater.gds')    
+# D = Device()
+# D<<HEATER
+# D.write_gds(r'G:\My Drive\...Projects\_electronics\nMem\simulation\geometry\phidl_exports\nMem_comsol_heater.gds')    
     
     
      
