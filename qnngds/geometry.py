@@ -733,7 +733,7 @@ def pads_adam_fill(style = 'right',layer = 1):
     pad_cover.add_port(name=1,port=p1.ports[1])
     return pad_cover
 
-def pad_array(num, size1=(100, 100), size2=(200, 250), outline=None, layer=1):
+def pad_array(num=8, size1=(100, 100), size2=(200, 250), outline=None, layer=1):
     
     if outline is None:
         out_dis = 5
@@ -781,7 +781,7 @@ def pad_array(num, size1=(100, 100), size2=(200, 250), outline=None, layer=1):
     D.flatten(single_layer=layer)
 
     return D
-qp(pad_array(7, outline=10))
+
 
 def resistor_pos(size=(6,20), width=20, length=40, overhang=10, pos_outline=.5, layer=1, rlayer=2):
         rwidth=size[0]
@@ -1192,6 +1192,7 @@ def ntron_amp(device_layer = 1,
     D = pg.union(D, by_layer=True)
     port_list = [s2.ports[1], t1.ports[1], t1.ports[3]]
     [D.add_port(name=n+1, port=port_list[n]) for n in range(len(port_list))]
+    
     return D
 
 
@@ -1261,10 +1262,10 @@ def ntron_amp(device_layer = 1,
     
 #     return D
 
-def ntron_four_port(choke_w = 0.05, 
+def ntron_four_port(choke_w = 0.015, 
               choke_l = .3,
               gate_w = 0.2,
-              channel_w = 0.1,
+              channel_w = 0.15,
               source_w = .3,
               drain_w = .3,
               inductor_a1 = 15,
@@ -1323,8 +1324,8 @@ def ntron_four_port(choke_w = 0.05,
     
     gt1 = D<<ground
     gt1.connect(gt1.ports['narrow'], st.ports[2])
-    D.flatten(single_layer=layer)
     D = pg.union(D, by_layer=False)
+    D.flatten(single_layer=layer)
     port_list = [s2.ports[2], s1.ports[2], s3.ports[2], s4.ports[2], gt1.ports['wide']]
     [D.add_port(name=n+1, port=port_list[n]) for n in range(len(port_list))]
     
@@ -1503,14 +1504,92 @@ def memory1(loop_size=(1, 2), lw=0.2, rw=0.4, port=1, vert=1.5, layer=1, hwl=.2,
 # D.write_gds(r'G:\My Drive\...Projects\_electronics\nMem\simulation\geometry\phidl_exports\nMem_comsol_heater.gds')    
     
     
-     
+# def tesla_valve(width=0.2, length=4, angle=18, num=5):
+#     D = Device('tesla_valve')
     
+#     hp = pg.optimal_hairpin(width, width*3, length)
+#     hp.rotate(180)
+#     ramp = pg.ramp(length=length/1.6, width1=width*7, width2=width*3)
+#     r = D<<ramp
+#     h = D<<hp
+#     h.connect(h.ports[2], r.ports[1]).rotate(180, h.ports[2])
     
+#     d = pg.boolean(h, r, 'A-B')
+#     D.remove([r, h])
+#     port_list = []
+#     D.add_port(name='start', midpoint=(0,0), width=width, orientation=0)
+#     for i in range(num):
+#         turn = D<<hp
+#         turn.rotate(-angle)
+#         turn.movex(length*i)
+#         turn.movey(origin=turn.ports[1].midpoint[1], destination=0)
+
+#         if i%2 == 0:
+#             turn.mirror(p1=(1,0))
     
+#     port_list.extend(D.get_ports(depth=3))
+#     D.add_port(name='end', midpoint=(length*num,0), width=width, orientation=0)
+#     port_list.append(D.ports['end'])
     
+#     for port in port_list:
+#         if port.name == 1:
+#             port_list.remove(port)
+#     for i in range(1, len(port_list)):
+#         new_port = port_list[i]
+#         new_port.orientation = port_list[i-1].orientation+180
+#         print(port_list[i-1].orientation)
+#         print(new_port.orientation)
+#         D<<pr.route_basic(port_list[i-1], new_port, path_type='straight')
+            
+#     return D, port_list
+
     
+def tesla_valve(width=0.2, pitch=0.6, length=4, angle=15, num=5):
+    D = Device('tesla_valve')
+
+    hp = pg.optimal_hairpin(width, pitch, length)
+    hp.move(hp.bbox[0], destination=(0,0))
+    hp.rotate(-angle, center=(hp.ports[1].midpoint))
     
+    ramp = pg.straight(size=(length, width+pitch))
+    r = D<<ramp
+    r.movex(-pitch)
+    h = D<<hp
     
+    d = pg.boolean(h, r, 'A-B')
+    d.movex(d.bbox[0][0], destination=0)
+    d.rotate(angle/2)
+    D.remove([h, r])
+    
+    d.add_port(name=1, midpoint=(0,width/2), width=width, orientation=180)
+    d.add_port(name=2, midpoint=(length*np.cos(angle/2*np.pi/180),width/2 + length*np.sin(angle/2*np.pi/180)), width=width, orientation=0)
+    d<<pr.route_basic(d.ports[1], d.ports[2], path_type='straight')
+    
+    dd = pg.union(d, precision=1e-8)
+    dd.add_port(name=1, port=d.ports[1])
+    dd.add_port(name=2, port=d.ports[2])
+    
+    D_list = np.tile(dd, num)
+    
+    for i in range(num):
+        
+        vert = D<<D_list[i]
+
+        if i%2 == 0:
+            vert.mirror(p1=(1,0))
+        if i == 0:
+            next_port = vert.ports[2]
+        if i > 0:
+            vert.connect(vert.ports[1], next_port)
+            next_port = vert.ports[2]
+    
+    port_list = D.get_ports()
+    D = pg.union(D, precision=1e-10)
+    D.add_port(name=1, port=port_list[0])
+    D.add_port(name=2, port=port_list[-1])
+    return D
+
+
     
     
     

@@ -847,14 +847,13 @@ def resistor_pad_bilayer(parameters=None, sheet_resistance=1):
         pad.rotate(90)
         pad.move(pad.ports[1], pad_taper.ports['wide']).movey(10)
         
-        ground_taper = qg.outline(qg.hyper_taper(n.ground_taper_length, n.ground_taper_width, n.straight_width*step_scale), distance= n.straight_outline, open_ports=2)
+        ground_taper = qg.outline(qg.hyper_taper(n.ground_taper_length, n.ground_taper_width, n.straight_width*step_scale), distance= n.straight_outline, open_ports=2, layer=n.straight_layer)
         ground_taper.rotate(90)
         ground_taper.move(ground_taper.ports['narrow'],step1.ports[1])
 
 
-
         D.add_ref([r, step1, step2, pad_taper, pad, ground_taper])
-        D.flatten()
+        D = pg.union(D, by_layer=True)
         D.move(D.bbox[0],destination=(0,0))
         
         
@@ -1045,8 +1044,9 @@ def ntron_single(parameters=None):
     D<<qg.outline(pr.route_basic(port1=t2.ports['narrow'], port2=s3.ports[1]), distance=n.outline,open_ports=3, rotate_ports=False, precision=1e-8)
     D<<qg.outline(pr.route_manhattan(port1=t3.ports['narrow'], port2=s1.ports[1]), distance=n.outline,open_ports=3, rotate_ports=True, precision=1e-8)
     D = pg.union(D, by_layer=True)
+    D.info = locals()
     return D
-
+D = ntron_single()
 
 def ntron_gate3(parameters=None):
     
@@ -1180,6 +1180,51 @@ def ntron_gate1(parameters=None):
           t.rotate(180, center=pads.ports[j].midpoint)
         D = pg.union(D, by_layer=True)
 
+    return D
+
+def ntron_gate1_sharp(parameters=None):
+    
+    if parameters == None: 
+       parameters = {
+               'device_layer': 1,
+               'pad_layer': 2,
+               'choke_w': np.array([.03, .03, .03, .03]), 
+               'choke_l': np.array([.5, .5, .5, .5]),
+               'gate_w': np.array([.2, .2, .2, .2]),
+               'channel_w': np.array([.1, .1, .1, .1]),
+               'source_w': 0.3,
+               'drain_w': 0.3,
+               'outline_dis': 0.15,
+               'routing': 1
+               }
+        
+    n = Namespace(**parameters) #This method of converting dictionary removes "Undefined name" warning
+
+    D=Device()
+        
+    pads = D<<qg.pads_adam_quad(layer=n.pad_layer)
+    pads.move(origin=pads.center, destination=(0,0))
+
+    for i in range(4):
+
+        ntron = qg.ntron_sharp(n.choke_w[i], n.choke_l[i], n.gate_w[i], 
+                               n.channel_w[i], n.source_w, n.drain_w, n.device_layer)
+        ntron = pg.outline(ntron, n.outline_dis, open_ports=1, layer=n.device_layer)
+        nt1 = D<<ntron
+        nt1.rotate(90).movey(-100)
+        nt1.rotate(-90*i)
+        
+        D<<qg.outline(pr.route_basic(port1=nt1.ports['g'], port2=pads.ports[i*3+2], width2=n.routing), distance=n.outline_dis,open_ports=3, rotate_ports=False, precision=1e-8, layer=n.device_layer)
+        D<<qg.outline(pr.route_manhattan(port1=nt1.ports['s'], port2=pads.ports[i*3+1], radius=5), distance=n.outline_dis,open_ports=3, rotate_ports=True, precision=1e-8, layer=n.device_layer)
+        D<<qg.outline(pr.route_manhattan(port1=nt1.ports['d'], port2=pads.ports[i*3+3], radius=5), distance=n.outline_dis,open_ports=3, rotate_ports=True, precision=1e-8, layer=n.device_layer)
+        
+        taper = qg.outline(qg.hyper_taper(5, 40, n.routing, layer=n.device_layer),distance=n.outline_dis,open_ports=2, layer=n.device_layer)
+        for j in [i*3+1, i*3+2, i*3+3]:
+          t = D<<taper
+          t.connect(t.ports['narrow'], pads.ports[j])
+          t.rotate(180, center=pads.ports[j].midpoint)
+        D = pg.union(D, by_layer=True)
+        
     return D
 
 
@@ -1383,7 +1428,6 @@ def ntron_amp_snspd(parameters=None, sheet_resistance=5, sheet_inductance=50):
         D<<E
         D.flatten()
     return D
-
 
 
 def ntron_snspd(parameters=None, sheet_resistance=5, sheet_inductance=50):
