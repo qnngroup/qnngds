@@ -95,12 +95,12 @@ def ntron_single(choke_w = 0.015,
         s = D<<step
         s.connect(s.ports[1], port_list[i])
         t = D<<qg.hyper_taper(15, f_ports[0].width*.75, routing)
-        t.connect(t.ports['wide'], f_ports[route_list[i]])
-        if round(s.ports[2].midpoint[0], 6)==round(t.ports['narrow'].midpoint[0], 6) or round(s.ports[2].midpoint[1], 6)==round(t.ports['narrow'].midpoint[1], 6):
-           r = D<<pr.route_basic(port1=s.ports[2], port2=t.ports['narrow'])
+        t.connect(t.ports[2], f_ports[route_list[i]])
+        if round(s.ports[2].midpoint[0], 6)==round(t.ports[1].midpoint[0], 6) or round(s.ports[2].midpoint[1], 6)==round(t.ports[1].midpoint[1], 6):
+           r = D<<pr.route_basic(port1=s.ports[2], port2=t.ports[1])
         else:
-           r = D<<pr.route_manhattan(port1=s.ports[2], port2=t.ports['narrow'], radius=10)
-        new_port_list.append(t.ports['wide'])
+           r = D<<pr.route_manhattan(port1=s.ports[2], port2=t.ports[1], radius=10)
+        new_port_list.append(t.ports[2])
     
     new_port_list.sort(key=getmidy, reverse=True)
 
@@ -178,8 +178,8 @@ def ntron_ind3(choke_w = 0.02,
     
     for i in range(len(route_list)):
         t = D<<pg.outline(qg.hyper_taper(30, f_ports[0].width*.75, routing), distance=outline_dis, open_ports=True)
-        t.connect(t.ports['wide'], f_ports[route_list[i]])
-        r = D<<qg.outline(pr.route_manhattan(port1=port_list[i], port2=t.ports['narrow'], radius=15), distance=outline_dis,open_ports=0, rotate_ports=True)
+        t.connect(t.ports[2], f_ports[route_list[i]])
+        r = D<<qg.outline(pr.route_manhattan(port1=port_list[i], port2=t.ports[1], radius=15), distance=outline_dis,open_ports=0, rotate_ports=True)
 
     D = pg.union(D)
     D.flatten(single_layer=layer)
@@ -254,8 +254,8 @@ def ntron_ind_gnd(choke_w = 0.02,
     
     for i in range(len(route_list)):
         t = D<<pg.outline(qg.hyper_taper(30, f_ports[0].width*.75, routing), distance=outline_dis, open_ports=True)
-        t.connect(t.ports['wide'], f_ports[route_list[i]])
-        r = D<<qg.outline(pr.route_manhattan(port1=port_list[i], port2=t.ports['narrow'], radius=15), distance=outline_dis,open_ports=0, rotate_ports=True)
+        t.connect(t.ports[2], f_ports[route_list[i]])
+        r = D<<qg.outline(pr.route_manhattan(port1=port_list[i], port2=t.ports[1], radius=15), distance=outline_dis,open_ports=0, rotate_ports=True)
 
     D = pg.union(D)
     D.flatten(single_layer=layer)
@@ -330,8 +330,8 @@ def ntron_ind3_gnd(choke_w = 0.02,
     
     for i in range(len(route_list)):
         t = D<<pg.outline(qg.hyper_taper(30, f_ports[0].width*.75, routing), distance=outline_dis, open_ports=True)
-        t.connect(t.ports['wide'], f_ports[route_list[i]])
-        r = D<<qg.outline(pr.route_manhattan(port1=port_list[i], port2=t.ports['narrow'], radius=5), distance=outline_dis,open_ports=0, rotate_ports=True)
+        t.connect(t.ports[2], f_ports[route_list[i]])
+        r = D<<qg.outline(pr.route_manhattan(port1=port_list[i], port2=t.ports[1], radius=5), distance=outline_dis,open_ports=0, rotate_ports=True)
 
     D = pg.union(D)
     D.flatten(single_layer=layer)
@@ -402,8 +402,8 @@ def ntron_ind4(choke_w = 0.02,
     
     for i in range(len(route_list)):
         t = D<<pg.outline(qg.hyper_taper(30, f_ports[0].width*.75, routing), distance=outline_dis, open_ports=True)
-        t.connect(t.ports['wide'], f_ports[route_list[i]])
-        r = D<<qg.outline(pr.route_manhattan(port1=port_list[i], port2=t.ports['narrow'], radius=15), distance=outline_dis,open_ports=0, rotate_ports=True)
+        t.connect(t.ports[2], f_ports[route_list[i]])
+        r = D<<qg.outline(pr.route_manhattan(port1=port_list[i], port2=t.ports[1], radius=15), distance=outline_dis,open_ports=0, rotate_ports=True)
 
     D = pg.union(D)
     D.flatten(single_layer=layer)
@@ -462,11 +462,11 @@ def ntron_10g(num_gate=10,
     
     for i in range(len(route_list)):
         t = D<<pg.outline(qg.hyper_taper(30, f_ports[0].width*.75, routing), distance=outline_dis, open_ports=True)
-        t.connect(t.ports['wide'], f_ports[route_list[i]])
-        if round(port_list[i].midpoint[0], 6)==round(t.ports['narrow'].midpoint[0], 6) or round(port_list[i].midpoint[1], 6)==round(t.ports['narrow'].midpoint[1], 6):
-            r = D<<qg.outline(pr.route_basic(port1=port_list[i], port2=t.ports['narrow']), distance=outline_dis,open_ports=0, rotate_ports=False)
+        t.connect(t.ports[2], f_ports[route_list[i]])
+        if round(port_list[i].midpoint[0], 6)==round(t.ports[1].midpoint[0], 6) or round(port_list[i].midpoint[1], 6)==round(t.ports[1].midpoint[1], 6):
+            r = D<<qg.outline(pr.route_basic(port1=port_list[i], port2=t.ports[1]), distance=outline_dis,open_ports=0, rotate_ports=False)
         else:
-            r = D<<qg.outline(pr.route_manhattan(port1=port_list[i], port2=t.ports['narrow'], radius=10), distance=outline_dis,open_ports=0, rotate_ports=True)
+            r = D<<qg.outline(pr.route_manhattan(port1=port_list[i], port2=t.ports[1], radius=10), distance=outline_dis,open_ports=0, rotate_ports=True)
 
     D = pg.union(D)
     D.flatten(single_layer=layer)
@@ -532,11 +532,11 @@ def ntron_10g_ind(num_gate=10,
     
     for i in range(len(route_list)):
         t = D<<pg.outline(qg.hyper_taper(30, f_ports[0].width*.75, routing), distance=outline_dis, open_ports=True)
-        t.connect(t.ports['wide'], f_ports[route_list[i]])
-        if round(port_list[i].midpoint[0], 6)==round(t.ports['narrow'].midpoint[0], 6) or round(port_list[i].midpoint[1], 6)==round(t.ports['narrow'].midpoint[1], 6):
-            r = D<<qg.outline(pr.route_basic(port1=port_list[i], port2=t.ports['narrow']), distance=outline_dis,open_ports=0, rotate_ports=False)
+        t.connect(t.ports[2], f_ports[route_list[i]])
+        if round(port_list[i].midpoint[0], 6)==round(t.ports[1].midpoint[0], 6) or round(port_list[i].midpoint[1], 6)==round(t.ports[1].midpoint[1], 6):
+            r = D<<qg.outline(pr.route_basic(port1=port_list[i], port2=t.ports[1]), distance=outline_dis,open_ports=0, rotate_ports=False)
         else:
-            r = D<<qg.outline(pr.route_manhattan(port1=port_list[i], port2=t.ports['narrow'], radius=20), distance=outline_dis,open_ports=0, rotate_ports=True)
+            r = D<<qg.outline(pr.route_manhattan(port1=port_list[i], port2=t.ports[1], radius=20), distance=outline_dis,open_ports=0, rotate_ports=True)
 
     D = pg.union(D)
     D.flatten(single_layer=layer)
@@ -550,13 +550,13 @@ def tesla(width=0.2, pitch=0.6,length=3.5, angle=15, num=5, pad_width=220, outli
     
     val = D<<qg.tesla_valve(width, pitch, length, angle, num)
     tap = D<<qg.hyper_taper(40, pad_width+10, width)
-    tap.connect(tap.ports['narrow'], val.ports[1])
+    tap.connect(tap.ports[1], val.ports[1])
     tap_g = D<<qg.hyper_taper(40, pad_width, width)
-    tap_g.connect(tap_g.ports['narrow'], val.ports[2])
+    tap_g.connect(tap_g.ports[1], val.ports[2])
     
     D = pg.union(D, precision=1e-6)
-    D.add_port(name=1, port=tap.ports['wide'])
-    D.add_port(name=2, port=tap_g.ports['wide'])
+    D.add_port(name=1, port=tap.ports[2])
+    D.add_port(name=2, port=tap_g.ports[2])
     D = pg.outline(D, distance=outline, open_ports=True, precision=1e-6, layer=1)
     
     pad = D<<qg.pad_U(pad_width=pad_width, pad_length=pad_width, width=15, layer=2)
@@ -566,41 +566,43 @@ def tesla(width=0.2, pitch=0.6,length=3.5, angle=15, num=5, pad_width=220, outli
     return D
 
     
-def straight_wire_pad_bilayer(width=0.2, length=30, outline=0.5, layer=1, two_pads=False):
+def straight_wire_pad_bilayer(width=0.2, length=30, outline=0.5, layer=1, pad_layer=None, two_pads=False, step_scale = 3, pad_shift=10, anticrowding_factor=1.2):
     D = Device('straight_wire')    
     info = locals()
     
+    if pad_layer is None:
+        pad_layer=layer+1
     ground_taper_length = 20
     pad_outline = 15
     pad_width = 250
-    step_scale = 3 #how big the optimal step is from the straight width. 
+    # step_scale = 3 #how big the optimal step is from the straight width. 
     ######################################################################
     detector = qg.outline(pg.straight((width,length)),distance=outline, open_ports=2, layer=layer)
     
-    pad = qg.pad_U(pad_width= pad_width, layer=layer+1)
+    pad = qg.pad_U(pad_width= pad_width, layer=pad_layer)
     pad.rotate(180)
 
-    pad_taper = qg.outline(qg.hyper_taper(40, pad_width+pad_outline,width*step_scale),distance=outline, open_ports=2, layer=layer)
-    pad_taper.move(pad_taper.ports['wide'], pad.ports[1]).movex(10)
+    pad_taper = qg.outline(qg.hyper_taper(40, pad_width+4*pad_outline,width*step_scale),distance=outline, open_ports=2, layer=layer)
+    pad_taper.move(pad_taper.ports[2], pad.ports[1]).movex(pad_shift)
     
-    step1 = qg.outline(pg.optimal_step(width*step_scale,width, symmetric=True),distance=outline, open_ports=3, layer=layer)
+    step1 = qg.outline(pg.optimal_step(width*step_scale,width, symmetric=True, anticrowding_factor=anticrowding_factor),distance=outline, open_ports=3, layer=layer)
     step1.rotate(180)
-    step1.move(step1.ports[1],pad_taper.ports['narrow'])
+    step1.move(step1.ports[1],pad_taper.ports[1])
     
     detector.rotate(90)
     detector.move(origin=detector.ports[2],destination=step1.ports[2])
     
-    step2 = qg.outline(pg.optimal_step(width*step_scale,width, symmetric=True),distance=outline, open_ports=3, layer=layer)
+    step2 = qg.outline(pg.optimal_step(width*step_scale,width, symmetric=True, anticrowding_factor=anticrowding_factor),distance=outline, open_ports=3, layer=layer)
     step2.move(step2.ports[2],detector.ports[1])
          
-    ground_taper = qg.outline(qg.hyper_taper(ground_taper_length, pad_width+pad_outline, width*step_scale), distance= outline, open_ports=2, layer=layer)
+    ground_taper = qg.outline(qg.hyper_taper(ground_taper_length, pad_width+4*pad_outline, width*step_scale), distance= outline, open_ports=2, layer=layer)
     ground_taper.rotate(180)
-    ground_taper.move(ground_taper.ports['narrow'],step2.ports[1])
+    ground_taper.move(ground_taper.ports[1],step2.ports[1])
 
     if two_pads:
         pad2 = qg.pad_U(pad_width= pad_width, layer=layer+1)
-        pad2.move(pad2.ports[1], ground_taper.ports['wide'])
-        pad2.movex(10)
+        pad2.move(pad2.ports[1], ground_taper.ports[2])
+        pad2.movex(pad_shift)
         D<<pad2
         D<<pad
     else:
@@ -649,16 +651,16 @@ def snspd_straight_ind_symdiff(width=1, length=30, a1=300, a2=100, inductor_widt
     ground_taper = qg.hyper_taper(30, 200, width*iwf)
     
     g1 = D<<ground_taper
-    g1.connect(g1.ports['narrow'], L1.ports[2])
+    g1.connect(g1.ports[1], L1.ports[2])
     g2 = D<<ground_taper
-    g2.connect(g2.ports['narrow'], L2.ports[2])
+    g2.connect(g2.ports[1], L2.ports[2])
     
     D.flatten(single_layer=layer)
     D = pg.union(D)
     D.info = info
     D.info['inductor_squares'] = inductor1.info['num_squares']+inductor2.info['num_squares']
-    D.add_port(name=1, port=g1.ports['wide'])
-    D.add_port(name=2, port=g2.ports['wide'])
+    D.add_port(name=1, port=g1.ports[2])
+    D.add_port(name=2, port=g2.ports[2])
     
     return D
 
@@ -707,16 +709,16 @@ def snspd_straight_ind_symdiff2(width=1, length=30, a1=300, a2=100, inductor_wid
     ground_taper = qg.hyper_taper(30, 200, width*3)
     
     g1 = D<<ground_taper
-    g1.connect(g1.ports['narrow'], L1.ports[2])
+    g1.connect(g1.ports[1], L1.ports[2])
     g2 = D<<ground_taper
-    g2.connect(g2.ports['narrow'], L2.ports[1])
+    g2.connect(g2.ports[1], L2.ports[1])
     
     D.flatten(single_layer=layer)
     D = pg.union(D)
     D.info = info
     D.info['inductor_squares'] = inductor1.info['num_squares']+inductor2.info['num_squares']
-    D.add_port(name=1, port=g1.ports['wide'])
-    D.add_port(name=2, port=g2.ports['wide'])
+    D.add_port(name=1, port=g1.ports[2])
+    D.add_port(name=2, port=g2.ports[2])
     
     return D
 
@@ -787,17 +789,17 @@ def snspd_straight_ind_symdiff3(width=1, length=30, a1=300, a2=100, inductor_wid
     ground_taper = qg.hyper_taper(10, 200, width*iwf)
     
     g1 = D<<ground_taper
-    g1.connect(g1.ports['narrow'], t1.ports[1])
+    g1.connect(g1.ports[1], t1.ports[1])
     g2 = D<<ground_taper
-    g2.connect(g2.ports['narrow'], t2.ports[1])
+    g2.connect(g2.ports[1], t2.ports[1])
     
     D.flatten(single_layer=layer)
     D = pg.union(D)
     D.info = info
     D.info['inductor_squares'] = inductor1.info['num_squares']+inductor2.info['num_squares']
     D.info['total_squares'] = length/width + inductor1.info['num_squares']+inductor2.info['num_squares']
-    D.add_port(name=1, port=g1.ports['wide'])
-    D.add_port(name=2, port=g2.ports['wide'])
+    D.add_port(name=1, port=g1.ports[2])
+    D.add_port(name=2, port=g2.ports[2])
    
     return D
 
@@ -839,9 +841,9 @@ def snspd_hairpin_ind_symdiff(width=1, length=30, a1=300, a2=100, layer=1):
     ground_taper = qg.hyper_taper(30, 200, width*3)
     
     g1 = D<<ground_taper
-    g1.connect(g1.ports['narrow'], L1.ports[2])
+    g1.connect(g1.ports[1], L1.ports[2])
     g2 = D<<ground_taper
-    g2.connect(g2.ports['narrow'], L2.ports[1])
+    g2.connect(g2.ports[1], L2.ports[1])
     
     D.flatten(single_layer=layer)
     D = pg.union(D)
