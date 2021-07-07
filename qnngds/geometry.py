@@ -185,13 +185,13 @@ def nw_same_side_port(wire_width = 0.2, wire_pitch=0.6,size=(22,11),layer = 1):
     
     hTAPER = hyper_taper(length = 50, wide_section=45, narrow_section=5,layer=0)
     htaper = device.add_ref(hTAPER)
-    htaper.rotate(90).move(origin=htaper.ports['wide'],destination=d.ports['21'])
-    ROUT = pr.route_basic(wire.ports[1],htaper.ports['narrow'],width_type='straight',path_type='sine')
+    htaper.rotate(90).move(origin=htaper.ports[2],destination=d.ports['21'])
+    ROUT = pr.route_basic(wire.ports[1],htaper.ports[1],width_type='straight',path_type='sine')
     rout = device.add_ref(ROUT)
     
     htaper1 = device.add_ref(hTAPER)
-    htaper1.rotate(90).move(origin=htaper1.ports['wide'],destination=d.ports['22'])
-    ROUT = pr.route_basic(wire.ports[2],htaper1.ports['narrow'],width_type='straight',path_type='sine')
+    htaper1.rotate(90).move(origin=htaper1.ports[2],destination=d.ports['22'])
+    ROUT = pr.route_basic(wire.ports[2],htaper1.ports[1],width_type='straight',path_type='sine')
     rout = device.add_ref(ROUT)
 
     nwOut = pg.outline(device,distance=.1,precision=1e-4,layer=0)
@@ -199,8 +199,8 @@ def nw_same_side_port(wire_width = 0.2, wire_pitch=0.6,size=(22,11),layer = 1):
     trim.move(origin=trim.center,destination=(nwOut.center[0],nwOut.bbox[1][1]))
     t = nwOut.add_ref(trim)
     nwOut = pg.boolean(nwOut,t,'A-B',precision=1e-4,layer=layer)
-    nwOut.add_port(name = 'wide0', port = htaper.ports['wide'])
-    nwOut.add_port(name = 'wide1', port = htaper1.ports['wide'])
+    nwOut.add_port(name = 'wide0', port = htaper.ports[2])
+    nwOut.add_port(name = 'wide1', port = htaper1.ports[2])
 
     return nwOut
 
@@ -220,14 +220,14 @@ def nw_same_side_port_single(wire_width = 0.2, wire_pitch=0.6,size=(22,11),termi
     
     hTAPER = hyper_taper(length = 50, wide_section=45, narrow_section=5,layer=0)
     htaper = device.add_ref(hTAPER)
-    htaper.rotate(90).move(origin=htaper.ports['wide'],destination=d.ports['23'])
-    ROUT = pr.route_basic(wire.ports[1],htaper.ports['narrow'],width_type='straight',path_type='sine')
+    htaper.rotate(90).move(origin=htaper.ports[2],destination=d.ports['23'])
+    ROUT = pr.route_basic(wire.ports[1],htaper.ports[1],width_type='straight',path_type='sine')
     rout = device.add_ref(ROUT)
     
     hTAPER1 = hyper_taper(length = 15, wide_section=15, narrow_section=5,layer=0)
     htaper1 = device.add_ref(hTAPER1)
-    htaper1.rotate(90).move(origin=htaper1.ports['wide'],destination=[nwLoc[0]-95,nwLoc[1]+95])
-    ROUT = pr.route_basic(wire.ports[2],htaper1.ports['narrow'],width_type='straight',path_type='sine')
+    htaper1.rotate(90).move(origin=htaper1.ports[2],destination=[nwLoc[0]-95,nwLoc[1]+95])
+    ROUT = pr.route_basic(wire.ports[2],htaper1.ports[1],width_type='straight',path_type='sine')
     rout = device.add_ref(ROUT)
 
     nwOut = pg.outline(device,distance=.1,precision=1e-4,layer=0)
@@ -240,8 +240,8 @@ def nw_same_side_port_single(wire_width = 0.2, wire_pitch=0.6,size=(22,11),termi
     t1 = nwOut.add_ref(trim1)
     nwOut = pg.boolean(nwOut,t,'A-B',precision=1e-4,layer=layer)
     nwOut = pg.boolean(nwOut,t1,'A-B',precision=1e-4,layer=layer)
-    nwOut.add_port(name = 'wide0', port = htaper.ports['wide'])
-    nwOut.add_port(name = 'wide1', port = htaper1.ports['wide'])
+    nwOut.add_port(name = 'wide0', port = htaper.ports[2])
+    nwOut.add_port(name = 'wide1', port = htaper1.ports[2])
     return nwOut
 
 
@@ -328,7 +328,17 @@ def alignment_marks(locations = ((-3500, -3500), (3500, 3500), (-3500, 3500), (3
     marks.flatten()
     return marks
 
-
+def etch_square(layers=[1], size=(1500,1500), location=(2500, 1000), outline=None):
+    D = Device('etch_square')
+    for l in layers:    
+        rec = pg.rectangle(size=size, layer=l)
+        if outline:
+            rec = pg.outline(rec, distance=outline, layer=l)
+        r = D<<rec
+        r.move(destination=location)
+    return D
+        
+    
 def hyper_taper (length, wide_section, narrow_section, layer=0):
     """
     Hyperbolic taper (solid). Designed by colang.
@@ -367,8 +377,8 @@ def hyper_taper (length, wide_section, narrow_section, layer=0):
         pts.append((y, -np.cosh(a*y)*narrow/2))
         HT = Device('hyper_taper')
         hyper_taper = HT.add_polygon(pts, layer = 2)
-        HT.add_port(name = 'narrow', midpoint = [0, 0],  width = narrow, orientation = 180)
-        HT.add_port(name = 'wide', midpoint = [taper_length, 0],  width = wide, orientation = 0)
+        HT.add_port(name = 1, midpoint = [0, 0],  width = narrow, orientation = 180)
+        HT.add_port(name = 2, midpoint = [taper_length, 0],  width = wide, orientation = 0)
         HT.flatten(single_layer = layer)
     return HT
 
@@ -413,8 +423,8 @@ def hyper_taper (length, wide_section, narrow_section, layer=0):
 #     trim_right.move(destination=(length, -max_y_point))
 #     ht = pg.boolean(ht,trim_right,'A-B', precision=1e-6,layer=layer)
     
-#     ht.add_port(name = 'narrow', midpoint = [.0015, 0],  width = narrow_section, orientation = 180)
-#     ht.add_port(name = 'wide', midpoint = [length-.0015, 0],  width = wide_section, orientation = 0)
+#     ht.add_port(name = 1, midpoint = [.0015, 0],  width = narrow_section, orientation = 180)
+#     ht.add_port(name = 2, midpoint = [length-.0015, 0],  width = wide_section, orientation = 0)
 #     ht.flatten(single_layer = layer)
 
 #     return ht
@@ -426,7 +436,7 @@ def straight_taper(width = 2,length = 10,t_length=10, t_width=100, outline = 1, 
     s = pg.straight(size=(width, length))
     t = hyper_taper(t_length, t_width, width)
     t.rotate(90)
-    t.move(origin=t.ports['narrow'],destination=s.ports[1])
+    t.move(origin=t.ports[1],destination=s.ports[1])
     S.add_ref([s,t])
 
     S.flatten(single_layer=layer)
@@ -515,7 +525,7 @@ def pad_taper(length=40,  pad_width=250, pad_length = 250, narrow_section=.1, w_
     O.add_ref([pO,hyper_wide2])
     
     ht = pg.boolean(O,I,'A-B',precision=1e-6, layer=layer)
-    ht.add_port(port=hyper_wide1.ports['narrow'], name=1)
+    ht.add_port(port=hyper_wide1.ports[1], name=1)
     return ht
 
 
@@ -562,7 +572,7 @@ def pad_basic(base_size=(200,200), port_size =10, taper_length=100, layer=1):
     
     P.add_ref([base,taper])
     P.flatten(single_layer=layer)
-    P.add_port(name='narrow',midpoint=(base_size[0]/2,base_size[1]+taper_length),orientation=90,width=port_size)
+    P.add_port(name=1,midpoint=(base_size[0]/2,base_size[1]+taper_length),orientation=90,width=port_size)
 
     return P
     
@@ -733,7 +743,32 @@ def pads_adam_fill(style = 'right',layer = 1):
     pad_cover.add_port(name=1,port=p1.ports[1])
     return pad_cover
 
-def pad_array(num=8, size1=(100, 100), size2=(200, 250), outline=None, layer=1):
+def pad_array(num=8, size1=(100, 100), size2=(200, 250), outline=None, layer=1, pad_layers=None, pad_iso=None):
+    '''
+    
+    Parameters
+    ----------
+    num : INT, optional
+        THE NUMBER OF PADS. PAD LOCATION IS AUTOMATED TO HANDLE ODD NUMBERS. The default is 8.
+    size1 : TUPLE, optional
+        THE SIZE OF THE WORKSPACE. TYPICALLY SMALLER THAN THE SIZE OF THE FIELD (450,450). The default is (100, 100).
+    size2 : TUPLE, optional
+        THE SIZE OF EACH PAD. The default is (200, 250).
+    outline : FLOAT, optional
+        THE OUTLINE DISTANCE. IF NONE NO OUTLINE WILL BE PERFORMED. The default is None.
+    layer : INT, optional
+        LAYER FOR GEOMETRY TO EXIST ON. The default is 1.
+    pad_layers : INT, optional
+        THE OPTION pad_layers WILL PLACE EACH PAD ON A SEPARATE LAYER FOR EASIER
+        BEAMER(LITHOGRAPHY PROGRAMMING), ie PLACING FIELDS BASED ON LAYER. 
+        LAYERS INCREMENT FROM THE SPECIFIED INT. The default is None.
+
+    Returns
+    -------
+    D : TYPE
+        DESCRIPTION.
+
+    '''
     
     if outline is None:
         out_dis = 5
@@ -741,6 +776,9 @@ def pad_array(num=8, size1=(100, 100), size2=(200, 250), outline=None, layer=1):
         out_dis = outline
         
     D = Device('pad_array')
+    if pad_iso:
+        B = Device()
+        
     a, b = divmod(num, 4)
     conn_side = np.tile(a, 4)
     for i in range(b):
@@ -752,8 +790,7 @@ def pad_array(num=8, size1=(100, 100), size2=(200, 250), outline=None, layer=1):
                  'N': conn_side[3]}
     
     rec1 = pg.compass_multi(size=size1, ports = conn_dict, flip_ports=False, layer = 1)
-    size2_x = max([size1[0], max(conn_side)*(size2[0]+out_dis*4)])
-    # size2_x = max(conn_side)*(size2[0]+out_dis*4)
+    size2_x = max([size1[0], max(conn_side)*(size2[0]+out_dis*5)])
 
     rec2 = pg.compass_multi(size=(size2_x, size2_x), ports = conn_dict, flip_ports=False, layer = 1)
     
@@ -766,9 +803,13 @@ def pad_array(num=8, size1=(100, 100), size2=(200, 250), outline=None, layer=1):
         
         final_ports.append(p1.ports[1])
         p2 = D<<pg.straight(size=size2)
-        p2.connect(p2.ports[1], prt2 )
+
+        p2.connect(p2.ports[1], prt2)
         
-        # newport1 = p1.ports[1].rotate(180).
+        if pad_iso:
+            Bp2 = B<<pg.straight(size=size2)
+            Bp2.connect(Bp2.ports[1], prt2)
+        
         D<<pr.route_basic(p1.ports[2], p2.ports[1], 
                           path_type='straight', width_type='straight',
                           width1 = None, width2 = p2.ports[1].width/2)
@@ -778,10 +819,38 @@ def pad_array(num=8, size1=(100, 100), size2=(200, 250), outline=None, layer=1):
     
     if outline:
         D = pg.outline(D, distance=out_dis, open_ports=True)
+        if pad_iso:
+            B = pg.outline(B, distance=out_dis, layer=pad_iso)
     D.flatten(single_layer=layer)
-
+    
+    
+    if pad_layers:
+        for p, i in zip(D.polygons, range(len(D.polygons))):
+            C = Device()
+            C.add(p)
+            C.flatten(single_layer=pad_layers+i)
+            D<<C
+            
+        n = len(D.polygons)
+        for p in range(n):
+            D.remove(D.polygons[0])
+    
+    if pad_iso and pad_layers==None:
+        D<<B
+    if pad_iso and pad_layers:
+        
+        for p, i in zip(B.polygons, range(len(B.polygons))):
+            A = Device()
+            A.add(p)
+            A.flatten(single_layer=pad_iso+i)
+            B<<A
+            
+        n = len(B.polygons)
+        for p in range(n):
+            B.remove(B.polygons[0])
+        D<<B
+        
     return D
-
 
 def resistor_pos(size=(6,20), width=20, length=40, overhang=10, pos_outline=.5, layer=1, rlayer=2):
         rwidth=size[0]
@@ -861,6 +930,7 @@ def ntron_sharp(choke_w=0.03, choke_l=.5, gate_w=0.2, channel_w=0.1, source_w=0.
     s.connect(source.ports[1], c.ports['S'])
     
     D = pg.union(D)
+    D.flatten(single_layer=layer)
     D.add_port(name='g', port=k.ports[1])
     D.add_port(name='d', port=d.ports[1])
     D.add_port(name='s', port=s.ports[2])
@@ -1284,10 +1354,10 @@ def ntron_amp(device_layer = 1,
     
     gtaper = pg.outline(hyper_taper(1,10,routing), distance=outline_dis, open_ports=2, layer=device_layer)
     gt = D<<gtaper
-    gt.connect(gt.ports['narrow'], n1.ports[1])
+    gt.connect(gt.ports[1], n1.ports[1])
     
     gt1 = D<<gtaper
-    gt1.connect(gt1.ports['narrow'], l2.ports[1])
+    gt1.connect(gt1.ports[1], l2.ports[1])
     D = pg.union(D, by_layer=True)
     port_list = [s2.ports[1], t1.ports[1], t1.ports[3]]
     [D.add_port(name=n+1, port=port_list[n]) for n in range(len(port_list))]
@@ -1354,7 +1424,7 @@ def ntron_amp(device_layer = 1,
 
 #     ground = pg.outline(hyper_taper(1, wide_section=drain_w*19, narrow_section=source_w), distance=outline_dis, open_ports=drain_w*19, layer=device_layer)
 #     gt1 = D<<ground
-#     gt1.connect(gt1.ports['narrow'], n1.ports['s'])
+#     gt1.connect(gt1.ports[1], n1.ports['s'])
 #     D = pg.union(D, by_layer=True)
 #     port_list = [s2.ports[2], s1.ports[2], l1.ports[2], l2.ports[1]]
 #     [D.add_port(name=n+1, port=port_list[n]) for n in range(len(port_list))]
@@ -1414,11 +1484,11 @@ def ntron_three_port(choke_w = 0.015,
    
     ground = hyper_taper(1, wide_section=drain_w*19, narrow_section=source_w)
     gt1 = D<<ground
-    gt1.connect(gt1.ports['narrow'], st.ports[2])
+    gt1.connect(gt1.ports[1], st.ports[2])
     
     D = pg.union(D, by_layer=False)
     D.flatten(single_layer=layer)
-    port_list = [gt.ports[2], s3.ports[2], s1.ports[2], gt1.ports['wide']]
+    port_list = [gt.ports[2], s3.ports[2], s1.ports[2], gt1.ports[2]]
     [D.add_port(name=n+1, port=port_list[n]) for n in range(len(port_list))]
     
     return D
@@ -1597,10 +1667,10 @@ def ntron_four_port(choke_w = 0.015,
     ground = hyper_taper(1, wide_section=drain_w*19, narrow_section=source_w)
     
     gt1 = D<<ground
-    gt1.connect(gt1.ports['narrow'], st.ports[2])
+    gt1.connect(gt1.ports[1], st.ports[2])
     D = pg.union(D, by_layer=False)
     D.flatten(single_layer=layer)
-    port_list = [s2.ports[2], s1.ports[2], s3.ports[2], s4.ports[2], gt1.ports['wide']]
+    port_list = [s2.ports[2], s1.ports[2], s3.ports[2], s4.ports[2], gt1.ports[2]]
     [D.add_port(name=n+1, port=port_list[n]) for n in range(len(port_list))]
     
     return D
@@ -1676,6 +1746,40 @@ def ntron_four_port_gnd(choke_w = 0.015,
     [D.add_port(name=n+1, port=port_list[n]) for n in range(len(port_list))]
     
     return D
+
+
+def not_gate(choke_w=0.05, choke_l=1, gate_w=0.5, channel_w=0.2, source_w=0.5, drain_w=0.5, constriciton_w=0.1, layer=1):
+    
+    D = Device('not_gate')
+    
+    nt = ntron_sharp(choke_w, choke_l, gate_w, channel_w, source_w, drain_w, layer)
+    n1 = D<<nt
+    
+    tee = pg.tee(size=(source_w*10, source_w), stub_size=(source_w, source_w*5), taper_type='fillet')
+    t1 = D<<tee
+    t1.connect(t1.ports[1], n1.ports['s'])
+    
+    t2 = D<<tee
+    t2.connect(t2.ports[2], n1.ports['d'])
+    step = pg.optimal_step(source_w, constriciton_w, symmetric=True)
+    s1 = D<<step
+    s1.connect(s1.ports[1], t1.ports[2])
+    
+    straight = pg.straight(size=(constriciton_w, constriciton_w*3))
+    st1 = D<<straight
+    st1.connect(st1.ports[1], s1.ports[2])
+    
+    htaper = hyper_taper(.8, constriciton_w*50, constriciton_w )
+    ht = D<<htaper
+    ht.connect(ht.ports[1], st1.ports[2])
+    
+    D.flatten(single_layer=layer)
+    port_list = [t2.ports[1], t2.ports[3], t1.ports[3], n1.ports['g'], ht.ports[2]]
+    for p, i in zip(port_list, range(len(port_list))):
+        D.add_port(name=i+1, port=p)
+
+    return D
+    
 
 
 def memory_loop(loop_size=(1, 2), lw=0.2, rw=0.4, port=1, vert=1.5, layer=1):
@@ -2031,14 +2135,14 @@ def tesla_valve(width=0.2, pitch=0.6, length=4, angle=15, num=5):
 
 def via_square(width=3, inset=2, layers=[0, 1, 2], outline=False):
     D = Device('via')    
-    via0 = pg.compass(size=(width+inset, width+inset), layer=layers[0])
+    via0 = pg.compass(size=(width+2*inset, width+2*inset), layer=layers[0])
     v0 = D<<via0
     
     via1 = pg.compass(size=(width, width), layer=layers[1])
     v1 = D<<via1
     v1.move(v1.center, v0.center)
     
-    via2 = pg.compass(size=(width+inset, width+inset), layer=layers[2])
+    via2 = pg.compass(size=(width+2*inset, width+2*inset), layer=layers[2])
     v2 = D<<via2
     v2.move(v2.center, v1.center)
     
@@ -2047,12 +2151,12 @@ def via_square(width=3, inset=2, layers=[0, 1, 2], outline=False):
     if outline:
         E = pg.copy_layer(D, layer=0, new_layer=0)
         D.remove_layers(layers=[0])
-        E = pg.outline(E, 5, layer=0)
+        E = pg.outline(E, distance=outline, layer=0)
         D<<E
         
         F = pg.copy_layer(D, layer=2, new_layer=2)
         D.remove_layers(layers=[2])
-        F = pg.outline(F, 5, layer=2)
+        F = pg.outline(F, distance=outline, layer=2)
         D<<F
     
     port_list = [v0.ports['N'], v0.ports['S'], v0.ports['E'], v0.ports['W']]
