@@ -526,8 +526,8 @@ def straight_snspd_pad_bilayer(parameters=None, sheet_inductance = 300):
         device_squares_list.append(device_squares)
         
         pad_taper = qg.outline(qg.hyper_taper(40, n.pad_width+n.pad_outline,n.snspd_width[i],n.snspd_layer), distance=n.snspd_outline,open_ports=2)
-        pad_taper.move(pad_taper.ports['wide'], pad.ports[1]).movex(10)
-        detector.move(origin=detector.ports[2],destination=pad_taper.ports['narrow'])
+        pad_taper.move(pad_taper.ports[2], pad.ports[1]).movex(10)
+        detector.move(origin=detector.ports[2],destination=pad_taper.ports[1])
         
         bend1 = qg.outline(pg.optimal_90deg(n.snspd_width[i]), distance=n.snspd_outline, open_ports=2)
         bend1.rotate(-90)
@@ -551,7 +551,7 @@ def straight_snspd_pad_bilayer(parameters=None, sheet_inductance = 300):
         
         ground_taper = qg.outline(qg.hyper_taper(n.ground_taper_length,n.ground_taper_width, n.snspd_width[i],n.snspd_layer),distance=n.snspd_outline, open_ports=2)
         ground_taper.rotate(180)
-        ground_taper.move(origin=ground_taper.ports['narrow'],destination=bend2.ports[1])
+        ground_taper.move(origin=ground_taper.ports[1],destination=bend2.ports[1])
         
 
         D.add_ref([pad_taper,detector,bend1, step1, STRAIGHT, step2, bend2, ground_taper])
@@ -1046,7 +1046,7 @@ def ntron_single(parameters=None):
     D = pg.union(D, by_layer=True)
     D.info = locals()
     return D
-D = ntron_single()
+
 
 def ntron_gate3(parameters=None):
     
