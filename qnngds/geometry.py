@@ -1951,7 +1951,6 @@ def memory1(loop_size=(1, 2), lw=0.2, rw=0.4, port=1, vert=1.5, layer=1, hwl=.2,
     return D
 
 
-
 # def memory_filled(loop_size=(2, 2), lw=0.2, rw=0.4, port=.2, vert=1.5, layer=1, hwl=.1, hwr=.1, hll=.5, hlr=1.25, hrout=.75, hlayer=2, port_shift=0.5):
 
   
@@ -2216,6 +2215,239 @@ def via_square(width=3, inset=2, layers=[0, 1, 2], outline=False):
 
 
     
+def memory_v2(left_side=0.2, right_side=0.4, notch_factor = 0.25):
+    D = Device('nMem')
+    
+    top = pg.flagpole(size=(2, 1.5), stub_size=(0.5, 0.25), taper_type='fillet')
+    t1 = D<<top
+    
+    left = pg.optimal_step(start_width=.5, end_width = left_side,anticrowding_factor=0.5, symmetric=True)
+    l1 = D<<left
+    l1.rotate(-90)
+    l1.move((l1.bbox[0][0],l1.bbox[1][1]), t1.bbox[0])
+    
+    top2 = pg.flagpole(size=(2, .25), stub_size=(0.5, 0.25), taper_type='fillet', shape='q')
+    t2 = D<<top2
+    t2.connect(t2.ports[1], l1.ports[1])
+    t2.movex(2)
+    
+
+    corner = pg.optimal_step(2, 2.5, anticrowding_factor=0.05)
+    c1 = D<<corner
+    c1.connect(c1.ports[1], t1.ports[2].rotate(180))
+    c1.movey(-0.3)
+    
+    straight = pg.straight(size=(2.5, 0.25))
+    s1 = D<<straight
+    s1.connect(s1.ports[1], c1.ports[2])
+
+
+    right = pg.optimal_step(start_width = 0.5, end_width = right_side, symmetric=False, anticrowding_factor=0.1)
+    r1 = D<<right
+    r1.connect(r1.ports[1], t2.ports[1])
+    
+    leftstraight = pg.straight(size=(left_side, 0.1))
+    ls = D<<leftstraight
+    ls.connect(ls.ports[1], l1.ports[2])
+    
+    rightstriaght = pg.straight(size=(right_side, -ls.ports[2].midpoint[1]+r1.ports[2].midpoint[1]))
+    rs = D<<rightstriaght
+    rs.connect(rs.ports[2], r1.ports[2])
+    D = pg.union(D)
+    tophalf = pg.union(D)
+    
+    bottomhalf = tophalf.mirror(p1 = ls.ports[2].midpoint, p2=rs.ports[1].midpoint)
+    bf = D<<bottomhalf
+    D = pg.union(D)
+    qp(D)
     
     
+    return D
+
+
+def memory_v3(left_side=0.2, right_side=0.4, notch_factor = None, layer=1, right_notch_shift=.4):
+    D = Device('nMem')
+
+    column_width = 2
+    cell_width = 3
+    left_side_buffer = column_width/2
+    right_side_buffer = right_side+.1
+    stub_length = 0.5
+    stub_substract = stub_length*.4
+    right_side_length = left_side*4
+    left_side_length = left_side
     
+    top = pg.optimal_step(column_width, cell_width, anticrowding_factor=0.05)
+    t1 = D<<top
+    t1.rotate(-90)
+    t1.move(t1.bbox[0], (0,0))
+    
+    topright = pg.flagpole(size=(cell_width, right_side/2), stub_size=(right_side_buffer, stub_length), taper_type='fillet', shape='q')
+    tright = D<<topright
+    tright.connect(tright.ports[2],t1.ports[2])
+    
+    topleft = pg.flagpole(size=(cell_width, right_side/2), stub_size=(left_side_buffer, stub_length), taper_type='fillet')
+    tleft = D<<topleft
+    tleft.connect(tleft.ports[2], t1.ports[2])
+    
+    stub_cut = pg.straight(size=(cell_width, stub_substract))
+    scut = D<<stub_cut
+    scut.move(scut.bbox[0], D.bbox[0])
+    D = pg.boolean(D, scut, 'A-B')
+    D.add_port(port=t1.ports[1])
+    D.add_port(port=tleft.ports[1], name=2)
+    D.add_port(port=tright.ports[1], name=3)
+
+    D.ports[2].midpoint = D.ports[2].midpoint+(0,stub_substract)
+    D.ports[3].midpoint = D.ports[3].midpoint+(0,stub_substract)
+
+    
+    
+
+    rightcon = pg.straight(size=(right_side, right_side_length))
+    rightc = D<<rightcon
+    rightc.move(rightc.ports[1], D.ports[3].midpoint-(0,right_side_length/2))
+    
+    leftcon = pg.straight(size=(left_side, left_side_length))
+    leftc = D<<leftcon
+    leftc.connect(leftc.ports[1], D.ports[2])
+    leftc.move(leftc.center, (leftc.ports[1].midpoint[0], rightc.center[1]))
+    
+    leftconnect = pr.route_basic(D.ports[2], leftc.ports[1], width_type='sine')
+    leftstub = D<<leftconnect
+    
+    rightconnect = pr.route_basic(D.ports[3], rightc.ports[1], width_type='sine')
+    rightstub = D<<rightconnect
+    
+    D = pg.union(D)
+    D.add_port(port=t1.ports[1])
+    D.add_port(port=leftc.ports[2])
+    D.add_port(port=rightc.ports[2], name=3)
+    A = pg.copy(D)
+    A.mirror(p1=leftc.center, p2=leftc.center+(1, 0))
+    D<<A
+    D.ports[2].midpoint = (D.ports[2].midpoint[0], D.ports[2].midpoint[1]+left_side_length/2)
+    D.move(origin=D.ports[2], destination=(0,0))
+    D.ports[3].midpoint = (D.ports[3].midpoint[0], 0)
+    port_list = [D.ports[1], D.references[0].ports[1], D.ports[2], D.ports[3]]
+
+    D = pg.union(D)
+    D.add_port(port=port_list[0], name=1)
+    D.add_port(port=port_list[1], name=2)
+    D.add_port(port=port_list[2], name=3)
+    D.add_port(port=port_list[3], name=4)
+
+    if notch_factor:
+        notchl = pg.straight(size=(left_side*notch_factor, left_side*notch_factor))
+        leftn = D<<notchl
+        leftn.move(leftn.center, D.ports[3])
+        leftn.rotate(45, D.ports[3].midpoint)
+        leftn.movex(-left_side/2)
+        
+        notchr = pg.straight(size=(right_side*notch_factor, right_side*notch_factor))
+        rightn = D<<notchr
+        rightn.move(rightn.center, D.ports[4])
+        rightn.rotate(45, D.ports[4])
+        rightn.movex(-right_side/2)
+        rightn.movey(-right_notch_shift)
+        
+        D = pg.boolean(D, [leftn, rightn], 'A-B')
+        D.add_port(port=port_list[0])
+        D.add_port(port=port_list[1], name=2)
+    D.flatten(single_layer=layer)
+    return D
+
+
+def memory_heater(left_side=0.1, right_side1=0.1, right_side2=0.1, right_space=.8, right_sidex = 2.25, layer=2):
+    D = Device('memory_heater')
+    
+    left_length = left_side*3
+    right_length = right_side1*4
+    
+    centerx = 0.7
+    centery = 0.3
+    routing = 0.5
+    turnback_width = .3
+    heater_out_dist = 4
+    
+    heatleft = pg.straight(size=(left_side, left_length))
+    heatl = D<<heatleft
+    heatl.rotate(90)
+    heatl.move(heatl.center, (0,0))
+    
+    heatright1 = pg.straight(size=(right_side1, right_length))
+    heatr1 = D<<heatright1
+    heatr1.rotate(90)
+    heatr1.move(heatr1.center, (right_sidex, -right_space/2))
+    
+    heatright2 = pg.straight(size=(right_side2, right_length))
+    heatr2 = D<<heatright2
+    heatr2.rotate(90)
+    heatr2.move(heatr2.center, (right_sidex, right_space/2))
+    
+    leftstep = pg.optimal_step(left_side, centery, symmetric=True, anticrowding_factor=0.5)
+    lefts1 = D<<leftstep
+    lefts1.connect(lefts1.ports[1], heatl.ports[2])
+    lefts2 = D<<pg.optimal_step(left_side, routing, symmetric=True, anticrowding_factor=0.5)
+    lefts2.connect(lefts2.ports[1], heatl.ports[1])
+    
+    rightstep = pg.optimal_step(left_side, centery, symmetric=True, anticrowding_factor=0.5)
+    rights1 = D<<rightstep
+    rights1.connect(rights1.ports[1], heatr1.ports[1])
+    rights2 = D<<pg.optimal_step(left_side, centery*1.5, symmetric=True, anticrowding_factor=0.5)
+    rights2.connect(rights2.ports[1], heatr2.ports[1])
+    
+    leftcon = pr.route_basic(lefts1.ports[2], rights1.ports[2], width_type='sine')
+    D<<leftcon
+    
+    rightstep = pg.optimal_step(left_side, centery, symmetric=True, anticrowding_factor=0.5)
+    rights3 = D<<rightstep
+    rights3.connect(rights3.ports[1], heatr1.ports[2])
+    rights4 = D<<rightstep
+    rights4.connect(rights4.ports[1], heatr2.ports[2])
+    
+    turnback = pg.arc(radius = right_space/2, width=centery, theta=180, start_angle=-90)
+    tb = D<<turnback
+    tb.connect(tb.ports[1], rights3.ports[2])
+    
+    turnback = pg.arc(radius = .5, width=centery*1.5, theta=180, start_angle=-90)
+    tb1 = D<<turnback
+    tb1.connect(tb1.ports[2], rights2.ports[2])
+
+    hs_length = (rights4.ports[2].midpoint[0]-rights2.ports[2].midpoint[0])
+    heatstraight = pg.straight(size = (centery*1.5, hs_length))
+    hstraight = D<<heatstraight
+    hstraight.connect(hstraight.ports[1], tb1.ports[1])
+    
+    rightout = pg.optimal_step(centery, routing, symmetric=True, anticrowding_factor=0.5)
+    ro = D<<rightout
+    ro.move(ro.ports[1], (heater_out_dist, 0))
+    
+    routout = pr.route_basic(hstraight.ports[2], ro.ports[1])
+    D<<routout
+    port_list = [lefts2.ports[2], ro.ports[2]]
+    D = pg.union(D)
+    D.flatten(single_layer=layer)
+    D.add_port(port=port_list[0], name=1)
+    D.add_port(port=port_list[1], name=2)
+    
+    return D
+
+def nMem():
+    D = Device('nMem')
+    
+    port_list = []
+    memory = memory_v3()
+    heater = memory_heater()
+    D<<memory
+    port_list.extend(memory.get_ports())
+    D<<heater
+    port_list.extend(heater.get_ports())
+    
+    D = pg.union(D, by_layer=True)
+    
+    for p, i in zip(port_list, range(0, len(port_list))):
+        D.add_port(name = i+1, port=p)
+    
+    return D
+
