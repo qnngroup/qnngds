@@ -852,3 +852,121 @@ def snspd_hairpin_ind_symdiff(width=1, length=30, a1=300, a2=100, layer=1):
     
     return D
 
+def snspd_dogbone(wire_width=1, wire_pitch=4, a1=100, layer=1):
+    D = Device('snspd_dogbone')
+    info = locals()
+    
+    detector = pg.snspd(wire_width, wire_pitch, size = (a1, a1))
+    d = D<<detector
+    
+    htaper = qg.hyper_taper(100, 200, wire_width)
+    ht1 = D<<htaper
+    ht1.connect(ht1.ports[1], d.ports[1])
+    
+    ht2 = D<<htaper
+    ht2.connect(ht2.ports[1], d.ports[2])
+    
+    pad = pg.straight(size=(200, 250))
+    p1 = D<<pad
+    p1.connect(p1.ports[1], ht1.ports[2])
+    p2 = D<<pad
+    p2.connect(p2.ports[1], ht2.ports[2])
+    
+    D.flatten(single_layer=layer)
+    D = pg.union(D)
+    D.info = info
+    print(detector.info['num_squares'])
+    return D
+
+def snspd_straight_dogbone(wire_width=1, a1=100, layer=1):
+    D = Device('snspd_dogbone')
+    info = locals()
+    
+    detector = pg.straight(size = (wire_width, a1))
+    d = D<<detector
+    detector.info['num_squares'] = a1/wire_width
+    htaper = qg.hyper_taper(60, 200, wire_width)
+    ht1 = D<<htaper
+    ht1.connect(ht1.ports[1], d.ports[1])
+    
+    ht2 = D<<htaper
+    ht2.connect(ht2.ports[1], d.ports[2])
+    
+    pad = pg.straight(size=(200, 250))
+    p1 = D<<pad
+    p1.connect(p1.ports[1], ht1.ports[2])
+    p2 = D<<pad
+    p2.connect(p2.ports[1], ht2.ports[2])
+    
+    D.flatten(single_layer=layer)
+    D = pg.union(D)
+    D.info = info
+    print(detector.info['num_squares'])
+    return D
+
+def memory_array(N, M, spacing=(8, 5), layer1=1, layer2=2):
+    D = Device('memory_array')
+    info = locals()
+    
+    D_list = []
+    d_list = []
+
+    port_list = []
+    Dsub = Device('column')
+
+    for i in range(0,N):
+        memory = qg.nMem()
+        d = Dsub<<memory
+        d.movey(i*spacing[1])
+
+
+    sub_port_list = Dsub.get_ports()
+    sub_port_list = np.reshape(sub_port_list, (N,6))
+    port_list = []
+    for i in range(1, N):
+        con = Dsub<<pr.route_basic(sub_port_list[i-1][0], sub_port_list[i][1], layer=layer1)
+        # port_list.extend(Dsub.get_ports())
+        # port_list = port_list[:len(port_list)-2]
+    
+    for i in range(0, M):
+        d = D<<Dsub
+        d.movex(i*spacing[0])
+        
+    port_list = D.get_ports()
+    heaterL=[]
+    heaterR=[]
+    colT = []
+    colB = []
+    for p in port_list:
+        if p.name==1:
+            colT.append(p)
+        if p.name==2:
+            colB.append(p)
+        if p.name==5:
+            heaterL.append(p)
+        if p.name==6:
+            heaterR.append(p)
+        
+
+    for i in range(0, N*(M-1)):
+        D<<pr.route_basic(heaterR[i], heaterL[i+N], layer=layer2)
+        
+    D.flatten()
+
+    colT = np.reshape(colT, (M, N*2-1))
+    colT = colT[0:M,N-1]
+    for p, i in zip(colT, range(0, M)):
+        D.add_port(port=p, name=i+1)
+        
+    colB = np.reshape(colB, (M, N*2-1))
+    colB = colB[0:M,0]
+    for p, i in zip(colB, range(0, M)):
+        D.add_port(port=p, name=M+i+1)
+    for p, i in zip(heaterL[0:N], range(0, N)):
+        D.add_port(port=p, name=M*2+i+1)
+    for p, i in zip(heaterR[len(heaterR)-N:len(heaterR)], range(0, N)):
+        D.add_port(port=p, name=M*2+i+1+N)
+    return D, colT
+
+D, d = memory_array(2,2, spacing=(10,10))
+qp(D)
