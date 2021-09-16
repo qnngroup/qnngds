@@ -544,6 +544,54 @@ def ntron_10g_ind(num_gate=10,
     D.info = info
     return D
 
+def ntron_snspd():
+    det_width=.1
+    inductor_width = .3
+    D = Device('ntron_snspd')
+    
+    det= pg.snspd(wire_width=det_width, wire_pitch=.3, size = (3, 3))
+    det.rotate(90)
+    
+    print(det.info)
+    d = D<<det
+    
+    s1 = D<<pg.optimal_step(det_width, inductor_width, symmetric=True, anticrowding_factor=4)
+    s1.connect(s1.ports[1], d.ports[2])
+    s2 = D<<pg.optimal_step(det_width, inductor_width, symmetric=True, anticrowding_factor=4)
+    s2.connect(s2.ports[1], d.ports[1])
+    
+    tee1 = D<<pg.tee(size=(1, inductor_width), stub_size=(inductor_width, 1), taper_type = 'fillet')
+    tee1.connect(tee1.ports[2], s1.ports[2])
+    
+    L1 = D<<qg.snspd_vert(wire_width=inductor_width, size=(20, 10))
+    L1.connect(L1.ports[1], tee1.ports[3])
+    print(L1.info)
+    ntron = D<<qg.ntron_sharp(layer=0, gate_w=inductor_width)
+    ntron.connect(ntron.ports['g'], L1.ports[2])
+
+    L2 = D<<pg.snspd(wire_width=inductor_width, wire_pitch=inductor_width*3, size=(36, 12))
+    L2.mirror()
+    print(L2.info)
+    L2.connect(L2.ports[1], tee1.ports[1])
+    
+    L3 = D<<pg.snspd(wire_width=inductor_width, wire_pitch=inductor_width*3, size=(36, 12))
+    L3.connect(L3.ports[1], ntron.ports['d'])
+    
+    D.move(D.bbox[0], (0,5))
+    
+    ht1 = D<<qg.hyper_taper(1, 5, inductor_width)
+    ht1.connect(ht1.ports[1], s2.ports[2])
+    
+    st1 = D<<pg.straight(size=(inductor_width, 9.5))
+    st1.connect(st1.ports[1], ntron.ports['s'])
+    
+    ht2 = D<<qg.hyper_taper(1, 5, inductor_width)
+    ht2.connect(ht2.ports[1], st1.ports[2])
+    
+    
+    qp(D)
+    
+ntron_snspd()
 
 def tesla(width=0.2, pitch=0.6,length=3.5, angle=15, num=5, pad_width=220, outline=1):
     D = Device('tesla_valve')
@@ -852,6 +900,58 @@ def snspd_hairpin_ind_symdiff(width=1, length=30, a1=300, a2=100, layer=1):
     
     return D
 
+def snspd_extended(wire_width=1, wire_pitch=4, a1=100, layer=1):
+    D = Device('snspd_dogbone')
+    info = locals()
+    
+    detector = pg.snspd(wire_width, wire_pitch, size = (a1, a1))
+    d = D<<detector
+    
+    htaper = qg.hyper_taper(50, 200, wire_width)
+    ht1 = D<<htaper
+    ht1.connect(ht1.ports[1], d.ports[1])
+    
+    ht2 = D<<htaper
+    ht2.connect(ht2.ports[1], d.ports[2])
+
+    
+    D.flatten(single_layer=layer)
+    D = pg.union(D)
+    D.add_port(port=ht1.ports[2], name=1)
+    D.add_port(port=ht2.ports[2], name=2)
+    D.info = info
+    D.info['num_squares'] = detector.info['num_squares']
+    print(detector.info['num_squares'])
+    return D
+
+
+def snspd_single_end(wire_width=1, wire_pitch=4, a1=100, layer=1):
+    D = Device('snspd_dogbone')
+    info = locals()
+    
+    detector = pg.snspd(wire_width, wire_pitch, size = (a1, a1))
+    d = D<<detector
+    
+    htaper = qg.hyper_taper(50, 200, wire_width)
+    ht1 = D<<htaper
+    ht1.connect(ht1.ports[1], d.ports[1])
+    
+    ht2 = D<<htaper
+    ht2.connect(ht2.ports[1], d.ports[2])
+    
+    pad = pg.straight(size=(200, 250))
+    p1 = D<<pad
+    p1.connect(p1.ports[1], ht1.ports[2])
+    
+    D.flatten(single_layer=layer)
+    D = pg.union(D)
+    D.add_port(port=ht2.ports[2])
+    D.info = info
+    D.info['num_squares'] = detector.info['num_squares']
+    print(detector.info['num_squares'])
+    return D
+
+
 def snspd_dogbone(wire_width=1, wire_pitch=4, a1=100, layer=1):
     D = Device('snspd_dogbone')
     info = locals()
@@ -904,6 +1004,7 @@ def snspd_straight_dogbone(wire_width=1, a1=100, layer=1):
     print(detector.info['num_squares'])
     return D
 
+
 def memory_array(N, M, spacing=(8, 5), layer1=1, layer2=2):
     D = Device('memory_array')
     info = locals()
@@ -921,7 +1022,7 @@ def memory_array(N, M, spacing=(8, 5), layer1=1, layer2=2):
 
 
     sub_port_list = Dsub.get_ports()
-    sub_port_list = np.reshape(sub_port_list, (N,6))
+    sub_port_list = np.reshape(sub_port_list, (N,4))
     port_list = []
     for i in range(1, N):
         con = Dsub<<pr.route_basic(sub_port_list[i-1][0], sub_port_list[i][1], layer=layer1)
@@ -942,9 +1043,9 @@ def memory_array(N, M, spacing=(8, 5), layer1=1, layer2=2):
             colT.append(p)
         if p.name==2:
             colB.append(p)
-        if p.name==5:
+        if p.name==3:
             heaterL.append(p)
-        if p.name==6:
+        if p.name==4:
             heaterR.append(p)
         
 
@@ -952,21 +1053,35 @@ def memory_array(N, M, spacing=(8, 5), layer1=1, layer2=2):
         D<<pr.route_basic(heaterR[i], heaterL[i+N], layer=layer2)
         
     D.flatten()
-
-    colT = np.reshape(colT, (M, N*2-1))
-    colT = colT[0:M,N-1]
-    for p, i in zip(colT, range(0, M)):
-        D.add_port(port=p, name=i+1)
+    
+    if N==1:
+        n=1
+    else:
+        n=2*N-1
         
-    colB = np.reshape(colB, (M, N*2-1))
-    colB = colB[0:M,0]
-    for p, i in zip(colB, range(0, M)):
+    # CREATE OUTLINE (EITHER HERE OR AFTER ADDING ROUTING TO PADS)
+    E = pg.extract(D, layers=[layer1])
+    colT = np.reshape(colT, (M,n)).T
+    for p, i in zip(colT[N-1], range(0, M)):
+        E.add_port(port=p, name=i+1)
+    colB = np.reshape(colB, (M, n)).T
+    for p, i in zip(colB[0], range(0, M)):
+        E.add_port(port=p, name=M+i+1)
+        
+    # E = pg.outline(E, distance=.1, open_ports=True)
+    # D<<E
+    D = pg.union(D, by_layer=True)
+
+    # ADD PORTS
+    for p, i in zip(colT[N-1], range(0, M)):
+        D.add_port(port=p, name=i+1)
+    for p, i in zip(colB[0], range(0, M)):
         D.add_port(port=p, name=M+i+1)
     for p, i in zip(heaterL[0:N], range(0, N)):
         D.add_port(port=p, name=M*2+i+1)
     for p, i in zip(heaterR[len(heaterR)-N:len(heaterR)], range(0, N)):
         D.add_port(port=p, name=M*2+i+1+N)
-    return D, colT
+    return D
 
-D, d = memory_array(2,2, spacing=(10,10))
-qp(D)
+# D, d = memory_array(4,2, spacing=(10,10))
+# qp(D)

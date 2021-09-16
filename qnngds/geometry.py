@@ -339,7 +339,7 @@ def etch_square(layers=[1], size=(1500,1500), location=(2500, 1000), outline=Non
     return D
         
     
-def hyper_taper (length, wide_section, narrow_section, layer=0):
+def hyper_taper(length, wide_section, narrow_section, layer=0):
     """
     Hyperbolic taper (solid). Designed by colang.
 
@@ -484,6 +484,8 @@ def snspd_vert(wire_width = 0.2, wire_pitch = 0.6, size = (6,10),
     else:
         D.add_port(name=1, port=t1.ports[2])
         D.add_port(name=2, port=t2.ports[2])
+        
+    D.info = S.info
     return D
     
 
@@ -771,7 +773,7 @@ def pad_array(num=8, size1=(100, 100), size2=(200, 250), outline=None, layer=1, 
     '''
     
     if outline is None:
-        out_dis = 5
+        out_dis = 10
     else: 
         out_dis = outline
         
@@ -789,10 +791,10 @@ def pad_array(num=8, size1=(100, 100), size2=(200, 250), outline=None, layer=1, 
                  'S': conn_side[2],
                  'N': conn_side[3]}
     
-    rec1 = pg.compass_multi(size=size1, ports = conn_dict, flip_ports=False, layer = 1)
+    rec1 = pg.compass_multi(size=size1, ports = conn_dict, layer = 1)
     size2_x = max([size1[0], max(conn_side)*(size2[0]+out_dis*5)])
 
-    rec2 = pg.compass_multi(size=(size2_x, size2_x), ports = conn_dict, flip_ports=False, layer = 1)
+    rec2 = pg.compass_multi(size=(size2_x, size2_x), ports = conn_dict, layer = 1)
     
     port_list1 = rec1.get_ports()
     port_list2 = rec2.get_ports()
@@ -849,7 +851,7 @@ def pad_array(num=8, size1=(100, 100), size2=(200, 250), outline=None, layer=1, 
         for p in range(n):
             B.remove(B.polygons[0])
         D<<B
-        
+    D.flatten()
     return D
 
 def resistor_pos(size=(6,20), width=20, length=40, overhang=10, pos_outline=.5, layer=1, rlayer=2):
@@ -1197,7 +1199,7 @@ def ntron_multi_gate_dual_fanout(num_gate=10, gate_w=.15, gate_p=.20, choke_w=0.
 def ntron_multi_gate_dual_fanout_ind(num_gate=10, gate_w=.2, gate_p=.30, choke_w=0.05, 
                             choke_l=.3, channel_w=0.12, source_w=0.3, drain_w=0.3, 
                             inductor_a1=30, inductor_a2=5, 
-                            routing=1, outline_dis=None, layer=1, gate_factor=20, choke_taper='straight', 
+                            routing=1, outline_dis=None, layer=1, gate_factor=15, choke_taper='straight', 
                             sheet_inductance=50):
     if not np.mod(num_gate,2) == 0:
         raise ValueError('number of gates must be even')
@@ -1254,30 +1256,22 @@ def ntron_multi_gate_dual_fanout_ind(num_gate=10, gate_w=.2, gate_p=.30, choke_w
     e1 = D<<E.mirror()
     [fanout_ports.append(e1.ports[num_gate-j]) for j in range(num_gate)]
     
-    t1 = D<<tee
     s1 = D<<step
     s2 = D<<step
-    t1.connect(t1.ports[3], n1.ports['d'])
     
     
-    turn = pg.optimal_90deg(width=drain_w)
-    tur1 = D<<turn
-    tur1.connect(tur1.ports[1], t1.ports[1])
-    tur2 = D<<turn
-    tur2.connect(tur2.ports[2], t1.ports[2])
+
     inductor = pg.snspd(drain_w, drain_w*2, size=(inductor_a1, inductor_a2))
     
     print('sheet_inductance: ' + str(sheet_inductance))
     print('Inductors ' + str(float(inductor.info['num_squares'])*sheet_inductance*1e-3) +' nH' )
     l1 = D<<inductor
-    l1.connect(l1.ports[1], tur1.ports[2])
-    s1.connect(s1.ports[2], tur2.ports[1])
+    l1.connect(l1.ports[1], n1.ports['d'])    
+    s1.connect(s2.ports[2], l1.ports[2])
     s2.connect(s2.ports[2], n1.ports['s'])
     fanout_ports.append(s2.ports[1])
     fanout_ports.append(s1.ports[1])
-    s3 = D<<step
-    s3.connect(s3.ports[2], l1.ports[2])
-    fanout_ports.append(s3.ports[1])
+
 
     D = pg.union(D)
     [D.add_port(name=n+1, port=fanout_ports[n]) for n in range(len(fanout_ports))]
@@ -2265,16 +2259,16 @@ def memory_v2(left_side=0.2, right_side=0.4, notch_factor = 0.25):
     return D
 
 
-def memory_v3(left_side=0.2, right_side=0.4, notch_factor = None, layer=1, right_notch_shift=.4):
+def memory_v3(left_side=0.2, right_side=0.4, notch_factor = None, layer=1, right_notch_shift=.6, cell_width = 4, right_side_length = 0.8):
     D = Device('nMem')
 
     column_width = 2
-    cell_width = 3
-    left_side_buffer = column_width/2
-    right_side_buffer = right_side+.1
-    stub_length = 0.5
-    stub_substract = stub_length*.4
-    right_side_length = left_side*4
+    
+    left_side_buffer = column_width/1.25
+    right_side_buffer = right_side
+    stub_length = 1
+    stub_substract = stub_length/2
+    
     left_side_length = left_side
     
     top = pg.optimal_step(column_width, cell_width, anticrowding_factor=0.05)
@@ -2351,24 +2345,29 @@ def memory_v3(left_side=0.2, right_side=0.4, notch_factor = None, layer=1, right
         rightn.movex(-right_side/2)
         rightn.movey(-right_notch_shift)
         
-        D = pg.boolean(D, [leftn, rightn], 'A-B')
+        rightnclip = D<<notchr
+        rightnclip.rotate(45)
+        rightnclip.move(rightnclip.center, rightn.center)
+        rightnclip.move(rightnclip.center, rightnclip.center-(right_side*notch_factor/2, right_side*notch_factor/2) )
+        D = pg.boolean(D, [leftn, rightn, rightnclip], 'A-B')
         D.add_port(port=port_list[0])
         D.add_port(port=port_list[1], name=2)
     D.flatten(single_layer=layer)
     return D
+D = memory_v3(notch_factor=.25, cell_width=5, right_side_length=1)
+# qp(D)
 
-
-def memory_heater(left_side=0.1, right_side1=0.1, right_side2=0.1, right_space=.8, right_sidex = 2.25, layer=2):
+def memory_heater(left_side=0.1, right_side1=0.1, right_side2=0.1, right_space=1.2, right_sidex = 3, layer=2):
     D = Device('memory_heater')
     
-    left_length = left_side*3
-    right_length = right_side1*4
+    left_length = left_side*5
+    right_length = right_side1*7
     
     centerx = 0.7
     centery = 0.3
     routing = 0.5
     turnback_width = .3
-    heater_out_dist = 4
+    heater_out_dist = right_sidex+2.5
     
     heatleft = pg.straight(size=(left_side, left_length))
     heatl = D<<heatleft
@@ -2414,7 +2413,7 @@ def memory_heater(left_side=0.1, right_side1=0.1, right_side2=0.1, right_space=.
     tb1 = D<<turnback
     tb1.connect(tb1.ports[2], rights2.ports[2])
 
-    hs_length = (rights4.ports[2].midpoint[0]-rights2.ports[2].midpoint[0])
+    hs_length = (rights4.ports[2].midpoint[0]-rights2.ports[2].midpoint[0])+.5
     heatstraight = pg.straight(size = (centery*1.5, hs_length))
     hstraight = D<<heatstraight
     hstraight.connect(hstraight.ports[1], tb1.ports[1])
@@ -2433,12 +2432,90 @@ def memory_heater(left_side=0.1, right_side1=0.1, right_side2=0.1, right_space=.
     
     return D
 
-def nMem():
+def memory_heater_dual(left_side=0.1, right_side1=0.1, right_side2=0.1, right_space=1.2, right_sidex = 3, layer=2):
+    D = Device('memory_heater_dual')
+    
+    left_length = left_side*3
+    right_length = right_side1*4
+    
+    centerx = 0.7
+    centery = 0.4
+    routing = 0.5
+    turnback_width = .3
+    heater_out_dist = right_sidex+2
+    
+    heatleft = pg.straight(size=(left_side, left_length))
+    heatl = D<<heatleft
+    heatl.rotate(90)
+    heatl.move(heatl.center, (0,0))
+    
+    heatright1 = pg.straight(size=(right_side1, right_length))
+    heatr1 = D<<heatright1
+    heatr1.rotate(90)
+    heatr1.move(heatr1.center, (right_sidex, -right_space/2))
+    
+    heatright2 = pg.straight(size=(right_side2, right_length))
+    heatr2 = D<<heatright2
+    heatr2.rotate(90)
+    heatr2.move(heatr2.center, (right_sidex, right_space/2))
+    
+    leftstep = pg.optimal_step(left_side, centery, symmetric=True, anticrowding_factor=0.5)
+    lefts1 = D<<leftstep
+    lefts1.connect(lefts1.ports[1], heatl.ports[2])
+    lefts2 = D<<pg.optimal_step(left_side, routing, symmetric=True, anticrowding_factor=0.5)
+    lefts2.connect(lefts2.ports[1], heatl.ports[1])
+    
+    turnback = pg.arc(radius = right_space/3, width=centery, theta=180, start_angle=-90)
+    tb1 = D<<turnback
+    tb1.connect(tb1.ports[2], lefts1.ports[2])
+    
+    hs_left_length = -heatl.ports[1].midpoint[0]+tb1.ports[1].midpoint[0]
+    hs_left = pg.straight(size=(centery, hs_left_length))
+    hsl = D<<hs_left
+    hsl.connect(hsl.ports[1], tb1.ports[1])
+    
+    leftstep1 = pg.optimal_step(centery, routing, symmetric=True, anticrowding_factor=0.4)
+    lefts3 = D<<leftstep1
+    lefts3.connect(lefts3.ports[1], hsl.ports[2])
+    
+    rightstep = pg.optimal_step(left_side, centery, symmetric=True, anticrowding_factor=0.5)
+    rights1 = D<<rightstep
+    rights1.connect(rights1.ports[1], heatr1.ports[1])
+    rights2 = D<<pg.optimal_step(left_side, centery, symmetric=True, anticrowding_factor=0.5)
+    rights2.connect(rights2.ports[1], heatr2.ports[1])
+    
+    
+    rightstep = pg.optimal_step(left_side, routing, symmetric=True, anticrowding_factor=0.5)
+    rights3 = D<<rightstep
+    rights3.connect(rights3.ports[1], heatr1.ports[2])
+    rights4 = D<<rightstep
+    rights4.connect(rights4.ports[1], heatr2.ports[2])
+    
+    turnback = pg.arc(radius = right_space/2, width=centery, theta=180, start_angle=-90)
+    tb = D<<turnback
+    tb.connect(tb.ports[1], rights2.ports[2])
+    
+
+    port_list = [lefts2.ports[2], lefts3.ports[2], rights3.ports[2], rights4.ports[2]]
+    D = pg.union(D)
+    D.flatten(single_layer=layer)
+    D.add_port(port=port_list[0], name=1)
+    D.add_port(port=port_list[1], name=2)
+    D.add_port(port=port_list[2], name=3)
+    D.add_port(port=port_list[3], name=4)
+    
+    return D
+# qp(memory_heater_dual())
+
+def nMem(dual_heater=False, layer1=1, layer2=2):
     D = Device('nMem')
     
     port_list = []
-    memory = memory_v3()
-    heater = memory_heater()
+    memory = memory_v3(notch_factor=0.25, layer=layer1)
+    if dual_heater:
+        heater = memory_heater_dual(layer=layer2)
+    else:
+        heater = memory_heater(layer=layer2)
     D<<memory
     port_list.extend(memory.get_ports())
     D<<heater
@@ -2450,4 +2527,5 @@ def nMem():
         D.add_port(name = i+1, port=p)
     
     return D
+# qp(nMem(dual_heater=True))
 
