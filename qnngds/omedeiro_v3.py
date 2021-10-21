@@ -166,7 +166,7 @@ def ntron_ind3(choke_w = 0.02,
                  'N': conn_side[3]}
     field_x=400
     
-    field = pg.compass_multi(size=(field_x,field_x), ports = conn_dict, flip_ports=True, layer = 10)
+    field = pg.compass_multi(size=(field_x,field_x), ports = conn_dict, layer = 10)
     
     f_ports = field.get_ports()
     def getmidy(p):
@@ -178,7 +178,7 @@ def ntron_ind3(choke_w = 0.02,
     
     for i in range(len(route_list)):
         t = D<<pg.outline(qg.hyper_taper(30, f_ports[0].width*.75, routing), distance=outline_dis, open_ports=True)
-        t.connect(t.ports[2], f_ports[route_list[i]])
+        t.connect(t.ports[2], f_ports[route_list[i]].rotate(180))
         r = D<<qg.outline(pr.route_manhattan(port1=port_list[i], port2=t.ports[1], radius=15), distance=outline_dis,open_ports=0, rotate_ports=True)
 
     D = pg.union(D)
@@ -186,6 +186,7 @@ def ntron_ind3(choke_w = 0.02,
 
     D.info = info
     return D
+
 
 
 def ntron_ind_gnd(choke_w = 0.02, 
@@ -449,7 +450,7 @@ def ntron_10g(num_gate=10,
     
     field_x=400
 
-    field = pg.compass_multi(size=(field_x,field_x), ports = conn_dict, flip_ports=True, layer = 10)
+    field = pg.compass_multi(size=(field_x,field_x), ports = conn_dict, layer = 10)
     f_ports = field.get_ports()
 
     def getmidy(p):
@@ -462,11 +463,15 @@ def ntron_10g(num_gate=10,
     
     for i in range(len(route_list)):
         t = D<<pg.outline(qg.hyper_taper(30, f_ports[0].width*.75, routing), distance=outline_dis, open_ports=True)
-        t.connect(t.ports[2], f_ports[route_list[i]])
+        t.connect(t.ports[2], f_ports[route_list[i]].rotate(180))
         if round(port_list[i].midpoint[0], 6)==round(t.ports[1].midpoint[0], 6) or round(port_list[i].midpoint[1], 6)==round(t.ports[1].midpoint[1], 6):
-            r = D<<qg.outline(pr.route_basic(port1=port_list[i], port2=t.ports[1]), distance=outline_dis,open_ports=0, rotate_ports=False)
+            r = pr.route_basic(port1=port_list[i], port2=t.ports[1])
+            D<<pg.outline(r, distance=outline_dis, open_ports=True)
         else:
-            r = D<<qg.outline(pr.route_manhattan(port1=port_list[i], port2=t.ports[1], radius=10), distance=outline_dis,open_ports=0, rotate_ports=True)
+            r = pr.route_manhattan(port1=port_list[i], port2=t.ports[1], radius=10)
+            r.ports[1].rotate(180)
+            r.ports[2].rotate(180)
+            D<<pg.outline(r, distance=outline_dis,open_ports=True)
 
     D = pg.union(D)
     D.flatten(single_layer=layer)
@@ -477,25 +482,26 @@ def ntron_10g(num_gate=10,
 
 
 def ntron_10g_ind(num_gate=10, 
-              gate_w=.2, 
-              gate_p=.30, 
-              choke_w=0.050, 
-              choke_l=.3, 
-              channel_w=0.120, 
-              source_w=0.3, 
-              drain_w=0.3,
-              inductor_a1=30, 
-              inductor_a2=5,
-              routing=1, 
-              outline_dis=.2, 
-              layer=1, 
-              gate_factor=50):
-    
+                  gate_w=.2, 
+                  gate_p=.450, 
+                  choke_w=0.03, 
+                  choke_l=.3, 
+                  channel_w=0.12, 
+                  source_w=0.3, 
+                  drain_w=0.3, 
+                  inductor_a1=7, 
+                  inductor_a2=30, 
+                  routing=1, 
+                  outline_dis=.2, 
+                  layer=1, 
+                  gate_factor=15, 
+                  choke_taper='straight', 
+                  sheet_inductance=50):
     
     D = Device('ntron_10g')
     info = locals()
     
-    conn_dict = {'N': 4,
+    conn_dict = {'N': 3,
                  'W': 3,
                  'S': 3,
                  'E': 3}
@@ -507,8 +513,8 @@ def ntron_10g_ind(num_gate=10,
               channel_w, 
               source_w, 
               drain_w, 
-              inductor_a1,
-              inductor_a2,
+              inductor_a1, 
+              inductor_a2, 
               routing, 
               outline_dis, 
               layer, 
@@ -517,7 +523,7 @@ def ntron_10g_ind(num_gate=10,
     
     field_x=400
 
-    field = pg.compass_multi(size=(field_x,field_x), ports = conn_dict, flip_ports=True, layer = 10)
+    field = pg.compass_multi(size=(field_x,field_x), ports = conn_dict, layer = 10)
     f_ports = field.get_ports()
 
     def getmidy(p):
@@ -526,17 +532,20 @@ def ntron_10g_ind(num_gate=10,
     f_ports.sort(key=getmidy, reverse=True)
     
     port_list = enc.get_ports()    
-    # route_list = [10, 1, 9, 8, 6, 4, 0, 2, 3, 5, 7, 11]
-    route_list = [10, 9, 7, 5, 0, 3, 4, 6, 8, 12, 11, 1, 2]
-
+    # route_list = [10, 9, 7, 5, 0, 3, 4, 6, 8, 11, 1, 2]
+    route_list = [9, 8, 6, 4, 0, 2, 3, 5, 7, 11, 10, 1]
     
     for i in range(len(route_list)):
         t = D<<pg.outline(qg.hyper_taper(30, f_ports[0].width*.75, routing), distance=outline_dis, open_ports=True)
-        t.connect(t.ports[2], f_ports[route_list[i]])
+        t.connect(t.ports[2], f_ports[route_list[i]].rotate(180))
         if round(port_list[i].midpoint[0], 6)==round(t.ports[1].midpoint[0], 6) or round(port_list[i].midpoint[1], 6)==round(t.ports[1].midpoint[1], 6):
-            r = D<<qg.outline(pr.route_basic(port1=port_list[i], port2=t.ports[1]), distance=outline_dis,open_ports=0, rotate_ports=False)
+            r = pr.route_basic(port1=port_list[i], port2=t.ports[1])
+            D<<pg.outline(r, distance=outline_dis, open_ports=True)
         else:
-            r = D<<qg.outline(pr.route_manhattan(port1=port_list[i], port2=t.ports[1], radius=20), distance=outline_dis,open_ports=0, rotate_ports=True)
+            r = pr.route_manhattan(port1=port_list[i], port2=t.ports[1], radius=10)
+            r.ports[1].rotate(180)
+            r.ports[2].rotate(180)
+            D<<pg.outline(r, distance=outline_dis,open_ports=True)
 
     D = pg.union(D)
     D.flatten(single_layer=layer)
@@ -544,9 +553,13 @@ def ntron_10g_ind(num_gate=10,
     D.info = info
     return D
 
-def ntron_snspd():
-    det_width=.1
-    inductor_width = .3
+
+
+def ntron_snspd(det_width=.1, inductor_width = .3, choke_w=0.02, channel_w=0.12, layer=1):
+    info = locals()
+
+    
+    routing=3
     D = Device('ntron_snspd')
     
     det= pg.snspd(wire_width=det_width, wire_pitch=.3, size = (3, 3))
@@ -563,18 +576,18 @@ def ntron_snspd():
     tee1 = D<<pg.tee(size=(1, inductor_width), stub_size=(inductor_width, 1), taper_type = 'fillet')
     tee1.connect(tee1.ports[2], s1.ports[2])
     
-    L1 = D<<qg.snspd_vert(wire_width=inductor_width, size=(20, 10))
+    L1 = D<<qg.snspd_vert(wire_width=inductor_width, size=(20, 25))
     L1.connect(L1.ports[1], tee1.ports[3])
     print(L1.info)
-    ntron = D<<qg.ntron_sharp(layer=0, gate_w=inductor_width)
+    ntron = D<<qg.ntron_sharp(choke_w=choke_w, channel_w=channel_w, gate_w=inductor_width, layer=0,)
     ntron.connect(ntron.ports['g'], L1.ports[2])
 
-    L2 = D<<pg.snspd(wire_width=inductor_width, wire_pitch=inductor_width*3, size=(36, 12))
+    L2 = D<<pg.snspd(wire_width=inductor_width, wire_pitch=inductor_width*2, size=(36, 18))
     L2.mirror()
     print(L2.info)
     L2.connect(L2.ports[1], tee1.ports[1])
     
-    L3 = D<<pg.snspd(wire_width=inductor_width, wire_pitch=inductor_width*3, size=(36, 12))
+    L3 = D<<pg.snspd(wire_width=inductor_width, wire_pitch=inductor_width*3, size=(36, 18))
     L3.connect(L3.ports[1], ntron.ports['d'])
     
     D.move(D.bbox[0], (0,5))
@@ -588,10 +601,205 @@ def ntron_snspd():
     ht2 = D<<qg.hyper_taper(1, 5, inductor_width)
     ht2.connect(ht2.ports[1], st1.ports[2])
     
+    routs1 = D<<pg.optimal_step(inductor_width, routing, symmetric=True, anticrowding_factor=4)
+    routs1.connect(routs1.ports[1], L2.ports[2])
+    routs2 = D<<pg.optimal_step(inductor_width, routing, symmetric=True, anticrowding_factor=4)
+    routs2.connect(routs2.ports[1], L3.ports[2])
     
+    D.move(D.center, (0,0))
+
+    port_list = [routs1.ports[2], routs2.ports[2], ht1.ports[2], ht2.ports[2]]
+    D = pg.union(D)
+    D.add_port(port=port_list[0], name=1)
+    D.add_port(port=port_list[1], name=2)
+    D.add_port(port=port_list[2], name=3)
+    D.add_port(port=port_list[3], name=4)
+
+    E = Device('4ntron_snspds')
+    pads = qg.pad_array(8, outline=10, size1=(250, 250), size2=(250, 250))
+    pads.remove(pads.polygons[2:8])
+    pads.remove([pads.ports[2],pads.ports[3],pads.ports[4],pads.ports[5],pads.ports[6],pads.ports[7]])
+    E<<pads
+    E<<D
+    
+    port_list=[]
+    for i in range(0,2):
+        ht = E<<qg.hyper_taper(10, 100, routing, layer=0)
+        ht.connect(ht.ports[2], pads.ports[i])
+        port_list.append(ht.ports[2])
+        E<<pr.route_basic(ht.ports[1], D.ports[i+1])
+        
+    port_list.extend([ht1.ports[2], ht2.ports[2]])
+    F = pg.copy_layer(E, layer=0)
+    F = pg.union(F)
+    F.add_port(port=port_list[0], name=1)
+    F.add_port(port=port_list[1], name=2)
+    F.add_port(port=port_list[2], name=3)
+    F.add_port(port=port_list[3], name=4)
+
+    F = pg.outline(F, distance=0.20, open_ports=3, layer=layer)
+    E.remove_layers(layers=[0])
+    E.flatten(single_layer=layer+1)
+    E<<F
+    E.flatten()
+    E.info = info
+    return E
+    
+
+def ntron_andor(choke_w=0.02, channel_w=0.12, inductor_width = .3, layer=1):
+    D = Device('ntron_andor')
+    info=locals()
+    routing=3
+    
+    ntron1 = D<<qg.ntron_sharp(choke_w=choke_w, channel_w=channel_w, gate_w=inductor_width, layer=0)
+    ntron2 = D<<qg.ntron_sharp(choke_w=choke_w, channel_w=channel_w, gate_w=inductor_width, layer=0)
+    ntron2.mirror()
+    ntron2.movex(15)
+    
+    L1 = D<<pg.snspd(wire_width=inductor_width, wire_pitch=inductor_width*2, size=(9, 5))
+    print(L1.info)
+    L1.connect(L1.ports[1], ntron1.ports['d'])
+    
+    L2 = D<<pg.snspd(wire_width=inductor_width, wire_pitch=inductor_width*2, size=(9, 5))
+    L2.mirror()
+    L2.connect(L2.ports[1], ntron2.ports['d'])
+    cen = D.center
+    tee1 = D<<pg.tee(size=(1, inductor_width), stub_size=(inductor_width, 1), taper_type = 'fillet')
+    tee1.move(tee1.center, cen)
+    tee1.rotate(180, center=cen).movey(8)
+    D<<pr.route_manhattan(tee1.ports[1], L1.ports[2], radius=1)
+    D<<pr.route_manhattan(tee1.ports[2], L2.ports[2], radius=1)
+
+    L3 = D<<qg.snspd_vert(wire_width=inductor_width, wire_pitch=inductor_width*2, size=(15, 15))
+    print(L3.info)
+    L3.connect(L3.ports[1], tee1.ports[3])
+    
+    routs1 = D<<pg.optimal_step(inductor_width, routing, symmetric=True, anticrowding_factor=1.5)
+    routs1.connect(routs1.ports[1], ntron1.ports['g'])
+    routs2 = D<<pg.optimal_step(inductor_width, routing, symmetric=True, anticrowding_factor=1.5)
+    routs2.connect(routs2.ports[1], ntron2.ports['g'])
+    routs3 = D<<pg.optimal_step(inductor_width, routing, symmetric=True, anticrowding_factor=1.5)
+    routs3.connect(routs3.ports[1], L3.ports[2])
+    
+    st1 = D<<pg.straight(size=(inductor_width, 5))
+    st1.connect(st1.ports[1], ntron1.ports['s'])
+    st2 = D<<pg.straight(size=(inductor_width, 5))
+    st2.connect(st2.ports[1], ntron2.ports['s'])
+    
+    ht1 = D<<qg.hyper_taper(1, 5, inductor_width)
+    ht1.connect(ht1.ports[1], st1.ports[2])
+    ht2 = D<<qg.hyper_taper(1, 5, inductor_width)
+    ht2.connect(ht2.ports[1], st2.ports[2])
+    D.move(D.center, (0,18))
+
+    port_list = [routs1.ports[2], routs2.ports[2], routs3.ports[2], ht1.ports[2], ht2.ports[2]]
+    D = pg.union(D)
+    for p, i in zip(port_list, range(0,5)):
+        D.add_port(port=p, name=i)
+    pads = qg.pad_array(5, size1=(200,200), size2=(300,300), outline=10)
+    pads.remove(pads.polygons[0])
+    pads.remove(pads.polygons[0])
+    pads.rotate(180)
+    p=D<<pads
+    
+    port_list=[]
+    for i, n in zip([2, 3, 4], [2, 0, 1]):
+        port_taper=D<<qg.hyper_taper(10, 150, routing)
+        port_taper.connect(port_taper.ports[2], p.ports[i])
+        port_list.append(port_taper.ports[2])
+        D<<pr.route_basic(port_taper.ports[1], D.ports[n])
+    port_list.append(D.ports[3])
+    port_list.append(D.ports[4])
+    
+    E = pg.copy_layer(D, layer=0)
+    for p, n in zip(port_list, range(0,5)):
+        E.add_port(port=p, name=n)
+    E = pg.outline(E, distance=0.2, open_ports=3, layer=layer)
+    D.remove_layers(layers=[0])
+    D.flatten(single_layer=layer+1)
+    D<<E
+    D = pg.union(D, by_layer=True)
+    D.flatten()
+    D.info = info
+    return D
+    
+def ntron_not(choke_w=0.02, channel_w=0.12, inductor_width=.3, gate_w = 0.3, nw_w = .1, layer=1):
+    
+    D = Device('ntron_not')
+    info=locals()
+
+    routing=3
+    
+    ntron1 = D<<qg.ntron_sharp(choke_w=choke_w, channel_w=channel_w, gate_w=gate_w, drain_w=inductor_width, source_w=inductor_width, layer=0)
+    
+    tee1 = D<<pg.tee(size=(3, inductor_width), stub_size=(inductor_width, 1), taper_type = 'fillet')
+    tee1.connect(tee1.ports[1], ntron1.ports['s'])
+    
+    step1 = D<<pg.optimal_step(inductor_width, nw_w, symmetric=True, anticrowding_factor=1.5)
+    step1.connect(step1.ports[1], tee1.ports[2])
+    
+    L1 = D<<pg.snspd(wire_width=.1, wire_pitch=.2, size=(3, 2))
+    print(L1.info)
+    L1.connect(L1.ports[1], step1.ports[2])
+    
+    st1 = D<<pg.straight(size=(.1, .5))
+    st1.connect(st1.ports[1], L1.ports[2])
+    
+    ht1 = D<<qg.hyper_taper(1, 5, .1)
+    ht1.connect(ht1.ports[1], st1.ports[2])
+    
+
+    
+    L2 = D<<pg.snspd(wire_width=inductor_width, wire_pitch=inductor_width*2, size=(10, 8))
+    print(L2.info)
+    L2.connect(L2.ports[1], ntron1.ports['d'])
+    
+    tee2 = D<<pg.tee(size=(5, inductor_width), stub_size=(inductor_width, 1), taper_type = 'fillet')
+    tee2.connect(tee2.ports[2], L2.ports[2])
+    
+    routs1 = D<<pg.optimal_step(inductor_width, routing, symmetric=True, anticrowding_factor=1.5)
+    routs1.connect(routs1.ports[1], tee1.ports[3])
+    
+    routs2 = D<<pg.optimal_step(inductor_width, routing, symmetric=True, anticrowding_factor=1.5)
+    routs2.connect(routs2.ports[1], tee2.ports[3])
+    
+    routs3 = D<<pg.optimal_step(inductor_width, routing, symmetric=True, anticrowding_factor=1.5)
+    routs3.connect(routs3.ports[1], tee2.ports[1])
+    
+    routs4 = D<<pg.optimal_step(gate_w, routing, symmetric=True, anticrowding_factor=1.5)
+    routs4.connect(routs4.ports[1], ntron1.ports['g'])
+    
+    port_list=[routs4.ports[2], routs3.ports[2], routs1.ports[2], routs2.ports[2]]
+    
+
+    
+    pads = qg.pad_array(6, size1=(200,200), size2=(300,300), outline=10)
+    pads.remove(pads.polygons[2])
+    pads.remove(pads.polygons[2])
+    pads.rotate(90)
+    D<<pads
+    port_list2=[]
+    for p, i in zip(port_list, range(0,4)):
+        port_taper=D<<qg.hyper_taper(10, 80, routing)
+        port_taper.connect(port_taper.ports[2], pads.ports[i])
+        port_list2.append(port_taper.ports[2])
+        D<<pr.route_manhattan(port_taper.ports[1], p, radius=3)
+    port_list2.append(ht1.ports[2])
+    
+    E = pg.copy_layer(D, layer=0)
+
+    for p, n in zip(port_list2, range(0,5)):
+        E.add_port(port=p, name=n)
+    E = pg.outline(E, distance=.2, open_ports=3, layer=layer)
+    D.remove_layers(layers=[0])
+    D.flatten(single_layer=layer+1)
+    D<<E
+    D = pg.union(D, by_layer=True)
     qp(D)
+    D.info = info
+    return D
     
-ntron_snspd()
+
 
 def tesla(width=0.2, pitch=0.6,length=3.5, angle=15, num=5, pad_width=220, outline=1):
     D = Device('tesla_valve')

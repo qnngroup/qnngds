@@ -1261,7 +1261,7 @@ def ntron_multi_gate_dual_fanout_ind(num_gate=10, gate_w=.2, gate_p=.30, choke_w
     
     
 
-    inductor = pg.snspd(drain_w, drain_w*2, size=(inductor_a1, inductor_a2))
+    inductor = snspd_vert(drain_w, drain_w*2, size=(inductor_a1, inductor_a2))
     
     print('sheet_inductance: ' + str(sheet_inductance))
     print('Inductors ' + str(float(inductor.info['num_squares'])*sheet_inductance*1e-3) +' nH' )
@@ -1443,9 +1443,6 @@ def ntron_three_port(choke_w = 0.015,
     n1 = D<<ntron
 
 
-    tee1 = pg.tee((drain_w*25, drain_w), (drain_w, drain_w*5), taper_type='fillet')
-    t1 = D<<tee1
-    t1.connect(t1.ports[2], n1.ports['d'])
     
     # inductor = snspd_vert(inductor_w, inductor_w*2, 
     #                           size=(inductor_a1, inductor_a2))
@@ -1454,8 +1451,12 @@ def ntron_three_port(choke_w = 0.015,
     print('sheet_inductance: ' + str(sheet_inductance))
     print('Inductors ' + str(float(inductor.info['num_squares'])*sheet_inductance*1e-3) +' nH' )
     l1 = D<<inductor
-    l1.connect(l1.ports[1],t1.ports[1])
+    l1.connect(l1.ports[1],n1.ports['d'])
    
+    
+    tee1 = pg.tee((drain_w*20, drain_w), (drain_w, drain_w*5), taper_type='fillet')
+    t1 = D<<tee1
+    t1.connect(t1.ports[2], l1.ports[2])
     # print(inductor.info['num_squares'])
     stepR = pg.optimal_step(drain_w, routing, symmetric=True, anticrowding_factor=3)
     s1 = D<<stepR
@@ -1469,7 +1470,7 @@ def ntron_three_port(choke_w = 0.015,
     # s2.connect(s2.ports[1], n1.ports[3])
     
     s3 = D<<pg.optimal_step(drain_w, routing, symmetric=True, anticrowding_factor=3)
-    s3.connect(s3.ports[1], l1.ports[2])
+    s3.connect(s3.ports[1], t1.ports[1])
 
     
     straight = pg.straight(size=(source_w, drain_w*7.5))
