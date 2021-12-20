@@ -335,7 +335,7 @@ def etch_square(layers=[1], size=(1500,1500), location=(2500, 1000), outline=Non
         if outline:
             rec = pg.outline(rec, distance=outline, layer=l)
         r = D<<rec
-        r.move(destination=location)
+        r.move(origin=r.center, destination=location)
     return D
         
     
