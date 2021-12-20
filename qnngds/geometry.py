@@ -338,7 +338,30 @@ def etch_square(layers=[1], size=(1500,1500), location=(2500, 1000), outline=Non
         r.move(origin=r.center, destination=location)
     return D
         
+def optimal_taper(width = 100.0, num_pts = 15, length_adjust = 1, layer = 0):
+    D = Device('optimal_taper')
     
+    t1 = D<<pg.optimal_90deg(width, num_pts, length_adjust)
+    t2 = D<<pg.optimal_90deg(width, num_pts, length_adjust)
+    t2.mirror()
+    t2.move(t2.ports[1], t1.ports[1])
+    
+    D.movex(-t1.ports[1].midpoint[0])
+    D.movey(-width)
+    D = pg.union(D, layer=layer)
+
+    trim = pg.straight(size=(width,-2*D.bbox[0][0]))
+    trim.rotate(90)
+    trim.move(trim.bbox[0],D.bbox[0])
+    D = pg.boolean(D,trim, 'A-B', layer=layer)
+    
+    D.add_port(name=1,port=t1.ports[1])
+    D.add_port(name=2, midpoint=(0,0), width=D.bbox[0][0]*-2, orientation=-90)
+    
+    
+    return D
+
+
 def hyper_taper(length, wide_section, narrow_section, layer=0):
     """
     Hyperbolic taper (solid). Designed by colang.
@@ -2355,7 +2378,7 @@ def memory_v3(left_side=0.2, right_side=0.4, notch_factor = None, layer=1, right
         D.add_port(port=port_list[1], name=2)
     D.flatten(single_layer=layer)
     return D
-D = memory_v3(notch_factor=.25, cell_width=5, right_side_length=1)
+# D = memory_v3(notch_factor=.25, cell_width=5, right_side_length=1)
 # qp(D)
 
 def memory_heater(left_side=0.1, right_side1=0.1, right_side2=0.1, right_space=1.2, right_sidex = 3, layer=2):
