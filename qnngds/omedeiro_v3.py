@@ -723,7 +723,7 @@ def ntron_andor(choke_w=0.02, channel_w=0.12, inductor_width = .3, layer=1):
     D.info = info
     return D
     
-def ntron_not(choke_w=0.02, channel_w=0.12, inductor_width=.3, gate_w = 0.3, nw_w = .1, layer=1):
+def ntron_not(choke_w=0.02, channel_w=0.12, inductor_width=.3, gate_w = 0.3, nw_w = .1, nw_area=(3,2), layer=1):
     
     D = Device('ntron_not')
     info=locals()
@@ -738,7 +738,7 @@ def ntron_not(choke_w=0.02, channel_w=0.12, inductor_width=.3, gate_w = 0.3, nw_
     step1 = D<<pg.optimal_step(inductor_width, nw_w, symmetric=True, anticrowding_factor=1.5)
     step1.connect(step1.ports[1], tee1.ports[2])
     
-    L1 = D<<pg.snspd(wire_width=.1, wire_pitch=.2, size=(3, 2))
+    L1 = D<<pg.snspd(wire_width=nw_w, wire_pitch=.2, size=nw_area)
     print(L1.info)
     L1.connect(L1.ports[1], step1.ports[2])
     
@@ -750,7 +750,7 @@ def ntron_not(choke_w=0.02, channel_w=0.12, inductor_width=.3, gate_w = 0.3, nw_
     
 
     
-    L2 = D<<pg.snspd(wire_width=inductor_width, wire_pitch=inductor_width*2, size=(10, 8))
+    L2 = D<<pg.snspd(wire_width=inductor_width, wire_pitch=inductor_width*2, size=(inductor_width*30, inductor_width*20))
     print(L2.info)
     L2.connect(L2.ports[1], ntron1.ports['d'])
     
@@ -1108,11 +1108,13 @@ def snspd_hairpin_ind_symdiff(width=1, length=30, a1=300, a2=100, layer=1):
     
     return D
 
-def snspd_extended(wire_width=1, wire_pitch=4, a1=100, layer=1):
+def snspd_extended(wire_width=1, wire_pitch=4, a1=100, a2=None, layer=1):
     D = Device('snspd_dogbone')
     info = locals()
     
-    detector = pg.snspd(wire_width, wire_pitch, size = (a1, a1))
+    if a2 is None:
+        a2=a1
+    detector = pg.snspd(wire_width, wire_pitch, size = (a1, a2))
     d = D<<detector
     
     htaper = qg.hyper_taper(50, 200, wire_width)
@@ -1133,11 +1135,14 @@ def snspd_extended(wire_width=1, wire_pitch=4, a1=100, layer=1):
     return D
 
 
-def snspd_single_end(wire_width=1, wire_pitch=4, a1=100, layer=1):
+def snspd_single_end(wire_width=1, wire_pitch=4, a1=100, a2=None, layer=1):
     D = Device('snspd_dogbone')
     info = locals()
     
-    detector = pg.snspd(wire_width, wire_pitch, size = (a1, a1))
+    if a2 is None:
+        a2=a1
+        
+    detector = pg.snspd(wire_width, wire_pitch, size = (a1, a2))
     d = D<<detector
     
     htaper = qg.hyper_taper(50, 200, wire_width)
@@ -1147,7 +1152,7 @@ def snspd_single_end(wire_width=1, wire_pitch=4, a1=100, layer=1):
     ht2 = D<<htaper
     ht2.connect(ht2.ports[1], d.ports[2])
     
-    pad = pg.straight(size=(200, 250))
+    pad = pg.straight(size=(250, 250))
     p1 = D<<pad
     p1.connect(p1.ports[1], ht1.ports[2])
     
@@ -1291,5 +1296,280 @@ def memory_array(N, M, spacing=(8, 5), layer1=1, layer2=2):
         D.add_port(port=p, name=M*2+i+1+N)
     return D
 
-# D, d = memory_array(4,2, spacing=(10,10))
-# qp(D)
+def via_array(n, via_size=3, via_inset=1, spacing=150, pad_size=(250,250), layers=[0,1,2]):
+    D = Device('via_array')
+    
+    # pad1 = D<<pg.straight(size=pad_size, layer=layers[1])
+    
+    
+    via = qg.via_square(width=via_size, inset=via_inset, layers=layers)
+    via_list=[]
+    for i in range(0,n):
+        conn = pg.straight(size=(via_size, spacing-via_size-2*via_inset), layer=layers[1+(-1)**(i+1)])
+
+        v = D<<via
+        v.movey(i*spacing)
+        via_list.append(v)
+        if i < n-1:
+            c = D<<conn
+            c.connect(c.ports[1], v.ports[1])
+        
+    # v = D<<via
+    # v.movey(i*spacing)
+    # v.connect(v.ports[2], c.ports[2])
+    # via_list.append(v)
+    connT = pg.straight(size=(via_size, spacing-via_size-2*via_inset), layer=layers[2])
+
+    cstart = D<<pg.straight(size=(via_size, spacing-via_size-2*via_inset), layer=layers[2])
+    cstart.connect(cstart.ports[1], via_list[0].ports[2])
+    
+
+    
+    pstart = D<<qg.pad_basic(base_size=pad_size, port_size=via_size, taper_length=60, layer=layers[2])
+    pstart.connect(pstart.ports[1], cstart.ports[2])
+    
+    pstart_etch = D<<pg.rectangle(size=(pad_size[0]+5, pad_size[1]+5), layer=layers[0])
+    pstart_etch.move(pstart_etch.bbox[0], pstart.bbox[0]-(5/2,5/2))
+
+    offset = 12
+    p = 3
+    for via, i in zip(via_list, range(1,len(via_list))):
+        cint = D<<pg.straight(size=(via_size, spacing-via_size-2*via_inset), layer=layers[1+(-1)**i])
+        cint.connect(cint.ports[1], via.ports[p])
+        cint.movey(spacing/2)
+        cint.movex(-cint.ports[1].midpoint[0])
+        
+        if p==3:
+            p=4
+        else:
+            p=3
+        pint = D<<qg.pad_basic(base_size=pad_size, port_size=via_size, taper_length=60, layer=layers[1+(-1)**i])
+        pint.connect(pint.ports[1], cint.ports[2])
+        
+        pint_etch = D<<pg.rectangle(size=(pad_size[0]+offset, pad_size[1]+offset), layer=layers[1+(-1)**(i+1)])
+        pint_etch.move(pint_etch.bbox[p-3], pint.bbox[p-3]-(offset/2*(-1)**(i),offset/2*(-1)**(i)))
+        
+    cend = D<<pg.straight(size=(via_size, spacing-via_size-2*via_inset), layer=layers[1+(-1)**(i+1)])
+    cend.connect(cend.ports[1], via_list[-1].ports[1])
+    
+    pend = D<<qg.pad_basic(base_size=pad_size, port_size=via_size, taper_length=60, layer=layers[1+(-1)**(i+1)])
+    pend.connect(pend.ports[1], cend.ports[2])
+    
+    pend_etch = D<<pg.rectangle(size=(pad_size[0]+offset, pad_size[1]+offset), layer=layers[2])
+    pend_etch.move(pend_etch.bbox[1], pend.bbox[1]+(offset/2,offset/2))
+
+    E = pg.extract(D, layers=[layers[0]])
+    E = pg.outline(E, distance=5, layer=layers[0])
+    D.remove_layers(layers=[layers[0]])
+    D<<E
+    
+    E = pg.extract(D, layers=[layers[2]])
+    E = pg.outline(E, distance=5, layer=layers[2])
+    D.remove_layers(layers=[layers[2]])
+    D<<E
+    
+    return D
+        
+
+def htron_not():
+    D = Device('htron_not')
+    
+    dl = 1
+    hl = 3
+    
+    width1 = 0.5
+    width2 = 0.1
+    length1 = 4
+    length2 = 1
+    
+    hwidth1 = 0.15
+    hlength1 = 2
+    
+    hwidth2 = 0.5
+
+    wire1 = D<<pg.straight(size=(width1,length1), layer=dl)
+    
+    induct1 = D<<pg.snspd(wire_width=width1, wire_pitch=width1*2, size=(12,10), layer=dl)
+    induct1.connect(induct1.ports[1], wire1.ports[1])
+    
+    heater1 = D<<pg.straight(size=(hwidth1,hlength1), layer=hl)
+    heater1.move(heater1.center, wire1.center)
+    
+    hturn1 = D<<pg.optimal_90deg(hwidth1, layer=hl)
+    hturn2 = D<<pg.optimal_90deg(hwidth1, layer=hl)
+    hturn1.connect(hturn1.ports[1], heater1.ports[1])
+    hturn2.connect(hturn2.ports[2], heater1.ports[2])
+    
+    hstep1 = D<<pg.optimal_step(hwidth1, hwidth2, layer=hl)
+    hstep2 = D<<pg.optimal_step(hwidth2, hwidth1, layer=hl)
+
+    hstep1.connect(hstep1.ports[1], hturn1.ports[2])
+    hstep2.connect(hstep2.ports[2], hturn2.ports[1])
+    
+    wire2 = D<<pg.straight(size=(width1,length2), layer=dl)
+    wire2.connect(wire2.ports[1], wire1.ports[2])
+    
+    tee1 = D<<pg.tee(size=(length1,width1), stub_size=(width1,width1*2),taper_type ='fillet', layer=dl)
+    tee2 = D<<pg.tee(size=(length1,width1), stub_size=(width1,width1*2),taper_type ='fillet', layer=dl)
+
+    tee1.connect(tee1.ports[1], wire2.ports[2])
+    tee2.connect(tee2.ports[2], wire2.ports[2])
+    
+    step1 = D<<pg.optimal_step(width1, width2, anticrowding_factor = 1.5, symmetric=True, layer=dl)
+    step1.connect(step1.ports[1], tee1.ports[2])
+    
+    wire3 = D<<pg.straight(size=(width2, 1), layer=dl)
+    wire3.connect(wire3.ports[1], step1.ports[2])
+    
+    step2 = D<<pg.optimal_step(width1, width2, anticrowding_factor = 1.5, symmetric=True, layer=dl)
+    step2.connect(step2.ports[2], wire3.ports[2])
+    
+    
+    tee3 = D<<pg.tee(size=(length1,width1), stub_size=(width1,width1*2),taper_type ='fillet', layer=dl)
+    tee3.connect(tee3.ports[2], induct1.ports[2])
+    
+    # taper1 = D<<qg.hyper_taper(1, 10, width1, layer=dl)
+    # taper1.connect(taper1.ports[1], step2.ports[1])
+    
+    port_list = [tee3.ports[1], tee3.ports[3], tee1.ports[3], tee2.ports[3], step2.ports[1], hstep1.ports[2], hstep2.ports[1]]
+    
+    D = pg.union(D, by_layer=True)
+    D.flatten()
+    
+    for p,i in zip(port_list, range(0,len(port_list))):
+        D.add_port(name=i, port=p)
+        
+    return D
+
+
+
+
+def htron_andor():
+    D = Device('htron_andor')
+    
+    dl = 3
+    hl = 1
+    
+    width1 = 0.5
+    width2 = 0.1
+    length1 = 4
+    length2 = 4
+    
+    hwidth1 = 0.15
+    hlength1 = 2
+    
+    hwidth2 = 0.5
+
+    wire1 = D<<pg.straight(size=(width1,length1), layer=dl)
+    
+    heater1 = D<<pg.straight(size=(hwidth1,hlength1), layer=hl)
+    heater1.move(heater1.center, wire1.center)
+    
+    hturn1 = D<<pg.optimal_90deg(hwidth1, layer=hl)
+    hturn2 = D<<pg.optimal_90deg(hwidth1, layer=hl)
+    hturn1.connect(hturn1.ports[1], heater1.ports[1])
+    hturn2.connect(hturn2.ports[2], heater1.ports[2])
+    
+    hstep1 = D<<pg.optimal_step(hwidth1, hwidth2, layer=hl)
+    hstep2 = D<<pg.optimal_step(hwidth2, hwidth1, layer=hl)
+
+    hstep1.connect(hstep1.ports[1], hturn1.ports[2])
+    hstep2.connect(hstep2.ports[2], hturn2.ports[1])
+    
+    wire2 = D<<pg.straight(size=(width1,length2), layer=dl)
+    wire2.connect(wire2.ports[1], wire1.ports[2])
+    
+   
+    induct1 = D<<pg.snspd(wire_width=width1, wire_pitch=width1*2, size=(12,10), layer=dl)
+    induct1.connect(induct1.ports[1], wire1.ports[1])
+    
+    print(induct1.info)
+    
+    tee1 = D<<pg.tee(size=(length1,width1), stub_size=(width1,width1*2),taper_type ='fillet', layer=dl)
+    tee1.connect(tee1.ports[2], induct1.ports[2])
+    
+    # taper1 = D<<qg.hyper_taper(1, 10, width1, layer=dl)
+    # taper1.connect(taper1.ports[1], wire2.ports[2])
+    
+
+    port_list = [tee1.ports[1], tee1.ports[3], wire2.ports[2], hstep1.ports[2], hstep2.ports[1]]
+    
+    D = pg.union(D, by_layer=True)
+    D.flatten()
+    
+    for p,i in zip(port_list, range(0,len(port_list))):
+        D.add_port(name=i, port=p)
+        
+    return D
+
+
+
+def htron_andor_snspd():
+    D = Device('htron_andor_snspd')
+    
+    dl = 3
+    hl = 1
+    
+    width1 = 0.5
+    width2 = 0.1
+    length1 = 4
+    length2 = 4
+    
+    hwidth1 = 0.15
+    hlength1 = 2
+    
+    hwidth2 = 0.5
+
+    wire1 = D<<pg.straight(size=(width1,length1), layer=dl)
+    
+    heater1 = D<<pg.straight(size=(hwidth1,hlength1), layer=hl)
+    heater1.move(heater1.center, wire1.center)
+    
+    hturn1 = D<<pg.optimal_90deg(hwidth1, layer=hl)
+    hturn2 = D<<pg.optimal_90deg(hwidth1, layer=hl)
+    hturn1.connect(hturn1.ports[1], heater1.ports[1])
+    hturn2.connect(hturn2.ports[2], heater1.ports[2])
+    
+    hstep1 = D<<pg.optimal_step(hwidth1, hwidth2, layer=hl)
+    hstep2 = D<<pg.optimal_step(hwidth2, hwidth1, layer=hl)
+
+    hstep1.connect(hstep1.ports[1], hturn1.ports[2])
+    hstep2.connect(hstep2.ports[2], hturn2.ports[1])
+    
+    wire2 = D<<pg.straight(size=(width1,length2), layer=dl)
+    wire2.connect(wire2.ports[1], wire1.ports[2])
+    
+   
+    induct1 = D<<pg.snspd(wire_width=width1, wire_pitch=width1*2, size=(12,10), layer=dl)
+    induct1.connect(induct1.ports[1], wire1.ports[1])
+    
+    print(induct1.info)
+    
+    tee1 = D<<pg.tee(size=(length1,width1), stub_size=(width1,width1*2),taper_type ='fillet', layer=dl)
+    tee1.connect(tee1.ports[2], induct1.ports[2])
+    
+    # taper1 = D<<qg.hyper_taper(1, 10, width1, layer=dl)
+    # taper1.connect(taper1.ports[1], wire2.ports[2])
+    
+    tee2 = D<<pg.tee(size=(length1*3,width1), stub_size=(width1,width1*4),taper_type ='fillet', layer=dl)
+    tee2.connect(tee2.ports[2], tee1.ports[3])
+    
+
+    snspd1 = D<<pg.snspd_expanded(wire_width=width2, wire_pitch=width2*3, size=(8,5), connector_width=width1, layer=dl)
+    snspd1.mirror()
+    snspd1.connect(snspd1.ports[1], tee2.ports[3])
+    print(snspd1.info)
+
+    wire3 = D<<pg.straight(size=(width1,snspd1.ports[2].midpoint[1]-wire2.ports[2].midpoint[1]), layer=dl)
+    wire3.connect(wire3.ports[1], snspd1.ports[2])
+    
+    port_list = [tee1.ports[1], tee2.ports[1], wire3.ports[2], wire2.ports[2], hstep1.ports[2], hstep2.ports[1]]
+    
+    D = pg.union(D, by_layer=True)
+    D.flatten()
+    
+    for p,i in zip(port_list, range(0,len(port_list))):
+        D.add_port(name=i, port=p)
+        
+    return D
+
