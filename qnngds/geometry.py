@@ -338,7 +338,7 @@ def etch_square(layers=[1], size=(1500,1500), location=(2500, 1000), outline=Non
         r.move(origin=r.center, destination=location)
     return D
         
-def optimal_taper(width = 100.0, num_pts = 15, length_adjust = 1, layer = 0):
+def optimal_taper(width = 100.0, num_pts = 15, length_adjust = 3, layer = 0):
     D = Device('optimal_taper')
     
     t1 = D<<pg.optimal_90deg(width, num_pts, length_adjust)
@@ -350,17 +350,47 @@ def optimal_taper(width = 100.0, num_pts = 15, length_adjust = 1, layer = 0):
     D.movey(-width)
     D = pg.union(D, layer=layer)
 
-    trim = pg.straight(size=(width,-2*D.bbox[0][0]))
+    #wide port trim
+    trim = pg.straight(size=(width,-2.5*D.bbox[0][0]))
     trim.rotate(90)
     trim.move(trim.bbox[0],D.bbox[0])
-    D = pg.boolean(D,trim, 'A-B', layer=layer)
+    trim.movex(-.005)
+    trim.movey(-.0001)
+    A = pg.boolean(t1,trim, 'A-B', layer=layer, precision=1e-9)
+    B = pg.boolean(t2,trim, 'A-B', layer=layer, precision=1e-9)
+
+    # #top length trim
+    trim2 = D<<pg.straight(size=(width*2, t1.ports[1].midpoint[1]-width*4))
+    trim2.connect(trim2.ports[1], t1.ports[1].rotate(180))
+    A = pg.boolean(A,trim2, 'A-B', layer=layer, precision=1e-9)
+    B = pg.boolean(B,trim2, 'A-B', layer=layer, precision=1e-9)
     
-    D.add_port(name=1,port=t1.ports[1])
+    # # width trim 1
+    trim3 = A<<pg.straight(size=(width/2, t1.ports[1].midpoint[1]+.1))
+    trim3.connect(trim3.ports[1], t1.ports[1].rotate(180))
+    trim3.movex(-width/2)
+    A = pg.boolean(A,trim3, 'A-B', layer=layer, precision=1e-9)
+
+    # # width trim 2
+    trim3 = B<<pg.straight(size=(width/2, t1.ports[1].midpoint[1]+.1))
+    trim3.connect(trim3.ports[1], t1.ports[1].rotate(180))
+    trim3.movex(width/2)
+    B = pg.boolean(B,trim3, 'A-B', layer=layer, precision=1e-9)
+    
+    p = B.get_polygons()
+    x1 = p[0][0,0]
+ 
+    A.movex(width/2+x1)
+    B.movex(-width/2-x1)
+    D = A
+    D<<B
+    D = pg.union(D, layer=layer)
+
+    D.add_port(name=1,midpoint=(0, width*4), width=width,orientation=90)
     D.add_port(name=2, midpoint=(0,0), width=D.bbox[0][0]*-2, orientation=-90)
     
     
-    return D
-
+    return D 
 
 def hyper_taper(length, wide_section, narrow_section, layer=0):
     """
@@ -404,6 +434,8 @@ def hyper_taper(length, wide_section, narrow_section, layer=0):
         HT.add_port(name = 2, midpoint = [taper_length, 0],  width = wide, orientation = 0)
         HT.flatten(single_layer = layer)
     return HT
+
+
 
 # def hyper_taper_outline(length=15, wide_section=80, narrow_section=.1, outline=0.5, layer=1):
 #     """
@@ -598,7 +630,7 @@ def pad_basic(base_size=(200,200), port_size =10, taper_length=100, layer=1):
     P.add_ref([base,taper])
     P.flatten(single_layer=layer)
     P.add_port(name=1,midpoint=(base_size[0]/2,base_size[1]+taper_length),orientation=90,width=port_size)
-
+    P.add_port(name='center', midpoint=base.center, width=0.1, orientation=0)
     return P
     
 
@@ -768,7 +800,7 @@ def pads_adam_fill(style = 'right',layer = 1):
     pad_cover.add_port(name=1,port=p1.ports[1])
     return pad_cover
 
-def pad_array(num=8, size1=(100, 100), size2=(200, 250), outline=None, layer=1, pad_layers=None, pad_iso=None):
+def pad_array(num=8, size1=(100, 100), size2=(200, 250), outline=None, layer=1, pad_layers=None, pad_iso=None, de_etch=False):
     '''
     
     Parameters
@@ -834,6 +866,11 @@ def pad_array(num=8, size1=(100, 100), size2=(200, 250), outline=None, layer=1, 
         if pad_iso:
             Bp2 = B<<pg.straight(size=size2)
             Bp2.connect(Bp2.ports[1], prt2)
+            
+        if de_etch:
+            pad_etch = B<<pg.straight(size=(size2[0]-10,size2[1]-10), layer=layer+1)
+            pad_etch.connect(pad_etch.ports[1], prt2)
+            pad_etch.move(pad_etch.center, p2.center)
         
         D<<pr.route_basic(p1.ports[2], p2.ports[1], 
                           path_type='straight', width_type='straight',
@@ -2180,6 +2217,41 @@ def via_square(width=3, inset=2, layers=[0, 1, 2], outline=False):
     [D.add_port(name=n+1, port=port_list[n]) for n in range(len(port_list))]
     
     return D
+
+
+
+
+def via_round(width=3, inset=2, layers=[0, 1, 2], outline=False):
+    D = Device('via')    
+    via0 = pg.compass(size=(width+2*inset, width+2*inset), layer=layers[0])
+    v0 = D<<via0
+    
+    via1 = pg.circle(radius=width/2, layer=layers[1])
+    v1 = D<<via1
+    v1.move(v1.center, v0.center)
+    
+    via2 = pg.compass(size=(width+2*inset, width+2*inset), layer=layers[2])
+    v2 = D<<via2
+    v2.move(v2.center, v1.center)
+    
+    D.flatten()
+    
+    if outline:
+        E = pg.copy_layer(D, layer=0, new_layer=0)
+        D.remove_layers(layers=[0])
+        E = pg.outline(E, distance=outline, layer=0)
+        D<<E
+        
+        F = pg.copy_layer(D, layer=2, new_layer=2)
+        D.remove_layers(layers=[2])
+        F = pg.outline(F, distance=outline, layer=2)
+        D<<F
+    
+    port_list = [v0.ports['N'], v0.ports['S'], v0.ports['E'], v0.ports['W']]
+    [D.add_port(name=n+1, port=port_list[n]) for n in range(len(port_list))]
+    
+    return D
+
 
 
 # def mTron(num_gate=4, gate_p=0.3, choke_w=0.03, channel_w=0.1, layer=1, 
