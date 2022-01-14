@@ -822,7 +822,7 @@ def tesla(width=0.2, pitch=0.6,length=3.5, angle=15, num=5, pad_width=220, outli
     return D
 
     
-def straight_wire_pad_bilayer(width=0.2, length=30, outline=0.5, layer=1, pad_layer=None, two_pads=False, step_scale = 3, pad_shift=10, anticrowding_factor=1.2):
+def straight_wire_pad_bilayer(width=0.2, length=30, outline=0.5, layer=1, pad_layer=None, two_pads=False, step_scale = 3, pad_shift=10, anticrowding_factor=1.2, de_etch=None):
     D = Device('straight_wire')    
     info = locals()
     
@@ -856,7 +856,7 @@ def straight_wire_pad_bilayer(width=0.2, length=30, outline=0.5, layer=1, pad_la
     ground_taper.move(ground_taper.ports[1],step2.ports[1])
 
     if two_pads:
-        pad2 = qg.pad_U(pad_width= pad_width, layer=layer+1)
+        pad2 = qg.pad_U(pad_width= pad_width, layer=pad_layer)
         pad2.move(pad2.ports[1], ground_taper.ports[2])
         pad2.movex(pad_shift)
         D<<pad2
@@ -864,6 +864,13 @@ def straight_wire_pad_bilayer(width=0.2, length=30, outline=0.5, layer=1, pad_la
     else:
         D<<pad
         
+    if de_etch:
+        pad_etch = D<<pg.rectangle(size=(pad_width-30, pad_width-30), layer=de_etch)
+        pad_etch.move(pad_etch.center, pad.center)
+        if two_pads:
+            pad_etch = D<<pg.rectangle(size=(pad_width-30, pad_width-30), layer=de_etch)
+            pad_etch.move(pad_etch.center, pad2.center)
+            
     D.add_ref([pad_taper,detector, step1, step2, ground_taper])
     D = pg.union(D, by_layer=True)
     D.rotate(-90)
@@ -1296,16 +1303,50 @@ def memory_array(N, M, spacing=(8, 5), layer1=1, layer2=2):
         D.add_port(port=p, name=M*2+i+1+N)
     return D
 
-def via_array(n, via_size=3, via_inset=1, spacing=150, pad_size=(250,250), layers=[0,1,2]):
+def tap_array(n, width=1, tap_spacing=100, pad_extension=10, alternate=False, layer=1):
+    D = Device('tap_array')
+    
+    tee = pg.tee(size=(tap_spacing, width), stub_size=(width*4,pad_extension), taper_type='fillet')
+    t_list=[]
+    port_list=[]
+    for i in range(0,n):
+        t = D<<tee
+        t_list.append(t)
+        if i==0:
+            port_list.append(t.ports[2])
+            port_list.append(t.ports[3])
+            
+        if i>0:
+            if alternate:
+                t.connect(t.ports[2-(i%2)], t_list[i-1].ports[2-(i%2)])
+                port_list.append(t.ports[3])
+            else:
+                t.connect(t.ports[2], t_list[i-1].ports[1])
+                port_list.append(t.ports[3])
+        if i==n-1:
+            if alternate:
+                port_list.append(t.ports[1+(i%2)])
+            else:
+                port_list.append(t.ports[1])
+                
+    D.flatten(single_layer=layer)
+    for p, i in zip(port_list, range(0,len(port_list))):
+        D.add_port(name=i, port=p)
+    qp(D)
+    return D
+
+def via_array(n, via_size=3, via_inset=1, spacing=150, pad_size=(250,250), outline_dis=5, layers=[0,1,2]):
     D = Device('via_array')
     
     # pad1 = D<<pg.straight(size=pad_size, layer=layers[1])
     
+    offset = 15
+    p = 3
     
     via = qg.via_square(width=via_size, inset=via_inset, layers=layers)
     via_list=[]
     for i in range(0,n):
-        conn = pg.straight(size=(via_size, spacing-via_size-2*via_inset), layer=layers[1+(-1)**(i+1)])
+        conn = pg.straight(size=(via_size+via_inset*2, spacing-via_size-2*via_inset), layer=layers[1+(-1)**(i+1)])
 
         v = D<<via
         v.movey(i*spacing)
@@ -1318,23 +1359,22 @@ def via_array(n, via_size=3, via_inset=1, spacing=150, pad_size=(250,250), layer
     # v.movey(i*spacing)
     # v.connect(v.ports[2], c.ports[2])
     # via_list.append(v)
-    connT = pg.straight(size=(via_size, spacing-via_size-2*via_inset), layer=layers[2])
+    connT = pg.straight(size=(via_size+via_inset*2, spacing-via_size-2*via_inset), layer=layers[2])
 
-    cstart = D<<pg.straight(size=(via_size, spacing-via_size-2*via_inset), layer=layers[2])
+    cstart = D<<pg.straight(size=(via_size+via_inset*2, spacing-via_size-2*via_inset), layer=layers[2])
     cstart.connect(cstart.ports[1], via_list[0].ports[2])
     
 
     
-    pstart = D<<qg.pad_basic(base_size=pad_size, port_size=via_size, taper_length=60, layer=layers[2])
+    pstart = D<<qg.pad_basic(base_size=pad_size, port_size=via_size+via_inset*2, taper_length=60, layer=layers[2])
     pstart.connect(pstart.ports[1], cstart.ports[2])
     
-    pstart_etch = D<<pg.rectangle(size=(pad_size[0]+5, pad_size[1]+5), layer=layers[0])
-    pstart_etch.move(pstart_etch.bbox[0], pstart.bbox[0]-(5/2,5/2))
+    pstart_etch = D<<pg.rectangle(size=(pad_size[0]+offset, pad_size[1]+offset), layer=layers[0])
+    pstart_etch.move(pstart_etch.center, pstart.ports['center'])
 
-    offset = 12
-    p = 3
+
     for via, i in zip(via_list, range(1,len(via_list))):
-        cint = D<<pg.straight(size=(via_size, spacing-via_size-2*via_inset), layer=layers[1+(-1)**i])
+        cint = D<<pg.straight(size=(via_size+via_inset*2, spacing-via_size-2*via_inset), layer=layers[1+(-1)**i])
         cint.connect(cint.ports[1], via.ports[p])
         cint.movey(spacing/2)
         cint.movex(-cint.ports[1].midpoint[0])
@@ -1343,98 +1383,148 @@ def via_array(n, via_size=3, via_inset=1, spacing=150, pad_size=(250,250), layer
             p=4
         else:
             p=3
-        pint = D<<qg.pad_basic(base_size=pad_size, port_size=via_size, taper_length=60, layer=layers[1+(-1)**i])
+        pint = D<<qg.pad_basic(base_size=pad_size, port_size=via_size+via_inset*2, taper_length=60, layer=layers[1+(-1)**i])
         pint.connect(pint.ports[1], cint.ports[2])
         
         pint_etch = D<<pg.rectangle(size=(pad_size[0]+offset, pad_size[1]+offset), layer=layers[1+(-1)**(i+1)])
-        pint_etch.move(pint_etch.bbox[p-3], pint.bbox[p-3]-(offset/2*(-1)**(i),offset/2*(-1)**(i)))
+        pint_etch.move(pint_etch.center, pint.ports['center'])
         
-    cend = D<<pg.straight(size=(via_size, spacing-via_size-2*via_inset), layer=layers[1+(-1)**(i+1)])
+        if p==4:
+            pint_etch1 = D<<pg.rectangle(size=(pad_size[0]-offset, pad_size[1]-offset), layer=layers[1])
+            pint_etch1.move(pint_etch1.center, pint.ports['center'])
+
+    cend = D<<pg.straight(size=(via_size+via_inset*2, spacing-via_size-2*via_inset), layer=layers[1+(-1)**(i+1)])
     cend.connect(cend.ports[1], via_list[-1].ports[1])
     
-    pend = D<<qg.pad_basic(base_size=pad_size, port_size=via_size, taper_length=60, layer=layers[1+(-1)**(i+1)])
+    pend = D<<qg.pad_basic(base_size=pad_size, port_size=via_size+via_inset*2, taper_length=60, layer=layers[1+(-1)**(i+1)])
     pend.connect(pend.ports[1], cend.ports[2])
     
-    pend_etch = D<<pg.rectangle(size=(pad_size[0]+offset, pad_size[1]+offset), layer=layers[2])
-    pend_etch.move(pend_etch.bbox[1], pend.bbox[1]+(offset/2,offset/2))
-
+    if n%2==0:
+        pend_etch = D<<pg.rectangle(size=(pad_size[0]+offset, pad_size[1]+offset), layer=layers[0])
+        pend_etch.move(pend_etch.center, pend.ports['center'])
+    else:
+        pend_etch = D<<pg.rectangle(size=(pad_size[0]+offset, pad_size[1]+offset), layer=layers[2])
+        pend_etch.move(pend_etch.center, pend.ports['center'])
+        pend_etch1 = D<<pg.rectangle(size=(pad_size[0]-offset, pad_size[1]-offset), layer=layers[1])
+        pend_etch1.move(pend_etch1.center, pend.ports['center'])
+            
     E = pg.extract(D, layers=[layers[0]])
-    E = pg.outline(E, distance=5, layer=layers[0])
+    E = pg.outline(E, distance=outline_dis, layer=layers[0])
     D.remove_layers(layers=[layers[0]])
     D<<E
     
     E = pg.extract(D, layers=[layers[2]])
-    E = pg.outline(E, distance=5, layer=layers[2])
+    E = pg.outline(E, distance=outline_dis, layer=layers[2])
     D.remove_layers(layers=[layers[2]])
     D<<E
     
     return D
-        
+# qp(via_array(3))
 
-def htron_not():
-    D = Device('htron_not')
+
+
+
+
+def htron(width1=0.5, length1=4, length2=2, hwidth1=0.15, hwidth2=0.5, size=(3,3), terminals_same_side=True, dl=3, hl=1):
+    D = Device('htron')
     
-    dl = 1
-    hl = 3
-    
-    width1 = 0.5
-    width2 = 0.1
-    length1 = 4
-    length2 = 1
-    
-    hwidth1 = 0.15
-    hlength1 = 2
-    
-    hwidth2 = 0.5
 
     wire1 = D<<pg.straight(size=(width1,length1), layer=dl)
     
-    induct1 = D<<pg.snspd(wire_width=width1, wire_pitch=width1*2, size=(12,10), layer=dl)
-    induct1.connect(induct1.ports[1], wire1.ports[1])
     
-    heater1 = D<<pg.straight(size=(hwidth1,hlength1), layer=hl)
+    heater1 = D<<pg.snspd(hwidth1, hwidth1*2, size=size, terminals_same_side=terminals_same_side, layer=hl)
     heater1.move(heater1.center, wire1.center)
-    
-    hturn1 = D<<pg.optimal_90deg(hwidth1, layer=hl)
-    hturn2 = D<<pg.optimal_90deg(hwidth1, layer=hl)
-    hturn1.connect(hturn1.ports[1], heater1.ports[1])
-    hturn2.connect(hturn2.ports[2], heater1.ports[2])
-    
+    D.info['heater_info'] = heater1.info
+
     hstep1 = D<<pg.optimal_step(hwidth1, hwidth2, layer=hl)
     hstep2 = D<<pg.optimal_step(hwidth2, hwidth1, layer=hl)
 
-    hstep1.connect(hstep1.ports[1], hturn1.ports[2])
-    hstep2.connect(hstep2.ports[2], hturn2.ports[1])
+    hstep1.connect(hstep1.ports[1], heater1.ports[2])
+    hstep2.connect(hstep2.ports[2], heater1.ports[1])
+    
+    wire2 = D<<pg.straight(size=(width1,length2), layer=dl)
+    wire2.connect(wire2.ports[1], wire1.ports[1])
+    
+    wire3 = D<<pg.straight(size=(width1,length2), layer=dl)
+    wire3.connect(wire3.ports[1], wire1.ports[2])
+
+    
+    port_list = [wire2.ports[2], wire3.ports[2], hstep1.ports[2], hstep2.ports[1]]
+    
+    info = D.info
+    D = pg.union(D, by_layer=True)
+    D.flatten()
+    D.info = info
+    
+    for p,i in zip(port_list, range(0,len(port_list))):
+        D.add_port(name=i, port=p)
+        
+    return D        
+
+
+def htron_not(width1=0.5, width2=0.15, length1=8, length2=2, hwidth1=0.15, size=(3,3), route_width=1, dl=3, hl=1):
+    D = Device('htron_not')
+    
+
+    wire1 = D<<pg.straight(size=(width1,length1), layer=dl)
+    
+
+    heater1 = D<<pg.snspd(hwidth1, hwidth1*2, size=size, terminals_same_side=True, layer=hl)
+    heater1.move(heater1.center, wire1.center)
+
+    D.info['heater_info'] = heater1.info
+
+    hstep1 = D<<pg.optimal_step(hwidth1, route_width, layer=hl)
+    hstep2 = D<<pg.optimal_step(route_width, hwidth1, layer=hl)
+
+    hstep1.connect(hstep1.ports[1], heater1.ports[2])
+    hstep2.connect(hstep2.ports[2], heater1.ports[1])
     
     wire2 = D<<pg.straight(size=(width1,length2), layer=dl)
     wire2.connect(wire2.ports[1], wire1.ports[2])
     
-    tee1 = D<<pg.tee(size=(length1,width1), stub_size=(width1,width1*2),taper_type ='fillet', layer=dl)
-    tee2 = D<<pg.tee(size=(length1,width1), stub_size=(width1,width1*2),taper_type ='fillet', layer=dl)
+    tee1 = D<<pg.tee(size=(route_width*2,width1), stub_size=(route_width,width1*2),taper_type ='fillet', layer=dl)
+    tee2 = D<<pg.tee(size=(route_width*2,width1), stub_size=(route_width,width1*2),taper_type ='fillet', layer=dl)
 
     tee1.connect(tee1.ports[1], wire2.ports[2])
     tee2.connect(tee2.ports[2], wire2.ports[2])
     
-    step1 = D<<pg.optimal_step(width1, width2, anticrowding_factor = 1.5, symmetric=True, layer=dl)
+    
+    step1 = D<<pg.optimal_step(width1, width2, anticrowding_factor = 1.5, num_pts=100, symmetric=True,  layer=dl)
     step1.connect(step1.ports[1], tee1.ports[2])
     
-    wire3 = D<<pg.straight(size=(width2, 1), layer=dl)
+    wire3 = D<<pg.straight(size=(width2, 2), layer=dl)
     wire3.connect(wire3.ports[1], step1.ports[2])
     
-    step2 = D<<pg.optimal_step(width1, width2, anticrowding_factor = 1.5, symmetric=True, layer=dl)
+    step2 = D<<pg.optimal_step(route_width, width2, anticrowding_factor = 1.5, num_pts=100, symmetric=True, layer=dl)
     step2.connect(step2.ports[2], wire3.ports[2])
     
     
-    tee3 = D<<pg.tee(size=(length1,width1), stub_size=(width1,width1*2),taper_type ='fillet', layer=dl)
-    tee3.connect(tee3.ports[2], induct1.ports[2])
+    tee3 = D<<pg.tee(size=(route_width*5,width1), stub_size=(width1,width1*10),taper_type ='fillet', layer=dl)
+    tee3.connect(tee3.ports[2], wire1.ports[1])
     
-    # taper1 = D<<qg.hyper_taper(1, 10, width1, layer=dl)
-    # taper1.connect(taper1.ports[1], step2.ports[1])
+    induct1 = D<<pg.snspd(wire_width=width1, wire_pitch=width1*2, size=(20,10), layer=dl)
+    induct1.connect(induct1.ports[1], tee3.ports[3])
     
-    port_list = [tee3.ports[1], tee3.ports[3], tee1.ports[3], tee2.ports[3], step2.ports[1], hstep1.ports[2], hstep2.ports[1]]
+    D.info['induct_info'] = induct1.info
+
+    step3 = D<<pg.optimal_step(width1, route_width, anticrowding_factor = 1.5, symmetric=True, layer=dl)
+    step3.connect(step3.ports[1], tee3.ports[1])
+
+    step4 = D<<pg.optimal_step(width1, route_width, anticrowding_factor = 1.5, symmetric=True, layer=dl)
+    step4.connect(step4.ports[1], induct1.ports[2])
     
+    taper=0
+    if taper==1:  
+        taper1 = D<<qg.optimal_taper(width1, layer=dl)
+        taper1.connect(taper1.ports[1], step2.ports[1])
+        port_list = [step3.ports[2], step4.ports[2], tee1.ports[3], tee2.ports[3], taper1.ports[2], hstep1.ports[2], hstep2.ports[1]]
+    else:
+        port_list = [step3.ports[2], step4.ports[2], tee1.ports[3], tee2.ports[3], step2.ports[1], hstep1.ports[2], hstep2.ports[1]]
+    info=D.info
     D = pg.union(D, by_layer=True)
     D.flatten()
+    D.info = info
     
     for p,i in zip(port_list, range(0,len(port_list))):
         D.add_port(name=i, port=p)
@@ -1443,58 +1533,58 @@ def htron_not():
 
 
 
-
-def htron_andor():
+def htron_andor(width1=0.3, pitch1=0.8, width2=0.15, length1=8, length2=2, hwidth1=0.3, hwidth2=0.5, dl=3, hl=1):
     D = Device('htron_andor')
     
-    dl = 3
-    hl = 1
-    
-    width1 = 0.5
-    width2 = 0.1
-    length1 = 4
-    length2 = 4
-    
-    hwidth1 = 0.15
-    hlength1 = 2
-    
-    hwidth2 = 0.5
+
 
     wire1 = D<<pg.straight(size=(width1,length1), layer=dl)
-    
-    heater1 = D<<pg.straight(size=(hwidth1,hlength1), layer=hl)
-    heater1.move(heater1.center, wire1.center)
-    
-    hturn1 = D<<pg.optimal_90deg(hwidth1, layer=hl)
-    hturn2 = D<<pg.optimal_90deg(hwidth1, layer=hl)
-    hturn1.connect(hturn1.ports[1], heater1.ports[1])
-    hturn2.connect(hturn2.ports[2], heater1.ports[2])
-    
-    hstep1 = D<<pg.optimal_step(hwidth1, hwidth2, layer=hl)
-    hstep2 = D<<pg.optimal_step(hwidth2, hwidth1, layer=hl)
-
-    hstep1.connect(hstep1.ports[1], hturn1.ports[2])
-    hstep2.connect(hstep2.ports[2], hturn2.ports[1])
     
     wire2 = D<<pg.straight(size=(width1,length2), layer=dl)
     wire2.connect(wire2.ports[1], wire1.ports[2])
     
-   
-    induct1 = D<<pg.snspd(wire_width=width1, wire_pitch=width1*2, size=(12,10), layer=dl)
-    induct1.connect(induct1.ports[1], wire1.ports[1])
+    wire3 = D<<pg.straight(size=(width1, length1), layer=dl)
+    wire3.connect(wire3.ports[1],wire1.ports[1])
     
-    print(induct1.info)
-    
-    tee1 = D<<pg.tee(size=(length1,width1), stub_size=(width1,width1*2),taper_type ='fillet', layer=dl)
-    tee1.connect(tee1.ports[2], induct1.ports[2])
-    
-    # taper1 = D<<qg.hyper_taper(1, 10, width1, layer=dl)
-    # taper1.connect(taper1.ports[1], wire2.ports[2])
-    
+    #first heater
+    heater1 = D<<pg.snspd(hwidth1, pitch1, size=(width1*6,hwidth1*10), terminals_same_side=True, layer=hl)
+    heater1.move(heater1.center, wire1.center)
 
-    port_list = [tee1.ports[1], tee1.ports[3], wire2.ports[2], hstep1.ports[2], hstep2.ports[1]]
+    D.info['heater_info'] = heater1.info
     
-    D = pg.union(D, by_layer=True)
+    hstep1 = D<<pg.optimal_step(hwidth1, hwidth2, layer=hl)
+    hstep2 = D<<pg.optimal_step(hwidth2, hwidth1, layer=hl)
+
+    hstep1.connect(hstep1.ports[1], heater1.ports[2])
+    hstep2.connect(hstep2.ports[2], heater1.ports[1])
+    
+    #second heater
+    heater2 = D<<pg.snspd(hwidth1, pitch1, size=(width1*6,hwidth1*10), terminals_same_side=True, layer=hl)
+    heater2.mirror()
+    heater2.move(heater2.center, wire3.center)
+
+
+    hstep21 = D<<pg.optimal_step(hwidth1, hwidth2, layer=hl)
+    hstep22 = D<<pg.optimal_step(hwidth2, hwidth1, layer=hl)
+
+    hstep21.connect(hstep21.ports[1], heater2.ports[1])
+    hstep22.connect(hstep22.ports[2], heater2.ports[2])
+
+    # tee1 = D<<pg.tee(size=(length1,width1), stub_size=(width1,width1*2),taper_type ='fillet', layer=dl)
+    # tee1.connect(tee1.ports[2], wire3.ports[2])
+    
+    
+    taper=0
+    if taper==1:
+        taper1 = D<<qg.optimal_taper(width1, layer=dl)
+        taper1.connect(taper1.ports[1], wire2.ports[2])
+
+        port_list = [wire3.ports[2], taper1.ports[2], hstep1.ports[2], hstep2.ports[1], hstep21.ports[2], hstep22.ports[1]]
+        
+    else:
+        port_list = [wire3.ports[2], wire2.ports[2], hstep1.ports[2], hstep2.ports[1], hstep21.ports[2], hstep22.ports[1]]
+    
+    # D = pg.union(D, by_layer=True)
     D.flatten()
     
     for p,i in zip(port_list, range(0,len(port_list))):
@@ -1504,37 +1594,19 @@ def htron_andor():
 
 
 
-def htron_andor_snspd():
+def htron_andor_snspd(width1=0.5, width2=0.1, length1=4, length2=4, hwidth1=0.15, hwidth2=0.5, dl=3, hl=1):
     D = Device('htron_andor_snspd')
     
-    dl = 3
-    hl = 1
-    
-    width1 = 0.5
-    width2 = 0.1
-    length1 = 4
-    length2 = 4
-    
-    hwidth1 = 0.15
-    hlength1 = 2
-    
-    hwidth2 = 0.5
-
     wire1 = D<<pg.straight(size=(width1,length1), layer=dl)
     
-    heater1 = D<<pg.straight(size=(hwidth1,hlength1), layer=hl)
+    heater1 = D<<pg.snspd(hwidth1, hwidth1*2, size=(hwidth1*30,hwidth1*15), terminals_same_side=True, layer=hl)
     heater1.move(heater1.center, wire1.center)
-    
-    hturn1 = D<<pg.optimal_90deg(hwidth1, layer=hl)
-    hturn2 = D<<pg.optimal_90deg(hwidth1, layer=hl)
-    hturn1.connect(hturn1.ports[1], heater1.ports[1])
-    hturn2.connect(hturn2.ports[2], heater1.ports[2])
-    
+
     hstep1 = D<<pg.optimal_step(hwidth1, hwidth2, layer=hl)
     hstep2 = D<<pg.optimal_step(hwidth2, hwidth1, layer=hl)
 
-    hstep1.connect(hstep1.ports[1], hturn1.ports[2])
-    hstep2.connect(hstep2.ports[2], hturn2.ports[1])
+    hstep1.connect(hstep1.ports[1], heater1.ports[2])
+    hstep2.connect(hstep2.ports[2], heater1.ports[1])
     
     wire2 = D<<pg.straight(size=(width1,length2), layer=dl)
     wire2.connect(wire2.ports[1], wire1.ports[2])
@@ -1555,7 +1627,7 @@ def htron_andor_snspd():
     tee2.connect(tee2.ports[2], tee1.ports[3])
     
 
-    snspd1 = D<<pg.snspd_expanded(wire_width=width2, wire_pitch=width2*3, size=(8,5), connector_width=width1, layer=dl)
+    snspd1 = D<<pg.snspd_expanded(wire_width=width2, wire_pitch=width2*3, size=(10,10), connector_width=width1, layer=dl)
     snspd1.mirror()
     snspd1.connect(snspd1.ports[1], tee2.ports[3])
     print(snspd1.info)
@@ -1563,7 +1635,17 @@ def htron_andor_snspd():
     wire3 = D<<pg.straight(size=(width1,snspd1.ports[2].midpoint[1]-wire2.ports[2].midpoint[1]), layer=dl)
     wire3.connect(wire3.ports[1], snspd1.ports[2])
     
-    port_list = [tee1.ports[1], tee2.ports[1], wire3.ports[2], wire2.ports[2], hstep1.ports[2], hstep2.ports[1]]
+    taper=0
+    if taper==1:
+        taper1 = D<<qg.optimal_taper(width1, layer=dl)
+        taper1.connect(taper1.ports[1], wire2.ports[2])
+        
+        taper2 = D<<qg.optimal_taper(width1, layer=dl)
+        taper2.connect(taper2.ports[1], wire3.ports[2])
+        port_list = [tee1.ports[1], tee2.ports[1], taper2.ports[2], taper1.ports[2], hstep1.ports[2], hstep2.ports[1]]
+        
+    else:    
+        port_list = [tee1.ports[1], tee2.ports[1], wire3.ports[2], wire2.ports[2], hstep1.ports[2], hstep2.ports[1]]
     
     D = pg.union(D, by_layer=True)
     D.flatten()
