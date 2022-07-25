@@ -1,45 +1,18 @@
 import numpy as np
 from phidl import Device
 import phidl.geometry as pg
+from qnngds.qnngds.geometry import hyper_taper
 
 '''
-SOLID phidl components
+Building blocks useful to mix-and-match different kinds of meander geometries
+
+Currently necessary for long_meanders tapers & SNSPIs, but ultimately may want to
+merge with geometry.py
 '''
-def hyper_taper (length, wide_section, narrow_section, layer=1):
-    """
-    Hyperbolic taper (solid). Designed by colang.
-    Parameters
-    ----------
-    length : FLOAT
-        Length of taper.
-    wide_section : FLOAT
-        Wide width dimension.
-    narrow_section : FLOAT
-        Narrow width dimension.
-    layer : INT, optional
-        Layer for device to be created on. The default is 1.
-    Returns
-    -------
-    HT :  DEVICE
-        PHIDL device object is returned.
-    """
-    taper_length=length
-    wide =  wide_section
-    narrow = narrow_section
-    x_list = np.arange(0,taper_length+.1, .1)
-    x_list2= np.arange(taper_length,-0.1,-0.1)
-    pts = []
-    a = np.arccosh(wide/narrow)/taper_length
-    for x in x_list:
-        pts.append((x, np.cosh(a*x)*narrow/2))
-    for y in x_list2:
-        pts.append((y, -np.cosh(a*y)*narrow/2))
-        HT = Device('hyper_taper')
-        hyper_taper = HT.add_polygon(pts, layer = 2)
-        HT.add_port(name = 'narrow', midpoint = [0, 0],  width = narrow, orientation = 180)
-        HT.add_port(name = 'wide', midpoint = [taper_length, 0],  width = wide, orientation = 0)
-        HT.flatten(single_layer = layer)
-    return HT
+
+'''
+Solid components
+'''
 
 def solid_pad(width1=200, layer=1):
     '''
@@ -57,7 +30,8 @@ def solid_pad(width1=200, layer=1):
     D.flatten(single_layer = layer)
     D.add_port(name = 'out', midpoint = [R1.center[0],2*R1.center[1]], width = 2*R1.center[1], orientation = 90)
     
-    return D    
+    return D  
+
 
 def solid_microwire(length, width, ht, pad, layer=1):
     '''
@@ -97,8 +71,9 @@ def solid_microwire(length, width, ht, pad, layer=1):
     return D
 
 '''
-OUTLINE phidl components
+Outline components
 '''
+
 def microwire_outline(length, width, ht, pad, layer=1):
     '''
     returns phidl Device of outline of microwire

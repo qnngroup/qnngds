@@ -8,7 +8,7 @@ from qnngds.qnngds.taper_helpers.erickson_taper import length, erickson_polynomi
 from qnngds.qnngds.taper_helpers.klopfenstein_taper import klop_length, klopfenstein_z
 from qnngds.qnngds.taper_helpers.taper_library import *
 
-from qnngds.qnngds.long_meander_helpers.phidl_components import CPW_to_phidl, cpw_pad, microstrip_taper_c, solid_pad
+from qnngds.qnngds.meander_geometry import CPW_to_phidl, cpw_pad, microstrip_taper_c, solid_pad
 from qnngds.qnngds.long_meander_helpers.generator_scripts import generate_taper, generate_meander
 from qnngds.qnngds.long_meander_helpers.coords import Coords, quarter12to3, quarter12to9
 
@@ -16,8 +16,14 @@ from qnngds.qnngds.long_meander_helpers.coords import Coords, quarter12to3, quar
 Functions that put all the pieces together to output specific long meanders as PHIDL devices
 
 * make_snspi_meander - returns a PHIDL device of an SNSPI meander
+    - Requires:
+        * design parameters in um (see docstring)
 * make_taper - returns a PHIDL device taper and a matching pad device in the appropriate size
-               (requires Sonnet simulation of Z, eps_eff -- or analytical calculation from taper_helpers/analytical.py)
+    - Requires: 
+        * Sonnet simulation of Z, eps_eff and the output csv filepaths
+         (default format: filename \n output value type \n parameter, output \n) 
+         -- or analytical calculation from taper_helpers/analytical.py
+        * other design parameters in um/MHz/dB
 '''
 
 def make_snspi_meander(w, g, array_length, array_height, min_conductor, 
@@ -25,15 +31,15 @@ def make_snspi_meander(w, g, array_length, array_height, min_conductor,
     '''
     Generates a meander array for an SNSPI
     
-    w = width of central conductor
-    g = gap to ground
-    array_length = total x-length of array
-    array_height = total y-height of array
-    min_conductor = minimum amount of ground conductor spacer when turning
-    line_height = height of one pixel in a single line
-    meander_architecture = CPW vs Microstrip
-    gds_name (optional) = name of gds file to write array to
-    plot (optional) = (Boolean) whether to plot meander Coords
+    w = width of central conductor [um]
+    g = gap to ground [um]
+    array_length = total x-length of array [um]
+    array_height = total y-height of array [um]
+    min_conductor = minimum amount of ground conductor spacer when turning [um]
+    line_height = height of one pixel in a single line [um]
+    meander_architecture = CPW vs Microstrip [taper_library.ARCHITECTURE]
+    gds_name (optional) = name of gds file to write array to [string]
+    plot (optional) = (Boolean) whether to plot meander Coords 
     '''
 
     coords = Coords()

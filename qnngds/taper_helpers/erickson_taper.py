@@ -3,7 +3,7 @@ from scipy.special import factorial
 from scipy.integrate import quad
 from scipy import constants
 
-from tapers.taper_helpers.spherical_bessel_zeros import Jn_zeros
+from qnngds.qnngds.taper_helpers.spherical_bessel_zeros import Jn_zeros
 
 '''
 taper design based on "Variational theory of the tapered impedance

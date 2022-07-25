@@ -27,7 +27,7 @@ print(s_samples)
 # set number of decimal points of precision 
 mp.dps = 300
 
-# data folder
+# data folder - path in which to save results
 DATA_FOLDER = '../data/CPW_STO_Lk=80pH_eps=1100_analytical'
 
 # sample parameters used in paper
