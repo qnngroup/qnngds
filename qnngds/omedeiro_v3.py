@@ -822,7 +822,7 @@ def tesla(width=0.2, pitch=0.6,length=3.5, angle=15, num=5, pad_width=220, outli
     return D
 
     
-def straight_wire_pad_bilayer(width=0.2, length=30, outline=0.5, layer=1, pad_layer=None, two_pads=False, step_scale = 3, pad_shift=10, anticrowding_factor=1.2, de_etch=None):
+def straight_wire_pad_bilayer(width=0.2, length=30, outline=0.5, layer=1, pad_layer=None, two_pads=False, pad_iso=None, step_scale = 3, pad_shift=10, anticrowding_factor=1.2, de_etch=None):
     D = Device('straight_wire')    
     info = locals()
     
@@ -864,13 +864,26 @@ def straight_wire_pad_bilayer(width=0.2, length=30, outline=0.5, layer=1, pad_la
     else:
         D<<pad
         
+
+        
     if de_etch:
-        pad_etch = D<<pg.rectangle(size=(pad_width-30, pad_width-30), layer=de_etch)
+        pad_etch = D<<pg.rectangle(size=(pad_width-40, pad_width-40), layer=de_etch)
         pad_etch.move(pad_etch.center, pad.center)
         if two_pads:
-            pad_etch = D<<pg.rectangle(size=(pad_width-30, pad_width-30), layer=de_etch)
+            pad_etch = D<<pg.rectangle(size=(pad_width-40, pad_width-40), layer=de_etch)
             pad_etch.move(pad_etch.center, pad2.center)
             
+            
+    if pad_iso is not None:
+        pad_etch = D<<pg.rectangle(size=(pad_width-40, pad_width-40), layer=0)
+        pad_etch.move(pad_etch.center, pad2.center)
+        iso = D<<pg.outline(pad_etch, distance=10, layer=pad_iso)
+        iso1 = D<<pg.outline(pad_etch, distance=10, layer=pad_iso)
+        iso1.move(iso1.center, pad.center)
+        D.remove(pad_etch)
+
+        
+        
     D.add_ref([pad_taper,detector, step1, step2, ground_taper])
     D = pg.union(D, by_layer=True)
     D.rotate(-90)
@@ -1425,32 +1438,43 @@ def via_array(n, via_size=3, via_inset=1, spacing=150, pad_size=(250,250), outli
 
 
 
-def htron(width1=0.5, length1=4, length2=2, hwidth1=0.15, hwidth2=0.5, size=(3,3), terminals_same_side=True, dl=3, hl=1):
+def htron(width1=0.5, length1=4, length2=2, hwidth1=0.15, hwidth2=1, size=(3,1), terminals_same_side=False, expanded=True, rout1=2, rout2=2, dl=3, hl=1):
     D = Device('htron')
     
 
     wire1 = D<<pg.straight(size=(width1,length1), layer=dl)
     
-    
-    heater1 = D<<pg.snspd(hwidth1, hwidth1*2, size=size, terminals_same_side=terminals_same_side, layer=hl)
-    heater1.move(heater1.center, wire1.center)
-    D.info['heater_info'] = heater1.info
+    if terminals_same_side:
+        heater1 = D<<pg.snspd(hwidth1, hwidth1*2, size=size, terminals_same_side=terminals_same_side, layer=hl)
+        heater1.move(heater1.center, wire1.center)
+        D.info['heater_info'] = heater1.info
+    else:
+        heater1 = D<<pg.straight(size=(hwidth1,2), layer=hl)
+        heater1.rotate(90)
+        heater1.move(heater1.center, wire1.center)
 
-    hstep1 = D<<pg.optimal_step(hwidth1, hwidth2, layer=hl)
-    hstep2 = D<<pg.optimal_step(hwidth2, hwidth1, layer=hl)
+    if expanded:
+        
+        hstep1 = D<<pg.optimal_step(hwidth1, hwidth2, layer=hl, symmetric=True)
+        hstep2 = D<<pg.optimal_step(hwidth2, hwidth1, layer=hl, symmetric=True)
+    
+        hstep1.connect(hstep1.ports[1], heater1.ports[2])
+        hstep2.connect(hstep2.ports[2], heater1.ports[1])
+        
+        step1 = D<<pg.optimal_step(width1, rout1, symmetric=True, layer=dl)
+        step1.connect(step1.ports[1], wire1.ports[1])
+        
+        step2 = D<<pg.optimal_step(width1, rout1, symmetric=True, layer=dl)
+        step2.connect(step2.ports[1], wire1.ports[2])
 
-    hstep1.connect(hstep1.ports[1], heater1.ports[2])
-    hstep2.connect(hstep2.ports[2], heater1.ports[1])
-    
-    wire2 = D<<pg.straight(size=(width1,length2), layer=dl)
-    wire2.connect(wire2.ports[1], wire1.ports[1])
-    
-    wire3 = D<<pg.straight(size=(width1,length2), layer=dl)
-    wire3.connect(wire3.ports[1], wire1.ports[2])
+        port1 = hstep2.ports[1]
+        port1.midpoint = port1.midpoint+(1,0)
+        port2 = hstep1.ports[2]
+        port2.midpoint = port2.midpoint-(1,0)
+        port_list = [step1.ports[2], step2.ports[2], port1,  port2]
+    else:
+        port_list = [wire1.ports[1], wire1.ports[2], heater1.ports[1], heater1.ports[2]]
 
-    
-    port_list = [wire2.ports[2], wire3.ports[2], hstep1.ports[2], hstep2.ports[1]]
-    
     info = D.info
     D = pg.union(D, by_layer=True)
     D.flatten()
@@ -1459,8 +1483,45 @@ def htron(width1=0.5, length1=4, length2=2, hwidth1=0.15, hwidth2=0.5, size=(3,3
     for p,i in zip(port_list, range(0,len(port_list))):
         D.add_port(name=i, port=p)
         
-    return D        
+    return D       
 
+def htron_alt(heater_size=(0.2, 4), channel_size=(1,4), route_width=4, h_layer=1, c_layer=2):
+    D = Device('htron')
+    
+    
+    channel = D<<pg.straight(size=channel_size, layer=c_layer)
+    
+    channel.move(channel.center, (0,0))
+
+    channel_taper = D<<pg.optimal_step(channel_size[0], route_width, anticrowding_factor=0.2, symmetric='True', layer=c_layer)
+    channel_taper.connect(channel_taper.ports[1], channel.ports[1])
+    channel_taper1 = D<<pg.optimal_step(channel_size[0], route_width, anticrowding_factor=0.2, symmetric='True', layer=c_layer)
+    channel_taper1.connect(channel_taper1.ports[1], channel.ports[2])
+    ### FLAG POLE CONNECTORS ###
+    flagpole1 = D<<pg.flagpole(size=(route_width*2, route_width), stub_size=(heater_size[0],channel_size[1]), shape='p', taper_type='fillet', layer=h_layer)
+    flagpole2 = D<<pg.flagpole(size=(route_width*2, route_width), stub_size=(heater_size[0],channel_size[1]), shape='d', taper_type='fillet', layer=h_layer)
+
+    flagpole1.move(flagpole1.ports[1].midpoint, (0,0))
+    flagpole2.move(flagpole2.ports[1].midpoint, (0,0))
+
+    compass1 = D<<pg.compass(size=(route_width, route_width), layer=h_layer)
+    compass2 = D<<pg.compass(size=(route_width, route_width), layer=h_layer)
+    
+    compass1.connect(compass1.ports['N'], flagpole1.ports[2].rotate(180))
+    compass2.connect(compass2.ports['N'], flagpole2.ports[2].rotate(180))
+    
+    
+    port_list = [channel_taper.ports[2], channel_taper1.ports[2], compass2.ports['E'], compass1.ports['E']]
+
+    info = D.info
+    D = pg.union(D, by_layer=True)
+    D.flatten()
+    D.info = info
+    
+    for p,i in zip(port_list, range(0,len(port_list))):
+        D.add_port(name=i, port=p)
+
+    return D        
 
 def htron_not(width1=0.5, width2=0.15, length1=8, length2=2, hwidth1=0.15, size=(3,3), route_width=1, dl=3, hl=1):
     D = Device('htron_not')
@@ -1530,6 +1591,127 @@ def htron_not(width1=0.5, width2=0.15, length1=8, length2=2, hwidth1=0.15, size=
         D.add_port(name=i, port=p)
         
     return D
+
+
+def htron_notR(width1=0.5, width2=0.15, rlength1=5, rlength2=2, length1=4, length2=2, hwidth1=0.2, size=(3,1), route_width=1, dl1=2, dl2=4, hl=1):
+    D = Device('htron_not')
+    
+
+    wire1 = D<<pg.straight(size=(width1,length1), layer=dl1)
+    
+
+    heater1 = D<<pg.snspd(hwidth1, hwidth1*2, size=size, terminals_same_side=True, layer=dl2)
+    heater1.move(heater1.center, wire1.center)
+
+    D.info['heater_info'] = heater1.info
+
+    hstep1 = D<<pg.optimal_step(hwidth1, route_width, layer=dl2)
+    hstep2 = D<<pg.optimal_step(route_width, hwidth1, layer=dl2)
+
+    hstep1.connect(hstep1.ports[1], heater1.ports[2])
+    hstep2.connect(hstep2.ports[2], heater1.ports[1])
+    
+    step3 = D<<pg.optimal_step(width1, route_width, anticrowding_factor = 1.0, symmetric=True, layer=dl1)
+    step3.connect(step3.ports[1], wire1.ports[1])
+    step4 = D<<pg.optimal_step(width1, route_width, anticrowding_factor = 1.0, symmetric=True, layer=dl1)
+    step4.connect(step4.ports[1], wire1.ports[2])
+
+    
+    tee = pg.tee(size=(route_width*2,route_width), stub_size=(route_width,route_width*2),taper_type ='fillet', layer=dl1)
+
+    tee1 = D<<tee
+    tee1.connect(tee1.ports[2], step3.ports[2])
+    
+    r1 = D<<qg.resistor_neg(size=(0.25,rlength1), width=1, length=-3, overhang=1, pos_outline=.1, layer=dl1, rlayer=hl)
+    r1.connect(r1.ports[1], tee1.ports[3])
+    
+    arc1 = D<<pg.arc(radius=1, width=1, theta=90, layer=dl1)
+    arc1.connect(arc1.ports[1], step4.ports[2])
+    r2 = D<<qg.resistor_neg(size=(0.25,rlength2), width=1, length=2, overhang=1, pos_outline=.1, layer=dl1, rlayer=hl)
+    r2.connect(r2.ports[1], arc1.ports[2])
+
+    
+    port_list = [tee1.ports[1], r1.ports[2], r2.ports[2], hstep1.ports[2], hstep2.ports[1]]
+    info=D.info
+    D = pg.union(D, by_layer=True)
+    D.flatten()
+    D.info = info
+    
+    for p,i in zip(port_list, range(0,len(port_list))):
+        D.add_port(name=i, port=p)
+        
+    return D
+
+
+
+def htron_notR_alt(heater_size=(0.2, 4), channel_size=(1,4), res1_size=(0.25, 4), route_width=4, h_layer=1, c_layer=2):
+    D = Device('htron')
+    
+    
+    channel = D<<pg.straight(size=channel_size, layer=c_layer)
+    
+    channel.move(channel.center, (0,0))
+
+    channel_taper = D<<pg.optimal_step(channel_size[0], route_width, anticrowding_factor=0.2, symmetric='True', layer=c_layer)
+    channel_taper.connect(channel_taper.ports[1], channel.ports[1])
+    channel_taper1 = D<<pg.optimal_step(channel_size[0], route_width, anticrowding_factor=0.2, symmetric='True', layer=c_layer)
+    channel_taper1.connect(channel_taper1.ports[1], channel.ports[2])
+    ### FLAG POLE CONNECTORS ###
+    flagpole1 = D<<pg.flagpole(size=(route_width*2, route_width), stub_size=(heater_size[0],channel_size[1]), shape='p', taper_type='fillet', layer=h_layer)
+    flagpole2 = D<<pg.flagpole(size=(route_width*2, route_width), stub_size=(heater_size[0],channel_size[1]), shape='b', taper_type='fillet', layer=h_layer)
+
+    flagpole1.move(flagpole1.ports[1].midpoint, (0,0))
+    flagpole2.move(flagpole2.ports[1].midpoint, (0,0))
+
+    flagpole1.mirror()
+    flagpole2.mirror()
+    compass1 = D<<pg.compass(size=(route_width, route_width), layer=h_layer)
+    compass2 = D<<pg.compass(size=(route_width, route_width), layer=h_layer)
+    
+    compass1.connect(compass1.ports['N'], flagpole1.ports[2].rotate(180))
+    compass2.connect(compass2.ports['N'], flagpole2.ports[2].rotate(180))
+    
+    
+    
+    tee = pg.tee(size=(route_width*2,route_width), stub_size=(route_width,route_width*2),taper_type ='fillet', layer=c_layer)
+
+    tee1 = D<<tee
+    tee1.connect(tee1.ports[2], channel_taper.ports[2])
+    
+    r1 = D<<pg.straight(size=res1_size, layer=h_layer)
+    r1.connect(r1.ports[1], tee1.ports[3])
+    r1pad = pg.straight(size=(route_width,2), layer=h_layer)
+    r1p = D<<r1pad
+    r1p.connect(r1p.ports[1], r1.ports[1])
+    r2p = D<<r1pad
+    r2p.connect(r2p.ports[1], r1.ports[2])
+
+    # flagpole1 = pg.flagpole(size = (route_width*2, route_width), stub_size=(route_width, route_width),taper_type ='fillet', layer=c_layer)
+    # fp1 = D<<flagpole1
+    # fp1.connect(fp1.ports[1], channel_taper1.ports[2])
+    # fp1.mirror()
+    
+    # compass3 = D<<pg.compass(size=(route_width*2, route_width), layer=c_layer)
+    # compass3.connect(compass3.ports['N'], fp1.ports[2].rotate(180))
+
+
+    arc1 = D<<pg.arc(radius=4, width=route_width, theta=90, layer=c_layer)
+    arc1.connect(arc1.ports[1], channel_taper1.ports[2])
+
+
+
+    port_list = [tee1.ports[1], r2p.ports[1].rotate(180), arc1.ports[2], compass2.ports['E'], compass1.ports['W']]
+
+    info = D.info
+    D = pg.union(D, by_layer=True)
+    D.flatten()
+    D.info = info
+    
+    for p,i in zip(port_list, range(0,len(port_list))):
+        D.add_port(name=i, port=p)
+
+    return D        
+
 
 
 

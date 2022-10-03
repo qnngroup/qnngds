@@ -941,6 +941,33 @@ def resistor_pos(size=(6,20), width=20, length=40, overhang=10, pos_outline=.5, 
         D.add_port(s2.ports[1])
         D.squares = (size[1]-overhang)/size[0]
         return D
+    
+
+def resistor_neg(size=(6,20), width=20, length=40, overhang=10, pos_outline=.5, layer=1, rlayer=2):
+        rwidth=size[0]
+        rlength=size[1]
+        spacing=rlength-overhang
+        res = pg.straight((rwidth,rlength),layer=rlayer)       
+        s1 = pg.straight((width, length+spacing), layer=layer)
+        rout = pg.straight((width+pos_outline*2,
+                            rlength-overhang),
+                            layer=layer)     
+        rout.move(rout.ports[2],s1.ports[1])
+        
+        res.move(res.center,rout.center)
+        
+        s2 = pg.straight((width,length+spacing), layer=layer)
+        
+        s2.move(s2.ports[2],rout.ports[1])
+        
+        D = Device('resistor')
+        D.add_ref([res,s1, s2])
+        D = pg.union(D, by_layer=True)
+        D.add_port(s1.ports[2])
+        D.add_port(s2.ports[1])
+        D.squares = (size[1]-overhang)/size[0]
+        return D
+
 
 def ntron(choke_w=0.03, gate_w=0.2, channel_w=0.1, source_w=0.3, drain_w=0.3, layer=1):
     
