@@ -25,6 +25,10 @@ from argparse import Namespace
 sys.path.append(r'Q:\qnngds')
 import qnngds.utilities as qu
 
+
+from phidl import set_quickplot_options
+set_quickplot_options(show_ports=True, show_subports=True)
+
 def outline(elements, distance = 1, precision = 1e-4, num_divisions = [1, 1],
             join = 'miter', tolerance = 2, join_first = True,
             max_points = 4000, layer = 0, open_ports=-1, rotate_ports=False):
@@ -631,6 +635,8 @@ def pad_basic(base_size=(200,200), port_size =10, taper_length=100, layer=1):
     P.flatten(single_layer=layer)
     P.add_port(name=1,midpoint=(base_size[0]/2,base_size[1]+taper_length),orientation=90,width=port_size)
     P.add_port(name='center', midpoint=base.center, width=0.1, orientation=0)
+    P.add_port(name='base', midpoint=(base_size[0]/2,base_size[1]), width=port_size/2, orientation=90)
+
     return P
     
 
@@ -990,14 +996,51 @@ def ntron(choke_w=0.03, gate_w=0.2, channel_w=0.1, source_w=0.3, drain_w=0.3, la
     
     D = pg.union(D)
     D.flatten(single_layer=layer)
-    D.add_port(name='g', port=k.ports[1])
-    D.add_port(name='d', port=d.ports[1])
-    D.add_port(name='s', port=s.ports[2])
+    D.add_port(name=3, port=k.ports[1])
+    D.add_port(name=1, port=d.ports[1])
+    D.add_port(name=2, port=s.ports[2])
     D.name = 'nTron'
     D.info = locals()
     return D
 
+def ntron_v2(choke_w=0.04, gate_w=0.5, channel_w=0.3, source_w=1, drain_w=1, choke_offset=1.5, layer=1):
+    
+    D = Device(name='nTron')
+    
+    # choke = pg.optimal_step(gate_w, choke_w, symmetric=True)
+    # k = D<<choke
+    
+    
+    drain = pg.optimal_step(drain_w, channel_w)
+    d = D<<drain
+    d.rotate(-90)
+    d.move(d.ports[2], (0,0))
+    
+    source = pg.optimal_step(channel_w, source_w)
+    s = D<<source
+    s.connect(s.ports[1], d.ports[2])
+    
+    choke = pg.optimal_step(gate_w, choke_w, symmetric=True)
+    k = D<<choke
+    k.move(k.ports[2].center, (-channel_w/2,-choke_offset))
+    
+    tee = D<<pg.tee(size=(drain_w*10, drain_w), stub_size=(drain_w, drain_w*5), taper_type='fillet')
+    tee.connect(tee.ports[2], d.ports[1])
+    
+    ind = D<<pg.snspd(size=(100,50), wire_width=drain_w, wire_pitch=drain_w*2)
+    ind.connect(ind.ports[1], tee.ports[1])
+    
+    D = pg.union(D)
+    D.flatten(single_layer=layer)
+    D.add_port(name=3, port=k.ports[1])
+    D.add_port(name=1, port=ind.ports[2])
+    D.add_port(name=2, port=s.ports[2])
+    D.add_port(name=4, port=tee.ports[3])
+    D.name = 'nTron'
+    D.info = locals()
 
+    return D
+# qp(ntron_v2(choke_offset=3))
 
 def ntron_sharp(choke_w=0.03, choke_l=.5, gate_w=0.2, channel_w=0.1, source_w=0.3, drain_w=0.3, layer=1):
     
@@ -1055,6 +1098,8 @@ def ntron_sharp_shift(choke_w=0.03, choke_l=.5,
     D.add_port(name='d', port=d.ports[1])
     D.add_port(name='s', port=s.ports[2])
     return D 
+
+
 def ntron_sharp_shift_fanout(choke_w=0.03, choke_l=.5, gate_w=0.2, channel_w=0.1, source_w=0.3, drain_w=0.3, routing=1, layer=1, choke_shift=-.5, choke_taper='optimal'):
     
     D = Device('nTron')
@@ -2376,7 +2421,7 @@ def memory_v2(left_side=0.2, right_side=0.4, notch_factor = 0.25):
     bottomhalf = tophalf.mirror(p1 = ls.ports[2].midpoint, p2=rs.ports[1].midpoint)
     bf = D<<bottomhalf
     D = pg.union(D)
-    qp(D)
+    # qp(D)
     
     
     return D
@@ -2480,6 +2525,166 @@ def memory_v3(left_side=0.2, right_side=0.4, notch_factor = None, layer=1, right
 # D = memory_v3(notch_factor=.25, cell_width=5, right_side_length=1)
 # qp(D)
 
+
+def memory_v4(left_width=0.2, right_width=0.4, right_extension = 1, route_width=2, device_layer=1, heater_layer=2):
+    
+    D = Device()
+    
+    top_conn = pg.compass_multi(size=(route_width, route_width), ports={'N':1, 'E':3, 'W':1, 'S':2})
+    TCONN=D<<top_conn
+    
+    port1 = TCONN.ports['N1']
+    
+    top_right = pg.flagpole(size=(route_width, route_width), stub_size=(right_width, right_extension), taper_type='fillet')
+    TRIGHT=D<<top_right
+    TRIGHT.connect(TRIGHT.ports[2], TCONN.ports['W1'].rotate(180))
+    
+    
+    arc_right = pg.arc(radius=right_width, width=right_width, theta=-90, start_angle=90)
+    AR = D<<arc_right
+    AR.connect(AR.ports[1], TRIGHT.ports[1])
+    
+    top_left = pg.flagpole(size=(route_width, route_width), stub_size=(route_width/2, right_width), taper_type='fillet')
+    TLEFT=D<<top_left
+    TLEFT.connect(TLEFT.ports[2], TCONN.ports['N1'].rotate(180))
+    
+
+    
+    D.add_port(name='l', midpoint=(TLEFT.ports[1].midpoint[0], TLEFT.ports[1].midpoint[1]-0.5), orientation=90, width=left_width) ################
+
+    LR = D<<pr.route_basic(TLEFT.ports[1], D.ports['l'], width_type='sine')
+    
+    left_ext = pg.straight(size=(left_width,0.5))##############
+    LEFTEXT = D<<left_ext
+    LEFTEXT.connect(LEFTEXT.ports[2], LR.ports[2])
+    
+    D.add_port(name='r', midpoint=(AR.ports[2].midpoint[0], LEFTEXT.ports[1].midpoint[1]), orientation=90, width=right_width) ################
+    RR = D<<pr.route_basic(AR.ports[2], D.ports['r'], width_type='sine')
+
+    E = pg.union(D)
+    
+    E.mirror(LEFTEXT.ports[1].midpoint, D.ports['r'].midpoint)
+    D<<E
+    
+    DD = pg.copy(D)
+    D = pg.union(D, precision=1e-5, layer=device_layer)
+    
+    notch_size = 0.1/np.sqrt(2) ###########
+    
+    heater_spacing = 1.5 #############
+    heater_width = 0.1
+    
+    
+    
+    notch_bool = True
+    if notch_bool == True:
+        E = Device()
+        notch = pg.rectangle(size=(notch_size, notch_size))
+        N1a = E<<notch
+        N1a.rotate(45)
+        N1a.move(N1a.center, LEFTEXT.ports[1].midpoint)
+        N1a.movex(-left_width/2)
+        
+        N1b = E<<notch
+        N1b.rotate(45)
+        N1b.move(N1b.center, LEFTEXT.ports[1].midpoint)
+        N1b.movex(left_width/2)
+        
+        N2a = E<<notch
+        N2a.rotate(45)
+        N2a.move(N2a.center, DD.ports['r'].midpoint)
+        N2a.movex(-right_width/2)
+        N2a.movey(-heater_spacing/2)
+        
+        N2b = E<<notch
+        N2b.rotate(45)
+        N2b.move(N2b.center, DD.ports['r'].midpoint)
+        N2b.movex(right_width/2)
+        N2b.movey(-heater_spacing/2)
+        
+        D = pg.boolean(D,E, 'A-B', layer=device_layer)
+        
+        
+    heater_bool = True
+    if heater_bool == True:
+        E = Device()
+        heater = pg.straight(size=(heater_width, 1))
+        
+        H1 = E<<heater
+        H1.rotate(90)
+        H1.move(H1.center, LEFTEXT.ports[1].midpoint)
+        
+        H2 = E<<heater
+        H2.rotate(90)
+        H2.move(H2.center, DD.ports['r'].midpoint)
+        H2.movey(-heater_spacing/2)
+        
+        H3 = E<<heater
+        H3.rotate(90)
+        H3.move(H3.center, DD.ports['r'].midpoint)
+        H3.movey(heater_spacing/2)
+        
+        h0 = E<<pg.straight(size=(heater_width*4, heater_width))
+        
+        p0 = (H1.ports[1].midpoint[0]-0.25, H1.ports[2].midpoint[1])
+        p1 = (H1.ports[2].midpoint[0]+0.25, H1.ports[2].midpoint[1])
+        p2 = (H2.ports[1].midpoint[0]-0.25, H2.ports[2].midpoint[1])
+        p3 = (H2.ports[2].midpoint[0]+0.25, H2.ports[2].midpoint[1])
+        p4 = (H3.ports[1].midpoint[0]-0.25, H3.ports[1].midpoint[1])
+        p5 = (H3.ports[2].midpoint[0]+0.25, H3.ports[1].midpoint[1])
+        p6 = (H1.ports[2].midpoint[0]+right_extension+4, H1.ports[2].midpoint[1])
+
+
+        E.add_port(name=0, midpoint=p0, orientation=0, width=heater_width*4)
+        E.add_port(name=1, midpoint=p1, orientation=180, width=heater_width*4)
+        E.add_port(name=2, midpoint=p2, orientation=0, width=heater_width*4)
+        E.add_port(name=3, midpoint=p3, orientation=180, width=heater_width*3)
+        E.add_port(name=4, midpoint=p4, orientation=0, width=heater_width*4)
+        E.add_port(name=5, midpoint=p5, orientation=180, width=heater_width*3)
+        E.add_port(name=6, midpoint=p6, orientation=180, width=heater_width*4)
+        E.add_port(name=7, midpoint=E.ports[4].midpoint+(0,1.5), orientation=180, width=heater_width*4)
+
+        h0.connect(h0.ports[2], E.ports[0].rotate(180))
+        E<<pr.route_sharp(H1.ports[1], E.ports[0].rotate(180))
+        E<<pr.route_sharp(H1.ports[2], E.ports[1])
+        E<<pr.route_sharp(H2.ports[1], E.ports[2])
+        E<<pr.route_sharp(H2.ports[2], E.ports[3])
+        E<<pr.route_sharp(H3.ports[1], E.ports[4])
+        E<<pr.route_sharp(H3.ports[2], E.ports[5])
+
+        E<<pr.route_sharp(E.ports[1].rotate(180), E.ports[2].rotate(180), path_type='Z', length1=0.2, length2=0.2)
+        E<<pr.route_sharp(E.ports[4].rotate(180), E.ports[7], path_type='U', length1=0.3)
+        # E<<pr.route_smooth(E.ports[7].rotate(180), E.ports[8], path_type='Z', length1=1, length2=0.5, radius=0.6)
+        E<<pr.route_sharp(E.ports[5].rotate(180), E.ports[3], path_type='U', length1=0.2)
+
+        # arc1 = E<<pg.arc(radius=heater_spacing/2, width=heater_width*3, theta=180)
+        # arc1.connect(arc1.ports[1], E.ports[3].rotate(180))
+        
+        port3 = h0.ports[1]
+
+        
+        E<<pr.route_sharp(E.ports[7].rotate(180), E.ports[6], path_type='Z', length1=2, length2=0.5)
+        port4 = E.ports[6].rotate(180)
+        E = pg.union(E, layer=heater_layer)
+    D<<E
+    
+    D = pg.union(D, by_layer=True)
+    D.flatten()
+
+    D.add_port(1, port=TCONN.ports['N1'])
+    D.add_port(2, midpoint=(0,D.bbox[0][1]), width=route_width, orientation=-90)
+    D.add_port(3,port=port3)
+    D.add_port(4,port=port4)
+    
+    D.move(H1.center, (0,0))
+    D.flatten()
+
+    return D
+
+# D = memory_v4(right_extension=1)
+# qp(D)
+    
+    
 def memory_heater(left_side=0.1, right_side1=0.1, right_side2=0.1, right_space=1.2, right_sidex = 3, layer=2):
     D = Device('memory_heater')
     
@@ -2554,6 +2759,7 @@ def memory_heater(left_side=0.1, right_side1=0.1, right_side2=0.1, right_space=1
     D.add_port(port=port_list[1], name=2)
     
     return D
+
 
 def memory_heater_dual(left_side=0.1, right_side1=0.1, right_side2=0.1, right_space=1.2, right_sidex = 3, layer=2):
     D = Device('memory_heater_dual')
@@ -2650,5 +2856,5 @@ def nMem(dual_heater=False, layer1=1, layer2=2):
         D.add_port(name = i+1, port=p)
     
     return D
-# qp(nMem(dual_heater=True))
+# qp(nMem(dual_heater=False))
 

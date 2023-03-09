@@ -7,7 +7,7 @@ Created on Sun Mar  7 19:27:05 2021
 
 from __future__ import division, print_function, absolute_import
 import numpy as np
-from phidl import Device
+from phidl import Device, CrossSection, Path
 import phidl.geometry as pg
 import phidl.routing as pr
 from phidl import quickplot as qp
@@ -17,6 +17,8 @@ from datetime import datetime
 import os
 import sys
 from time import sleep
+import phidl.path as pp
+
 from phidl.device_layout import _parse_layer, DeviceReference
 
 from argparse import Namespace    
@@ -795,7 +797,7 @@ def ntron_not(choke_w=0.02, channel_w=0.12, inductor_width=.3, gate_w = 0.3, nw_
     D.flatten(single_layer=layer+1)
     D<<E
     D = pg.union(D, by_layer=True)
-    qp(D)
+    # qp(D)
     D.info = info
     return D
     
@@ -1238,6 +1240,136 @@ def snspd_straight_dogbone(wire_width=1, a1=100, layer=1):
     return D
 
 
+ 
+    
+def single_cell(device_layer = 1, heater_layer=2, loop_adjust=0):
+    D = Device('cell')
+    
+    det = D<<qg.snspd_vert(wire_width = 0.1, wire_pitch = 0.6, size = (10,10), layer = device_layer)
+    
+    taper = pg.optimal_step(0.1, 2, symmetric=True, anticrowding_factor = 1, layer = device_layer)
+    
+    t1 = D<<taper
+    t1.connect(t1.ports[1], det.ports[1])
+    
+    t2 = D<<taper
+    t2.connect(t2.ports[1], det.ports[2])
+    
+    tee = pg.tee(size = (2, 2), stub_size = (1, 2+loop_adjust), taper_type = 'fillet', layer = device_layer)
+    
+    tee1 = D<<tee
+    tee1.connect(tee1.ports[2], t1.ports[2])
+    
+    tee2 = D<<tee
+    tee2.connect(tee2.ports[1], t2.ports[2])
+    
+    rs1 = D<<pr.route_smooth(tee1.ports[3], tee2.ports[3], path_type='U', length1=10, layer=device_layer)
+    port1 = tee1.ports[1]
+    port2 = tee2.ports[2]
+    
+    
+    
+    ht1 = D<<pg.C(width=0.8, size=(6, 3.5), layer=heater_layer)
+    ht1.rotate(0)
+    ht1.move(origin=ht1.center, destination=(15.5+loop_adjust, -5))
+    
+    D.add_port(name=3, midpoint=(0,-20), orientation=0, width=2)
+    D.add_port(name=4, midpoint=(35+loop_adjust,-20), orientation=180, width=2)
+
+    D<<pr.route_smooth(ht1.ports[2], D.ports[3], layer=heater_layer, width = 2)
+    D<<pr.route_smooth(D.ports[4], ht1.ports[1], layer=heater_layer, width = 2)
+    
+    D = pg.union(D, by_layer=True)
+    D.add_port(name=1, port=port1)
+    D.add_port(name=2, port=port2)
+    D.add_port(name=3, midpoint=(0,-20), orientation=0, width=2)
+    D.add_port(name=4, midpoint=(35+loop_adjust,-20), orientation=180, width=2)
+
+    return D
+# qp(single_cell(loop_adjust=1))
+
+def single_bit_array(N, M, spacing=(40, 30), device_layer=1, heater_layer=2):
+    D = Device('1bit_array')
+    info = locals()
+    
+    D_list = []
+    d_list = []
+
+    port_list = []
+    Dsub = Device('column')
+
+    for i in range(0,N):
+        memory = single_cell(device_layer=device_layer, heater_layer=heater_layer)
+        d = Dsub<<memory
+        d.movey(i*spacing[1])
+
+
+    sub_port_list = Dsub.get_ports()
+    sub_port_list = np.reshape(sub_port_list, (N,4))
+    port_list = []
+    for i in range(1, N):
+        con = Dsub<<pr.route_basic(sub_port_list[i-1][0], sub_port_list[i][1], layer=device_layer)
+        # port_list.extend(Dsub.get_ports())
+        # port_list = port_list[:len(port_list)-2]
+    
+    for i in range(0, M):
+        d = D<<Dsub
+        d.movex(i*spacing[0])
+        
+    port_list = D.get_ports()
+    heaterL=[]
+    heaterR=[]
+    colT = []
+    colB = []
+    for p in port_list:
+        if p.name==1:
+            colT.append(p)
+        if p.name==2:
+            colB.append(p)
+        if p.name==3:
+            heaterL.append(p)
+        if p.name==4:
+            heaterR.append(p)
+        
+
+    for i in range(0, N*(M-1)):
+        D<<pr.route_basic(heaterR[i], heaterL[i+N], layer=heater_layer)
+        
+    D.flatten()
+    
+    if N==1:
+        n=1
+    else:
+        n=2*N-1
+        
+    # CREATE OUTLINE (EITHER HERE OR AFTER ADDING ROUTING TO PADS)
+    E = pg.extract(D, layers=[device_layer])
+    colT = np.reshape(colT, (M,n)).T
+    for p, i in zip(colT[N-1], range(0, M)):
+        E.add_port(port=p, name=i+1)
+    colB = np.reshape(colB, (M, n)).T
+    for p, i in zip(colB[0], range(0, M)):
+        E.add_port(port=p, name=M+i+1)
+        
+    # E = pg.outline(E, distance=.1, open_ports=True)
+    # D<<E
+    D = pg.union(D, by_layer=True)
+
+    # ADD PORTS
+    for p, i in zip(colT[N-1], range(0, M)):
+        D.add_port(port=p, name=i+1)
+    for p, i in zip(colB[0], range(0, M)):
+        D.add_port(port=p, name=M+i+1)
+    for p, i in zip(heaterL[0:N], range(0, N)):
+        D.add_port(port=p, name=M*2+i+1)
+    for p, i in zip(heaterR[len(heaterR)-N:len(heaterR)], range(0, N)):
+        D.add_port(port=p, name=M*2+i+1+N)
+    return D
+
+
+# qp(single_bit_array(2,2))
+
+
 def memory_array(N, M, spacing=(8, 5), layer1=1, layer2=2):
     D = Device('memory_array')
     info = locals()
@@ -1249,7 +1381,7 @@ def memory_array(N, M, spacing=(8, 5), layer1=1, layer2=2):
     Dsub = Device('column')
 
     for i in range(0,N):
-        memory = qg.nMem()
+        memory = qg.memory_v4()
         d = Dsub<<memory
         d.movey(i*spacing[1])
 
@@ -1315,6 +1447,11 @@ def memory_array(N, M, spacing=(8, 5), layer1=1, layer2=2):
     for p, i in zip(heaterR[len(heaterR)-N:len(heaterR)], range(0, N)):
         D.add_port(port=p, name=M*2+i+1+N)
     return D
+# D = memory_array(8,8, spacing=(7,6))
+# qp(D)
+
+
+
 
 def tap_array(n, width=1, tap_spacing=100, pad_extension=10, alternate=False, layer=1):
     D = Device('tap_array')
@@ -1345,7 +1482,7 @@ def tap_array(n, width=1, tap_spacing=100, pad_extension=10, alternate=False, la
     D.flatten(single_layer=layer)
     for p, i in zip(port_list, range(0,len(port_list))):
         D.add_port(name=i, port=p)
-    qp(D)
+    # qp(D)
     return D
 
 def via_array(n, via_size=3, via_inset=1, spacing=150, pad_size=(250,250), outline_dis=5, layers=[0,1,2]):
@@ -1522,6 +1659,7 @@ def htron_alt(heater_size=(0.2, 4), channel_size=(1,4), route_width=4, h_layer=1
         D.add_port(name=i, port=p)
 
     return D        
+# qp(htron_alt())
 
 def htron_not(width1=0.5, width2=0.15, length1=8, length2=2, hwidth1=0.15, size=(3,3), route_width=1, dl=3, hl=1):
     D = Device('htron_not')
@@ -1644,7 +1782,7 @@ def htron_notR(width1=0.5, width2=0.15, rlength1=5, rlength2=2, length1=4, lengt
 
 
 
-def htron_notR_alt(heater_size=(0.2, 4), channel_size=(1,4), res1_size=(0.25, 4), route_width=4, h_layer=1, c_layer=2):
+def htron_notR_alt(heater_size=(0.2, 4), channel_size=(1,4), res1_size=(0.25, 4), route_width=4, h_layer=1, c_layer=2, r_layer=1):
     D = Device('htron')
     
     
@@ -1678,9 +1816,9 @@ def htron_notR_alt(heater_size=(0.2, 4), channel_size=(1,4), res1_size=(0.25, 4)
     tee1 = D<<tee
     tee1.connect(tee1.ports[2], channel_taper.ports[2])
     
-    r1 = D<<pg.straight(size=res1_size, layer=h_layer)
+    r1 = D<<pg.straight(size=res1_size, layer=r_layer)
     r1.connect(r1.ports[1], tee1.ports[3])
-    r1pad = pg.straight(size=(route_width,2), layer=h_layer)
+    r1pad = pg.straight(size=(route_width,2), layer=r_layer)
     r1p = D<<r1pad
     r1p.connect(r1p.ports[1], r1.ports[1])
     r2p = D<<r1pad
@@ -1837,3 +1975,419 @@ def htron_andor_snspd(width1=0.5, width2=0.1, length1=4, length2=4, hwidth1=0.15
         
     return D
 
+
+
+def meander_smooth(wire_width=0.1, meander_length=30, desired_length=5, desired_width=None, pitch=None, layer=1):
+    P = Path()
+    
+    if pitch is None:
+        pitch = wire_width*4
+        
+    if desired_length is None:
+        desired_length = meander_length/2
+        
+        
+    r = pitch
+    arc_length = 2*np.pi*r/4
+    
+    target_length = desired_length
+    
+    
+    n = int(target_length/(2*r)) # number of verts in target length
+    # print("Number of verts = " + str(n))
+    nlength = (meander_length-2*n*arc_length-2*r)/(n-1) # meander straight length
+    # print("nlength=" + str(nlength))
+    # nturns = int(np.floor(meander_length/meander_width)-1)
+    # print(nturns)
+    sarc = pp.arc(r, -90)
+    P.append(sarc)
+    straight = pp.straight(nlength/2-r)
+    P.append(straight)
+    i=1
+    for i in range(1,n):
+    # while P.length() < meander_length-nlength:
+        if i>1:
+            straight = pp.straight(nlength)
+            P.append(straight)
+        if np.mod(i,2) > 0:
+            turn = pp.arc(radius=pitch, angle=180)
+            P.append(turn)
+        else:
+            turn = pp.arc(radius=pitch, angle=-180)
+            P.append(turn)
+        i=i+1
+        j=i
+    straight = pp.straight(nlength/2-r)
+    P.append(straight)
+    # print("j = "+str(j))
+    if np.mod(j,2)!=0:
+        sarc = pp.arc(r, 90)
+        P.append(sarc)
+    else:
+        sarc = pp.arc(r, -90)
+        P.append(sarc)
+
+    tail_length = meander_length-P.length()
+    # print("Path_length="+str(P.length()))
+    # print("tail_length="+str(tail_length))
+
+    if tail_length < 0:
+        raise 'error'
+
+    D = P.extrude(wire_width, layer=layer)    
+    D.add_port(0, midpoint=P.points[0], orientation=180, width = wire_width)
+    D.add_port(1, midpoint=P.points[-1], orientation=0, width = wire_width)
+    t1 = D<<pg.straight(size=(wire_width, tail_length/2), layer=layer)
+    t1.connect(t1.ports[1], D.ports[0])
+    t2 = D<<pg.straight(size=(wire_width, tail_length/2), layer=layer)
+    t2.connect(t2.ports[1], D.ports[1])
+    D = pg.union(D, layer=layer)
+    D.add_port(1, port=t1.ports[2])
+    D.add_port(2, port=t2.ports[2])
+    D.move(D.ports[1], (0,0))
+    
+    # print("sum="+str(P.length()+tail_length))
+    return D
+# D=Device()
+# D<<meander_smooth(meander_length=120, desired_length=5) 
+# D<<meander_smooth(meander_length=120, desired_length=10) 
+# D<<meander_smooth(meander_length=120, desired_length=25) 
+# D.distribute(direction='y', spacing=1)
+# D.align(alignment='x')
+# qp(D)
+
+# E = Device()
+# E<<meander_smooth(meander_length=120, desired_length=5) 
+# E<<meander_smooth(meander_length=60, desired_length=5) 
+# E<<meander_smooth(meander_length=30, desired_length=5) 
+# E.distribute(direction='y', spacing=1)
+
+# F = Device()
+# F<<D
+# F<<E
+# F.distribute(direction='x', spacing=10)
+# qp(F)
+
+
+
+def die_edge(size0=300, size1 = (7500,7500), layer=0):
+    D = Device()
+    
+    n = int(size1[0]/size0)
+    ploc = pg.compass_multi(size=size1, ports={'N': n, 'E': n, 'W': n, 'S': n})
+    for p in ploc.ports:
+        pad = pg.straight(size=(150,300), layer=2)
+        pp = D<<pad
+        pp.connect(pp.ports[1], ploc.ports[p])
+    
+    D<<qg.alignment_marks(locations = ((-4000, -4000), (4000, 4000), (-4000, 4000), (4000, -4000)))
+        
+    print(len(ploc.ports))
+    D.flatten(single_layer=layer)
+    return D
+
+def die_row(size0=(150,300), size1 = (7500,300), layer=0):
+    D = Device()
+    
+    n = int(size1[0]/size0[1])
+    ploc = pg.compass_multi(size=size1, ports={'N': n, 'S': n})
+    for p in ploc.ports:
+        pad = pg.straight(size=size0)
+        pp = D<<pad
+        pp.connect(pp.ports[1], ploc.ports[p])
+    
+    E = Device()
+    for i in range(0,int(0.5*size1[0]/(size0[0]*2+size1[1]))+2):
+        E<<D
+    E.distribute(direction='y')
+    E.move(E.center, (0,0))
+    E<<qg.alignment_marks(locations = ((-4000, -4000), (4000, 4000), (-4000, 4000), (4000, -4000)))
+        
+    print(len(ploc.ports)*i)
+    E.flatten(single_layer=layer)
+    return E
+
+
+def die_field(size0=(450,600), size1 = (7500,7500), layer=0):
+    
+    D = Device()
+    n = int(size1[0]/size0[1])
+    ploc = pg.compass_multi(size=size0, ports={'N': 3, 'W':6, 'S': 3})
+    for p in ploc.ports:
+        if ploc.ports[p].orientation == 0 or ploc.ports[p].orientation == 180:
+            pad = pg.straight(size=(75,300))
+            pp = D<<pad
+            pp.connect(pp.ports[1], ploc.ports[p])
+        else:
+            pad = pg.straight(size=(100,300))
+            pp = D<<pad
+            pp.connect(pp.ports[1], ploc.ports[p])
+    
+
+    x = int(size1[0]/(D.bbox[1][0]-D.bbox[0][0]))-2
+    y = int(size1[1]/(D.bbox[1][1]*2))
+
+    E=Device()
+    D_list = np.tile(D, x*y)
+    E << pg.grid(D_list, spacing=(200,100), shape=(x,y))
+    E.move(E.center, (0,0))
+    E<<qg.alignment_marks(locations = ((-4000, -4000), (4000, 4000), (-4000, 4000), (4000, -4000)))
+
+    print(x*y)
+    return E
+
+
+def die_cell(size=(500,500), pad_size=(150,200), ground_width=250, ports = {'N':1, 'E':1, 'W':1, 'S':1}, ports_ground=['E','S'], text1='A', text2='1'):
+
+    D = Device()
+    
+    
+    cell = pg.rectangle(size=size)
+    ground = D<<pg.outline(cell, distance=ground_width)
+    
+    padloc = D<<pg.compass_multi(size=size, ports=ports)
+    padloc.move(padloc.center, ground.center)
+    padloc_list = list(padloc.ports.keys())
+    D.remove(ground)
+    E = Device()
+    
+    port_list=[]
+    for p in padloc_list:
+        pad = E<<qg.pad_basic(base_size=pad_size, port_size=10, taper_length=100)
+        pad.connect(pad.ports['base'], padloc.ports[p])
+        port_list.append(pad.ports['base'])
+        
+        cardstr = p[0]
+        # if any(cardstr != g for g in ports_ground):
+        boolcheck = any(p[0] == g for g in ports_ground)
+        if not boolcheck:
+            padOut = pg.outline(pad, distance=10)
+            ground = pg.boolean(ground, padOut, 'A-B')
+
+    D<<E
+    D<<ground
+    D.remove(padloc)
+    
+    E=Device()
+    markerOpen = E<<pg.rectangle(size=(150,150))
+    markerOpen.move(markerOpen.center, D.bbox[0]+ground_width/2)
+    markerOpen = E<<pg.rectangle(size=(150,150))
+    markerOpen.move(markerOpen.center, D.bbox[1]-ground_width/2)
+    markerOpen = E<<pg.rectangle(size=(150,150))
+    markerOpen.move(markerOpen.center, (D.bbox[0][0]+ground_width/2, D.bbox[1][1]-ground_width/2))
+    markerOpen = E<<pg.rectangle(size=(150,150))
+    markerOpen.move(markerOpen.center, (D.bbox[1][0]-ground_width/2, D.bbox[0][0]+ground_width/2))
+    
+    labelOpen = E<<pg.rectangle(size=(300, 50))
+    labelOpen.move(labelOpen.center, (D.center[0], D.bbox[0][0]+30))
+    D = pg.boolean(D,E,'A-B')
+
+    marker = D<<pg.cross(length=150, width=5)
+    marker.move(marker.center, D.bbox[0]+ground_width/2)
+    marker = D<<pg.cross(length=150, width=5)
+    marker.move(marker.center, D.bbox[1]-ground_width/2)
+    marker = D<<pg.cross(length=150, width=5)
+    marker.move(marker.center,(D.bbox[0][0]+ground_width/2, D.bbox[1][1]-ground_width/2))
+    marker = D<<pg.cross(length=150, width=5)
+    marker.move(marker.center, (D.bbox[1][0]-ground_width/2, D.bbox[0][0]+ground_width/2))
+
+    label = D<<pg.text(text1+text2, size=40, justify="center")
+    label.move(label.center, labelOpen.center)
+    
+    
+    
+    D = pg.union(D)
+    for p, i in zip(port_list, range(1,len(port_list)+1)):
+        D.add_port(i, port=p)
+
+    D.move(D.center, (0,0))
+    D.flatten()
+    return D
+
+
+def die_cell_v2(size=(2500,2500), size2=(500,500), pad_size=(150,200), ground_width=250, ports = {'N':1, 'E':1, 'W':1, 'S':1}, ports_ground=['E','S'], text1='A', text2='1'):
+
+    D = Device()
+    
+    
+    cell = pg.rectangle(size=size)
+    ground = D<<pg.outline(cell, distance=ground_width)
+    
+    padloc = D<<pg.compass_multi(size=size, ports=ports)
+    padloc.move(padloc.center, ground.center)
+    padloc_list = list(padloc.ports.keys())
+    
+    fieldloc = pg.compass_multi(size=size2, ports=ports)
+    fieldloc.move(fieldloc.center, ground.center)
+    fieldloc_ports = list(fieldloc.ports.values())
+    D.remove(fieldloc)
+    D.remove(ground)
+    E = Device()
+    
+    port_list=[]
+    for p, i in zip(padloc_list, range(0,len(fieldloc_ports))):
+        fieldloc_ports[i].width = 10
+        pad = E<<pg.straight(size=pad_size)
+        pad.connect(pad.ports[1], padloc.ports[p])
+        
+        pad2 = E<<pg.straight(size=(20,30))
+        pad2.connect(pad2.ports[1], fieldloc_ports[i])
+        E<<pr.route_sharp(pad.ports[1], pad2.ports[2], path_type='Z', length1=30, length2=10)
+        pad2.ports[2].width=20
+        port_list.append(pad2.ports[2].rotate(180))
+        
+        cardstr = p[0]
+        # if any(cardstr != g for g in ports_ground):
+        boolcheck = any(p[0] == g for g in ports_ground)
+        if not boolcheck:
+            padOut = pg.outline(pad, distance=10)
+            ground = pg.boolean(ground, padOut, 'A-B')
+
+    D<<E
+    D<<ground
+    D.remove(padloc)
+    
+    E=Device()
+    markerOpen = E<<pg.rectangle(size=(150,150))
+    markerOpen.move(markerOpen.center, D.bbox[0]+ground_width/2)
+    markerOpen = E<<pg.rectangle(size=(150,150))
+    markerOpen.move(markerOpen.center, D.bbox[1]-ground_width/2)
+    markerOpen = E<<pg.rectangle(size=(150,150))
+    markerOpen.move(markerOpen.center, (D.bbox[0][0]+ground_width/2, D.bbox[1][1]-ground_width/2))
+    markerOpen = E<<pg.rectangle(size=(150,150))
+    markerOpen.move(markerOpen.center, (D.bbox[1][0]-ground_width/2, D.bbox[0][0]+ground_width/2))
+    
+    labelOpen = E<<pg.rectangle(size=(300, 50))
+    labelOpen.move(labelOpen.center, (D.center[0], D.bbox[0][0]+30))
+    D = pg.boolean(D,E,'A-B')
+
+    marker = D<<pg.cross(length=150, width=5)
+    marker.move(marker.center, D.bbox[0]+ground_width/2)
+    marker = D<<pg.cross(length=150, width=5)
+    marker.move(marker.center, D.bbox[1]-ground_width/2)
+    marker = D<<pg.cross(length=150, width=5)
+    marker.move(marker.center,(D.bbox[0][0]+ground_width/2, D.bbox[1][1]-ground_width/2))
+    marker = D<<pg.cross(length=150, width=5)
+    marker.move(marker.center, (D.bbox[1][0]-ground_width/2, D.bbox[0][0]+ground_width/2))
+
+    label = D<<pg.text(text1+text2, size=40, justify="center")
+    label.move(label.center, labelOpen.center)
+    
+    
+    
+    D = pg.union(D)
+    for p, i in zip(port_list, range(1,len(port_list)+1)):
+        D.add_port(i, port=p)
+
+    D.move(D.center, (0,0))
+    D.flatten()
+    return D
+
+def die_cell_v3(size=(1500,1500), size2=(500,500), pad_size=(150,250), ground_width=500, ports = {'N':1, 'E':1, 'W':1, 'S':1}, ports_ground=['E','S'], text1='A', text2='1'):
+
+    D = Device()
+    
+    
+    cell = pg.rectangle(size=size)
+    ground = D<<pg.outline(cell, distance=ground_width)
+    
+    padloc = D<<pg.compass_multi(size=size, ports=ports)
+    padloc.move(padloc.center, ground.center)
+    padloc_list = list(padloc.ports.keys())
+    # print(padloc.ports)
+    fieldloc = pg.compass_multi(size=size2, ports=ports)
+    fieldloc.move(fieldloc.center, ground.center)
+    fieldloc_ports = list(fieldloc.ports.values())
+    D.remove(fieldloc)
+    D.remove(ground)
+    E = Device()
+
+    
+    port_list=[]
+    for p, i in zip(padloc_list, range(0,len(fieldloc_ports))):
+        fieldloc_ports[i].width = 10
+        pad = E<<pg.straight(size=pad_size)
+        pad.connect(pad.ports[1], padloc.ports[p])
+        
+        pad2 = E<<pg.straight(size=(20,30))
+        pad2.connect(pad2.ports[1], fieldloc_ports[i])
+        E<<pr.route_quad(pad.ports[1], pad2.ports[2])
+        pad2.ports[2].width=20
+        port_list.append(pad2.ports[2].rotate(180))
+        
+        cardstr = p[0]
+        # if any(cardstr != g for g in ports_ground):
+        boolcheck = any(p[0] == g for g in ports_ground)
+        if not boolcheck:
+            padOut = pg.outline(pad, distance=10)
+            ground = pg.boolean(ground, padOut, 'A-B')
+
+    D<<E
+    D<<ground
+    D.remove(padloc)
+    
+    E=Device()
+    markerOpen = E<<pg.rectangle(size=(150,150))
+    markerOpen.move(markerOpen.center, D.bbox[0]+ground_width/2)
+    markerOpen = E<<pg.rectangle(size=(150,150))
+    markerOpen.move(markerOpen.center, D.bbox[1]-ground_width/2)
+    markerOpen = E<<pg.rectangle(size=(150,150))
+    markerOpen.move(markerOpen.center, (D.bbox[0][0]+ground_width/2, D.bbox[1][1]-ground_width/2))
+    markerOpen = E<<pg.rectangle(size=(150,150))
+    markerOpen.move(markerOpen.center, (D.bbox[1][0]-ground_width/2, D.bbox[0][0]+ground_width/2))
+    
+    labelOpen = E<<pg.rectangle(size=(300, 50))
+    labelOpen.move(labelOpen.center, (D.center[0], D.bbox[0][0]+30))
+    D = pg.boolean(D,E,'A-B')
+
+    marker = D<<pg.cross(length=150, width=5)
+    marker.move(marker.center, D.bbox[0]+ground_width/2)
+    marker = D<<pg.cross(length=150, width=5)
+    marker.move(marker.center, D.bbox[1]-ground_width/2)
+    marker = D<<pg.cross(length=150, width=5)
+    marker.move(marker.center,(D.bbox[0][0]+ground_width/2, D.bbox[1][1]-ground_width/2))
+    marker = D<<pg.cross(length=150, width=5)
+    marker.move(marker.center, (D.bbox[1][0]-ground_width/2, D.bbox[0][0]+ground_width/2))
+
+    label = D<<pg.text(text1+text2, size=40, justify="center")
+    label.move(label.center, labelOpen.center)
+    
+    nPorts = []
+    ePorts = []
+    wPorts = []
+    sPorts = []
+    
+    for p in port_list:
+        if p.orientation == 270:
+            nPorts.append(p)
+        if p.orientation == 0:
+            ePorts.append(p)
+        if p.orientation == 180:
+            wPorts.append(p)
+        if p.orientation == 90:
+            sPorts.append(p)
+
+    port_list2=[]
+    port_list2.extend(nPorts)
+    port_list2.extend(sPorts)
+    port_list2.extend(ePorts)
+    port_list2.extend(wPorts)
+
+    # print(port_list[[0]])
+    D = pg.union(D)
+    for p, i in zip(port_list2, range(1,len(port_list2)+1)):
+        D.add_port(i, port=p)
+
+    D.move(D.center, (0,0))
+    D.flatten()
+    # qp(D)
+    return D
+
+# a = die_cell_v3(ports={'N':3, 'E':3, 'W':3, 'S':3})
+
+# qp(die_cell_v2(size=(2500,2500), ports={'N':8, 'E':8, 'W':8, 'S':8}))
+
+
+
+def basic_die(text1='A', text2='1', **kwargs):
+    return pg.basic_die(die_name=text1+text2, **kwargs)
