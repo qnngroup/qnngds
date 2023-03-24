@@ -2179,7 +2179,7 @@ def die_cell(size=(500,500), pad_size=(150,200), ground_width=250, ports = {'N':
     markerOpen.move(markerOpen.center, (D.bbox[1][0]-ground_width/2, D.bbox[0][0]+ground_width/2))
     
     labelOpen = E<<pg.rectangle(size=(300, 50))
-    labelOpen.move(labelOpen.center, (D.center[0], D.bbox[0][0]+30))
+    labelOpen.move(labelOpen.center, (D.center[0], markerOpen.center[1]))
     D = pg.boolean(D,E,'A-B')
 
     marker = D<<pg.cross(length=150, width=5)
@@ -2337,7 +2337,7 @@ def die_cell_v3(size=(1500,1500), size2=(500,500), pad_size=(150,250), ground_wi
     markerOpen.move(markerOpen.center, (D.bbox[1][0]-ground_width/2, D.bbox[0][0]+ground_width/2))
     
     labelOpen = E<<pg.rectangle(size=(300, 50))
-    labelOpen.move(labelOpen.center, (D.center[0], D.bbox[0][0]+30))
+    labelOpen.move(labelOpen.center, (D.center[0], markerOpen.center[1]))
     D = pg.boolean(D,E,'A-B')
 
     marker = D<<pg.cross(length=150, width=5)
@@ -2385,7 +2385,7 @@ def die_cell_v3(size=(1500,1500), size2=(500,500), pad_size=(150,250), ground_wi
 
 # a = die_cell_v3(ports={'N':3, 'E':3, 'W':3, 'S':3})
 
-# qp(die_cell_v2(size=(2500,2500), ports={'N':8, 'E':8, 'W':8, 'S':8}))
+# qp(die_cell_v3(size=(2500,2500), ports={'N':8, 'E':8, 'W':8, 'S':8}))
 
 
 

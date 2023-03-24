@@ -329,8 +329,10 @@ def alignment_marks(locations = ((-3500, -3500), (3500, 3500), (-3500, 3500), (3
         alignMark = marks.add_ref(alignMARK)
         alignMark.move(origin=alignMark.center,destination=locations[i])
         
+    marks = pg.union(marks, layer=layer)
     marks.flatten()
     return marks
+
 
 def etch_square(layers=[1], size=(1500,1500), location=(2500, 1000), outline=None):
     D = Device('etch_square')
@@ -979,7 +981,7 @@ def ntron(choke_w=0.03, gate_w=0.2, channel_w=0.1, source_w=0.3, drain_w=0.3, la
     
     D = Device(name='nTron')
     
-    choke = pg.optimal_step(gate_w, choke_w, symmetric=True)
+    choke = pg.optimal_step(gate_w, choke_w, symmetric=True, num_pts=100)
     k = D<<choke
     
     channel = pg.compass(size=(channel_w, choke_w))
