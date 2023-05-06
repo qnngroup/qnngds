@@ -1017,12 +1017,12 @@ def ntron_v2(choke_w=0.04, gate_w=0.5, channel_w=0.3, source_w=1, drain_w=1, cho
     d = D<<drain
     d.rotate(-90)
     d.move(d.ports[2], (0,0))
-    
+        
     source = pg.optimal_step(channel_w, source_w)
     s = D<<source
     s.connect(s.ports[1], d.ports[2])
     
-    choke = pg.optimal_step(gate_w, choke_w, symmetric=True)
+    choke = pg.optimal_step(gate_w, choke_w, symmetric=True, num_pts=150)
     k = D<<choke
     k.move(k.ports[2].center, (-channel_w/2,-choke_offset))
     
@@ -1042,7 +1042,7 @@ def ntron_v2(choke_w=0.04, gate_w=0.5, channel_w=0.3, source_w=1, drain_w=1, cho
     D.info = locals()
 
     return D
-# qp(ntron_v2(choke_offset=3))
+# qp(ntron_v2(choke_w=0.05, choke_offset=3))
 
 def ntron_sharp(choke_w=0.03, choke_l=.5, gate_w=0.2, channel_w=0.1, source_w=0.3, drain_w=0.3, layer=1):
     
@@ -2378,6 +2378,181 @@ def via_round(width=3, inset=2, layers=[0, 1, 2], outline=False):
 #     return D
 
 
+def _via_iterable(
+    via_spacing, wire_width, wiring1_layer, wiring2_layer, via_layer, via_width
+):
+    """Helper function for test_via
+
+    Parameters
+    ----------
+    via_spacing : int or float
+        Distance between vias.
+    wire_width : int or float
+        The width of the wires.
+    wiring1_layer : int
+        Specific layer to put the top wiring on.
+    wiring2_layer : int
+        Specific layer to put the bottom wiring on.
+    via_layer : int
+        Specific layer to put the vias on.
+    via_width : int or float
+        Diameter of the vias.
+
+    Returns
+    -------
+    VI : Device
+
+    """
+    VI = Device("test_via_iter")
+    wire1 = VI.add_ref(pg.compass(size=(via_spacing, wire_width), layer=wiring1_layer))
+    wire2 = VI.add_ref(pg.compass(size=(via_spacing, wire_width), layer=wiring2_layer))
+    via1 = VI.add_ref(pg.compass(size=(via_width, via_width), layer=via_layer))
+    via2 = VI.add_ref(pg.compass(size=(via_width, via_width), layer=via_layer))
+    wire1.connect(port="E", destination=wire2.ports["W"], overlap=wire_width)
+    via1.connect(
+        port="W", destination=wire1.ports["E"], overlap=(wire_width + via_width) / 2
+    )
+    via2.connect(
+        port="W", destination=wire2.ports["E"], overlap=(wire_width + via_width) / 2
+    )
+    VI.add_port(name="W", port=wire1.ports["W"])
+    VI.add_port(name="E", port=wire2.ports["E"])
+    VI.add_port(
+        name="S",
+        midpoint=[wire2.xmax - wire_width / 2, -wire_width / 2],
+        width=wire_width,
+        orientation=-90,
+    )
+    VI.add_port(
+        name="N",
+        midpoint=[wire2.xmax - wire_width / 2, wire_width / 2],
+        width=wire_width,
+        orientation=90,
+    )
+
+    return VI
+
+
+def test_via(
+    num_vias=100,
+    wire_width=10,
+    via_width=15,
+    via_spacing=40,
+    max_y_spread = 300,
+    wiring1_layer=1,
+    wiring2_layer=2,
+    via_layer=3,
+):
+    """Via chain test structure
+
+    Parameters
+    ----------
+    num_vias : int
+        The total number of requested vias (must be an even number).
+    wire_width : int or float
+        The width of the wires.
+    via_width : int or float
+        Diameter of the vias.
+    via_spacing : int or float
+        Distance between vias.
+    pad_size : array-like[2]
+        (width, height) of the pads.
+    min_pad_spacing : int or float
+        Defines the minimum distance between the two pads.
+    pad_layer : int
+        Specific layer to put the pads on.
+    wiring1_layer : int
+        Specific layer to put the top wiring on.
+    wiring2_layer : int
+        Specific layer to put the bottom wiring on.
+    via_layer : int
+        Specific layer to put the vias on.
+
+    !! Design rules : wire_width - via_width > 0.6um !!
+    (The via should be smaller than the route)
+    
+    
+
+    Returns
+    -------
+    VR : Device
+        A Device containing the test via structures.
+
+    Usage
+    -----
+    Call via_route_test_structure() by indicating the number of vias you want
+    drawn. You can also change the other parameters however if you do not
+    specifiy a value for a parameter it will just use the default value
+    Ex::
+
+        via_route_test_structure(num_vias=54)
+
+    - or -::
+
+        via_route_test_structure(num_vias=12, pad_size=(100,100),wire_width=8)
+
+    ex: via_route(54, min_pad_spacing=300)
+    """
+    VR = Device("test_via")
+    
+    nub = VR.add_ref(pg.compass(size=(3 * wire_width, wire_width), layer=wiring1_layer))
+    #nub_overlay = VR.add_ref(pg.compass(size=(3 * wire_width, wire_width), layer=wiring1_layer))
+    
+    # Square at the start of the chain
+    head = VR.add_ref(pg.compass(size=(wire_width, wire_width), layer=wiring1_layer))
+    #head_overlay = VR.add_ref(pg.compass(size=(wire_width, wire_width), layer=wiring1_layer))
+    nub.ymax = wire_width/2
+    nub.xmin = 0
+    #nub_overlay.ymax = wire_width/2
+    #nub_overlay.xmin = 0
+    head.connect(port="W", destination=nub.ports["E"])
+    #head_overlay.connect(port="W", destination=nub_overlay.ports["E"])
+    #pad1_overlay.xmin = pad1.xmin
+    #pad1_overlay.ymin = pad1.ymin
+
+    old_port = head.ports["N"]
+    count = 0
+    width_via_iter = 2 * via_spacing - 2 * wire_width
+
+    current_width = 3 * wire_width + wire_width  # width of nub and 1 overlap
+    obj_old = head
+    obj = head
+    via_iterable = _via_iterable(
+        via_spacing, wire_width, wiring1_layer, wiring2_layer, via_layer, via_width
+    )
+    
+    while (count + 2) <= num_vias:
+        obj = VR.add_ref(via_iterable)
+        obj.connect(port="W", destination=old_port, overlap=wire_width)
+        old_port = obj.ports["E"]
+        # Check if the vias chain reaches the max height
+        if obj.ymax > max_y_spread/2:
+            obj.connect(port="W", destination=obj_old.ports["S"], overlap=wire_width)
+            old_port = obj.ports["S"]
+            current_width += width_via_iter
+
+        elif obj.ymin < -max_y_spread/2:
+            obj.connect(port="W", destination=obj_old.ports["N"], overlap=wire_width)
+            old_port = obj.ports["N"]
+            current_width += width_via_iter
+        count = count + 2
+        obj_old = obj
+        
+    # Square at the end
+    tail = VR.add_ref(pg.compass(
+        size=(wire_width, wire_width),
+        layer=wiring1_layer,
+        )
+    )
+    
+    tail.connect(port="W", destination=obj.ports["S"], overlap=wire_width)
+
+    VR.add_port(name=1, midpoint=(obj.center[0] + 2*via_spacing+wire_width, 0), width=wire_width, orientation = 180)
+    VR<<pr.route_smooth(port1=VR.ports[1], port2=obj.ports["E"], radius=2*wire_width, layer = wiring1_layer)
+    VR.add_port(name=2, port=nub.ports["W"])
+    VR.ports[1].orientation=0 # Change the orientation otherwize won't connect to pads    
+
+    return VR
     
 def memory_v2(left_side=0.2, right_side=0.4, notch_factor = 0.25):
     D = Device('nMem')
