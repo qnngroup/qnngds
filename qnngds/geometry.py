@@ -19,7 +19,7 @@ import os
 import sys
 from time import sleep
 from phidl.device_layout import _parse_layer, DeviceReference
-
+import math
 from argparse import Namespace    
 
 sys.path.append(r'Q:\qnngds')
@@ -3035,3 +3035,104 @@ def nMem(dual_heater=False, layer1=1, layer2=2):
     return D
 # qp(nMem(dual_heater=False))
 
+
+def nanoSQUID(cwidth=0.05, width=1, loop_size = (2,10), layer=1):
+    D = Device('nanoSQUID')
+    
+    hairpin = pg.optimal_hairpin(width=width, pitch=loop_size[0], length=loop_size[1])
+    
+    hp1 = D<<hairpin
+    hp2 = D<<hairpin
+    
+    hp1.connect(hp1.ports[1], hp2.ports[2])
+    D.move(D.center, (0,0))
+    D.rotate(-90)
+    h = (width/2-cwidth/2)
+    hp1.movey(h)
+    hp2.movey(-h)
+    
+    D.add_port('left', midpoint=(hp1.ports[1].midpoint[0], 0), orientation=90, width=cwidth)
+    D.add_port('right', midpoint=(hp2.ports[1].midpoint[0], 0), orientation=90, width=cwidth)
+    D.add_port('top', midpoint=(0, D.bbox[1][1]), width=width+loop_size[0], orientation=90)
+    D.add_port('bottom', midpoint=(0, D.bbox[0][1]), width=width+loop_size[0], orientation=-90)
+
+    D<<pr.route_sharp(hp1.ports[1], D.ports['left'])
+    D<<pr.route_sharp(hp2.ports[2], D.ports['left'].rotate(180))
+    D<<pr.route_sharp(hp1.ports[2], D.ports['right'])
+    D<<pr.route_sharp(hp2.ports[1], D.ports['right'].rotate(180))
+    
+    tee = pg.tee(size=(loop_size[1]/2, width), stub_size=(width, 3*width), taper_type='fillet')
+    
+    t1 = D<<tee
+    t1.connect(t1.ports[2], hp1.ports[2].rotate(180))
+    t2 = D<<tee
+    t2.connect(t2.ports[1], hp2.ports[1].rotate(180))
+    
+    port_list = [D.ports['top'], D.ports['bottom'], t1.ports[3], t2.ports[3]]
+    
+    D = pg.union(D, by_layer=True)
+    D.flatten(single_layer=layer)
+    
+    for p, i in zip(port_list, range(0, len(port_list))):
+        D.add_port(name = i+1, port=p)
+
+    return D
+
+def clover(cwidth=0.03, cwidth2=0.01, width=1, layer=1):
+    D = Device('clover')
+    
+    step = pg.optimal_step(cwidth, width, symmetric='True', num_pts=200)
+    s1 = D<<step
+    s1.move(s1.ports[1], (0,0))
+    s1.rotate(90)
+    
+    s2 = D<<step
+    s2.connect(s2.ports[1], s1.ports[1])
+    
+    step2 = pg.optimal_step(cwidth2, width, symmetric='True', num_pts=200)
+    r1 = D<<step2
+    r1.move(r1.ports[1], (cwidth/2+.002, 0))
+    r2 = D<<step2
+    r2.rotate(180)
+    r2.move(r2.ports[1], (-cwidth/2-.002, 0))
+    
+    port_list = [s1.ports[2], s2.ports[2], r1.ports[2], r2.ports[2]]
+    
+    D = pg.union(D, by_layer=True)
+    D.flatten(single_layer=layer)
+    
+    for p, i in zip(port_list, range(0, len(port_list))):
+        D.add_port(name = i+1, port=p)
+        
+    return D
+    
+
+def nw_diode(width_ch = 0.5,
+             angle = 90,
+             length = 5,
+             routing = 1,
+             layer = 1):
+
+    D = Device('nw_diode')
+    info = locals()
+    
+    height = routing-width_ch
+    base = 2*height*math.tan((angle/180)*math.pi/2)
+    
+    nw = pg.taper(length = length, width1 = routing, width2 = routing, port = None, layer = 0) 
+    nw.rotate(90)
+    nw.center=(0,0)
+    tr = pg.taper(length = height, width1 = base, width2 = 0.0001, port = None, layer = 0)
+    tr.move((-routing/2,0))
+    
+    b = D<<pg.boolean(A = nw, B = tr, operation = 'not', precision = 1e-6,
+               num_divisions = [1,1], layer = 0)
+        
+    D = pg.union(D)
+    D.add_port(port = nw.ports[2], name = 1)
+    D.add_port(port = nw.ports[1], name = 2)
+    D.flatten(single_layer=layer)
+    
+
+    D.info = info
+    return D
