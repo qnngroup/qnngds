@@ -2,7 +2,34 @@
 
 Toolbox built on top of phidl for device design in the QNN group. 
 
-## Motivation
+# Installation
+
+```
+git clone https://github.com/qnngroup/qnngds
+cd qnngds
+python3 -m build
+```
+
+This will create a wheel which can be installed anywhere (systemwide or preferrably in a virtualenv)
+
+Preferrably, install with `pip` in a virtualenv that is local to your project
+```
+python3 -m venv ./path/to/venv
+source ./path/to/venv/bin/activate
+pip install <repo-dir>/dist/qnngds-<version>-py3-none-any.whl
+```
+
+Or using `conda`
+```
+conda create --name <my-env> [python=<optional-python-version>]
+conda activate <my-env>
+pip install --no-deps <repo-dir>/dist/qnngds-<version>-py3-none-any.whl
+```
+
+With `conda`, the dependencies will not automatically be installed, since installing with `pip` in a `conda` environment is bad practice as it circumvents the `conda` dependency management system and could potentially clobber packages which were pulled in by previous conda dependency.
+
+# Usage
+
 Design is the first step in our experimental work and our design process can dictate the quality of our research. 
 This toolbox will not improve your devices designs but hopes to add functions that improve how we collect and save device parameters. 
 
@@ -61,7 +88,7 @@ Links between sections: **Backward** *Forward*
 - *Devices should be compled into a list for orginization.*
 
 ### Orginization
-- **Orginization functions should work with a list of functions **
+- **Orginization functions should work with a list of functions**
 - There should be different functions for arranging devices using static spacing or dynamic spacing to reduce area. 
 - Names could be created here based on location/grouping
 - *Pass layout and parameters to save*
@@ -76,6 +103,4 @@ Links between sections: **Backward** *Forward*
 	- what parameters are worth saving.... how to specify. 
 - Location for files created on network
 - Protections for sample names (ask as input)
-
-
 
