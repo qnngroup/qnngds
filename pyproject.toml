@@ -1,0 +1,26 @@
+[build-system]
+requires = [ "setuptools>=61.0" ]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qnngds"
+version = "0.0.1"
+authors = [
+  { name="Owen Medeiros", email="omedeiro@mit.edu" },
+  { name="Reed Foster", email="reedf@mit.edu" },
+]
+description = "QNN GDS Libs"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+  "wheel",
+  "phidl",
+  "numpy",
+  "matplotlib",
+  "scipy",
+]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]

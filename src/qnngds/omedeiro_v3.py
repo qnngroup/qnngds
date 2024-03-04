@@ -11,7 +11,6 @@ from phidl import Device, CrossSection, Path
 import phidl.geometry as pg
 import phidl.routing as pr
 from phidl import quickplot as qp
-# import colang as mc
 import string
 from datetime import datetime
 import os
@@ -23,11 +22,6 @@ from phidl.device_layout import _parse_layer, DeviceReference
 
 from argparse import Namespace    
 
-
-
-sys.path.append(r'Q:\qnnpy')
-sys.path.append(r'Q:\qnngds')
-import qnnpy.functions.functions as qf
 import qnngds.utilities as qu
 import qnngds.geometry as qg
    
