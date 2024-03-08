@@ -31,7 +31,7 @@ sys.path.append(r'Q:\qnnpy')
 sys.path.append(r'Q:\qnngds')
 import qnnpy.functions.functions as qf
 import qnngds.utilities as qu
-import qnngds.geometry as qg
+import qnngds.archives.geometry as qg
 
 
     

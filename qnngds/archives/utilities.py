@@ -341,8 +341,8 @@ def save_gds(device, filename, prop_dict=None, path=None):
         full_path = os.getcwd()
         device.write_gds(filename)
         
-    if prop_dict:
-        qf.output_log(prop_dict, full_path)
+    # if prop_dict:
+    #     qf.output_log(prop_dict, full_path)
     
     
 

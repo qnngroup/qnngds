@@ -578,7 +578,7 @@ def place_remaining_devices(devices_to_place:      List[Device],
 
 
 
-### Useful very common cells to be used as test vehicles during and after fab
+### Useful very common structures to be used as test vehicles during and after fab
 
 def alignement_mark(layers: List[int] = [1, 2, 3, 4]):
     """ Creates an alignement mark for every photolithography

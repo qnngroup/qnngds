@@ -31,7 +31,7 @@ sys.path.append(r'Q:\qnngds')
 import qnngds.omedeiro_v3 as om
 import qnnpy.functions.functions as qf
 import qnngds.utilities as qu
-import qnngds.geometry as qg
+import qnngds.archives.geometry as qg
 from phidl import set_quickplot_options
 set_quickplot_options(show_ports=True, show_subports=False)
 

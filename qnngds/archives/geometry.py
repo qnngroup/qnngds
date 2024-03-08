@@ -23,7 +23,7 @@ import math
 from argparse import Namespace    
 
 sys.path.append(r'Q:\qnngds')
-import qnngds.utilities as qu
+import qnngds.archives.utilities as qu
 
 
 from phidl import set_quickplot_options

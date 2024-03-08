@@ -22,7 +22,7 @@ import qnngds.omedeiro_v3 as om
 import qnngds.omedeiro as om1
 
 import qnngds.utilities as qu
-import qnngds.geometry as qg
+import qnngds.archives.geometry as qg
 
 #%%
 
