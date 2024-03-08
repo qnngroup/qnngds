@@ -3,8 +3,8 @@ Design. """
 
 from __future__ import division, print_function, absolute_import
 from phidl import Device, Port
-from phidl import quickplot as qp
-from phidl import set_quickplot_options
+# from phidl import quickplot as qp
+# from phidl import set_quickplot_options
 import phidl.geometry as pg
 import phidl.routing as pr
 from typing import Tuple, List, Union, Dict, Set
@@ -390,6 +390,7 @@ class Design:
                                     text         = text)
 
 
+## to build a design
 
 def create_chip(chip_w:                 Union[int, float]       = dflt_chip_w, 
                 margin:                 Union[int, float]       = dflt_chip_margin, 
@@ -582,13 +583,10 @@ def place_remaining_devices(devices_to_place:      List[Device],
               "no place remaining on the chip.")
 
 
-
-# pre-built cells:
-
 ## basics:
 
-def create_alignement_cell(die_w:           Union[int, float],
-                           layers_to_align: List[int],
+def create_alignement_cell(die_w:           Union[int, float] = dflt_die_w,
+                           layers_to_align: List[int]         = [dflt_layers['die'], dflt_layers['pad']],
                            outline_die:     Union[int, float] = dflt_die_outline,
                            die_layer:       int               = dflt_layers['die'],
                            text:            Union[None, str]  = dflt_text):
@@ -629,9 +627,9 @@ def create_alignement_cell(die_w:           Union[int, float],
 
     return DIE
 
-def create_vdp_cell(die_w:             Union[int, float], 
-                    pad_size:          Tuple[float], 
-                    layers_to_probe:   List[int],
+def create_vdp_cell(die_w:             Union[int, float]      = dflt_die_w, 
+                    pad_size:          Tuple[float]           = dflt_pad_size, 
+                    layers_to_probe:   List[int]              = [dflt_layers['pad']],
                     layers_to_outline: Union[None, List[int]] = auto_param,
                     outline:           Union[int, float]      = dflt_die_outline, 
                     die_layer:         Union[int, float]      = dflt_layers['die'], 
@@ -706,8 +704,8 @@ def create_vdp_cell(die_w:             Union[int, float],
     DIE_VANDP.name = f"DIE VAN DER PAUW {text} "
     return DIE_VANDP
 
-def create_etch_test_cell(die_w:          Union[int, float],
-                          layers_to_etch: List[List[int]],
+def create_etch_test_cell(die_w:          Union[int, float] = dflt_die_w,
+                          layers_to_etch: List[List[int]]   = [[dflt_layers['pad']]],
                           outline_die:    Union[int, float] = dflt_die_outline,
                           die_layer:      int               = dflt_layers['die'],
                           text:           Union[None, str]  = dflt_text):
@@ -765,8 +763,8 @@ def create_etch_test_cell(die_w:          Union[int, float],
 
     return DIE_ETCH_TEST
 
-def create_resolution_test_cell(die_w:               Union[int, float],
-                                layer_to_resolve:    int,
+def create_resolution_test_cell(die_w:               Union[int, float] = dflt_die_w,
+                                layer_to_resolve:    int               = dflt_layers['device'],
                                 resolutions_to_test: List[float]       = [0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 1, 1.5, 2.0],
                                 outline:             Union[int, float] = dflt_die_outline, 
                                 die_layer:           int               = dflt_layers['die'],
@@ -817,11 +815,12 @@ def create_resolution_test_cell(die_w:               Union[int, float],
 
     return DIE_RES_TEST
 
+
 ## devices:
 
-def create_nanowires_cell(die_w:              Union[int, float], 
-                          pad_size:           Tuple[float], 
-                          channels_sources_w: List[Tuple[float, float]],
+def create_nanowires_cell(die_w:              Union[int, float]           = dflt_die_w, 
+                          pad_size:           Tuple[float]                = dflt_pad_size, 
+                          channels_sources_w: List[Tuple[float, float]]   = [(0.1, 1), (0.5, 3), (1, 10)],
                           overlap_w:          Union[int, float]           = dflt_ebeam_overlap, 
                           outline_die:        Union[int, float]           = dflt_die_outline, 
                           outline_dev:        Union[int, float]           = dflt_device_outline, 
@@ -925,10 +924,10 @@ def create_nanowires_cell(die_w:              Union[int, float],
     NANOWIRES_DIE.name = f'DIE NWIRES {text} '
     return NANOWIRES_DIE
 
-def create_ntron_cell(die_w:        Union[int, float],
-                      pad_size:     Tuple[float, float],
-                      choke_w:      Union[int, float],
-                      channel_w:    Union[int, float],
+def create_ntron_cell(die_w:        Union[int, float]       = dflt_die_w,
+                      pad_size:     Tuple[float, float]     = dflt_pad_size,
+                      choke_w:      Union[int, float]       = 0.1,
+                      channel_w:    Union[int, float]       = 0.5,
                       gate_w:       Union[None, int, float] = auto_param,
                       source_w:     Union[None, int, float] = auto_param,
                       drain_w:      Union[None, int, float] = auto_param,
@@ -1045,17 +1044,17 @@ def create_ntron_cell(die_w:        Union[int, float],
     DIE_NTRON.name = f"DIE NTRON {text} "
     return DIE_NTRON
 
-def create_snspd_ntron_cell(die_w:        Union[int, float], 
-                            pad_size:     Tuple[float, float], 
-                            w_choke:      Union[int, float], 
-                            w_snspd:      Union[int, float] = auto_param, 
-                            overlap_w:    Union[int, float] = dflt_ebeam_overlap, 
-                            outline_die:  Union[int, float] = dflt_die_outline, 
-                            outline_dev:  Union[int, float] = dflt_device_outline, 
-                            device_layer: int               = dflt_layers['device'], 
-                            die_layer:    int               = dflt_layers['die'], 
-                            pad_layer:    int               = dflt_layers['pad'],
-                            text:         Union[None, str]  = dflt_text):
+def create_snspd_ntron_cell(die_w:        Union[int, float]   = dflt_die_w, 
+                            pad_size:     Tuple[float, float] = dflt_pad_size, 
+                            w_choke:      Union[int, float]   = 0.1, 
+                            w_snspd:      Union[int, float]   = auto_param, 
+                            overlap_w:    Union[int, float]   = dflt_ebeam_overlap, 
+                            outline_die:  Union[int, float]   = dflt_die_outline, 
+                            outline_dev:  Union[int, float]   = dflt_device_outline, 
+                            device_layer: int                 = dflt_layers['device'], 
+                            die_layer:    int                 = dflt_layers['die'], 
+                            pad_layer:    int                 = dflt_layers['pad'],
+                            text:         Union[None, str]    = dflt_text):
     """ Creates a cell that contains an snspd coupled to ntron. 
     The device's parameters are sized according to the snspd's width and the ntron's choke.
     

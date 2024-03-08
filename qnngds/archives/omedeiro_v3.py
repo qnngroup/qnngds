@@ -25,12 +25,11 @@ from argparse import Namespace
 
 
 
-sys.path.append(r'Q:\qnnpy')
-sys.path.append(r'Q:\qnngds')
+# sys.path.append(r'Q:\qnnpy')
+sys.path.append(r'Q:\qnngds\archives')
 # import qnnpy.functions.functions as qf
-import qnngds.archives.utilities as qu
-import qnngds.archives.geometry as qg
-   
+import utilities as qu
+import geometry as qg
 
 
 def ntron_single(choke_w = 0.015, 
@@ -822,7 +821,6 @@ def tesla(width=0.2, pitch=0.6,length=3.5, angle=15, num=5, pad_width=220, outli
     pad.movex(15)
     D.flatten()
     return D
-
     
 def straight_wire_pad_bilayer(width=0.2, length=30, outline=0.5, layer=1, pad_layer=None, two_pads=False, pad_iso=None, step_scale = 3, pad_shift=10, anticrowding_factor=1.2, de_etch=None):
     D = Device('straight_wire')    

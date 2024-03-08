@@ -22,8 +22,8 @@ from phidl.device_layout import _parse_layer, DeviceReference
 import math
 from argparse import Namespace    
 
-sys.path.append(r'Q:\qnngds')
-import qnngds.archives.utilities as qu
+# sys.path.append(r'Q:\qnngds')
+import utilities as qu
 
 
 from phidl import set_quickplot_options

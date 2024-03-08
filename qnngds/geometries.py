@@ -3,8 +3,8 @@
 
 from __future__ import division, print_function, absolute_import
 from phidl import Device, Port
-from phidl import quickplot as qp
-from phidl import set_quickplot_options
+# from phidl import quickplot as qp
+# from phidl import set_quickplot_options
 import phidl.geometry as pg
 import phidl.routing as pr
 from typing import Tuple, List, Union, Dict, Set
@@ -12,6 +12,8 @@ import numpy as np
 import math
 import os
 
+
+# Basics
 
 def alignement_mark(layers: List[int] = [1, 2, 3, 4]):
     """ Creates an alignement mark for every photolithography
@@ -214,9 +216,108 @@ def resolution_test(resolutions: List[float]        = [0.8, 1, 1.2, 1.4, 1.6, 1.
     RES_TEST.name = res_test_name
     return RES_TEST
 
-### Useful common nanowire-based devices
+# Tapers, tools 
 
-""" copied and adjusted from qnngds geometries"""
+def hyper_taper(length = 10, wide_section = 50, narrow_section = 5, layer=0):
+    """
+    Hyperbolic taper (solid). Designed by colang.
+
+
+    Parameters
+    ----------
+    length : FLOAT
+        Length of taper.
+    wide_section : FLOAT
+        Wide width dimension.
+    narrow_section : FLOAT
+        Narrow width dimension.
+    layer : INT, optional
+        Layer for device to be created on. The default is 1.
+        
+        
+    Returns
+    -------
+    HT :  DEVICE
+        PHIDL device object is returned.
+    """
+    taper_length=length
+    wide =  wide_section
+    zero = 0
+    narrow = narrow_section
+    x_list = np.arange(0,taper_length+.1, .1)
+    x_list2= np.arange(taper_length,-0.1,-0.1)
+    pts = []
+
+    a = np.arccosh(wide/narrow)/taper_length
+
+    for x in x_list:
+        pts.append((x, np.cosh(a*x)*narrow/2))
+    for y in x_list2:
+        pts.append((y, -np.cosh(a*y)*narrow/2))
+        HT = Device('hyper_taper')
+        hyper_taper = HT.add_polygon(pts)
+        HT.add_port(name = 1, midpoint = [0, 0],  width = narrow, orientation = 180)
+        HT.add_port(name = 2, midpoint = [taper_length, 0],  width = wide, orientation = 0)
+        HT.flatten(single_layer = layer)
+    return HT
+     
+def optimal_taper(width = 100.0, num_pts = 15, length_adjust = 3, layer = 0):
+    
+    D = Device('optimal_taper')
+    
+    t1 = D<<pg.optimal_90deg(width, num_pts, length_adjust)
+    t2 = D<<pg.optimal_90deg(width, num_pts, length_adjust)
+    t2.mirror()
+    t2.move(t2.ports[1], t1.ports[1])
+    
+    D.movex(-t1.ports[1].midpoint[0])
+    D.movey(-width)
+    D = pg.union(D, layer=layer)
+
+    #wide port trim
+    trim = pg.straight(size=(width,-2.5*D.bbox[0][0]))
+    trim.rotate(90)
+    trim.move(trim.bbox[0],D.bbox[0])
+    trim.movex(-.005)
+    trim.movey(-.0001)
+    A = pg.boolean(t1,trim, 'A-B', layer=layer, precision=1e-9)
+    B = pg.boolean(t2,trim, 'A-B', layer=layer, precision=1e-9)
+
+    # #top length trim
+    trim2 = D<<pg.straight(size=(width*2, t1.ports[1].midpoint[1]-width*4))
+    trim2.connect(trim2.ports[1], t1.ports[1].rotate(180))
+    A = pg.boolean(A,trim2, 'A-B', layer=layer, precision=1e-9)
+    B = pg.boolean(B,trim2, 'A-B', layer=layer, precision=1e-9)
+    
+    # # width trim 1
+    trim3 = A<<pg.straight(size=(width/2, t1.ports[1].midpoint[1]+.1))
+    trim3.connect(trim3.ports[1], t1.ports[1].rotate(180))
+    trim3.movex(-width/2)
+    A = pg.boolean(A,trim3, 'A-B', layer=layer, precision=1e-9)
+
+    # # width trim 2
+    trim3 = B<<pg.straight(size=(width/2, t1.ports[1].midpoint[1]+.1))
+    trim3.connect(trim3.ports[1], t1.ports[1].rotate(180))
+    trim3.movex(width/2)
+    B = pg.boolean(B,trim3, 'A-B', layer=layer, precision=1e-9)
+    
+    p = B.get_polygons()
+    x1 = p[0][0,0]
+ 
+    A.movex(width/2+x1)
+    B.movex(-width/2-x1)
+    D = A
+    D<<B
+    D = pg.union(D, layer=layer)
+
+    D.add_port(name=1,midpoint=(0, width*4), width=width,orientation=90)
+    D.add_port(name=2, midpoint=(0,0), width=D.bbox[0][0]*-2, orientation=-90)
+    
+    return D 
+
+
+# Common nanowire-based devices
+
 def ntron(choke_w     = 0.03, 
           gate_w      = 0.2, 
           channel_w   = 0.1, 
@@ -254,7 +355,6 @@ def ntron(choke_w     = 0.03,
 
     return D
 
-""" copied and adjusted from qnngds geometries"""
 def ntron_compassPorts(choke_w     = 0.03, 
                        gate_w      = 0.2, 
                        channel_w   = 0.1, 
@@ -262,7 +362,9 @@ def ntron_compassPorts(choke_w     = 0.03,
                        drain_w     = 0.3, 
                        choke_shift = -0.3, 
                        layer       = 0):
-    
+    """ A basic ntron with ports named as in compass multi (N1, W1, S1 for
+    drain, gate, source) """
+
     D = Device()
     
     choke = pg.optimal_step(gate_w, choke_w, symmetric=True, num_pts=100)
@@ -292,11 +394,52 @@ def ntron_compassPorts(choke_w     = 0.03,
 
     return D
 
+def ntron_sharp(choke_w=0.03, choke_l=.5, gate_w=0.2, channel_w=0.1, source_w=0.3, drain_w=0.3, layer=0):
+    
+    D = Device('nTron')
+    
+    choke = pg.taper(choke_l, gate_w, choke_w)
+    k = D<<choke
+    
+    channel = pg.compass(size=(channel_w, choke_w/10))
+    c = D<<channel
+    c.connect(channel.ports['W'],choke.ports[2])
+    
+    drain = pg.taper(channel_w*6, drain_w, channel_w)
+    d = D<<drain
+    d.connect(drain.ports[2], c.ports['N'])
+    
+    source = pg.taper(channel_w*6, channel_w, source_w)
+    s = D<<source
+    s.connect(source.ports[1], c.ports['S'])
+    
+    D = pg.union(D)
+    D.flatten(single_layer=layer)
+    D.add_port(name='g', port=k.ports[1])
+    D.add_port(name='d', port=d.ports[1])
+    D.add_port(name='s', port=s.ports[2])
+    D.name = 'nTron'
+    D.info = locals()
+    return D 
+
 def nanowire(channel_w: float = 0.1, 
              source_w:  float = 0.3, 
              layer:     int   = 0, 
              num_pts:   int   = 100):
+    """ Creates a single wire, of same appearance as a ntron but without the
+    gate.
     
+    Parameters:
+    channel_w (int or float): the width of the channel (at the hot-spot location)
+    source_w  (int or float): the width of the nanowire's "source"
+    layer (int): the layer where to put the device
+    num_pts (int): the number of points comprising the optimal_steps geometries
+
+    Returns:
+    NANOWIRE (Device): a device containing 2 optimal steps joined at their
+    channel_w end
+
+    """
     NANOWIRE = Device(f"NANOWIRE {channel_w} ")
     wire = pg.optimal_step(channel_w, source_w, symmetric=True, num_pts=num_pts)
     source = NANOWIRE << wire
@@ -310,6 +453,51 @@ def nanowire(channel_w: float = 0.1,
     NANOWIRE.move(NANOWIRE.center, (0, 0))
 
     return NANOWIRE
+
+def snspd_vert(wire_width = 0.2, wire_pitch = 0.6, size = (6,10),
+        num_squares = None, terminals_same_side = False, extend=None, layer = 0):
+    
+    D = Device('snspd_vert')
+    S = pg.snspd(wire_width = wire_width, wire_pitch = wire_pitch, size = size,
+        num_squares = num_squares, terminals_same_side = terminals_same_side, layer = layer)
+    s1 = D<<S
+    
+    HP = pg.optimal_hairpin(width = wire_width, pitch=wire_pitch, length=size[0]/2, layer=layer)
+    h1 = D<<HP
+    h1.connect(h1.ports[1], S.references[0].ports['E'])
+    h1.rotate(180, h1.ports[1])
+    
+    h2 = D<<HP
+    h2.connect(h2.ports[1], S.references[-1].ports['E'])
+    h2.rotate(180, h2.ports[1])
+    
+    T = pg.optimal_90deg(width=wire_width, layer=layer)
+    t1 = D<<T
+    T_width = t1.ports[2].midpoint[0]
+    t1.connect(t1.ports[1],h1.ports[2])
+    t1.movex(-T_width+wire_width/2)
+    
+    t2 = D<<T
+    t2.connect(t2.ports[1],h2.ports[2])
+    t2.movex(T_width-wire_width/2)
+    
+    D = pg.union(D, layer=layer)
+    D.flatten()
+    if extend:
+        E = pg.straight(size=(wire_width, extend), layer=layer)
+        e1 = D<<E
+        e1.connect(e1.ports[1],t1.ports[2])
+        e2 = D<<E
+        e2.connect(e2.ports[1],t2.ports[2])
+        D = pg.union(D, layer=layer)
+        D.add_port(name=1, port=e1.ports[2])
+        D.add_port(name=2, port=e2.ports[2])
+    else:
+        D.add_port(name=1, port=t1.ports[2])
+        D.add_port(name=2, port=t2.ports[2])
+        
+    D.info = S.info
+    return D
 
 def snspd_ntron(w_snspd:        float                    = 0.1, 
                 pitch_snspd:    float                    = 0.3,
@@ -559,3 +747,115 @@ def snspd_ntron(w_snspd:        float                    = 0.1,
     SNSPD_NTRON.name = f"SNSPD NTRON {w_snspd} {w_choke} "
     return SNSPD_NTRON
 
+def tesla_valve(width=0.2, pitch=0.6, length=4, angle=15, num=5):
+    D = Device('tesla_valve')
+
+    hp = pg.optimal_hairpin(width, pitch, length)
+    hp.move(hp.bbox[0], destination=(0,0))
+    hp.rotate(-angle, center=(hp.ports[1].midpoint))
+    
+    ramp = pg.straight(size=(length, width+pitch))
+    r = D<<ramp
+    r.movex(-pitch)
+    h = D<<hp
+    
+    d = pg.boolean(h, r, 'A-B')
+    d.movex(d.bbox[0][0], destination=0)
+    d.rotate(angle/2)
+    D.remove([h, r])
+    
+    d.add_port(name=1, midpoint=(0,width/2), width=width, orientation=180)
+    d.add_port(name=2, midpoint=(length*np.cos(angle/2*np.pi/180),width/2 + length*np.sin(angle/2*np.pi/180)), width=width, orientation=0)
+    d<<pr.route_basic(d.ports[1], d.ports[2], path_type='straight')
+    
+    dd = pg.union(d, precision=1e-8)
+    dd.add_port(name=1, port=d.ports[1])
+    dd.add_port(name=2, port=d.ports[2])
+    
+    D_list = np.tile(dd, num)
+    
+    for i in range(num):
+        
+        vert = D<<D_list[i]
+
+        if i%2 == 0:
+            vert.mirror(p1=(1,0))
+        if i == 0:
+            next_port = vert.ports[2]
+        if i > 0:
+            vert.connect(vert.ports[1], next_port)
+            next_port = vert.ports[2]
+    
+    port_list = D.get_ports()
+    D = pg.union(D, precision=1e-10)
+    D.add_port(name=1, port=port_list[0])
+    D.add_port(name=2, port=port_list[-1])
+    return D
+
+def via_square(width=3, inset=2, layers=[0, 1, 2], outline=False):
+    D = Device('via')    
+    via0 = pg.compass(size=(width+2*inset, width+2*inset), layer=layers[0])
+    v0 = D<<via0
+    
+    via1 = pg.compass(size=(width, width), layer=layers[1])
+    v1 = D<<via1
+    v1.move(v1.center, v0.center)
+    
+    via2 = pg.compass(size=(width+2*inset, width+2*inset), layer=layers[2])
+    v2 = D<<via2
+    v2.move(v2.center, v1.center)
+    
+    D.flatten()
+    
+    if outline:
+        E = pg.copy_layer(D, layer=0, new_layer=0)
+        D.remove_layers(layers=[0])
+        E = pg.outline(E, distance=outline, layer=0)
+        D<<E
+        
+        F = pg.copy_layer(D, layer=2, new_layer=2)
+        D.remove_layers(layers=[2])
+        F = pg.outline(F, distance=outline, layer=2)
+        D<<F
+    
+    port_list = [v0.ports['N'], v0.ports['S'], v0.ports['E'], v0.ports['W']]
+    [D.add_port(name=n+1, port=port_list[n]) for n in range(len(port_list))]
+    
+    return D
+
+def via_round(width=3, inset=2, layers=[0, 1, 2], outline=False):
+    D = Device('via')    
+    via0 = pg.compass(size=(width+2*inset, width+2*inset), layer=layers[0])
+    v0 = D<<via0
+    
+    via1 = pg.circle(radius=width/2, layer=layers[1])
+    v1 = D<<via1
+    v1.move(v1.center, v0.center)
+    
+    via2 = pg.compass(size=(width+2*inset, width+2*inset), layer=layers[2])
+    v2 = D<<via2
+    v2.move(v2.center, v1.center)
+    
+    D.flatten()
+    
+    if outline:
+        E = pg.copy_layer(D, layer=0, new_layer=0)
+        D.remove_layers(layers=[0])
+        E = pg.outline(E, distance=outline, layer=0)
+        D<<E
+        
+        F = pg.copy_layer(D, layer=2, new_layer=2)
+        D.remove_layers(layers=[2])
+        F = pg.outline(F, distance=outline, layer=2)
+        D<<F
+    
+    port_list = [v0.ports['N'], v0.ports['S'], v0.ports['E'], v0.ports['W']]
+    [D.add_port(name=n+1, port=port_list[n]) for n in range(len(port_list))]
+    
+    return D
+
+""" Other geonetries like htron, plannar htron, logic gates etc could be added.
+One good standard to remember could be to name the devices ports with compass
+multi names (i.e. N1, N2, W1, S1 etc...) for the utilities functions to properly
+work.
+"""
