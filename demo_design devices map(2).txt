@@ -1,0 +1,11 @@
+(3, 1) : DIE NWIRES src=4chn 
+(0, 3) : DIE NTRON chk: 0.025 chnl: 0.125 
+(1, 3) : DIE NTRON chk: 0.05 chnl: 0.25 
+(2, 3) : DIE NTRON chk: 0.1 chnl: 0.5 
+(3, 3) : DIE NTRON chk: 0.25 chnl: 1.25 
+(4, 3) : DIE NTRON chk: 0.5 chnl: 2.5 
+(0, 4) : DIE NTRON chk: 0.025 chnl: 0.25 
+(1, 4) : DIE NTRON chk: 0.05 chnl: 0.5 
+(2, 4) : DIE NTRON chk: 0.1 chnl: 1.0 
+(3, 4) : DIE NTRON chk: 0.25 chnl: 2.5 
+(4, 4) : DIE NTRON chk: 0.5 chnl: 5.0 
