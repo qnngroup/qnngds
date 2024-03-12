@@ -12,6 +12,8 @@ import numpy as np
 import math
 import os
 import geometries as qg
+import devices as qd
+import circuits as qc
 import utilities as qu
 
 Free = True
@@ -864,7 +866,7 @@ def create_nanowires_cell(die_w:              Union[int, float]           = dflt
     NANOWIRES = Device()
     nanowires_ref = []
     for i, channel_source_w in enumerate(channels_sources_w):
-        nanowire_ref = NANOWIRES << qg.nanowire(channel_source_w[0], channel_source_w[1])
+        nanowire_ref = NANOWIRES << qd.nanowire(channel_source_w[0], channel_source_w[1])
         nanowires_ref.append(nanowire_ref)
     DEVICE << NANOWIRES
 
@@ -983,13 +985,13 @@ def create_ntron_cell(die_w:        Union[int, float]       = dflt_die_w,
     if choke_shift is None:
         choke_shift=-3*channel_w
 
-    NTRON = qg.ntron_compassPorts(choke_w, 
-                            gate_w, 
-                            channel_w, 
-                            source_w, 
-                            drain_w, 
-                            choke_shift, 
-                            device_layer)
+    NTRON = qd.ntron_compassPorts(choke_w, 
+                                gate_w, 
+                                channel_w, 
+                                source_w, 
+                                drain_w, 
+                                choke_shift, 
+                                device_layer)
     
     if text is None: text = f"chk: {choke_w} \nchnl: {channel_w}"
     DIE_NTRON = Device(f"DIE NTRON {text} ")
@@ -1087,7 +1089,7 @@ def create_snspd_ntron_cell(die_w:        Union[int, float]   = dflt_die_w,
     DIE_SNSPD_NTRON = Device(f"DIE {text} ")
     DEVICE = Device(f"{text} ")
 
-    SNSPD_NTRON = qg.snspd_ntron(w_snspd = w_snspd, 
+    SNSPD_NTRON = qc.snspd_ntron(w_snspd = w_snspd, 
                             pitch_snspd = 3*w_snspd,
                             size_snspd =(30*w_snspd, 30*w_snspd),
                             w_inductor = 3*w_snspd,

@@ -1,4 +1,0 @@
-Devices placed on the chip: 
-
-(row, col) : device.name
-
