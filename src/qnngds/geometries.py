@@ -16,7 +16,8 @@ set_quickplot_options(blocking=True)
 
 # Basics
 
-def alignement_mark(layers: List[int] = [1, 2, 3, 4]):
+def alignement_mark(layers: List[int] = [1, 2, 3, 4]
+                    ) -> Device:
     """ Creates an alignement mark for every photolithography
     
     Parameters:
@@ -117,7 +118,8 @@ def alignement_mark(layers: List[int] = [1, 2, 3, 4]):
 
 def resolution_test(resolutions: List[float]        = [0.8, 1, 1.2, 1.4, 1.6, 1.8, 2.0], 
                     inverted:    Union[bool, float] = False, 
-                    layer:       int                = 0):
+                    layer:       int                = 0
+                    ) -> Device:
     """ Creates test structures for determining a process resolution
         
         Parameters:

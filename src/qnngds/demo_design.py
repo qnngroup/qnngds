@@ -1,5 +1,9 @@
 from phidl import quickplot as qp
+from phidl import set_quickplot_options
 import qnngds.design as qd
+
+set_quickplot_options(blocking=True)
+
 
 chip_w = 5000
 chip_margin = 50
@@ -100,5 +104,5 @@ for ratio in channel_to_choke_ratios:
 design.place_remaining_devices(remaining_cells, write_remaining_devices_map_txt = False)
 
 
-# qp(CHIP)
+qp(CHIP)
 # design.write_gds()

@@ -16,7 +16,8 @@ def ntron(choke_w     = 0.03,
           source_w    = 0.3, 
           drain_w     = 0.3, 
           choke_shift = -0.3, 
-          layer       = 0):
+          layer       = 0
+          ) -> Device:
     
     D = Device()
     
@@ -53,7 +54,8 @@ def ntron_compassPorts(choke_w     = 0.03,
                        source_w    = 0.3, 
                        drain_w     = 0.3, 
                        choke_shift = -0.3, 
-                       layer       = 0):
+                       layer       = 0
+                       ) -> Device:
     """ A basic ntron with ports named as in compass multi (N1, W1, S1 for
     drain, gate, source) """
 
@@ -117,7 +119,8 @@ def ntron_sharp(choke_w=0.03, choke_l=.5, gate_w=0.2, channel_w=0.1, source_w=0.
 def nanowire(channel_w: float = 0.1, 
              source_w:  float = 0.3, 
              layer:     int   = 0, 
-             num_pts:   int   = 100):
+             num_pts:   int   = 100
+             ) -> Device:
     """ Creates a single wire, of same appearance as a ntron but without the
     gate.
     

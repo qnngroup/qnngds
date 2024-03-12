@@ -23,7 +23,8 @@ def snspd_ntron(w_snspd:        float                    = 0.1,
                 w_choke:        float                    = 0.02,
                 w_channel:      float                    = 0.12,
                 w_pad:          Union[int, float]        = 1,
-                layer:          int                      = 0):
+                layer:          int                      = 0
+                ) -> Device:
     """ Creates a snspd coupled to a ntron, with 3 inductors in the circuit as:
 
         |        |

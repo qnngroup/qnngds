@@ -52,7 +52,8 @@ def die_cell(die_size:        Tuple[int, int]   = (dflt_die_w, dflt_die_w),
              text_size:       Union[int, float] = die_cell_border/2, 
              layer:           int               = dflt_layers['die'], 
              pad_layer:       int               = dflt_layers['pad'], 
-             invert:          bool              = False):
+             invert:          bool              = False
+             ) -> Device:
     """ Creates a die cell with dicing marks, text, and pads to connect to a device.
     
     Parameters:
@@ -180,7 +181,8 @@ def die_cell(die_size:        Tuple[int, int]   = (dflt_die_w, dflt_die_w),
 def add_hyptap_to_cell(die_ports: List[Port], 
                        overlap_w: Union[int, float] = dflt_ebeam_overlap, 
                        contact_w: Union[int, float] = 5, 
-                       layer:     int               = dflt_layers['device']):
+                       layer:     int               = dflt_layers['device']
+                       ) -> Tuple[Device, Device]:
     """ Takes the cell and add hyper taper at its ports
     
     Parameters:
@@ -211,7 +213,8 @@ def add_hyptap_to_cell(die_ports: List[Port],
 
 def route_to_dev(ext_ports: List[Port],
                  dev_ports: Set[Port],
-                 layer:     int = dflt_layers['device']):
+                 layer:     int = dflt_layers['device']
+                 ) -> Device:
     """ Creates smooth routes from external ports to the device's ports
     
     Parameters:

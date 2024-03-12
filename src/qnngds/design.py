@@ -7,7 +7,7 @@ from phidl import Device, Port
 # from phidl import set_quickplot_options
 import phidl.geometry as pg
 import phidl.routing as pr
-from typing import Tuple, List, Union, Dict, Set
+from typing import Tuple, List, Union, Dict, Set, Optional
 import numpy as np
 import math
 import os
@@ -73,7 +73,8 @@ class Design:
     # help building a design
        
     def create_chip(self,
-                    create_devices_map_txt: Union[bool, str] = True):
+                    create_devices_map_txt: Union[bool, str] = True
+                    ) -> Device:
         """ Creates the chip, with unit cells.
 
         The CHIP created will be the foundation of the design, the Device to add
@@ -125,7 +126,8 @@ class Design:
     def place_on_chip(self, 
                       cell:        Device, 
                       coordinates: Tuple[int, int], 
-                      add_to_chip: bool = True):
+                      add_to_chip: bool = True
+                      ) -> bool:
         """ Moves the chip to the coordinates specified.
         Update the chip map with Occupied states where the device has been placed.
 
@@ -135,23 +137,28 @@ class Design:
         cell (Device) : Device to be moved.
         coordinates (int, int) : (i, j) indices of the chip grid, where to place the cell.
             Note that the indices start at 0.
-              
+            
+        Returns:
+        (bool) : False, if the Device falls out of the chip map, prints an error
+        message and does not place the device. True, otherwise.
+        
         Raises:
         Prints a warning if the Device is overlapping with already occupied coordinates.
 
         """
         
-        place_on_chip(cell = cell,
-                      coordinates = coordinates,
-                      chip_map = self.chip_map,
-                      die_w = self.die_w,
-                      devices_map_txt = self.devices_map_txt)
         if add_to_chip: self.CHIP << cell
+        return place_on_chip(cell = cell,
+                             coordinates = coordinates,
+                             chip_map = self.chip_map,
+                             die_w = self.die_w,
+                             devices_map_txt = self.devices_map_txt)
     
     def place_remaining_devices(self, 
                                 devices_to_place:                List[Device], 
                                 add_to_chip:                     bool             = True, 
-                                write_remaining_devices_map_txt: Union[bool, str] = False):
+                                write_remaining_devices_map_txt: Union[bool, str] = False
+                                ) -> Optional[None]:
         """ Go through the chip map and place the devices given, where the chip map is Free
 
         Warning: The list of devices is not re-ordered to fit as many of them as possible. 
@@ -180,7 +187,8 @@ class Design:
                                 write_devices_map_txt = write_devices_map_txt)
     
     def write_gds(self, 
-                  text: Union[None, str] = dflt_text):
+                  text: Union[None, str] = dflt_text
+                  ) -> Optional[str]:
         """ Write a gds file.
          
           Parameters:
@@ -189,13 +197,14 @@ class Design:
         
         """
         if text is None: text = self.name
-        self.CHIP.write_gds(filename = f"{text}.gds")
+        return self.CHIP.write_gds(filename = f"{text}.gds")
 
     # basics:
 
     def create_alignement_cell(self, 
                                layers_to_align: List[int], 
-                               text:            Union[None, str] = dflt_text):
+                               text:            Union[None, str] = dflt_text
+                               ) -> Device:
         """ Creates alignement marks in a integer number of unit cells.
         
         Parameters:
@@ -216,7 +225,8 @@ class Design:
     def create_vdp_cell(self, 
                         layers_to_probe:   List[int], 
                         layers_to_outline: Union[List[int], None] = auto_param, 
-                        text:              Union[None, str]       = dflt_text):
+                        text:              Union[None, str]       = dflt_text
+                        ) -> Device:
         """ Creates a cell containing a Van Der Pauw structure between 4 contact pads.
 
         Parameters: 
@@ -241,7 +251,8 @@ class Design:
     
     def create_etch_test_cell(self, 
                               layers_to_etch: List[List[int]], 
-                              text:           Union[None, str] = dflt_text):
+                              text:           Union[None, str] = dflt_text
+                              ) -> Device:
         """ Creates etch test structures in integer number of unit cells.
         These tests structures are though to be used by probing on pads (with a
         simple multimeter) that should be isolated one with another if the etching
@@ -267,7 +278,8 @@ class Design:
     def create_resolution_test_cell(self, 
                                     layer_to_resolve:    int, 
                                     resolutions_to_test: List[float]      = [0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 1, 1.5, 2],
-                                    text:                Union[None, str] = dflt_text):
+                                    text:                Union[None, str] = dflt_text
+                                    ) -> Device:
         """ Creates a cell containing a resolution test.
         
         Parameters: 
@@ -291,7 +303,8 @@ class Design:
 
     def create_nanowires_cell(self, 
                               channels_sources_w: List[Tuple[float, float]], 
-                              text:               Union[None, str]           = dflt_text):
+                              text:               Union[None, str]           = dflt_text
+                              ) -> Device:
         """ Creates a cell that contains several nanowires of given channel and source.
         
         Parameters: 
@@ -324,7 +337,8 @@ class Design:
                           source_w:    Union[float, None] = auto_param,
                           drain_w:     Union[float, None] = auto_param,
                           choke_shift: Union[float, None] = auto_param,
-                          text:        Union[str, None]   = dflt_text):
+                          text:        Union[str, None]   = dflt_text
+                          ) -> Device:
         """ Creates a standardized cell specifically for a single ntron.
 
         Unless specified, scales the ntron parameters as:
@@ -364,7 +378,8 @@ class Design:
     def create_snspd_ntron_cell(self, 
                                 w_choke: float,
                                 w_snspd: Union[float, None] = auto_param,
-                                text:    Union[str, None]   = dflt_text):
+                                text:    Union[str, None]   = dflt_text
+                                ) -> Device:
         """ Creates a cell that contains an snspd coupled to ntron. 
         The device's parameters are sized according to the snspd's width and the ntron's choke.
         
@@ -400,7 +415,11 @@ def create_chip(chip_w:                 Union[int, float]       = dflt_chip_w,
                 die_w:                  Union[None, int, float] = dflt_die_w, 
                 annotations_layer:      int                     = dflt_layers['annotation'], 
                 unpack_chip_map:        bool                    = True,
-                create_devices_map_txt: Union[bool, str]        = True):
+                create_devices_map_txt: Union[bool, str]        = True
+                ) -> Union[Tuple[Device, Union[int, float], List[List[bool]], str], 
+                           Tuple[Device, Union[int, float], str],
+                           Tuple[Device, Union[int, float], List[List[bool]]], 
+                           Tuple[Device, Union[int, float]]]:
     """ Creates a chip map in the annotations layer.
     If unpack_chip_map is set to True, creates a map (2D array) to monitor the
     states of each cell of the chip.
@@ -488,7 +507,8 @@ def place_on_chip(cell:                  Device,
                   coordinates:           Tuple[int, int], 
                   chip_map:              List[List[bool]], 
                   die_w:                 Union[int, float],
-                  devices_map_txt:       Union[None, str]  = None):
+                  devices_map_txt:       Union[None, str]  = None
+                  ) -> bool:
     """ Moves the chip to the coordinates specified.
     Update the chip map with Occupied states where the device has been placed.
 
@@ -503,8 +523,10 @@ def place_on_chip(cell:                  Device,
     die_w (int or float): The width of a die/unit in the chip map.
 
     Returns:
-    Returns False if the Device falls out of the chip map, 
-     prints an error message and does not place the device.
+    (bool) : False, if the Device falls out of the chip map, prints an error
+    message and does not place the device. True, otherwise.
+    
+    Raises:
     Prints a warning if the Device is overlapping with already occupied coordinates.
 
     """
@@ -543,7 +565,8 @@ def place_on_chip(cell:                  Device,
 def place_remaining_devices(devices_to_place:      List[Device], 
                             chip_map:              List[List[bool]], 
                             die_w:                 Union[int,float],
-                            write_devices_map_txt: Union[bool, str] = False):
+                            write_devices_map_txt: Union[bool, str] = False
+                            ) -> Optional[None]:
     """ Go through the chip map and place the devices given, where the chip map is Free
         
         Warning: The list of devices is not re-ordered to fit as many of them as possible. 
@@ -591,7 +614,8 @@ def create_alignement_cell(die_w:           Union[int, float] = dflt_die_w,
                            layers_to_align: List[int]         = [dflt_layers['die'], dflt_layers['pad']],
                            outline_die:     Union[int, float] = dflt_die_outline,
                            die_layer:       int               = dflt_layers['die'],
-                           text:            Union[None, str]  = dflt_text):
+                           text:            Union[None, str]  = dflt_text
+                           ) -> Device:
     """ Creates alignement marks in a integer number of unit cells.
      
     Parameters:
@@ -636,7 +660,8 @@ def create_vdp_cell(die_w:             Union[int, float]      = dflt_die_w,
                     outline:           Union[int, float]      = dflt_die_outline, 
                     die_layer:         Union[int, float]      = dflt_layers['die'], 
                     pad_layer:         int                    = dflt_layers['pad'],
-                    text:              Union[None, str]       = dflt_text):
+                    text:              Union[None, str]       = dflt_text
+                    ) -> Device:
     """ Creates a cell containing a Van Der Pauw structure between 4 contact pads.
     
     Parameters: 
@@ -710,7 +735,8 @@ def create_etch_test_cell(die_w:          Union[int, float] = dflt_die_w,
                           layers_to_etch: List[List[int]]   = [[dflt_layers['pad']]],
                           outline_die:    Union[int, float] = dflt_die_outline,
                           die_layer:      int               = dflt_layers['die'],
-                          text:           Union[None, str]  = dflt_text):
+                          text:           Union[None, str]  = dflt_text
+                          ) -> Device:
     """ Creates etch test structures in integer number of unit cells.
     These tests structures are though to be used by probing on pads (with a
     simple multimeter) that should be isolated one with another if the etching
@@ -770,7 +796,8 @@ def create_resolution_test_cell(die_w:               Union[int, float] = dflt_di
                                 resolutions_to_test: List[float]       = [0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 1, 1.5, 2.0],
                                 outline:             Union[int, float] = dflt_die_outline, 
                                 die_layer:           int               = dflt_layers['die'],
-                                text:                Union[None, str]  = dflt_text):
+                                text:                Union[None, str]  = dflt_text
+                                ) -> Device:
     """ Creates a cell containing a resolution test.
     
     Parameters: 
@@ -829,7 +856,8 @@ def create_nanowires_cell(die_w:              Union[int, float]           = dflt
                           device_layer:       int                         = dflt_layers['device'], 
                           die_layer:          int                         = dflt_layers['die'], 
                           pad_layer:          int                         = dflt_layers['pad'],
-                          text:               Union[None, str]            = dflt_text):
+                          text:               Union[None, str]            = dflt_text
+                          ) -> Device:
 
     """ Creates a cell that contains several nanowires of given channel and source.
     
@@ -940,7 +968,8 @@ def create_ntron_cell(die_w:        Union[int, float]       = dflt_die_w,
                       device_layer: int                     = dflt_layers['device'], 
                       die_layer:    int                     = dflt_layers['die'], 
                       pad_layer:    int                     = dflt_layers['pad'],
-                      text:         Union[None, str]        = dflt_text):
+                      text:         Union[None, str]        = dflt_text
+                      ) -> Device:
     """ Creates a standardized cell specifically for a single ntron.
     Unless specified, scales the ntron parameters as:
      gate_w = drain_w = source_w = 3*channel_w
@@ -1056,7 +1085,8 @@ def create_snspd_ntron_cell(die_w:        Union[int, float]   = dflt_die_w,
                             device_layer: int                 = dflt_layers['device'], 
                             die_layer:    int                 = dflt_layers['die'], 
                             pad_layer:    int                 = dflt_layers['pad'],
-                            text:         Union[None, str]    = dflt_text):
+                            text:         Union[None, str]    = dflt_text
+                            ) -> Device:
     """ Creates a cell that contains an snspd coupled to ntron. 
     The device's parameters are sized according to the snspd's width and the ntron's choke.
     
