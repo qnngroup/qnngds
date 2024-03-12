@@ -250,313 +250,313 @@ def route_to_dev(ext_ports: List[Port],
 
 # from previous qnngds: to be tested...
 
-def outline(elements, distance = 1, precision = 1e-4, num_divisions = [1, 1],
-            join = 'miter', tolerance = 2, join_first = True,
-            max_points = 4000, layer = 0, open_ports=-1, rotate_ports=False):
-    """ Creates an outline around all the polygons passed in the `elements`
-    argument. `elements` may be a Device, Polygon, or list of Devices.
-    Parameters
-    ----------
-    elements : Device(/Reference), list of Device(/Reference), or Polygon
-        Polygons to outline or Device containing polygons to outline.
-    distance : int or float
-        Distance to offset polygons. Positive values expand, negative shrink.
-    precision : float
-        Desired precision for rounding vertex coordinates.
-    num_divisions : array-like[2] of int
-        The number of divisions with which the geometry is divided into 
-        multiple rectangular regions. This allows for each region to be 
-        processed sequentially, which is more computationally efficient.
-    join : {'miter', 'bevel', 'round'}
-        Type of join used to create the offset polygon.
-    tolerance : int or float
-        For miter joints, this number must be at least 2 and it represents the 
-        maximal distance in multiples of offset between new vertices and their 
-        original position before beveling to avoid spikes at acute joints. For 
-        round joints, it indicates the curvature resolution in number of 
-        points per full circle.
-    join_first : bool
-        Join all paths before offsetting to avoid unnecessary joins in 
-        adjacent polygon sides.
-    max_points : int
-        The maximum number of vertices within the resulting polygon.
-    layer : int, array-like[2], or set
-        Specific layer(s) to put polygon geometry on.
-  open_ports : int or float
-      Trims the outline at each port of the element. The value of open_port
-      scales the length of the trim gemoetry (must be positive). 
-      Useful for positive tone layouts. 
-    Returns
-    -------
-    D : Device
-        A Device containing the outlined polygon(s).
-    """
-    D = Device('outline')
-    if type(elements) is not list: elements = [elements]
-    for e in elements:
-        if isinstance(e, Device): D.add_ref(e)
-        else: D.add(e)
-    gds_layer, gds_datatype = _parse_layer(layer)
-    D_bloated = pg.offset(D, distance = distance, join_first = join_first,
-                       num_divisions = num_divisions, precision = precision,
-                       max_points = max_points, join = join,
-                       tolerance = tolerance, layer = layer)
-    Outline = pg.boolean(A = D_bloated, B = D, operation = 'A-B',
-                      num_divisions = num_divisions, max_points = max_points,
-                      precision = precision, layer = layer)
-    if open_ports>=0:
-      for i in e.ports:
-          trim = pg.rectangle(size=(distance, e.ports[i].width+open_ports*distance))
+# def outline(elements, distance = 1, precision = 1e-4, num_divisions = [1, 1],
+#             join = 'miter', tolerance = 2, join_first = True,
+#             max_points = 4000, layer = 0, open_ports=-1, rotate_ports=False):
+#     """ Creates an outline around all the polygons passed in the `elements`
+#     argument. `elements` may be a Device, Polygon, or list of Devices.
+#     Parameters
+#     ----------
+#     elements : Device(/Reference), list of Device(/Reference), or Polygon
+#         Polygons to outline or Device containing polygons to outline.
+#     distance : int or float
+#         Distance to offset polygons. Positive values expand, negative shrink.
+#     precision : float
+#         Desired precision for rounding vertex coordinates.
+#     num_divisions : array-like[2] of int
+#         The number of divisions with which the geometry is divided into 
+#         multiple rectangular regions. This allows for each region to be 
+#         processed sequentially, which is more computationally efficient.
+#     join : {'miter', 'bevel', 'round'}
+#         Type of join used to create the offset polygon.
+#     tolerance : int or float
+#         For miter joints, this number must be at least 2 and it represents the 
+#         maximal distance in multiples of offset between new vertices and their 
+#         original position before beveling to avoid spikes at acute joints. For 
+#         round joints, it indicates the curvature resolution in number of 
+#         points per full circle.
+#     join_first : bool
+#         Join all paths before offsetting to avoid unnecessary joins in 
+#         adjacent polygon sides.
+#     max_points : int
+#         The maximum number of vertices within the resulting polygon.
+#     layer : int, array-like[2], or set
+#         Specific layer(s) to put polygon geometry on.
+#   open_ports : int or float
+#       Trims the outline at each port of the element. The value of open_port
+#       scales the length of the trim gemoetry (must be positive). 
+#       Useful for positive tone layouts. 
+#     Returns
+#     -------
+#     D : Device
+#         A Device containing the outlined polygon(s).
+#     """
+#     D = Device('outline')
+#     if type(elements) is not list: elements = [elements]
+#     for e in elements:
+#         if isinstance(e, Device): D.add_ref(e)
+#         else: D.add(e)
+#     gds_layer, gds_datatype = _parse_layer(layer)
+#     D_bloated = pg.offset(D, distance = distance, join_first = join_first,
+#                        num_divisions = num_divisions, precision = precision,
+#                        max_points = max_points, join = join,
+#                        tolerance = tolerance, layer = layer)
+#     Outline = pg.boolean(A = D_bloated, B = D, operation = 'A-B',
+#                       num_divisions = num_divisions, max_points = max_points,
+#                       precision = precision, layer = layer)
+#     if open_ports>=0:
+#       for i in e.ports:
+#           trim = pg.rectangle(size=(distance, e.ports[i].width+open_ports*distance))
 
-          trim.rotate(e.ports[i].orientation)
-          trim.move(trim.center, destination=e.ports[i].midpoint)
-          if rotate_ports:
-              trim.movex(-np.cos(e.ports[i].orientation/180*np.pi)*distance/2)
-              trim.movey(-np.sin(e.ports[i].orientation/180*np.pi)*distance/2)
-          else:
-              trim.movex(np.cos(e.ports[i].orientation/180*np.pi)*distance/2)
-              trim.movey(np.sin(e.ports[i].orientation/180*np.pi)*distance/2)
+#           trim.rotate(e.ports[i].orientation)
+#           trim.move(trim.center, destination=e.ports[i].midpoint)
+#           if rotate_ports:
+#               trim.movex(-np.cos(e.ports[i].orientation/180*np.pi)*distance/2)
+#               trim.movey(-np.sin(e.ports[i].orientation/180*np.pi)*distance/2)
+#           else:
+#               trim.movex(np.cos(e.ports[i].orientation/180*np.pi)*distance/2)
+#               trim.movey(np.sin(e.ports[i].orientation/180*np.pi)*distance/2)
 
-          Outline = pg.boolean(A = Outline, B = trim, operation = 'A-B',
-                     num_divisions = num_divisions, max_points = max_points,
-                     precision = precision, layer = layer)
-      for i in e.ports: Outline.add_port(port=e.ports[i])
-    return Outline
+#           Outline = pg.boolean(A = Outline, B = trim, operation = 'A-B',
+#                      num_divisions = num_divisions, max_points = max_points,
+#                      precision = precision, layer = layer)
+#       for i in e.ports: Outline.add_port(port=e.ports[i])
+#     return Outline
 
-def assign_ids(device_list, ids):
-    """
-    Attach device ID to device list.
+# def assign_ids(device_list, ids):
+#     """
+#     Attach device ID to device list.
 
-    Parameters
-    ----------
-    device_list : LIST
-        List of phidl device objects.
-    ids : LIST
-        list of identification strings. 
-        typically generated from packer_rect/text_labels.
+#     Parameters
+#     ----------
+#     device_list : LIST
+#         List of phidl device objects.
+#     ids : LIST
+#         list of identification strings. 
+#         typically generated from packer_rect/text_labels.
 
-    Returns
-    -------
-    None.
+#     Returns
+#     -------
+#     None.
 
-    """    
-    device_list = list(filter(None,device_list))
-    for i in range(len(device_list)):
-        device_list[i].name = ids[i]
+#     """    
+#     device_list = list(filter(None,device_list))
+#     for i in range(len(device_list)):
+#         device_list[i].name = ids[i]
  
-def packer(D_list,
-           text_letter,
-           text_pos=(0,-70),
-           text_layer=1,
-           text_height=50,
-           spacing = 100,
-           aspect_ratio = (1,1),
-           max_size = (None,750),
-           sort_by_area = False,
-           density = 1.1,
-           precision = 1e-2,
-           verbose = False):
-    """
-    Returns Device "p" with references from D_list. Names, or index, of each device is assigned and can be called from p.references[i].parent.name
+# def packer(D_list,
+#            text_letter,
+#            text_pos=(0,-70),
+#            text_layer=1,
+#            text_height=50,
+#            spacing = 100,
+#            aspect_ratio = (1,1),
+#            max_size = (None,750),
+#            sort_by_area = False,
+#            density = 1.1,
+#            precision = 1e-2,
+#            verbose = False):
+#     """
+#     Returns Device "p" with references from D_list. Names, or index, of each device is assigned and can be called from p.references[i].parent.name
 
 
-    Parameters
-    ----------
-    D_list : TYPE
-        DESCRIPTION.
-    text_letter : TYPE
-        DESCRIPTION.
-    text_pos : TYPE, optional
-        DESCRIPTION. The default is None.
-    text_layer : TYPE, optional
-        DESCRIPTION. The default is 1.
-    text_height : TYPE, optional
-        DESCRIPTION. The default is 50.
-    spacing : TYPE, optional
-        DESCRIPTION. The default is 10.
-    aspect_ratio : TYPE, optional
-        DESCRIPTION. The default is (1,1).
-    max_size : TYPE, optional
-        DESCRIPTION. The default is (None,None).
-    sort_by_area : TYPE, optional
-        DESCRIPTION. The default is True.
-    density : TYPE, optional
-        DESCRIPTION. The default is 1.1.
-    precision : TYPE, optional
-        DESCRIPTION. The default is 1e-2.
-    verbose : TYPE, optional
-        DESCRIPTION. The default is False.
-     : TYPE
-        DESCRIPTION.
+#     Parameters
+#     ----------
+#     D_list : TYPE
+#         DESCRIPTION.
+#     text_letter : TYPE
+#         DESCRIPTION.
+#     text_pos : TYPE, optional
+#         DESCRIPTION. The default is None.
+#     text_layer : TYPE, optional
+#         DESCRIPTION. The default is 1.
+#     text_height : TYPE, optional
+#         DESCRIPTION. The default is 50.
+#     spacing : TYPE, optional
+#         DESCRIPTION. The default is 10.
+#     aspect_ratio : TYPE, optional
+#         DESCRIPTION. The default is (1,1).
+#     max_size : TYPE, optional
+#         DESCRIPTION. The default is (None,None).
+#     sort_by_area : TYPE, optional
+#         DESCRIPTION. The default is True.
+#     density : TYPE, optional
+#         DESCRIPTION. The default is 1.1.
+#     precision : TYPE, optional
+#         DESCRIPTION. The default is 1e-2.
+#     verbose : TYPE, optional
+#         DESCRIPTION. The default is False.
+#      : TYPE
+#         DESCRIPTION.
 
-    Returns
-    -------
-    TYPE
-        DESCRIPTION.
+#     Returns
+#     -------
+#     TYPE
+#         DESCRIPTION.
 
-    """
+#     """
     
-    p = pg.packer(D_list,
-        spacing = spacing,
-        aspect_ratio = aspect_ratio,
-        max_size = max_size,
-        sort_by_area = sort_by_area,
-        density = density,
-        precision = precision,
-        verbose = verbose,
-        )
+#     p = pg.packer(D_list,
+#         spacing = spacing,
+#         aspect_ratio = aspect_ratio,
+#         max_size = max_size,
+#         sort_by_area = sort_by_area,
+#         density = density,
+#         precision = precision,
+#         verbose = verbose,
+#         )
 
     
-    for i in range(len(p[0].references)):
-        device_text = text_letter+str(i)
-        text_object = pg.text(text=device_text, size = text_height, justify='left', layer=text_layer)
-        t = p[0].references[i].parent.add_ref(text_object)
-        t.move(origin=text_object.bbox[0], destination= (text_pos[0], text_pos[1]))
+#     for i in range(len(p[0].references)):
+#         device_text = text_letter+str(i)
+#         text_object = pg.text(text=device_text, size = text_height, justify='left', layer=text_layer)
+#         t = p[0].references[i].parent.add_ref(text_object)
+#         t.move(origin=text_object.bbox[0], destination= (text_pos[0], text_pos[1]))
 
-        p[0].references[i].parent.name = device_text
+#         p[0].references[i].parent.name = device_text
         
-    p = p[0]
-    p.name = text_letter
-    p._internal_name = text_letter
-    # p.flatten() # do not flatten.
+#     p = p[0]
+#     p.name = text_letter
+#     p._internal_name = text_letter
+#     # p.flatten() # do not flatten.
 
-    return p
+#     return p
  
-def packer_rect(device_list, dimensions, spacing, text_pos=None, text_size = 50, text_layer = 1):
-    """
-    This function distributes devices from a list onto a rectangular grid. The aspect ratio (dimensions) and spacing must be specified.
-    If specified, text can be added automatically in a A1, B2, C3, style. The text will start with A0 in the NW corner.
+# def packer_rect(device_list, dimensions, spacing, text_pos=None, text_size = 50, text_layer = 1):
+#     """
+#     This function distributes devices from a list onto a rectangular grid. The aspect ratio (dimensions) and spacing must be specified.
+#     If specified, text can be added automatically in a A1, B2, C3, style. The text will start with A0 in the NW corner.
 
-    Parameters
-    ----------
-    device_list : LIST
-        LIST OF PHIDL DEVICE OBJECTS
-    dimensions : TUPLE
-        (X,Y) X BY Y GRID POINTS
-    spacing : TUPLE
-        (dX,dY) SPACING BETWEEN GRID POINTS
-    text_pos : TUPLE, optional
-        IF SPECIFIED THE GENERATED TEXT IS LOCATED AT (dX,dY) FROM SW CORNER. The default is None.
-    text_size : INT, optional
-        SIZE OF TEXT LABEL. The default is 50.
-    text_layer : INT, optional
-        LAYER TO ADD TEXT LABEL TO The default is 1.
+#     Parameters
+#     ----------
+#     device_list : LIST
+#         LIST OF PHIDL DEVICE OBJECTS
+#     dimensions : TUPLE
+#         (X,Y) X BY Y GRID POINTS
+#     spacing : TUPLE
+#         (dX,dY) SPACING BETWEEN GRID POINTS
+#     text_pos : TUPLE, optional
+#         IF SPECIFIED THE GENERATED TEXT IS LOCATED AT (dX,dY) FROM SW CORNER. The default is None.
+#     text_size : INT, optional
+#         SIZE OF TEXT LABEL. The default is 50.
+#     text_layer : INT, optional
+#         LAYER TO ADD TEXT LABEL TO The default is 1.
 
-    Returns
-    -------
-    D : DEVICE
-        PHIDL device object. List is entered and a single device is returned with labels.
-    text_list : LIST
-        LIST of strings of device labels.
+#     Returns
+#     -------
+#     D : DEVICE
+#         PHIDL device object. List is entered and a single device is returned with labels.
+#     text_list : LIST
+#         LIST of strings of device labels.
 
-    """
+#     """
     
-    letters = list(string.ascii_uppercase)
+#     letters = list(string.ascii_uppercase)
 
-    while len(device_list) < np.product(dimensions):
-        device_list.append(None)
+#     while len(device_list) < np.product(dimensions):
+#         device_list.append(None)
     
-    new_shape = np.reshape(device_list,dimensions)
-    text_list=[]
-    D = Device('return')
-    for i in range(dimensions[0]):
-        for j in range(dimensions[1]):
-            if not new_shape[i][j] == None:
-                moved_device = new_shape[i][j].move(origin=new_shape[i][j].bbox[0], destination=(i*spacing[0], -j*spacing[1]))
-                D.add_ref(moved_device)
-                if text_pos:
-                    device_text = letters[i]+str(j)
-                    text_list.append(device_text)
-                    text_object = pg.text(text=device_text, size = text_size, justify='left', layer=text_layer)
-                    text_object.move(destination= (i*spacing[0]+text_pos[0], -j*spacing[1]+text_pos[1]))
-                    D.add_ref(text_object)
+#     new_shape = np.reshape(device_list,dimensions)
+#     text_list=[]
+#     D = Device('return')
+#     for i in range(dimensions[0]):
+#         for j in range(dimensions[1]):
+#             if not new_shape[i][j] == None:
+#                 moved_device = new_shape[i][j].move(origin=new_shape[i][j].bbox[0], destination=(i*spacing[0], -j*spacing[1]))
+#                 D.add_ref(moved_device)
+#                 if text_pos:
+#                     device_text = letters[i]+str(j)
+#                     text_list.append(device_text)
+#                     text_object = pg.text(text=device_text, size = text_size, justify='left', layer=text_layer)
+#                     text_object.move(destination= (i*spacing[0]+text_pos[0], -j*spacing[1]+text_pos[1]))
+#                     D.add_ref(text_object)
 
-    return D, text_list
+#     return D, text_list
 
-def packer_doc(D_pack_list):
-    """
-    This function creates a text document to be referenced during meansurement.
-    Its primary purpose is to serve as a reference for device specifications on chip.
-    For instance, "A2 is a 3um device."
+# def packer_doc(D_pack_list):
+#     """
+#     This function creates a text document to be referenced during meansurement.
+#     Its primary purpose is to serve as a reference for device specifications on chip.
+#     For instance, "A2 is a 3um device."
     
-    Currently. This function really only works with D_pack_list from packer(). 
-    It looks at each reference and grabs the device parameters (which are hard coded).
-    'line.append(str(D_pack_list[i].references[j].parent.width))'
-    It would be great to have this as a dynamical property that can be expounded for every kind of device/parameter.
+#     Currently. This function really only works with D_pack_list from packer(). 
+#     It looks at each reference and grabs the device parameters (which are hard coded).
+#     'line.append(str(D_pack_list[i].references[j].parent.width))'
+#     It would be great to have this as a dynamical property that can be expounded for every kind of device/parameter.
     
-    'create_device_doc' predated this function and took every np.array parameter in the parameter-dict and wrote it to a .txt file.
-    The main problem with this function is that the device name is not associated in the parameter-dict.
+#     'create_device_doc' predated this function and took every np.array parameter in the parameter-dict and wrote it to a .txt file.
+#     The main problem with this function is that the device name is not associated in the parameter-dict.
     
-    Inputs
-    ----------
-    sample: STRING
-        enter a sample name "SPX000". The file path will be generated on the NAS and the .txt file will be saved there. 
+#     Inputs
+#     ----------
+#     sample: STRING
+#         enter a sample name "SPX000". The file path will be generated on the NAS and the .txt file will be saved there. 
     
-    Parameters
-    ----------
-    D_pack_list : LIST
-        List containing PHIDL Device objects.
+#     Parameters
+#     ----------
+#     D_pack_list : LIST
+#         List containing PHIDL Device objects.
 
-    Returns
-    -------
-    None.
+#     Returns
+#     -------
+#     None.
 
-    """
+#     """
     
-    """ Safety net for writing to the correct location"""
+#     """ Safety net for writing to the correct location"""
     
-    sample = input('enter a sample name: ')
-    if sample == '':
-        print('Doc not created')
-        return
-    else:
-        path = os.path.join('S:\SC\Measurements',sample)
-        os.makedirs(path, exist_ok=True)
+#     sample = input('enter a sample name: ')
+#     if sample == '':
+#         print('Doc not created')
+#         return
+#     else:
+#         path = os.path.join('S:\SC\Measurements',sample)
+#         os.makedirs(path, exist_ok=True)
     
-        path = os.path.join('S:\SC\Measurements',sample, sample+'_device_doc.txt')
+#         path = os.path.join('S:\SC\Measurements',sample, sample+'_device_doc.txt')
         
-        file = open(path, "w")
+#         file = open(path, "w")
         
-        tab = ',\t'    
-        string_list=[]
-        headers = ['ID', 'WIDTH', 'AREA', 'SQUARES']   
-        headers.append('\n----------------------------------\n')
+#         tab = ',\t'    
+#         string_list=[]
+#         headers = ['ID', 'WIDTH', 'AREA', 'SQUARES']   
+#         headers.append('\n----------------------------------\n')
         
-        for i in range(len(D_pack_list)):
-            for j in range(len(D_pack_list[i].references)):
-                line = []
-                line.append(str(D_pack_list[i].references[j].parent.name))
-                line.append(str(D_pack_list[i].references[j].parent.width))
-                line.append(str(D_pack_list[i].references[j].parent.area))
-                line.append(str(D_pack_list[i].references[j].parent.squares))
+#         for i in range(len(D_pack_list)):
+#             for j in range(len(D_pack_list[i].references)):
+#                 line = []
+#                 line.append(str(D_pack_list[i].references[j].parent.name))
+#                 line.append(str(D_pack_list[i].references[j].parent.width))
+#                 line.append(str(D_pack_list[i].references[j].parent.area))
+#                 line.append(str(D_pack_list[i].references[j].parent.squares))
                 
-                line.append('\n')
-                string_list.append(tab.join(line))
-                string_list.append('. . . . . . . . . . . . . . . . \n')
-            string_list.append('\\-----------------------------------\\ \n')
+#                 line.append('\n')
+#                 string_list.append(tab.join(line))
+#                 string_list.append('. . . . . . . . . . . . . . . . \n')
+#             string_list.append('\\-----------------------------------\\ \n')
         
-        file.write(tab.join(headers))
-        file.writelines(string_list)
-        file.close()
+#         file.write(tab.join(headers))
+#         file.writelines(string_list)
+#         file.close()
 
-def assign_ids(device_list, ids):
-    """
-    Attach device ID to device list.
+# def assign_ids(device_list, ids):
+#     """
+#     Attach device ID to device list.
 
-    Parameters
-    ----------
-    device_list : LIST
-        List of phidl device objects.
-    ids : LIST
-        list of identification strings. 
-        typically generated from packer_rect/text_labels.
+#     Parameters
+#     ----------
+#     device_list : LIST
+#         List of phidl device objects.
+#     ids : LIST
+#         list of identification strings. 
+#         typically generated from packer_rect/text_labels.
 
-    Returns
-    -------
-    None.
+#     Returns
+#     -------
+#     None.
 
-    """    
-    device_list = list(filter(None,device_list))
-    for i in range(len(device_list)):
-        device_list[i].name = ids[i]
+#     """    
+#     device_list = list(filter(None,device_list))
+#     for i in range(len(device_list)):
+#         device_list[i].name = ids[i]
   

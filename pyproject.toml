@@ -26,7 +26,8 @@ classifiers = [
 
 dependencies = [
   "peppercorn",
-  "phidl"
+  "phidl",
+  "scipy"
 ]
 
 [project.urls]

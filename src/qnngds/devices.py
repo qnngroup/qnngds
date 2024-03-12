@@ -3,11 +3,7 @@ from phidl import Device, Port
 # from phidl import quickplot as qp
 # from phidl import set_quickplot_options
 import phidl.geometry as pg
-import phidl.routing as pr
 from typing import Tuple, List, Union, Dict, Set
-import numpy as np
-import math
-import os
 
 
 def ntron(choke_w     = 0.03, 
