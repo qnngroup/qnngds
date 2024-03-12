@@ -9,7 +9,7 @@ import numpy as np
 import math
 import os
 
-import devices as qd
+import qnngds.devices as qd
 
 set_quickplot_options(blocking=True)
 

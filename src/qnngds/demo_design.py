@@ -1,5 +1,5 @@
 from phidl import quickplot as qp
-import design as qd
+import qnngds.design as qd
 
 chip_w = 5000
 chip_margin = 50

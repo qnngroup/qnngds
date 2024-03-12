@@ -23,7 +23,7 @@ from phidl.device_layout import (
     _parse_layer,
     make_device,
 )
-import geometries as qg
+import qnngds.geometries as qg
 
 auto_param = None
 die_cell_border = 80

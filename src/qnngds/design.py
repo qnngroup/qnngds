@@ -11,10 +11,10 @@ from typing import Tuple, List, Union, Dict, Set
 import numpy as np
 import math
 import os
-import geometries as qg
-import devices as qd
-import circuits as qc
-import utilities as qu
+import qnngds.geometries as qg
+import qnngds.devices as qd
+import qnngds.circuits as qc
+import qnngds.utilities as qu
 
 Free = True
 Occupied = False
