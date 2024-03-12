@@ -1,0 +1,32 @@
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[project]
+name = "qnngds"
+version = "0.0.1"
+authors = [
+  { name="A. Jacquillat", email="audrey01@mid.edu" }
+]
+maintainers = [
+  {name = "A. Jacquillat", email = "audrey01@mit.edu" }
+]
+description = "The QNN library for creating gds files"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {file = "LICENSE.txt"}
+keywords = ["phidl", "nanowire electronics", "nanofabrication", "gds"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+  "peppercorn",
+  "phidl"
+]
+
+[project.urls]
+Homepage = "https://github.com/qnngroup/qnngds"
+Issues = "https://github.com/qnngroup/qnngds/issues"
