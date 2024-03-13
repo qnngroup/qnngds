@@ -3,8 +3,8 @@
 # -- Project information
 
 project = 'qnngds'
-# copyright = '2024, Graziella'
-# author = 'Graziella'
+copyright = '2024, QNN group'
+author = 'QNN group'
 
 release = '0.1'
 version = '0.1.0'
