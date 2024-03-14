@@ -11,7 +11,7 @@ Devices
 Circuits
 --------
 
-.. automodule:: circuits
+.. automodule:: qnngds.circuits
    :members:
    :undoc-members:
 
