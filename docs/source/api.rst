@@ -4,35 +4,35 @@ API
 Devices
 -------
 
-.. automodule:: devices
+.. automodule:: qnngds.devices
    :members:
    :undoc-members:
 
 Circuits
 --------
 
-.. automodule:: circuits
+.. automodule:: qnngds.circuits
    :members:
    :undoc-members:
 
 Geometries
 ----------
 
-.. automodule:: geometries
+.. automodule:: qnngds.geometries
    :members:
    :undoc-members:
 
 Utilities
 ----------
 
-.. automodule:: utilities
+.. automodule:: qnngds.utilities
    :members:
    :undoc-members:
 
 Design
 ------
 
-.. automodule:: design
+.. automodule:: qnngds.design
    :members:
    :undoc-members:
 
