@@ -4,20 +4,20 @@ API
 Devices
 -------
 
-.. automodule:: devices
+.. automodule:: src.qnngds.devices
    :members:
    :undoc-members:
 
 Circuits
 --------
 
-.. automodule:: circuits
+.. automodule:: src.qnngds.circuits
    :members:
    :undoc-members:
 
 Geometries
 ----------
 
-.. automodule:: geometries
+.. automodule:: src.qnngds.geometries
    :members:
    :undoc-members:
