@@ -1,30 +1,38 @@
 API
 ===
 
-.. Devices
-.. -------
+Devices
+-------
 
-.. .. automodule:: devices
-..    :members:
-..    :undoc-members:
+.. automodule:: devices
+   :members:
+   :undoc-members:
 
-.. Circuits
-.. --------
+Circuits
+--------
 
-.. .. automodule:: circuits
-..    :members:
-..    :undoc-members:
+.. automodule:: circuits
+   :members:
+   :undoc-members:
 
-.. Geometries
-.. ----------
+Geometries
+----------
 
-.. .. automodule:: geometries
-..    :members:
-..    :undoc-members:
+.. automodule:: geometries
+   :members:
+   :undoc-members:
 
-.. autosummary::
-   :toctree: modules
+Utilities
+----------
 
-   devices
-   circuits
-   geometries
+.. automodule:: utilities
+   :members:
+   :undoc-members:
+
+Design
+------
+
+.. automodule:: design
+   :members:
+   :undoc-members:
+
