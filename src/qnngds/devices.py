@@ -117,20 +117,26 @@ def nanowire(channel_w: float = 0.1,
              layer:     int   = 0, 
              num_pts:   int   = 100
              ) -> Device:
-    """ Creates a single wire, of same appearance as a ntron but without the
-    gate.
-    
+    """
+    Creates a single wire, with the same appearance as an NTRON but without the gate.
+
     Parameters:
-    channel_w (int or float): the width of the channel (at the hot-spot location)
-    source_w  (int or float): the width of the nanowire's "source"
-    layer (int): the layer where to put the device
-    num_pts (int): the number of points comprising the optimal_steps geometries
+    -----------
+    channel_w : int or float
+        The width of the channel (at the hot-spot location).
+    source_w : int or float
+        The width of the nanowire's "source".
+    layer : int
+        The layer where to put the device.
+    num_pts : int
+        The number of points comprising the optimal_steps geometries.
 
     Returns:
-    NANOWIRE (Device): a device containing 2 optimal steps joined at their
-    channel_w end
-
+    --------
+    NANOWIRE : Device
+        A device containing 2 optimal steps joined at their channel_w end.
     """
+
     NANOWIRE = Device(f"NANOWIRE {channel_w} ")
     wire = pg.optimal_step(channel_w, source_w, symmetric=True, num_pts=num_pts)
     source = NANOWIRE << wire

@@ -25,34 +25,50 @@ def snspd_ntron(w_snspd:        float                    = 0.1,
                 w_pad:          Union[int, float]        = 1,
                 layer:          int                      = 0
                 ) -> Device:
-    """ Creates a snspd coupled to a ntron, with 3 inductors in the circuit as:
+    """
+    Creates a SNSPD coupled to an NTRON, with 3 inductors in the circuit as:
 
         |        |
         L1       L3
         |        |
-        |__L2__ntron
+        |__L2__NTRON
         |        |
         SNSPD
         |
         
-        The length of L1, L2 and L3 (long nanowires) where scaled against the snspd:
-        L1 = L3 = k13 * L and L2 = k2 * L where L is the snspd kinetic inductance
+    The length of L1, L2, and L3 (long nanowires) where scaled against the SNSPD:
+    L1 = L3 = k13 * L and L2 = k2 * L where L is the SNSPD kinetic inductance.
 
-        Param:
-        w_snspd, pitch_snspd, size_snspd : parameters relative to snspd
-        w_inductor, pitch_inductor : parameters relative to inductors
-        k_inductor13, k_inductor2 : the factors for scaling the inductors
-                                     to the snspd kinetic inductance
-        w_choke, w_channel : parameters relative to the ntron 
-                            (note: the ntron source and drain w will be
-                            equal to w_inductor)
-        w_pad : the width of the external connections to the cell
-        layer : int
-        
-        Returns:
-        SNSPD_NTRON : Device
-        
-        """
+    Parameters:
+    -----------
+    w_snspd : float
+        Width of the SNSPD.
+    pitch_snspd : float
+        Pitch of the SNSPD.
+    size_snspd : float
+        Size of the SNSPD.
+    w_inductor : float
+        Width of the inductors.
+    pitch_inductor : float
+        Pitch of the inductors.
+    k_inductor13 : float
+        The factor for scaling L1 and L3 relative to the SNSPD kinetic inductance.
+    k_inductor2 : float
+        The factor for scaling L2 relative to the SNSPD kinetic inductance.
+    w_choke : float
+        Width of the choke in the NTRON.
+    w_channel : float
+        Width of the channel in the NTRON.
+    w_pad : float
+        Width of the external connections to the cell.
+    layer : int
+        Layer of the device.
+
+    Returns:
+    --------
+    SNSPD_NTRON : Device
+        The created device.
+    """
     
     def scale_inductors_to_snspd():
 

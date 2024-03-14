@@ -18,13 +18,18 @@ set_quickplot_options(blocking=True)
 
 def alignement_mark(layers: List[int] = [1, 2, 3, 4]
                     ) -> Device:
-    """ Creates an alignement mark for every photolithography
+    """
+    Creates an alignment mark for every photolithography.
     
     Parameters:
-    layers (array of int): an array of layers
+    -----------
+    layers : array of int
+        An array of layers.
       
     Returns:
-    ALIGN (Device): a device containing the alignement marks, on each layer
+    --------
+    ALIGN : Device
+        A device containing the alignment marks on each layer.
     """
 
     def create_marker(layer1, layer2):
@@ -120,19 +125,25 @@ def resolution_test(resolutions: List[float]        = [0.8, 1, 1.2, 1.4, 1.6, 1.
                     inverted:    Union[bool, float] = False, 
                     layer:       int                = 0
                     ) -> Device:
-    """ Creates test structures for determining a process resolution
+    """
+    Creates test structures for determining a process resolution.
         
-        Parameters:
-        resolutions (array of int or float): list of resolutions (in um) to be tested
-        inverted (bool or float): if True, invert the device. If float, outline the device by this width.
-        layer (int): layer to put the device on
+    Parameters:
+    -----------
+    resolutions : array of int or float
+        List of resolutions (in µm) to be tested.
+    inverted : bool or float
+        If True, invert the device. If float, outline the device by this width.
+    layer : int
+        Layer to put the device on.
+    die_max_size : int or float, optional
+        Max size of the test structure to be returned (typically, the size of a single die).
 
-        # to add in later versions, wrap the test structures to fit a given unit cell:
-        die_max_size: max size of the test structure to be returned (typically, the size of a single die) 
-                       
-        Returns:
-        RES_TEST (Device): the test structures, in the specified layer
-        """
+    Returns:
+    --------
+    RES_TEST : Device
+        The test structures, in the specified layer.
+    """
     
     def create_3L(res = 1):
 
@@ -225,24 +236,23 @@ def hyper_taper(length = 10, wide_section = 50, narrow_section = 5, layer=0):
     """
     Hyperbolic taper (solid). Designed by colang.
 
-
     Parameters
     ----------
-    length : FLOAT
+    length : float
         Length of taper.
-    wide_section : FLOAT
+    wide_section : float
         Wide width dimension.
-    narrow_section : FLOAT
+    narrow_section : float
         Narrow width dimension.
-    layer : INT, optional
+    layer : int, optional
         Layer for device to be created on. The default is 1.
-        
         
     Returns
     -------
-    HT :  DEVICE
-        PHIDL device object is returned.
+    HT :  Device
+        The hyper taper.
     """
+
     taper_length=length
     wide =  wide_section
     zero = 0

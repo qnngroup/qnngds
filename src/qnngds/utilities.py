@@ -54,30 +54,45 @@ def die_cell(die_size:        Tuple[int, int]   = (dflt_die_w, dflt_die_w),
              pad_layer:       int               = dflt_layers['pad'], 
              invert:          bool              = False
              ) -> Device:
-    """ Creates a die cell with dicing marks, text, and pads to connect to a device.
+    """
+    Creates a die cell with dicing marks, text, and pads to connect to a device.
     
     Parameters:
-    die_size        (int or float, int or float): overall size of the cell (w, h)
-    device_max_size (int or float, int or float): max dimensions of the device inside the cell (w, h)
-    pad_size        (int or float, int or float): dimensions of the cell's pads (w, h)
-    contact_w (int or float): width of the ports and route to be connected to a device
-    contact_l (int or float): extra length of the routes above the ports to assure alignment with the device 
-                              (useful for ebeam lithography)
-    ports     (set): the ports of the device, format must be {'N':m, 'E':n, 'W':p, 'S':q}
-    ports_gnd (array of string): the ports connected to ground
-    isolation (int or float): the width of the pads outline
-    text      (string): the text to be displayed on the cell
-    text_size (int): size of text, corresponds to phidl geometry std
-    layer     (int or array-like[2]): the layer where to put the cell
-    pad_layer (int or array-like[2]): the layer where to put the contact pads
-    invert    (bool): if True, the cell is inverted (useful for positive tone resists exposure)
+    -----------
+    die_size : tuple of int or float
+        Overall size of the cell (width, height).
+    device_max_size : tuple of int or float
+        Max dimensions of the device inside the cell (width, height).
+    pad_size : tuple of int or float
+        Dimensions of the cell's pads (width, height).
+    contact_w : int or float
+        Width of the ports and route to be connected to a device.
+    contact_l : int or float
+        Extra length of the routes above the ports to assure alignment with the device 
+        (useful for ebeam lithography).
+    ports : set
+        The ports of the device, format must be {'N':m, 'E':n, 'W':p, 'S':q}.
+    ports_gnd : array of string
+        The ports connected to ground.
+    isolation : int or float
+        The width of the pads outline.
+    text : string
+        The text to be displayed on the cell.
+    text_size : int
+        Size of text, corresponds to phidl geometry std.
+    layer : int or array-like[2]
+        The layer where to put the cell.
+    pad_layer : int or array-like[2]
+        The layer where to put the contact pads.
+    invert : bool
+        If True, the cell is inverted (useful for positive tone resists exposure).
 
-      
     Returns:
-    DIE (Device): the cell, with ports of width contact_w positionned around a device_max_size area
-    
+    --------
+    DIE : Device
+        The cell, with ports of width contact_w positioned around a device_max_size area.
     """
-    
+
     def offset(overlap_port):
         port_name = overlap_port.name[0]
         if   port_name == 'N' :
@@ -183,19 +198,27 @@ def add_hyptap_to_cell(die_ports: List[Port],
                        contact_w: Union[int, float] = 5, 
                        layer:     int               = dflt_layers['device']
                        ) -> Tuple[Device, Device]:
-    """ Takes the cell and add hyper taper at its ports
+    """
+    Takes the cell and adds hyper taper at its ports.
     
     Parameters:
-    die_ports (list of Port, use .get_ports()): the ports of the die cell
-    overlap_w (int or float): the overlap width in µm (accounts for misalignement between 1st and 2nd ebeam exposures)
-    contact_w (int or float): the width of the contact with the device's route in µm
-                            (width of hyper taper's end)
-    layer (int or array-like[2]): the layer on which to place the device
+    -----------
+    die_ports : list of Port
+        The ports of the die cell (use .get_ports()).
+    overlap_w : int or float
+        The overlap width in µm (accounts for misalignment between 1st and 2nd ebeam exposures).
+    contact_w : int or float
+        The width of the contact with the device's route in µm (width of hyper taper's end).
+    layer : int or array-like[2]
+        The layer on which to place the device.
                             
     Returns:
-    HT (Device): the hyper tapers, positionned at the die's ports,
-                ports of the same name than the die's ports are added to the output of the tapers
-    device_ports (Device): a device containing only the input ports of the tapers, named as the die's ports
+    --------
+    HT : Device
+        The hyper tapers, positioned at the die's ports. Ports of the same name as the die's ports
+        are added to the output of the tapers.
+    device_ports : Device
+        A device containing only the input ports of the tapers, named as the die's ports.
     """
     
     HT = Device("HYPER TAPERS ")
@@ -215,15 +238,22 @@ def route_to_dev(ext_ports: List[Port],
                  dev_ports: Set[Port],
                  layer:     int = dflt_layers['device']
                  ) -> Device:
-    """ Creates smooth routes from external ports to the device's ports
+    """
+    Creates smooth routes from external ports to the device's ports.
     
     Parameters:
-     ext_ports (List of Port, use .get_ports()): the external ports, e.g. of the die or hyper tapers 
-     dev_ports (Set of Port,  use .ports): the device's ports, should be named as the external ports 
-     layer (int or array-like[2]): the layer to put the routes on
+    -----------
+    ext_ports : list of Port
+        The external ports, e.g., of the die or hyper tapers (use .get_ports()).
+    dev_ports : set of Port
+        The device's ports, should be named as the external ports (use .ports).
+    layer : int or array-like[2]
+        The layer to put the routes on.
      
     Returns:
-     ROUTES (Device): the routes from ports to ports, on the specified layer
+    --------
+    ROUTES : Device
+        The routes from ports to ports, on the specified layer.
     """
 
     ROUTES = Device("ROUTES ")

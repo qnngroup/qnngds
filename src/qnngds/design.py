@@ -420,32 +420,44 @@ def create_chip(chip_w:                 Union[int, float]       = dflt_chip_w,
                            Tuple[Device, Union[int, float], str],
                            Tuple[Device, Union[int, float], List[List[bool]]], 
                            Tuple[Device, Union[int, float]]]:
-    """ Creates a chip map in the annotations layer.
-    If unpack_chip_map is set to True, creates a map (2D array) to monitor the
-    states of each cell of the chip.
-    The user should input N_dies xor die_w.
-     
-      Parameters: 
-      chip_w (int or float): The overall width (in um) of the chip
-      margin (int or float): The width (in um) of the outline of the chip where
-      no device should be placed
-      N_dies (int): Number of dies/units to be placed by row and column
-      die_w (None, int or float): if specified, the width of each die/unit to be
-      placed by row and column
-      annotations_layer (int, array-like[2]): The layer where to put the device
-      unpack_chip_map (bool): if True, the function returns a map (2D array) of
-      states to be filled later (e.g. with place_on_chip())
-      create_devices_map_txt (bool or string): if True or string, the function
-      creates a txt file that will map the devices
-
-      Returns:
-      CHIP (Device): The chip map.
-      if die_w was None, die_w (float): The width of each die.
-      if die_w was given, N_dies (float): The number of dies/units on each row and column
-      chip_map (array-like[N_dies][N_dies]): A 2D array filled with "Free"
-      (=True) states, returned only if unpack_chip_map == True
-      file_name (str): The name of the created devices map text file
+    """
+    Creates a chip map in the annotations layer.
     
+    If unpack_chip_map is set to True, creates a map (2D array) to monitor the
+    states of each cell of the chip. The user should input N_dies xor die_w.
+
+    Parameters:
+    -----------
+    chip_w : int or float
+        The overall width (in um) of the chip.
+    margin : int or float
+        The width (in um) of the outline of the chip where no device should be placed.
+    N_dies : int
+        Number of dies/units to be placed by row and column.
+    die_w : None, int, or float, optional
+        If specified, the width of each die/unit to be placed by row and column.
+    annotations_layer : int or array-like[2], optional
+        The layer where to put the device.
+    unpack_chip_map : bool, optional
+        If True, the function returns a map (2D array) of states to be filled later (e.g., with place_on_chip()).
+    create_devices_map_txt : bool or string, optional
+        If True or string, the function creates a txt file that will map the devices.
+
+    Returns:
+    --------
+    CHIP : Device
+        The chip map.
+    if die_w was None:
+        die_w : float
+            The width of each die.
+    if die_w was given:
+        N_dies : float
+            The number of dies/units on each row and column.
+    if unpack_chip_map is True:
+        chip_map : array-like[N_dies][N_dies]
+            A 2D array filled with "Free" (=True) states.
+    file_name : str
+        The name of the created devices map text file.
     """
 
     CHIP = Device("CHIP ")
@@ -508,27 +520,36 @@ def place_on_chip(cell:                  Device,
                   chip_map:              List[List[bool]], 
                   die_w:                 Union[int, float],
                   devices_map_txt:       Union[None, str]  = None
-                  ) -> bool:
-    """ Moves the chip to the coordinates specified.
-    Update the chip map with Occupied states where the device has been placed.
-
-    NB: the cell is aligned from its bottom left corner to the coordinates.
-
+                  ) -> bool:    
+    """
+    Moves the chip to the coordinates specified.
     
+    Update the chip map with Occupied states where the device has been placed.
+    
+    NB: The cell is aligned from its bottom left corner to the coordinates.
+
     Parameters:
-    cell (Device) : Device to be moved.
-    coordinates (int, int) : (i, j) indices of the chip grid, where to place the cell.
+    -----------
+    cell : Device
+        Device to be moved.
+    coordinates : tuple of int
+        (i, j) indices of the chip grid, where to place the cell.
         Note that the indices start at 0.
-    chip_map (2D array): The 2D array mapping the free cells in the chip map.
-    die_w (int or float): The width of a die/unit in the chip map.
+    chip_map : 2D array
+        The 2D array mapping the free cells in the chip map.
+    die_w : int or float
+        The width of a die/unit in the chip map.
 
     Returns:
-    (bool) : False, if the Device falls out of the chip map, prints an error
-    message and does not place the device. True, otherwise.
+    --------
+    bool
+        False, if the Device falls out of the chip map, prints an error message and does not place the device. 
+        True, otherwise.
     
     Raises:
-    Prints a warning if the Device is overlapping with already occupied coordinates.
-
+    -------
+    Warning
+        Prints a warning if the Device is overlapping with already occupied coordinates.
     """
 
     # update the chip's availabilities
@@ -567,18 +588,22 @@ def place_remaining_devices(devices_to_place:      List[Device],
                             die_w:                 Union[int,float],
                             write_devices_map_txt: Union[bool, str] = False
                             ) -> Optional[None]:
-    """ Go through the chip map and place the devices given, where the chip map is Free
-        
-        Warning: The list of devices is not re-ordered to fit as many of them as possible. 
-        Some edges of the chip may remain empty because the list contained 2-units long devices (for e.g.).
+    """
+    Go through the chip map and place the devices given, where the chip map is Free.
+    
+    Warning: The list of devices is not re-ordered to fit as many of them as possible. 
+    Some edges of the chip may remain empty because the list contained 2-units long devices (for e.g.).
 
     Parameters:
-    devices_to_place (list of Device objects): The devices to be placed
-    chip_map (2D array): The 2D array mapping the free cells in the chip map.
-    die_w (int or float): The width of a die/unit in the chip map.
-    write_devices_map_txt (bool or string): if True, write a .txt file mapping
-    the devices that were placed
-    
+    -----------
+    devices_to_place : list of Device objects
+        The devices to be placed.
+    chip_map : 2D array
+        The 2D array mapping the free cells in the chip map.
+    die_w : int or float
+        The width of a die/unit in the chip map.
+    write_devices_map_txt : bool or string, optional
+        If True, write a .txt file mapping the devices that were placed.
     """
 
     # name and create the file if no file was given
@@ -616,19 +641,26 @@ def create_alignement_cell(die_w:           Union[int, float] = dflt_die_w,
                            die_layer:       int               = dflt_layers['die'],
                            text:            Union[None, str]  = dflt_text
                            ) -> Device:
-    """ Creates alignement marks in a integer number of unit cells.
-     
+    """
+    Creates alignment marks in an integer number of unit cells.
+
     Parameters:
-    die_w (int or float): width of a unit die/cell in the design (the output
-    device will be a integer number of unit cells)
-    layers_to_align (list of int)
-    outline_die (int or float): the width of the die's outline
-    die_layer (int)
-    text (string)
-    
+    -----------
+    die_w : int or float
+        Width of a unit die/cell in the design (the output device will be an integer number of unit cells).
+    layers_to_align : list of int
+        Layers to align.
+    outline_die : int or float
+        The width of the die's outline.
+    die_layer : int
+        The layer where the die is placed.
+    text : string
+        Text to be displayed.
+
     Returns:
-    DIE_ALIGN (Device): A device that centers the alignement marks in a n*m unit cell
-    
+    --------
+    DIE_ALIGN : Device
+        A device that centers the alignment marks in an n*m unit cell.
     """
 
     if text is None: text = ''
@@ -662,25 +694,34 @@ def create_vdp_cell(die_w:             Union[int, float]      = dflt_die_w,
                     pad_layer:         int                    = dflt_layers['pad'],
                     text:              Union[None, str]       = dflt_text
                     ) -> Device:
-    """ Creates a cell containing a Van Der Pauw structure between 4 contact pads.
+    """
+    Creates a cell containing a Van Der Pauw structure between 4 contact pads.
     
     Parameters: 
-    die_w    (int or float): width of a unit die/cell in the design (the output
-    device will be a integer number of unit cells)
-    pad_size (int or float, int or float): dimensions of the die's pads (w, h)
-    layers_to_probe (list of int): the layers on which to place the vdp structure
-    layers_to_outline (list of int): amoung the vdp layers, the ones for which
-    structure must not be filled but outlined 
-    outline (int or float): the width of the vdp and die's outline
-    die_layer    (int or array-like[2])
-    pad_layer    (int or array-like[2])
-    text (string): if None, the text is f"VDP \n{layers_to_probe}"
+    -----------
+    die_w : int or float
+        Width of a unit die/cell in the design (the output device will be an integer number of unit cells).
+    pad_size : tuple of int or float
+        Dimensions of the die's pads (width, height).
+    layers_to_probe : list of int
+        The layers on which to place the VDP structure.
+    layers_to_outline : list of int
+        Among the VDP layers, the ones for which structure must not be filled but outlined.
+    outline : int or float
+        The width of the VDP and die's outline.
+    die_layer : int or array-like[2]
+        The layer where the die is placed.
+    pad_layer : int or array-like[2]
+        The layer where the pads are placed.
+    text : string, optional
+        If None, the text is f"VDP \n{layers_to_probe}".
     
     Returns:
-    DIE_VANDP (Device)
-    
+    --------
+    DIE_VANDP : Device
+        The created device.
     """
-    
+
     if text is None : text = layers_to_probe
     DIE_VANDP = Device(f"DIE VAN DER PAUW {text} ")
 
@@ -737,26 +778,33 @@ def create_etch_test_cell(die_w:          Union[int, float] = dflt_die_w,
                           die_layer:      int               = dflt_layers['die'],
                           text:           Union[None, str]  = dflt_text
                           ) -> Device:
-    """ Creates etch test structures in integer number of unit cells.
-    These tests structures are though to be used by probing on pads (with a
-    simple multimeter) that should be isolated one with another if the etching
+    """
+    Creates etch test structures in an integer number of unit cells.
+    
+    These test structures are thought to be used by probing on pads (with a
+    simple multimeter) that should be isolated one from another if the etching
     is complete.
      
     Parameters:
-    die_w (int or float): width of a unit die/cell in the design (the output
-    device will be a integer number of unit cells)
-    layers_to_etch (list of list of int): etch element of the list correspond to
-    one test point, to put on the list of layers specified. e.g.: [[1, 2], 1, 2] or [[1]]
-    outline_die (int or float): the width of the die's outline
-    die_layer (int)
-    text (string) 
-    
+    -----------
+    die_w : int or float
+        Width of a unit die/cell in the design (the output device will be an integer number of unit cells).
+    layers_to_etch : list of list of int
+        Each element of the list corresponds to one test point, to put on the list of layers specified.
+        Example: [[1, 2], [1], [2]]
+    outline_die : int or float
+        The width of the die's outline.
+    die_layer : int
+        The layer where the die is placed.
+    text : string
+        Text to be displayed.
+
     Returns:
-    DIE_ETCH_TEST (Device): a device (with size n*m of unit cells) with etch
-    tests in its center
-    
+    --------
+    DIE_ETCH_TEST : Device
+        A device (with size n*m of unit cells) with etch tests in its center.
     """
-    
+
     if text is None: text = f'{layers_to_etch}'
     DIE_ETCH_TEST = Device(f'DIE ETCH TEST {text} ')
 
@@ -798,22 +846,30 @@ def create_resolution_test_cell(die_w:               Union[int, float] = dflt_di
                                 die_layer:           int               = dflt_layers['die'],
                                 text:                Union[None, str]  = dflt_text
                                 ) -> Device:
-    """ Creates a cell containing a resolution test.
+    """
+    Creates a cell containing a resolution test.
     
     Parameters: 
-    die_w    (int or float): width of a unit die/cell in the design (the output
-    device will be a integer number of unit cells)
-    layer_to_resolve (int): the layer to put the resolution test on
-    resolutions_to_test (list of float): the resolutions to test in µm
-    outline (int or float): the width of the vdp and die's outline
-    die_layer    (int or array-like[2])
-    text (string): if None, the text is f"RES TEST \n{layer_to_resolve}"
-    
+    -----------
+    die_w : int or float
+        Width of a unit die/cell in the design (the output device will be an integer number of unit cells).
+    layer_to_resolve : int
+        The layer to put the resolution test on.
+    resolutions_to_test : list of float
+        The resolutions to test in µm.
+    outline : int or float
+        The width of the VDP and die's outline.
+    die_layer : int or array-like[2]
+        The layer where the die is placed.
+    text : string
+        If None, the text is f"RES TEST \n{layer_to_resolve}".
+
     Returns:
-    DIE_RES_TEST (Device)
-    
+    --------
+    DIE_RES_TEST : Device
+        The created device.
     """
-    
+
     if text is None : text = layer_to_resolve
     DIE_RES_TEST = Device(f"DIE RESOLUTION TEST {text} ")
 
@@ -859,30 +915,40 @@ def create_nanowires_cell(die_w:              Union[int, float]           = dflt
                           text:               Union[None, str]            = dflt_text
                           ) -> Device:
 
-    """ Creates a cell that contains several nanowires of given channel and source.
+    """
+    Creates a cell that contains several nanowires of given channel and source.
     
     Parameters: 
-    die_w    (int or float): width of a unit die/cell in the design (the output
-    device will be a integer number of unit cells)
-    pad_size (int or float, int or float): dimensions of the die's pads (w, h)
-    channels_sources_w (List of (float, float)): the list of (channel_w,
-    source_w) of the nanowires to create
-    overlap_w   (int or float): extra length of the routes above the die's ports
-    to assure alignment with the device (useful for ebeam lithography)
-    outline_die (int or float): the width of the pads outline
-    outline_dev (int or float): the width of the device's outline
-    device_layer (int or array-like[2])
-    die_layer    (int or array-like[2])
-    pad_layer    (int or array-like[2])
-    text (string): if None, the text is "NWIRES"
-    
+    -----------
+    die_w : int or float
+        Width of a unit die/cell in the design (the output device will be an integer number of unit cells).
+    pad_size : tuple of int or float
+        Dimensions of the die's pads (width, height).
+    channels_sources_w : List of tuple of float
+        The list of (channel_w, source_w) of the nanowires to create.
+    overlap_w : int or float
+        Extra length of the routes above the die's ports to assure alignment with the device
+        (useful for ebeam lithography).
+    outline_die : int or float
+        The width of the pads outline.
+    outline_dev : int or float
+        The width of the device's outline.
+    device_layer : int or array-like[2]
+        The layer where the device is placed.
+    die_layer : int or array-like[2]
+        The layer where the die is placed.
+    pad_layer : int or array-like[2]
+        The layer where the pads are placed.
+    text : string
+        If None, the text is "NWIRES".
+
     Returns:
-    NANOWIRES_DIE (Device) : a device (of size n*m unit cells) containing the
-    nanowires, the border of the die (created with die_cell function), and the
-    connections between the nanowires and pads
-    
+    --------
+    NANOWIRES_DIE : Device
+        A device (of size n*m unit cells) containing the nanowires, the border of the die
+        (created with die_cell function), and the connections between the nanowires and pads.
     """
-    
+
     if text is None: text = ''
 
     NANOWIRES_DIE = Device(f'DIE NWIRES {text} ')
@@ -970,35 +1036,53 @@ def create_ntron_cell(die_w:        Union[int, float]       = dflt_die_w,
                       pad_layer:    int                     = dflt_layers['pad'],
                       text:         Union[None, str]        = dflt_text
                       ) -> Device:
-    """ Creates a standardized cell specifically for a single ntron.
+    """
+    Creates a standardized cell specifically for a single ntron.
+    
     Unless specified, scales the ntron parameters as:
-     gate_w = drain_w = source_w = 3*channel_w
-     choke_shift = -3*channel_w
+    gate_w = drain_w = source_w = 3 * channel_w
+    choke_shift = -3 * channel_w
     
     Parameters: 
-    die_w    (int or float): width of a unit die/cell in the design (the output
-    device will be a integer number of unit cells)
-    pad_size (int or float, int or float): dimensions of the die's pads (w, h)
-    choke_w   (int or float): the width of the ntron's choke in µm
-    channel_w (int or float): the width of the ntron's channel in µm
-    gate_w, source_w, drain_w, choke_shift (int or float): if None, those
-    parameters or sized with respect to choke_w and channel_w.
-    overlap_w   (int or float): extra length of the routes above the die's ports
-    to assure alignment with the device (useful for ebeam lithography)
-    outline_die (int or float): the width of the pads outline
-    outline_dev (int or float): the width of the device's outline
-    device_layer (int or array-like[2])
-    die_layer    (int or array-like[2])
-    pad_layer    (int or array-like[2])
-    text (string): if None, the text is the ntron's choke and channel widths
+    -----------
+    die_w : int or float
+        Width of a unit die/cell in the design (the output device will be an integer number of unit cells).
+    pad_size : tuple of int or float
+        Dimensions of the die's pads (width, height).
+    choke_w : int or float
+        The width of the ntron's choke in µm.
+    channel_w : int or float
+        The width of the ntron's channel in µm.
+    gate_w : int or float, optional
+        If None, gate width is 3 times the channel width.
+    source_w : int or float, optional
+        If None, source width is 3 times the channel width.
+    drain_w : int or float, optional
+        If None, drain width is 3 times the channel width.
+    choke_shift : int or float, optional
+        If None, choke shift is -3 times the channel width.
+    overlap_w : int or float, optional
+        Extra length of the routes above the die's ports to assure alignment with the device
+        (useful for ebeam lithography).
+    outline_die : int or float, optional
+        The width of the pads outline.
+    outline_dev : int or float, optional
+        The width of the device's outline.
+    device_layer : int or array-like[2], optional
+        The layer where the device is placed.
+    die_layer : int or array-like[2], optional
+        The layer where the die is placed.
+    pad_layer : int or array-like[2], optional
+        The layer where the pads are placed.
+    text : string, optional
+        If None, the text is the ntron's choke and channel widths.
     
     Returns:
-    DIE_NTRON : Device, a device containing the ntron, 
-    the border of the die (created with die_cell function), 
-    and the connections between the ports
-    
-    """
-    
+    --------
+    DIE_NTRON : Device
+        A device containing the ntron, the border of the die (created with die_cell function),
+        and the connections between the ports.
+    """   
 
     ## Create the NTRON
     
@@ -1087,28 +1171,40 @@ def create_snspd_ntron_cell(die_w:        Union[int, float]   = dflt_die_w,
                             pad_layer:    int                 = dflt_layers['pad'],
                             text:         Union[None, str]    = dflt_text
                             ) -> Device:
-    """ Creates a cell that contains an snspd coupled to ntron. 
-    The device's parameters are sized according to the snspd's width and the ntron's choke.
+    """
+    Creates a cell that contains an SNSPD coupled to an NTRON. 
+    The device's parameters are sized according to the SNSPD's width and the NTRON's choke.
     
     Parameters:
-    die_w    (int or float): width of a unit die/cell in the design (the output
-    device will be a integer number of unit cells)
-    pad_size (int or float, int or float): dimensions of the die's pads (w, h)
-    w_choke (int or float): the width of the ntron choke in µm
-    w_snspd (int or float): the width of the snspd nanowire in µm (if None,
-    scaled to 5*w_choke)
-    overlap_w   (int or float): extra length of the routes above the die's ports
-    to assure alignment with the device (useful for ebeam lithography)
-    outline_die (int or float): the width of the pads outline
-    outline_dev (int or float): the width of the device's outline
-    device_layer (int or array-like[2])
-    die_layer    (int or array-like[2])
-    pad_layer    (int or array-like[2])
-    text (string): if None, text = f'SNSPD {w_choke}'
+    -----------
+    die_w : int or float
+        Width of a unit die/cell in the design (the output device will be an integer number of unit cells).
+    pad_size : tuple of int or float
+        Dimensions of the die's pads (width, height).
+    w_choke : int or float
+        The width of the NTRON choke in µm.
+    w_snspd : int or float, optional
+        The width of the SNSPD nanowire in µm (if None, scaled to 5 * w_choke).
+    overlap_w : int or float, optional
+        Extra length of the routes above the die's ports to assure alignment with the device
+        (useful for ebeam lithography).
+    outline_die : int or float, optional
+        The width of the pads outline.
+    outline_dev : int or float, optional
+        The width of the device's outline.
+    device_layer : int or array-like[2], optional
+        The layer where the device is placed.
+    die_layer : int or array-like[2], optional
+        The layer where the die is placed.
+    pad_layer : int or array-like[2], optional
+        The layer where the pads are placed.
+    text : string, optional
+        If None, text = f'SNSPD {w_choke}'.
 
     Returns:
-    DIE_SNSPD_NTRON (Device): a cell containg a die in die_layer, pads in pad layer 
-    and a snspd-ntron properly routed in the device layer.
+    --------
+    DIE_SNSPD_NTRON : Device
+        A cell containing a die in die_layer, pads in pad layer, and an SNSPD-NTRON properly routed in the device layer.
     """
 
     # Create SNSPD-NTRON
