@@ -13,7 +13,7 @@ import sys
 import os
 # script_dir = os.path.dirname(os.path.abspath(__file__))
 # qnngds_path = os.path.abspath(os.path.join(script_dir, '..', 'src\qnngds'))
-sys.path.insert(0, os.path.abspath('..\src\qnngds'))
+sys.path.insert(0, os.path.abspath('..\..\src\qnngds'))
 
 # -- General configuration
 
