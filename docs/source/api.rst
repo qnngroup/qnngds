@@ -1,23 +1,30 @@
 API
 ===
 
-Devices
--------
+.. Devices
+.. -------
 
-.. automodule:: devices
-   :members:
-   :undoc-members:
+.. .. automodule:: devices
+..    :members:
+..    :undoc-members:
 
-Circuits
---------
+.. Circuits
+.. --------
 
-.. automodule:: qnngds.circuits
-   :members:
-   :undoc-members:
+.. .. automodule:: circuits
+..    :members:
+..    :undoc-members:
 
-Geometries
-----------
+.. Geometries
+.. ----------
 
-.. automodule:: src.qnngds.geometries
-   :members:
-   :undoc-members:
+.. .. automodule:: geometries
+..    :members:
+..    :undoc-members:
+
+.. autosummary::
+   :toctree: modules
+
+   devices
+   circuits
+   geometries
