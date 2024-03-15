@@ -19,18 +19,15 @@ set_quickplot_options(blocking=True)
 def alignement_mark(layers: List[int] = [1, 2, 3, 4]
                     ) -> Device:
     """
-    Creates an alignment mark for every photolithography.
-    
-    Parameters:
-    -----------
-    layers : array of int
-        An array of layers.
-      
+    Creates an alignment mark for each photolithography.
+
+    Args:
+        layers (List[int]): An array of layers.
+
     Returns:
-    --------
-    ALIGN : Device
-        A device containing the alignment marks on each layer.
+        Device: A device containing the alignment marks on each layer.
     """
+
 
     def create_marker(layer1, layer2):
 
@@ -127,22 +124,14 @@ def resolution_test(resolutions: List[float]        = [0.8, 1, 1.2, 1.4, 1.6, 1.
                     ) -> Device:
     """
     Creates test structures for determining a process resolution.
-        
-    Parameters:
-    -----------
-    resolutions : array of int or float
-        List of resolutions (in µm) to be tested.
-    inverted : bool or float
-        If True, invert the device. If float, outline the device by this width.
-    layer : int
-        Layer to put the device on.
-    die_max_size : int or float, optional
-        Max size of the test structure to be returned (typically, the size of a single die).
+
+    Args:
+        resolutions (List[float]): List of resolutions (in µm) to be tested.
+        inverted (Union[bool, float]): If True, invert the device. If float, outline the device by this width.
+        layer (int): Layer to put the device on.
 
     Returns:
-    --------
-    RES_TEST : Device
-        The test structures, in the specified layer.
+        Device: The test structures, in the specified layer.
     """
     
     def create_3L(res = 1):
@@ -236,21 +225,14 @@ def hyper_taper(length = 10, wide_section = 50, narrow_section = 5, layer=0):
     """
     Hyperbolic taper (solid). Designed by colang.
 
-    Parameters
-    ----------
-    length : float
-        Length of taper.
-    wide_section : float
-        Wide width dimension.
-    narrow_section : float
-        Narrow width dimension.
-    layer : int, optional
-        Layer for device to be created on. The default is 1.
+    Args:
+        length (float): Length of taper.
+        wide_section (float): Wide width dimension.
+        narrow_section (float): Narrow width dimension.
+        layer (int): Layer for device to be created on.
         
-    Returns
-    -------
-    HT :  Device
-        The hyper taper.
+    Returns:
+        Device: The hyper taper.
     """
 
     taper_length=length

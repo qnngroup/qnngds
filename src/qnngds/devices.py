@@ -3,17 +3,32 @@ from phidl import Device, Port
 # from phidl import quickplot as qp
 # from phidl import set_quickplot_options
 import phidl.geometry as pg
-from typing import Tuple, List, Union, Dict, Set
+from typing import Tuple, List, Union, Dict, Set, Optional
 
 
-def ntron(choke_w     = 0.03, 
-          gate_w      = 0.2, 
-          channel_w   = 0.1, 
-          source_w    = 0.3, 
-          drain_w     = 0.3, 
-          choke_shift = -0.3, 
-          layer       = 0
+def ntron(choke_w: float = 0.03, 
+          gate_w: float = 0.2, 
+          channel_w: float = 0.1, 
+          source_w: float = 0.3, 
+          drain_w: float = 0.3, 
+          choke_shift: float = -0.3, 
+          layer: int = 0
           ) -> Device:
+    """
+    Creates a ntron device.
+
+    Args:
+        choke_w (float): Width of the choke region.
+        gate_w (float): Width of the gate region.
+        channel_w (float): Width of the channel region.
+        source_w (float): Width of the source region.
+        drain_w (float): Width of the drain region.
+        choke_shift (float): Shift of the choke region.
+        layer (int): Layer for the device to be created on.
+
+    Returns:
+        Device: The ntron device.
+    """
     
     D = Device()
     
@@ -44,16 +59,28 @@ def ntron(choke_w     = 0.03,
 
     return D
 
-def ntron_compassPorts(choke_w     = 0.03, 
-                       gate_w      = 0.2, 
-                       channel_w   = 0.1, 
-                       source_w    = 0.3, 
-                       drain_w     = 0.3, 
-                       choke_shift = -0.3, 
-                       layer       = 0
+def ntron_compassPorts(choke_w: float = 0.03, 
+                       gate_w: float = 0.2, 
+                       channel_w: float = 0.1, 
+                       source_w: float = 0.3, 
+                       drain_w: float = 0.3, 
+                       choke_shift: float = -0.3, 
+                       layer: int = 0
                        ) -> Device:
-    """ A basic ntron with ports named as in compass multi (N1, W1, S1 for
-    drain, gate, source) """
+    """ Creates a ntron device with compass ports (i.e. N1, W1, S1 for drain, gate, source respectively).
+    
+    Args:
+        choke_w (float): Width of the choke region.
+        gate_w (float): Width of the gate region.
+        channel_w (float): Width of the channel region.
+        source_w (float): Width of the source region.
+        drain_w (float): Width of the drain region.
+        choke_shift (float): Shift of the choke region.
+        layer (int): Layer for the device to be created on.
+
+    Returns:
+        Device: The ntron device.
+    """
 
     D = Device()
     
@@ -84,8 +111,29 @@ def ntron_compassPorts(choke_w     = 0.03,
 
     return D
 
-def ntron_sharp(choke_w=0.03, choke_l=.5, gate_w=0.2, channel_w=0.1, source_w=0.3, drain_w=0.3, layer=0):
-    
+def ntron_sharp(choke_w: float = 0.03, 
+                choke_l: float = 0.5, 
+                gate_w: float = 0.2, 
+                channel_w: float = 0.1, 
+                source_w: float = 0.3, 
+                drain_w: float = 0.3, 
+                layer: int = 0) -> Device:
+    """
+    Creates a sharp ntron device.
+
+    Args:
+        choke_w (float): Width of the choke region.
+        choke_l (float): Length of the choke region.
+        gate_w (float): Width of the gate region.
+        channel_w (float): Width of the channel region.
+        source_w (float): Width of the source region.
+        drain_w (float): Width of the drain region.
+        layer (int): Layer for the device to be created on.
+
+    Returns:
+        Device: The sharp ntron device.
+    """  
+
     D = Device('nTron')
     
     choke = pg.taper(choke_l, gate_w, choke_w)
@@ -120,22 +168,16 @@ def nanowire(channel_w: float = 0.1,
     """
     Creates a single wire, with the same appearance as an NTRON but without the gate.
 
-    Parameters:
-    -----------
-    channel_w : int or float
-        The width of the channel (at the hot-spot location).
-    source_w : int or float
-        The width of the nanowire's "source".
-    layer : int
-        The layer where to put the device.
-    num_pts : int
-        The number of points comprising the optimal_steps geometries.
+    Args:
+        channel_w (int or float): The width of the channel (at the hot-spot location).
+        source_w (int or float): The width of the nanowire's "source".
+        layer (int): The layer where to put the device.
+        num_pts (int): The number of points comprising the optimal_steps geometries.
 
     Returns:
-    --------
-    NANOWIRE : Device
-        A device containing 2 optimal steps joined at their channel_w end.
+        Device: A device containing 2 optimal steps joined at their channel_w end.
     """
+
 
     NANOWIRE = Device(f"NANOWIRE {channel_w} ")
     wire = pg.optimal_step(channel_w, source_w, symmetric=True, num_pts=num_pts)
@@ -151,9 +193,29 @@ def nanowire(channel_w: float = 0.1,
 
     return NANOWIRE
 
-def snspd_vert(wire_width = 0.2, wire_pitch = 0.6, size = (6,10),
-        num_squares = None, terminals_same_side = False, extend=None, layer = 0):
-    
+def snspd_vert(wire_width: float = 0.2, 
+               wire_pitch: float = 0.6, 
+               size: Tuple[int, int] = (6, 10),
+               num_squares: Optional[int] = None, 
+               terminals_same_side: bool = False, 
+               extend: Optional[float] = None, 
+               layer: int = 0
+               ) -> Device:
+    """
+    Creates a vertical superconducting nanowire single-photon detector (SNSPD).
+
+    Args:
+        wire_width (float): Width of the nanowire.
+        wire_pitch (float): Pitch of the nanowire.
+        size (Tuple[int, int]): Size of the detector in squares (width, height).
+        num_squares (Optional[int]): Number of squares in the detector.
+        terminals_same_side (bool): Whether the terminals are on the same side of the detector.
+        extend (Optional[bool]): Whether or not to extend the ports.
+        layer (int): Layer for the device to be created on.
+
+    Returns:
+        Device: The vertical SNSPD device.
+    """   
     D = Device('snspd_vert')
     S = pg.snspd(wire_width = wire_width, wire_pitch = wire_pitch, size = size,
         num_squares = num_squares, terminals_same_side = terminals_same_side, layer = layer)
