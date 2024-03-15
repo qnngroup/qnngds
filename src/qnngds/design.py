@@ -63,10 +63,8 @@ def create_chip(chip_w:                 Union[int, float]       = dflt_chip_w,
         create_devices_map_txt (bool or string): If True or string, the function creates a txt file that will map the devices.
 
     Returns:
-        Union[Tuple[Device, float, List[List[bool]], str], 
-            Tuple[Device, float, str],
-            Tuple[Device, float, List[List[bool]]], 
-            Tuple[Device, float]]: A tuple containing either three or four elements:
+        Union[Tuple[Device, float, List[List[bool]], str], Tuple[Device, float, str], Tuple[Device, float, List[List[bool]]], Tuple[Device, float]]: 
+            A tuple containing either three or four elements:
             - CHIP: The chip map.
             - If die_w was None:
                 - die_w (float): The width of each die.
@@ -155,8 +153,8 @@ def place_on_chip(cell:                  Device,
             If None, no file will be written.
 
     Returns:
-        bool: False, if the Device falls out of the chip map, prints an error message and does not place the device. 
-            True, otherwise.
+        bool: False, if the Device falls out of the chip map, prints an error
+        message and does not place the device. True, otherwise.
     
     Raises:
         Warning: Prints a warning if the Device is overlapping with already occupied coordinates.
