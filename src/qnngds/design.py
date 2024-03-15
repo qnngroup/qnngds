@@ -65,7 +65,6 @@ def create_chip(chip_w:                 Union[int, float]       = dflt_chip_w,
     Returns:
         Tuple[Device, float, List[List[bool]], str]: A tuple containing from 2 to 4 elements, 
             depending on what needs to be extracted (parameters dependent):
-            
         - CHIP (*Device*): The chip map.
         - die_w (*float*): The width of each die. (returned if die_w was None)
         - N_dies (*float*): The number of dies/units on each row and column. (returned if die_w was not None)
