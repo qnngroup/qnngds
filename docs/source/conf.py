@@ -27,6 +27,9 @@ extensions = [
 autodoc_member_order = 'bysource'
 napoleon_numpy_docstring = True
 napoleon_google_docstring = True
+napoleon_use_param = False
+napoleon_use_rtype = False
+napoleon_include_init_with_doc = True
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3/', None),
