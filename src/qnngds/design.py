@@ -189,12 +189,17 @@ class Design:
     def write_gds(self, 
                   text: Union[None, str] = dflt_text
                   ) -> Optional[str]:
-        """ Write a gds file.
-         
-          Parameters:
-           text (None or string): if None, the gds filename will be the name of
-           the Design 
-        
+        """Write a GDS file.
+
+        Parameters:
+        ----------
+        text : str or None, optional
+            The filename for the GDS file. If None, the name of the Design will be used.
+
+        Returns:
+        -------
+        str or None
+            The filename of the written GDS file, or None if no file was written.
         """
         if text is None: text = self.name
         return self.CHIP.write_gds(filename = f"{text}.gds")
