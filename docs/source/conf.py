@@ -11,8 +11,6 @@ version = '0.1.0'
 
 import sys 
 import os
-# script_dir = os.path.dirname(os.path.abspath(__file__))
-# qnngds_path = os.path.abspath(os.path.join(script_dir, '..', 'src\qnngds'))
 sys.path.insert(0, os.path.abspath(os.path.join('..', '..', 'src')))
 
 # -- General configuration
@@ -23,9 +21,11 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
+    'sphinx.ext.napoleon'
 ]
 
 autodoc_member_order = 'bysource'
+napoleon_numpy_docstring = True
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3/', None),
