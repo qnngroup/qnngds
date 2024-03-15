@@ -126,12 +126,12 @@ def resolution_test(resolutions: List[float]        = [0.8, 1, 1.2, 1.4, 1.6, 1.
     Creates test structures for determining a process resolution.
 
     Args:
-        resolutions: List of resolutions (in µm) to be tested.
-        inverted: If True, invert the device. If float, outline the device by this width.
-        layer: Layer to put the device on.
+        resolutions (List[float]): List of resolutions (in µm) to be tested.
+        inverted (Union[bool, float]): If True, invert the device. If float, outline the device by this width.
+        layer (int): Layer to put the device on.
 
     Returns:
-        The test structures, in the specified layer.
+        Device: The test structures, in the specified layer.
     """
     
     def create_3L(res = 1):
