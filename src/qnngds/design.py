@@ -66,11 +66,11 @@ def create_chip(chip_w:                 Union[int, float]       = dflt_chip_w,
         Tuple[Device, float, List[List[bool]], str]: A tuple containing from 2 to 4 elements, 
             depending on what needs to be extracted (parameters dependent):
             
-        - CHIP (Device): The chip map.
-        - die_w (float): The width of each die. (returned if die_w was None)
-        - N_dies (float): The number of dies/units on each row and column. (returned if die_w was not None)
-        - chip_map (array-like[N_dies][N_dies] of bool): A 2D array filled with "Free" (=True) states. (returned if unpack_chip_map is True)
-        - file_name (str): The name of the created devices map text file. (returned if create_devices_map_txt is not False)
+            - CHIP (Device): The chip map.
+            - die_w (float): The width of each die. (returned if die_w was None)
+            - N_dies (float): The number of dies/units on each row and column. (returned if die_w was not None)
+            - chip_map (array-like[N_dies][N_dies] of bool): A 2D array filled with "Free" (=True) states. (returned if unpack_chip_map is True)
+            - file_name (str): The name of the created devices map text file. (returned if create_devices_map_txt is not False)
     """
 
     CHIP = Device("CHIP ")
