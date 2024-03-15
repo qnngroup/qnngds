@@ -63,14 +63,18 @@ def create_chip(chip_w:                 Union[int, float]       = dflt_chip_w,
         create_devices_map_txt (bool or string): If True or string, the function creates a txt file that will map the devices.
 
     Returns:
-        CHIP (Device): The chip map.
-        if die_w was None:
-            die_w (float): The width of each die.
-        if die_w was given:
-            N_dies (float): The number of dies/units on each row and column.
-        if unpack_chip_map is True:
-            chip_map (array-like[N_dies][N_dies]): A 2D array filled with "Free" (=True) states.
-        file_name (str): The name of the created devices map text file.
+        Union[Tuple[Device, float, List[List[bool]], str], 
+            Tuple[Device, float, str],
+            Tuple[Device, float, List[List[bool]]], 
+            Tuple[Device, float]]: A tuple containing either three or four elements:
+            - CHIP: The chip map.
+            - If die_w was None:
+                - die_w (float): The width of each die.
+            - If die_w was given:
+                - N_dies (float): The number of dies/units on each row and column.
+            - If unpack_chip_map is True:
+                - chip_map (array-like[N_dies][N_dies]): A 2D array filled with "Free" (=True) states.
+            - file_name (str): The name of the created devices map text file.
     """
 
     CHIP = Device("CHIP ")
@@ -289,7 +293,7 @@ def create_vdp_cell(die_w:             Union[int, float]      = dflt_die_w,
                     pad_layer:         int                    = dflt_layers['pad'],
                     text:              Union[None, str]       = dflt_text
                     ) -> Device:
-    """
+    r"""
     Creates a cell containing a Van Der Pauw structure between 4 contact pads.
     
     Parameters: 
@@ -422,7 +426,7 @@ def create_resolution_test_cell(die_w:               Union[int, float] = dflt_di
                                 die_layer:           int               = dflt_layers['die'],
                                 text:                Union[None, str]  = dflt_text
                                 ) -> Device:
-    """
+    r"""
     Creates a cell containing a resolution test.
     
     Parameters: 
@@ -804,7 +808,7 @@ def create_snspd_ntron_cell(die_w:        Union[int, float]   = dflt_die_w,
 
 
 class Design:
-
+    
     def __init__(self, 
                  name              = 'new_design',
                  chip_w            = dflt_chip_w, 
@@ -819,10 +823,7 @@ class Design:
                  device_layer      = dflt_layers['device'],
                  die_layer         = dflt_layers['die'],
                  pad_layer         = dflt_layers['pad']):
-        
         """ 
-        Initializes a new instance of the class.
-
         Args:
             name (str): The name of the design.
             chip_w (int or float): The overall width of the chip.
@@ -926,8 +927,7 @@ class Design:
                 Note that the indices start at 0.
                 
         Returns:
-            bool: False, if the Device falls out of the chip map, prints an error
-                message and does not place the device. True, otherwise.
+            bool: False, if the Device falls out of the chip map, prints an error message and does not place the device. True, otherwise.
             
         Raises:
             Warning: Prints a warning if the Device is overlapping with already occupied coordinates.
@@ -1015,7 +1015,7 @@ class Design:
                         layers_to_outline: Union[List[int], None] = auto_param, 
                         text:              Union[None, str]       = dflt_text
                         ) -> Device:
-        """
+        r"""
         Creates a cell containing a Van Der Pauw structure between 4 contact pads.
 
         Parameters:
@@ -1066,7 +1066,7 @@ class Design:
                                     resolutions_to_test: List[float]      = [0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 1, 1.5, 2],
                                     text:                Union[None, str] = dflt_text
                                     ) -> Device:
-        """ 
+        r""" 
         Creates a cell containing a resolution test.
 
         Parameters:
@@ -1123,7 +1123,7 @@ class Design:
                           choke_shift: Union[float, None] = auto_param,
                           text:        Union[str, None]   = dflt_text
                           ) -> Device:
-        """ 
+        r""" 
         Creates a standardized cell specifically for a single ntron.
 
         Unless specified, scales the ntron parameters as:

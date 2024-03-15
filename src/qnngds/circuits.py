@@ -28,14 +28,14 @@ def snspd_ntron(w_snspd:        float                    = 0.1,
     """
     Creates a SNSPD coupled to an NTRON, with 3 inductors in the circuit as:
 
-        |        |
-        L1       L3
-        |        |
-        |__L2__NTRON
-        |        |
-        SNSPD
-        |
-        
+    >>> |        |
+    >>> L1       L3
+    >>> |        |
+    >>> |__L2__NTRON
+    >>> |        |
+    >>> SNSPD
+    >>> |
+    
     The length of L1, L2, and L3 (long nanowires) where scaled against the SNSPD:
     L1 = L3 = k13 * L and L2 = k2 * L where L is the SNSPD kinetic inductance.
 
