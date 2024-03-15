@@ -65,13 +65,11 @@ def create_chip(chip_w:                 Union[int, float]       = dflt_chip_w,
     Returns:
         Union[Tuple[Device, float, List[List[bool]], str], Tuple[Device, float, str], Tuple[Device, float, List[List[bool]]], Tuple[Device, float]]: 
             A tuple containing either three or four elements:
+            
             - CHIP: The chip map.
-            - If die_w was None:
-                - die_w (float): The width of each die.
-            - If die_w was given:
-                - N_dies (float): The number of dies/units on each row and column.
-            - If unpack_chip_map is True:
-                - chip_map (array-like[N_dies][N_dies]): A 2D array filled with "Free" (=True) states.
+            - die_w (float): The width of each die. (returned if die_w was None)
+            - N_dies (float): The number of dies/units on each row and column. (returned if die_w was not None)
+            - chip_map (array-like[N_dies][N_dies]): A 2D array filled with "Free" (=True) states. (returned if unpack_chip_map is True)
             - file_name (str): The name of the created devices map text file.
     """
 
@@ -502,7 +500,7 @@ def create_nanowires_cell(die_w:              Union[int, float]           = dflt
 
     Returns:
         NANOWIRES_DIE (Device): A device (of size n*m unit cells) containing the nanowires, the border of the die
-                                 (created with die_cell function), and the connections between the nanowires and pads.
+            (created with die_cell function), and the connections between the nanowires and pads.
     """
 
     if text is None: text = ''
@@ -619,7 +617,7 @@ def create_ntron_cell(die_w:        Union[int, float]       = dflt_die_w,
     
     Returns:
         DIE_NTRON (Device): A device containing the ntron, the border of the die (created with die_cell function),
-                            and the connections between the ports.
+            and the connections between the ports.
     """   
 
     ## Create the NTRON
@@ -729,7 +727,7 @@ def create_snspd_ntron_cell(die_w:        Union[int, float]   = dflt_die_w,
 
     Returns:
         DIE_SNSPD_NTRON (Device): A cell containing a die in die_layer, pads in pad layer, 
-                                   and an SNSPD-NTRON properly routed in the device layer.
+            and an SNSPD-NTRON properly routed in the device layer.
     """   
 
     # Create SNSPD-NTRON
@@ -1098,7 +1096,7 @@ class Design:
 
         Returns:
             Device: A device containing the nanowires, the border of the die (created with die_cell function),
-                    and the connections between the nanowires and pads.
+                and the connections between the nanowires and pads.
         """
 
         return create_nanowires_cell(die_w              = self.die_w,
@@ -1139,7 +1137,7 @@ class Design:
 
         Returns:
             Device: A device containing the ntron, the border of the die (created with die_cell function), 
-                    and the connections between the ports.
+                and the connections between the ports.
         """
 
         return create_ntron_cell(die_w       = self.die_w,
@@ -1174,7 +1172,7 @@ class Design:
 
         Returns:
             Device: A cell containing a die in die_layer, pads in pad layer, 
-                    and an SNSPD-NTRON properly routed in the device layer.
+                and an SNSPD-NTRON properly routed in the device layer.
         """
 
         return create_snspd_ntron_cell(die_w     = self.die_w,
