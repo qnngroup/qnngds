@@ -30,7 +30,7 @@ napoleon_numpy_docstring = True
 napoleon_use_param = False
 napoleon_use_rtype = False
 napoleon_include_init_with_doc = True
-napoleon_preprocess_types = True
+napoleon_attr_annotations = True
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3/', None),
