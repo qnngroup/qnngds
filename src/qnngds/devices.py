@@ -28,10 +28,6 @@ def ntron(choke_w: float = 0.03,
 
     Returns:
         Device: The ntron device.
-
-    .. image:: docs\images\qp_devices\nTron.png
-        :width: 200
-        :alt: ntron quickplot
     """
     
     D = Device()
