@@ -8,7 +8,7 @@ Devices
    :members:
    :undoc-members:
 
-.. image:: docs\images\qp_devices\nTron.png
+.. image:: images\qp_devices\nTron.png
    :width: 200
    :alt: ntron quickplot
 
