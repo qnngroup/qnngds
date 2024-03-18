@@ -26,7 +26,7 @@ extensions = [
 
 autodoc_member_order = 'bysource'
 autodoc_typehints = "description"
-autodoc_typehints_description_target = "documented_params"
+autodoc_typehints_description_target = "all"
 
 napoleon_google_docstring = True
 napoleon_numpy_docstring = True

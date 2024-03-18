@@ -498,8 +498,9 @@ def create_nanowires_cell(die_w:              Union[int, float]           = dflt
         text (str, optional): If None, the text is "NWIRES".
 
     Returns:
-        Device: A device (of size n*m unit cells) containing the nanowires, the border of the die 
-                (created with die_cell function), and the connections between the nanowires and pads.
+        Device: A device (of size n*m unit cells) containing the nanowires, the
+        border of the die (created with die_cell function), and the connections
+        between the nanowires and pads.
     """
 
     if text is None: text = ''
