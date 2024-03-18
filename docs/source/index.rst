@@ -26,5 +26,6 @@ Contents
 
    api
    libraries_goal
+   libraries
    tutorials
    
