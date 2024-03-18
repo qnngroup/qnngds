@@ -2,15 +2,12 @@
 """
 
 from __future__ import division, print_function, absolute_import
-from phidl import Device, Port
+from phidl import Device
 from phidl import quickplot as qp
 from phidl import set_quickplot_options
 import phidl.geometry as pg
-import phidl.routing as pr
-from typing import Tuple, List, Union, Dict, Set
+from typing import List, Union
 import numpy as np
-import math
-import os
 
 set_quickplot_options(blocking=True)
 

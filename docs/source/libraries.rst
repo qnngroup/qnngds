@@ -3,7 +3,7 @@ Libraries
 =========
 
 Devices
-=======
+-------
 
 nanowire
 ~~~~~~~~
@@ -11,11 +11,11 @@ nanowire
 .. image:: ../images/Devices/nanowire.png
    :alt: nanowire.png
 
-nTron
+ntron
 ~~~~~
 
-.. image:: ../images/Devices/nTron.png
-   :alt: nTron.png
+.. image:: ../images/Devices/ntron.png
+   :alt: ntron.png
 
 ntron_compassPorts
 ~~~~~~~~~~~~~~~~~~
@@ -29,8 +29,14 @@ ntron_sharp
 .. image:: ../images/Devices/ntron_sharp.png
    :alt: ntron_sharp.png
 
+snspd_vert
+~~~~~~~~~~
+
+.. image:: ../images/Devices/snspd_vert.png
+   :alt: snspd_vert.png
+
 Circuits
-========
+--------
 
 snspd_ntron
 ~~~~~~~~~~~
@@ -39,7 +45,7 @@ snspd_ntron
    :alt: snspd_ntron.png
 
 Geometries
-==========
+----------
 
 alignement_mark
 ~~~~~~~~~~~~~~~
@@ -66,13 +72,19 @@ resolution_test
    :alt: resolution_test.png
 
 Design
-======
+------
 
 create_alignement_cell
 ~~~~~~~~~~~~~~~~~~~~~~
 
 .. image:: ../images/Design/create_alignement_cell.png
    :alt: create_alignement_cell.png
+
+create_chip
+~~~~~~~~~~~
+
+.. image:: ../images/Design/create_chip.png
+   :alt: create_chip.png
 
 create_etch_test_cell
 ~~~~~~~~~~~~~~~~~~~~~
@@ -109,10 +121,4 @@ create_vdp_cell
 
 .. image:: ../images/Design/create_vdp_cell.png
    :alt: create_vdp_cell.png
-
-devices map
-~~~~~~~~~~~
-
-.. image:: ../images/Design/devices map.txt
-   :alt: devices map.txt
 

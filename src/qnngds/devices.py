@@ -1,9 +1,9 @@
 from __future__ import division, print_function, absolute_import
-from phidl import Device, Port
+from phidl import Device
 # from phidl import quickplot as qp
 # from phidl import set_quickplot_options
 import phidl.geometry as pg
-from typing import Tuple, List, Union, Dict, Set, Optional
+from typing import Tuple, Optional
 
 
 def ntron(choke_w: float = 0.03, 

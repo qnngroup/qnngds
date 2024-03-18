@@ -13,7 +13,7 @@ Libraries
     # Iterate through preferred order
     for subfolder in preferred_order:
         content += f"{subfolder}\n"
-        content += f"{'=' * len(subfolder)}\n\n"
+        content += f"{'-' * len(subfolder)}\n\n"
 
         # Add images from the subfolder
         subfolder_path = os.path.join(os.path.dirname(__file__), '..', 'images', subfolder)

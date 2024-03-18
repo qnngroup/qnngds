@@ -1,13 +1,10 @@
 from __future__ import division, print_function, absolute_import
-from phidl import Device, Port
+from phidl import Device
 from phidl import quickplot as qp
 from phidl import set_quickplot_options
 import phidl.geometry as pg
-import phidl.routing as pr
-from typing import Tuple, List, Union, Dict, Set
-import numpy as np
+from typing import Tuple, Union
 import math
-import os
 
 import qnngds.devices as qd
 

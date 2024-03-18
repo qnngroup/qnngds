@@ -9,19 +9,9 @@ from phidl import Device, Port
 import phidl.geometry as pg
 import phidl.routing as pr
 from typing import Tuple, List, Union, Dict, Set
-import numpy as np
-import math
-import string
-import os
 from phidl.device_layout import (
-    CellArray,
     Device,
-    DeviceReference,
-    Group,
-    Polygon,
     Port,
-    _parse_layer,
-    make_device,
 )
 import qnngds.geometries as qg
 

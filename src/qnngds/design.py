@@ -2,13 +2,12 @@
 Design. """
 
 from __future__ import division, print_function, absolute_import
-from phidl import Device, Port
+from phidl import Device
 # from phidl import quickplot as qp
 # from phidl import set_quickplot_options
 import phidl.geometry as pg
 import phidl.routing as pr
-from typing import Tuple, List, Union, Dict, Set, Optional
-import numpy as np
+from typing import Tuple, List, Union, Optional
 import math
 import os
 import qnngds.geometries as qg
@@ -39,10 +38,10 @@ dflt_text = auto_param
 def create_chip(chip_w:                 Union[int, float]       = dflt_chip_w, 
                 margin:                 Union[int, float]       = dflt_chip_margin, 
                 N_dies:                 int                     = dflt_N_dies, 
-                die_w:                  Union[None, int, float] = dflt_die_w, 
+                die_w:                  Union[None, int, float] = auto_param, 
                 annotations_layer:      int                     = dflt_layers['annotation'], 
                 unpack_chip_map:        bool                    = True,
-                create_devices_map_txt: Union[bool, str]        = True
+                create_devices_map_txt: Union[bool, str]        = False
                 ) -> Union[Tuple[Device, Union[int, float], List[List[bool]], str], 
                            Tuple[Device, Union[int, float], str],
                            Tuple[Device, Union[int, float], List[List[bool]]], 
