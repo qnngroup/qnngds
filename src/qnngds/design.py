@@ -498,8 +498,8 @@ def create_nanowires_cell(die_w:              Union[int, float]           = dflt
         text (str, optional): If None, the text is "NWIRES".
 
     Returns:
-        NANOWIRES_DIE (Device): A device (of size n*m unit cells) containing the nanowires, the border of the die
-            (created with die_cell function), and the connections between the nanowires and pads.
+        Device: A device (of size n*m unit cells) containing the nanowires, the border of the die 
+                (created with die_cell function), and the connections between the nanowires and pads.
     """
 
     if text is None: text = ''
@@ -615,8 +615,8 @@ def create_ntron_cell(die_w:        Union[int, float]       = dflt_die_w,
         text (string, optional): If None, the text is the ntron's choke and channel widths.
     
     Returns:
-        DIE_NTRON (Device): A device containing the ntron, the border of the die (created with die_cell function),
-            and the connections between the ports.
+        Device: A device containing the ntron, the border of the die (created with die_cell function),
+                and the connections between the ports.
     """   
 
     ## Create the NTRON
@@ -725,8 +725,8 @@ def create_snspd_ntron_cell(die_w:        Union[int, float]   = dflt_die_w,
         text (string, optional): If None, text = f'SNSPD {w_choke}'.
 
     Returns:
-        DIE_SNSPD_NTRON (Device): A cell containing a die in die_layer, pads in pad layer, 
-            and an SNSPD-NTRON properly routed in the device layer.
+        Device: A cell containing a die in die_layer, pads in pad layer, 
+                and an SNSPD-NTRON properly routed in the device layer.
     """   
 
     # Create SNSPD-NTRON
