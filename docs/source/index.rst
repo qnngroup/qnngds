@@ -1,11 +1,6 @@
 Welcome to qnngds documentation!
 ===================================
 
-here is some new content CICD.
-and now even more.
-
-an now even moooore
-
 **qnngds** is a Python library for cooks and food lovers
 that creates recipes mixing random ingredients.
 It pulls data from the `Open Food Facts database <https://world.openfoodfacts.org/>`_
@@ -25,7 +20,6 @@ Contents
    :maxdepth: 2
 
    api
-   libraries_goal
    libraries
    tutorials
    
