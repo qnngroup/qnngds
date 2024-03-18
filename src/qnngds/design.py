@@ -65,11 +65,11 @@ def create_chip(chip_w:                 Union[int, float]       = dflt_chip_w,
     Returns:
         Tuple[Device, float, List[List[bool]], str]: A tuple containing from 2 to 4 elements, depending on what needs to be extracted (parameters dependent):
 
-        - CHIP (*Device*): The chip map.
-        - die_w (*float*): The width of each die. (returned if die_w was None)
-        - N_dies (*float*): The number of dies/units on each row and column. (returned if die_w was not None)
-        - chip_map (*array-like[N_dies][N_dies] of bool*): A 2D array filled with "Free" (=True) states. (returned if unpack_chip_map is True)
-        - file_name (*str*): The name of the created devices map text file. (returned if create_devices_map_txt is not False)
+        - **CHIP** (*Device*): The chip map.
+        - **die_w** (*float*): The width of each die. (returned if die_w was None)
+        - **N_dies** (*float*): The number of dies/units on each row and column. (returned if die_w was not None)
+        - **chip_map** (*array-like[N_dies][N_dies] of bool*): A 2D array filled with "Free" (=True) states. (returned if unpack_chip_map is True)
+        - **file_name** (*str*): The name of the created devices map text file. (returned if create_devices_map_txt is not False)
     """
 
     CHIP = Device("CHIP ")
@@ -1094,8 +1094,7 @@ class Design:
             text (str, optional): If None, the text is "NWIRES".
 
         Returns:
-            Device: A device containing the nanowires, the border of the die (created with die_cell function),
-                and the connections between the nanowires and pads.
+            Device: A device containing the nanowires, the border of the die (created with die_cell function), and the connections between the nanowires and pads.
         """
 
         return create_nanowires_cell(die_w              = self.die_w,
@@ -1132,11 +1131,10 @@ class Design:
             source_w (int or float, optional): If None, source width is 3 times the channel width.
             drain_w (int or float, optional): If None, drain width is 3 times the channel width.
             choke_shift (int or float, optional): If None, choke shift is -3 times the channel width.
-            text (str, optional): If None, the text is f"chk: {choke_w} \nchnl: {channel_w}".
+            text (str, optional): If None, the text is f"chk: {choke_w} '\n'chnl: {channel_w}".
 
         Returns:
-            Device: A device containing the ntron, the border of the die (created with die_cell function), 
-                and the connections between the ports.
+            Device: A device containing the ntron, the border of the die (created with die_cell function), and the connections between the ports.
         """
 
         return create_ntron_cell(die_w       = self.die_w,
@@ -1170,8 +1168,7 @@ class Design:
             text (str, optional): If None, text = f'SNSPD {w_choke}'.
 
         Returns:
-            Device: A cell containing a die in die_layer, pads in pad layer, 
-                and an SNSPD-NTRON properly routed in the device layer.
+            Device: A cell containing a die in die_layer, pads in pad layer, and an SNSPD-NTRON properly routed in the device layer.
         """
 
         return create_snspd_ntron_cell(die_w     = self.die_w,

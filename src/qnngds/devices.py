@@ -18,16 +18,16 @@ def ntron(choke_w: float = 0.03,
     Creates a ntron device.
 
     Args:
-        choke_w (float): Width of the choke region.
-        gate_w (float): Width of the gate region.
-        channel_w (float): Width of the channel region.
-        source_w (float): Width of the source region.
-        drain_w (float): Width of the drain region.
-        choke_shift (float): Shift of the choke region.
-        layer (int): Layer for the device to be created on.
+        choke_w : Width of the choke region.
+        gate_w : Width of the gate region.
+        channel_w : Width of the channel region.
+        source_w : Width of the source region.
+        drain_w : Width of the drain region.
+        choke_shift : Shift of the choke region.
+        layer : Layer for the device to be created on.
 
     Returns:
-        Device: The ntron device.
+        The ntron device.
     """
     
     D = Device()

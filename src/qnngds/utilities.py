@@ -192,11 +192,10 @@ def add_hyptap_to_cell(die_ports: List[Port],
         layer (int or array-like[2]): The layer on which to place the device.
                             
     Returns:
-        Tuple[Device, Device]: a tuple containing
+        Tuple[Device, Device]: a tuple containing:
 
-        - HT (*Device*): The hyper tapers, positioned at the die's ports. Ports of the same name as the die's ports 
-            are added to the output of the tapers.
-        - device_ports (*Device*): A device containing only the input ports of the tapers, named as the die's ports.
+        - **HT** (*Device*): The hyper tapers, positioned at the die's ports. Ports of the same name as the die's ports are added to the output of the tapers.
+        - **device_ports** (*Device*): A device containing only the input ports of the tapers, named as the die's ports.
     """
     
     HT = Device("HYPER TAPERS ")
