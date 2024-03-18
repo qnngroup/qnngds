@@ -2,7 +2,7 @@ import os
 
 def generate_libraries_rst(filename):
     content = """
-Libraries
+Images
 =========
 
 """
@@ -30,4 +30,4 @@ Libraries
         file.write(content)
 
 if __name__ == "__main__":
-    generate_libraries_rst("libraries.rst")
+    generate_libraries_rst("images.rst")

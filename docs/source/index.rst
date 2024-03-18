@@ -20,6 +20,6 @@ Contents
    :maxdepth: 2
 
    api
-   libraries
+   images
    tutorials
    

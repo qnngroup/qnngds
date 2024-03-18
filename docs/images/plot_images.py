@@ -4,6 +4,7 @@ from phidl import Device
 from phidl import quickplot as qp
 from phidl import set_quickplot_options
 import matplotlib.pyplot as plt
+
 def import_module(module_path):
     """
     Dynamically imports a Python module given its file path.
