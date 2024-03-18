@@ -617,7 +617,7 @@ def create_ntron_cell(die_w:        Union[int, float]       = dflt_die_w,
     
     Returns:
         Device: A device containing the ntron, the border of the die (created with die_cell function),
-                and the connections between the ports.
+        and the connections between the ports.
     """   
 
     ## Create the NTRON
@@ -727,7 +727,7 @@ def create_snspd_ntron_cell(die_w:        Union[int, float]   = dflt_die_w,
 
     Returns:
         Device: A cell containing a die in die_layer, pads in pad layer, 
-                and an SNSPD-NTRON properly routed in the device layer.
+        and an SNSPD-NTRON properly routed in the device layer.
     """   
 
     # Create SNSPD-NTRON
@@ -1091,11 +1091,14 @@ class Design:
         Creates a cell containing several nanowires of given channel and source.
 
         Parameters:
-            channels_sources_w (List[Tuple[float, float]]): The list of (channel_w, source_w) of the nanowires to create.
+            channels_sources_w (List[Tuple[float, float]]): The list of
+                (channel_w, source_w) of the nanowires to create.
             text (str, optional): If None, the text is "NWIRES".
 
         Returns:
-            Device: A device containing the nanowires, the border of the die (created with die_cell function), and the connections between the nanowires and pads.
+            Device: A device containing the nanowires, the border of the die
+            (created with die_cell function), and the connections between the
+            nanowires and pads.
         """
 
         return create_nanowires_cell(die_w              = self.die_w,
@@ -1132,10 +1135,11 @@ class Design:
             source_w (int or float, optional): If None, source width is 3 times the channel width.
             drain_w (int or float, optional): If None, drain width is 3 times the channel width.
             choke_shift (int or float, optional): If None, choke shift is -3 times the channel width.
-            text (str, optional): If None, the text is f"chk: {choke_w} '\n'chnl: {channel_w}".
+            text (str, optional): If None, the text is f"chk: {choke_w} /n chnl: {channel_w}".
 
         Returns:
-            Device: A device containing the ntron, the border of the die (created with die_cell function), and the connections between the ports.
+            Device: A device containing the ntron, the border of the die (created with die_cell function), 
+            and the connections between the ports.
         """
 
         return create_ntron_cell(die_w       = self.die_w,

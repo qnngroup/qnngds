@@ -40,6 +40,7 @@ dflt_ebeam_overlap = 10
 dflt_layers = {'annotation':0, 'device':1, 'die':2, 'pad':3}
 dflt_text = auto_param
 
+
 def die_cell(die_size:        Tuple[int, int]   = (dflt_die_w, dflt_die_w), 
              device_max_size: Tuple[int, int]   = (100, 100), 
              pad_size:        Tuple[int, int]   = dflt_pad_size, 
@@ -187,15 +188,20 @@ def add_hyptap_to_cell(die_ports: List[Port],
     
     Parameters:
         die_ports (list of Port): The ports of the die cell (use .get_ports()).
-        overlap_w (int or float): The overlap width in µm (accounts for misalignment between 1st and 2nd ebeam exposures).
-        contact_w (int or float): The width of the contact with the device's route in µm (width of hyper taper's end).
+        overlap_w (int or float): The overlap width in µm (accounts for
+            misalignment between 1st and 2nd ebeam exposures).
+        contact_w (int or float): The width of the contact with the device's
+            route in µm (width of hyper taper's end).
         layer (int or array-like[2]): The layer on which to place the device.
                             
     Returns:
         Tuple[Device, Device]: a tuple containing:
 
-        - **HT** (*Device*): The hyper tapers, positioned at the die's ports. Ports of the same name as the die's ports are added to the output of the tapers.
-        - **device_ports** (*Device*): A device containing only the input ports of the tapers, named as the die's ports.
+        - **HT** (*Device*): The hyper tapers, positioned at the die's ports.
+          Ports of the same name as the die's ports are added to the output of
+          the tapers.
+        - **device_ports** (*Device*): A device containing only the input ports
+          of the tapers, named as the die's ports.
     """
     
     HT = Device("HYPER TAPERS ")
