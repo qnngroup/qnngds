@@ -23,8 +23,8 @@ Contents
 
 .. toctree::
    :maxdepth: 2
-   
+
    api
-   librairies
+   libraries_goal
    tutorials
    
