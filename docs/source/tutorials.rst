@@ -6,6 +6,6 @@ Tutorials
     :titlesonly:
     :caption: Contents:
 
-    ../tutorials/create_cell.ipynb
-    ../tutorials/design.ipynb
-    ../tutorials/test.rst
+    /../tutorials/create_cell.ipynb
+    /../tutorials/design.ipynb
+    /../tutorials/test.rst
