@@ -1,13 +1,14 @@
 Tutorials
 =========
 
-new content
+new content test.rst
+new content tutorials/test.rst
 
 .. toctree::
     :maxdepth: 2
     :titlesonly:
     :caption: Contents:
 
-    create_cell.ipynb
-    design.ipynb
-    test.rst
+    tutorials/create_cell.ipynb
+    tutorials/design.ipynb
+    tutorials/test.rst
