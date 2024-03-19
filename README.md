@@ -22,7 +22,10 @@ It is made for helping in the design of gds files. The package is composed of 5 
 ## License
 This project is licensed under the MIT License - see the LICENSE.md file for details
 
-## Documentation
-add link to qnngds documentation
+## [Documentation](https://qnngds.readthedocs.io/en/latest/)
+- [API](https://qnngds.readthedocs.io/en/latest/api.html)
+- [Libraries](https://qnngds.readthedocs.io/en/latest/libraries.html)
+- [Tutorials](https://qnngds.readthedocs.io/en/latest/tutorials.html)
+
 ## How to contribute
 add link to file
