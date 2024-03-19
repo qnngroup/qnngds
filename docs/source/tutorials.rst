@@ -7,6 +7,9 @@ new content tutorials/test.rst
 
 new content with quickstart, without caption: Contents
 
+Tutorials
+---------
+
 .. toctree::
     :maxdepth: 2
     :titlesonly:
