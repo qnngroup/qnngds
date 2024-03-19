@@ -8,3 +8,4 @@ Tutorials
 
     tutorials/create_cell
     tutorials/design
+    tutorials/test

@@ -2,7 +2,7 @@ import os
 
 def generate_libraries_rst(filename):
     content = """
-Images
+Libraries
 =========
 
 """
