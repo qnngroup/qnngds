@@ -12,7 +12,6 @@ Tutorials
 
 .. toctree::
     :maxdepth: 2
-    :titlesonly:
 
     ../tutorials/create_cell.ipynb
     ../tutorials/design.ipynb
