@@ -24,7 +24,6 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
     'sphinx.ext.napoleon',
-    'nbsphinx',
 ]
 
 autodoc_member_order = 'bysource'
