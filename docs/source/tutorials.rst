@@ -6,6 +6,6 @@ Tutorials
     :titlesonly:
     :caption: Contents:
 
-    tutorials/create_cell
-    tutorials/design
-    tutorials/test
+    ../tutorials/create_cell
+    ../tutorials/design
+    ../tutorials/test
