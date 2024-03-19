@@ -1,6 +1,7 @@
 """ Utilies is used for building cells in design. Cells are made of devices
 (found in utilities) and a die_cell border, wich contains pads, text etc... The
-device and its die are linked thanks to functions present in this file. """
+device and its die are linked thanks to functions present in this module. 
+"""
 
 from __future__ import division, print_function, absolute_import
 from phidl import Device, Port

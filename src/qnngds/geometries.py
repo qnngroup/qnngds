@@ -1,4 +1,6 @@
-""" Geometries contains common devices from test structures to proper circuits.
+""" 
+Geometries contains common test structures as well as useful shapes/tools that are not
+available in phidl's geometry library.
 """
 
 from __future__ import division, print_function, absolute_import

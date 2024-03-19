@@ -1,3 +1,7 @@
+""" 
+Circuits module contains a library of QNN's circuits (e.g. snspd coupled to ntron, logic gates etc.)
+"""
+
 from __future__ import division, print_function, absolute_import
 from phidl import Device
 from phidl import quickplot as qp

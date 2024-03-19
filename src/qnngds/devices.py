@@ -1,3 +1,7 @@
+""" 
+Devices module contain the basic devices that QNN uses in its circuits (e.g. ntron, htron etc).
+"""
+
 from __future__ import division, print_function, absolute_import
 from phidl import Device
 # from phidl import quickplot as qp

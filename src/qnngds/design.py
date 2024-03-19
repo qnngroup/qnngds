@@ -1,5 +1,9 @@
-""" Design is the file linking geometries and utilities. It also offers a class
-Design. """
+""" 
+Design's module is though for users to be able to access pre-built cells that
+are made of circuits, devices or test structures already integrated in a die
+cell. 
+It is a module that is sufficient in itself to build an entire new design.
+"""
 
 from __future__ import division, print_function, absolute_import
 from phidl import Device
