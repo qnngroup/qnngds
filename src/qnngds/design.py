@@ -803,6 +803,59 @@ def create_snspd_ntron_cell(die_w:        Union[int, float]   = dflt_die_w,
 
 
 class Design:
+    """ 
+    A class for a design on a single layer of superconducting material, and additional contact pads.
+
+    It is though for a process like:
+
+    - exposing the superconductiong material using e-beam lithography. Two
+    exposures at low and high currents are possible by distinguishing two
+    layers: device layer and die layer. Equivalently, the shapes outlines
+    (though for positive tone resist) have two different widths for the device
+    and die layers.
+
+    - exposing the pads layer using photolithography.
+
+    Args:
+        name (str): The name of the design.
+        chip_w (int or float): The overall width of the chip.
+        chip_margin (int or float): The width of the outline of the chip where
+            no device should be placed.
+        N_dies (int): Number of dies/units to be placed by row and column.
+        die_w (int or float, optional): Width of a unit die/cell in the design
+            (the output device will be an integer number of unit cells).
+        pad_size (tuple of int or float): Dimensions of the die's pads (width, height).
+        device_outline (int or float): The width of the device's outline.
+        die_outline (int or float): The width of the pads outline.
+        ebeam_overlap (int or float): Extra length of the routes above the die's
+            ports to assure alignment with the device (useful for ebeam
+            lithography).
+        annotation_layer (int): The layer where to put the annotations.
+        device_layer (int or array-like[2]): The layer where the device is placed.
+        die_layer (int or array-like[2]): The layer where the die is placed.
+        pad_layer (int or array-like[2]): The layer where the pads are placed.
+
+    Example:
+        Here is an example of how to create the class.
+
+        >>> # Choose some design parameters, let the others to default
+        >>> chip_w = 10000
+        >>> N_dies = 11
+        >>> device_outline = 0.3
+        >>> die_outline = 10
+
+        >>> # Create the design and initialize the chip
+        >>> demo_project = Design(name="demo design", 
+        >>>                       chip_w=chip_w, 
+        >>>                       N_dies=N_dies, 
+        >>>                       device_outline=device_outline, 
+        >>>                       die_outline=die_outline)
+        >>> demo_project.create_chip()
+
+        >>> # Quickplot the chip skeletton!
+        >>> qp(demo_project.CHIP)
+
+    """
     
     def __init__(self, 
                  name              = 'new_design',
@@ -926,6 +979,14 @@ class Design:
             
         Raises:
             Warning: Prints a warning if the Device is overlapping with already occupied coordinates.
+        
+        Examples:
+            Here is an example of placing alignement cells on two given positions of the chip.
+            
+            >>> align_left  = demo_project.create_alignement_cell(layers_to_align=[2, 3])
+            >>> align_right = demo_project.create_alignement_cell(layers_to_align=[2, 3])
+            >>> demo_project.place_on_chip(cell=align_left,  coordinates=(0, 5))
+            >>> demo_project.place_on_chip(cell=align_right, coordinates=(10, 5))
         """
             
         if add_to_chip: self.CHIP << cell
@@ -953,6 +1014,18 @@ class Design:
         Note:
             The list of devices is not re-ordered to fit as many of them as possible. 
             Some edges of the chip may remain empty because the list contained 2-units long devices (for e.g.).
+        
+        Examples:
+            Here is a typical example of why this function is useful and how to
+            use it. If design is a Design class initalized, and the
+            create_chip() function has previously been executed.
+
+            >>> channels_w = [0.5, 0.75, 1, 1.25, 1.5]
+            >>> ntrons_to_place = []
+            >>> for channel_w in channels_w:
+            >>>     ntron = design.create_ntron_cell(choke_w=0.05, channel_w=channel_w)
+            >>>     ntrons_to_place.append(ntron)
+            >>> design.place_remaining_cells(ntrons_to_place)
         """
         if self.devices_map_txt is not None:
             # the decision taken when creating the chip overwrites this one
