@@ -14,7 +14,8 @@ Tutorials
     :maxdepth: 2
     :titlesonly:
 
-    tutorials/create_cell.ipynb
-    tutorials/design.ipynb
-    tutorials/test.rst
-    tutorials/quickstart
+    ../tutorials/create_cell.ipynb
+    ../tutorials/design.ipynb
+    ../tutorials/test.rst
+    ../tutorials/quickstart
+    test2.rst
