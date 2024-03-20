@@ -14,13 +14,12 @@ extensions = [
 ]
 
 multiproject_projects = {
-    "user": {
-        "path": "user",
-    },
+    "user": {},
     "dev": {
+        # Set a custom path.
         "path": "dev",
     },
-},
+}
 
 # Common options.
 html_theme = "sphinx_rtd_theme"
