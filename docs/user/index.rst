@@ -22,6 +22,5 @@ Contents
    api
    libraries
    tutorials
-   
+   Developer Documentation <https://qnngds.dev.readthedocs.io>
 
-Looking for :ref:`the developers' documentation<Welcome to qnngds documentation for developers!>`?
