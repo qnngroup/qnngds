@@ -15,10 +15,7 @@ extensions = [
 
 multiproject_projects = {
     "user": {},
-    "dev": {
-        # Set a custom path.
-        "path": "dev",
-    },
+    "dev": {},
 }
 
 # Common options.
