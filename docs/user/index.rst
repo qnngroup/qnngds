@@ -23,3 +23,5 @@ Contents
    libraries
    tutorials
    
+
+Looking for :ref:`the developers' documentation<Welcome to qnngds documentation for developers!>`?
