@@ -1,3 +1,4 @@
+:ref:`dev documentation`
 Welcome to qnngds documentation for developers!
 ===============================================
 

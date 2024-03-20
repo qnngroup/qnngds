@@ -6,12 +6,14 @@ version = '0.1.0'
 import sys 
 import os
 sys.path.insert(0, os.path.abspath(os.path.join('..', '..', 'src')))
-sys.path.insert(0, os.path.abspath('..'))
 
 
 extensions = [
+    'sphinx.ext.duration',
+    'sphinx.ext.doctest',
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
+    'sphinx.ext.intersphinx',
     'sphinx.ext.napoleon',
 ]
 

@@ -24,4 +24,4 @@ Contents
    tutorials
    
 
-Looking for :ref:`the developers' documentation<Welcome to qnngds documentation for developers!>`?
+Looking for :ref:`the developers' documentation<dev documentation>`?
