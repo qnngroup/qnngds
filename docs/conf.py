@@ -18,14 +18,9 @@ multiproject_projects = {
         "path": "user",
     },
     "dev": {
-        "use_config_file": False,
-        "config": {
-            "project": "QNNGDS developer documentation",
-            "html_title": "QNNGDS developer documentation",
-            "path": "dev",
-        },
+        "path": "dev",
     },
-}
+},
 
 # Common options.
 html_theme = "sphinx_rtd_theme"
