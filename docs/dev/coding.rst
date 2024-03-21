@@ -7,21 +7,25 @@ GitHub Management
 To contribute to our package, follow these steps:
 
 #. Clone the repository:
+
     .. code-block:: 
         git clone https://github.com/qnngroup/qnngds.git
 
 #. Create a new branch for your work:
+
     .. code-block:: 
         git checkout -b your_new_branch_name
 
 #. Start adding your functions or making changes to existing ones.
 
 #. Once you're done, commit your changes:
+
     .. code-block:: 
         git add .
         git commit -m "Your descriptive commit message"
 
 #. Push your branch to GitHub:
+
     .. code-block:: 
         git push origin your_new_branch_name
 
@@ -60,22 +64,22 @@ Function Docstring Template (Google Format)
 .. code-block:: python
 
     def your_function_name(param1: type, param2: type) -> type:
-    """
-    Brief description of the function.
+        """
+        Brief description of the function.
 
-    Args:
-        param1 (type): Description of param1.
-            This description might take several lines, in this case it needs
-            an indentation.
-        param2 (type): Description of param2.
+        Args:
+            param1 (type): Description of param1.
+                This description might take several lines, in this case it needs
+                an indentation.
+            param2 (type): Description of param2.
 
-    Returns:
-        return_type: Description of the return value.
+        Returns:
+            return_type: Description of the return value.
 
-    Raises:
-        SpecificException: Description of when this exception is raised.
+        Raises:
+            SpecificException: Description of when this exception is raised.
 
-    Examples:
-        Example usage of the function.
-    """
-    # Implementation of the function
+        Examples:
+            Example usage of the function.
+        """
+        # Implementation of the function
