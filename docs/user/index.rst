@@ -22,5 +22,9 @@ Contents
    api
    libraries
    tutorials
-   Developer Documentation <https://qnngds.dev.readthedocs.io>
+
+Want to contribute?
+-------------------
+
+Access the `developer documentation<https://qnngds.dev.readthedocs.io>`
 

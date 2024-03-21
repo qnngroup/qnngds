@@ -20,30 +20,55 @@ sys.path.insert(0, os.path.abspath(os.path.join('..', 'src')))
 extensions = [
     "multiproject",
     # "sphinx_copybutton",
-    "sphinx.ext.autodoc",
+    'sphinx.ext.duration',
+    'sphinx.ext.doctest',
+    'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     "sphinx.ext.autosectionlabel",
     "sphinx.ext.extlinks",
     "sphinx.ext.intersphinx",
 ]
 
+autodoc_member_order = 'bysource'
+
+napoleon_google_docstring = True
+napoleon_use_param = False
+napoleon_use_rtype = False
+napoleon_include_init_with_doc = False
+napoleon_attr_annotations = True
+
+# multiproject_projects = {
+#     "user": {
+#         "use_config_file": False,
+#         "config": {
+#             "project": "qnngds",
+#             "html_title": "qnngds-user",
+#         },
+#     },
+#     "dev": {
+#         "use_config_file": False,
+#         "config": {
+#             "project": "qnngds",
+#             "html_title": "qnngds-developer",
+#         },
+#     },
+# }
+
 multiproject_projects = {
-    "user": {
-        "use_config_file": False,
-        "config": {
-            "project": "QNNGDS user documentation",
-            "html_title": "QNNGDS user documentation",
-        },
-    },
-    "dev": {
-        "use_config_file": False,
-        "config": {
-            "project": "QNNGDS developer documentation",
-            "html_title": "QNNGDS developer documentation",
-        },
-    },
+   "user": {},
+   "dev": {},
 }
 
-docset = get_project(multiproject_projects)
+
+current_project = get_project(multiproject_projects)
+
+locale_dirs = [f"{current_project}/locale/"]
+
+if current_project == "user":
+    extensions += ['sphinx.ext.napoleon']
+    project = "qnngds doc for user"
+elif current_project == "dev":
+    project = "qnngds doc for dev"
 
 master_doc = "index"
 copyright = "QNN group"
@@ -55,9 +80,7 @@ intersphinx_mapping = {
     'sphinx': ('https://www.sphinx-doc.org/en/master/', None),
 }
 
-
 html_theme = "sphinx_rtd_theme"
-html_static_path = ["_static", f"{docset}/_static"]
 
 # Activate autosectionlabel plugin
 autosectionlabel_prefix_document = True
