@@ -811,6 +811,7 @@ class Design:
     A class for a design on a single layer of superconducting material, and additional contact pads.
 
     It is though for a process like:
+    
     - exposing the superconductiong material using e-beam lithography. Two
         exposures at low and high currents are possible by distinguishing two
         layers: device layer and die layer. Equivalently, the shapes outlines
