@@ -28,4 +28,4 @@ This project is licensed under the MIT License - see the LICENSE.md file for det
 - [Tutorials](https://qnngds.readthedocs.io/en/latest/tutorials.html)
 
 ## How to contribute
-add link to file
+- [Developer's documentation](https://qnngds-dev.readthedocs.io/en/latest)

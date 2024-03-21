@@ -66,9 +66,9 @@ locale_dirs = [f"{current_project}/locale/"]
 
 if current_project == "user":
     extensions += ['sphinx.ext.napoleon']
-    project = "qnngds doc for user"
+    project = "qnngds"
 elif current_project == "dev":
-    project = "qnngds doc for dev"
+    project = "qnngds-dev"
 
 master_doc = "index"
 copyright = "QNN group"

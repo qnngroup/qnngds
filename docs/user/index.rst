@@ -26,5 +26,5 @@ Contents
 Want to contribute?
 -------------------
 
-Access the `developer documentation<https://qnngds.dev.readthedocs.io>`
+Access the `developer documentation<https://qnngds-dev.readthedocs.io>`
 
