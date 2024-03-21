@@ -1,6 +1,25 @@
 # Functions
 `import qnngds.qnngds.omedeiro as om`
+`import qnngds.qnngds.long_meanders as lm`
 
+## Long meanders
+
+### SNSPI
+`lm.make_snspi_meander(w, g, array_length, array_height, min_conductor, line_height)`
+
+This function returns a gds device of a long meander suitable for SNSPIs, parameterized
+by central conductor width, gap, total length, total height, minimum distance between turns,
+and the height of each pixel, all in microns. Other values have defaults that can be changed.
+
+### Impedance Matching Tapers
+`lm.make_taper(z_file, eps_file, gap, w0, lmax, Fc)`
+
+This function returns a gds device of an impedance matching taper (Klopfenstein by default,
+with an option for Erickson). The correct taper rate is calculated from Z and eps_eff as 
+functions of width and gap computed by Sonnet, read in from the default Sonnet csvs 
+(TODO: add more generic read-in options and make explicit some of the weirder tapers I've used), 
+and also parameterized by gap, central conductor width, maximum length between turns, and 
+cutoff frequency (um/MHz). Other values have defaults that can be changed.
 
 ## adam_pads
 `qp(om.adam_pads())`
