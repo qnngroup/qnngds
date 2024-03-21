@@ -1,16 +1,3 @@
-"""
-Shared Sphinx configuration using sphinx-multiproject.
-
-To build each project, the ``PROJECT`` environment variable is used.
-
-.. code:: console
-
-   $ make html  # build default project
-   $ PROJECT=dev make html  # build the dev project
-
-for more information read https://sphinx-multiproject.readthedocs.io/.
-"""
-
 import os
 import sys
 from multiproject.utils import get_project
@@ -36,6 +23,8 @@ napoleon_use_param = False
 napoleon_use_rtype = False
 napoleon_include_init_with_doc = False
 napoleon_attr_annotations = True
+
+pygments_style = 'sphinx'
 
 # multiproject_projects = {
 #     "user": {
