@@ -14,6 +14,7 @@ extensions = [
     "sphinx.ext.autosectionlabel",
     "sphinx.ext.extlinks",
     "sphinx.ext.intersphinx",
+    "sphinx.ext.todo",
 ]
 
 autodoc_member_order = 'bysource'

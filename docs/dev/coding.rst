@@ -62,12 +62,22 @@ Good Coding Practices
 
 When contributing code to the package, please follow these practices:
 
-- Avoid lines of code that are too long; break them for readability.
-- Comment your functions and code for better understanding.
-- Include type annotations for function parameters and return types.
+* Avoid lines of code that are too long; break them for readability.
+* Comment your functions and code for better understanding.
+* Include type annotations for function parameters and return types.
+* **Add a docstring to your functions!!** The docstring should include a description of 
+  the function, its parameters and returns. Please respect the precise format given as in 
+  :ref:`template<docstring template>` for the autodocumentation to work properly.
+* As much as possible, include default arguments to the function definition.
+  This is not so much to give the user an idea of what is expected but mostly to
+  **auto-generate a library** for functions returning Phidl Devices. 
+
+.. _docstring template:
 
 Function Docstring Template (Google Format)
 -------------------------------------------
+
+See `the Google Python Style Guide <https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings>`_ for more details.
 
 .. code-block:: python
 
