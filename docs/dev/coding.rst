@@ -1,17 +1,30 @@
 Coding
 =======
 
+Package Structure
+-----------------
+
+The package is organized as follows:
+
+* the source code, i.e. the package modules
+
+    * devices: contains devices like ntron, htron, snspd
+    * circuits: contains circuits made of devices
+    * geometries: contains test structures and geometry tools
+    * utilities: contains useful functions for building a new cell
+    * design: contains pre-built cells, ready to be added to a design
+
+* some files for creating the package
+
+* some files for documenting it
+
+*See more details on how to contribute to the package and documentation files in
+sections* :ref:`Packaging` *and* :ref:`Documenting`.
+
 GitHub Management
 -----------------
 
 To contribute to our package, follow these steps:
-#. Step 1. Example:
-
-    .. code-block:: bash
-
-      Example code
-
-#. Step 2.
 
 #. Clone the repository:
 
@@ -41,24 +54,6 @@ To contribute to our package, follow these steps:
         git push origin your_new_branch_name
 
 #. Finally, create a pull request on GitHub to merge your changes into the main branch.
-
-
-Package Structure
------------------
-
-The package is organized as follows:
-
-* the source code, i.e. the package modules
-    * devices: 
-    * circuits:
-    * geometries: 
-    * utilities: 
-    * design: 
-* some files for creating the package
-* some files for documenting it
-
-See more details on how to contribute to the package and documentation files in
-sections :ref:`Packaging` and :ref:`Documenting`.
 
 Good Coding Practices
 ---------------------
