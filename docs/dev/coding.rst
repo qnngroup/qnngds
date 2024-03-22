@@ -5,28 +5,39 @@ GitHub Management
 -----------------
 
 To contribute to our package, follow these steps:
+#. Step 1. Example:
+
+    .. code-block:: bash
+
+      Example code
+
+#. Step 2.
 
 #. Clone the repository:
 
-    .. code-block:: 
+    .. code-block:: bash
+
         git clone https://github.com/qnngroup/qnngds.git
 
 #. Create a new branch for your work:
 
-    .. code-block:: 
+    .. code-block:: bash
+
         git checkout -b your_new_branch_name
 
 #. Start adding your functions or making changes to existing ones.
 
 #. Once you're done, commit your changes:
 
-    .. code-block:: 
+    .. code-block:: bash
+
         git add .
         git commit -m "Your descriptive commit message"
 
 #. Push your branch to GitHub:
 
-    .. code-block:: 
+    .. code-block:: bash
+
         git push origin your_new_branch_name
 
 #. Finally, create a pull request on GitHub to merge your changes into the main branch.
