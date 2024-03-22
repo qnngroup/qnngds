@@ -3,6 +3,8 @@
 Packaging 
 =========
 
+.. _Updating qnngds package:
+
 Updating qnngds package after a pull request has been accepted
 --------------------------------------------------------------
 
@@ -44,20 +46,19 @@ Modifying qnngds PyPI webpages
 ------------------------------
 
 If you are looking to update/modify the PyPI webpage of qnngds, you will have to
-modify files like `README.md`, `LICENSE.md` or `pyproject.toml`. Below are some
+modify files like ``README.md``, ``LICENSE.md`` or ``pyproject.toml``. Below are some
 useful links that can help for this purpose. 
 
 * `Python Packaging User Guide <https://packaging.python.org/en/latest/tutorials/packaging-projects/>`_ 
-(for an introduction to packaging)
+  (for an introduction to packaging)
 
 * `Writing your pyproject.toml <https://packaging.python.org/en/latest/guides/writing-pyproject-toml/>`_
 
 * `Using TestPyPI <https://packaging.python.org/en/latest/guides/using-testpypi/>`_ to try out the 
-distribution tools and process without worrying about affecting the real index.
+  distribution tools and process without worrying about affecting the real index.
 
 Note that once modified, a pull request has to be made as well and the
-:ref:`steps described above<Updating qnngds package after a pull request has
-been accepted>` have to be followed.
+:ref:`steps described above<Updating qnngds package>` have to be followed.
 
 .. todo::
     Figure out the visualization issue for modifying PyPI pages.

@@ -25,6 +25,7 @@ napoleon_include_init_with_doc = False
 napoleon_attr_annotations = True
 
 pygments_style = 'sphinx'
+todo_include_todos = True
 
 # multiproject_projects = {
 #     "user": {
