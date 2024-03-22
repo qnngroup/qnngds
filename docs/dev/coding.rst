@@ -1,3 +1,5 @@
+.. _Coding:
+
 Coding
 =======
 
@@ -8,11 +10,11 @@ The package is organized as follows:
 
 * the source code, i.e. the package modules
 
-    * devices: contains devices like ntron, htron, snspd
-    * circuits: contains circuits made of devices
-    * geometries: contains test structures and geometry tools
-    * utilities: contains useful functions for building a new cell
-    * design: contains pre-built cells, ready to be added to a design
+    * **devices**: contains devices like ntron, htron, snspd
+    * **circuits**: contains circuits made of devices
+    * **geometries**: contains test structures and geometry tools
+    * **utilities**: contains useful functions for building a new cell
+    * **design**: contains pre-built cells, ready to be added to a design
 
 * some files for creating the package
 
