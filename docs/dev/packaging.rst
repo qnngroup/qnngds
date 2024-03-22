@@ -3,16 +3,8 @@
 Packaging 
 =========
 
-*<https://packaging.python.org/en/latest/tutorials/packaging-projects/>
-Explain the docs present in this package (pyproject.toml, license, readme etc)
-
-Explain how to update the pypi package (discuss who should have access to this :
-should everyone be able to push to the main and update the package etc or shoul
-dit be peered reviewed first ?)
-once the pull request is accepted, the assignees should follow the next steps to update the package on python:
-
-Figure out the token/account issue. *
-
+Updating qnngds package after a pull request has been accepted
+--------------------------------------------------------------
 
 #. Modify the code as needed, see :ref:`Coding` for instructions and guides.
 
@@ -22,12 +14,11 @@ Figure out the token/account issue. *
 
         .. code-block:: bash
 
-            cd path/to/qnngds
             pip install -e /path/to/qnngds
 
-#. In **``pyproject.toml``**, manually update the ``version``.
+#. In ``pyproject.toml``, manually update the ``version = x.x.x``. If your name is not yet cited, add it to the ``authors``!
 
-#. Delete **``.pdm-build``** and **``dist``** folders.
+#. Delete ``.pdm-build`` and ``dist`` folders.
 
 #. Open terminal in **qnngds** directory. Run the following commands:
     
@@ -36,7 +27,10 @@ Figure out the token/account issue. *
         py -m build
         twine upload dist/*
     
-    Enter the token password. (Note that Ctrl+V might not work, you need to use Right Click `>` Edit '>' Paste)
+    Enter the token password. (Note that Ctrl+V might not work, you need to use Right-Click>Edit>Paste)
+    
+    .. todo::
+        Figure out the token/account issue.
 
     .. warning::
         Before executing the commands above, make sure you have the latest version of PyPA's **build** and **twine**:
@@ -45,6 +39,28 @@ Figure out the token/account issue. *
 
             py -m pip install --upgrade build
             py -m pip install --upgrade twine
+
+Modifying qnngds PyPI webpages
+------------------------------
+
+If you are looking to update/modify the PyPI webpage of qnngds, you will have to
+modify files like `README.md`, `LICENSE.md` or `pyproject.toml`. Below are some
+useful links that can help for this purpose. 
+
+* `Python Packaging User Guide <https://packaging.python.org/en/latest/tutorials/packaging-projects/>`_ 
+(for an introduction to packaging)
+
+* `Writing your pyproject.toml <https://packaging.python.org/en/latest/guides/writing-pyproject-toml/>`_
+
+* `Using TestPyPI <https://packaging.python.org/en/latest/guides/using-testpypi/>`_ to try out the 
+distribution tools and process without worrying about affecting the real index.
+
+Note that once modified, a pull request has to be made as well and the
+:ref:`steps described above<Updating qnngds package after a pull request has
+been accepted>` have to be followed.
+
+.. todo::
+    Figure out the visualization issue for modifying PyPI pages.
 
 
 
