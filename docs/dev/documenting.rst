@@ -1,8 +1,7 @@
+.. _Documenting:
 
 Documenting
 ===========
-
-I am trying autosectionlabel extension :ref:`Documenting`.
 
 Updating qnngds documentation after a code moficiation
 ------------------------------------------------------
@@ -44,8 +43,8 @@ Updating qnngds documentation after a code moficiation
       ``libraries.rst`` file.
 
 The next steps describe how to proceed if you are ready to make a pull request
-but want to preview the documentation first. Jump to :ref:`this<latest rtd>`
-step if you don't need to version the documentation.
+but want to preview the documentation first. Skip them if you don't need to version 
+the documentation.
 
 #. Make sure you ``added``, ``committed`` and ``pushed`` your code to the branch 
    created for the modifications you brought.
@@ -68,11 +67,10 @@ step if you don't need to version the documentation.
        Note that if you are note a manager of qnngds github, the CICD won't work on 
        your branch. Figure out who has access etc.
 
-.. _latest rtd:
-#. Once you are satisfied with how your documentation looks, you can generate
-   the pull request. The documentation will automatically be built in the
-   ``latest`` version. You will not need to manually generate the documentation
-   in read the docs.
+Once you are satisfied with how your documentation looks, you can generate
+the pull request. The documentation will automatically be built in the
+``latest`` version. You will not need to manually generate the documentation
+in read the docs.
 
 
 Modifying qnngds documentation's files
@@ -99,5 +97,3 @@ Documentation <https://sphinx-multiproject.readthedocs.io/en/latest/>`_
     follow the exact same :ref:`steps described above<doc steps>` to build your 
     documentation. The only difference is to open  **qnngds-dev** project instead 
     in `Read The Docs <https://readthedocs.org/projects>`_.
-
-
