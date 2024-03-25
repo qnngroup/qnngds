@@ -26,5 +26,8 @@ Contents
 Want to contribute?
 -------------------
 
-Access the `developer documentation<https://qnngds-dev.readthedocs.io>`_.
+Access the `qnngds developer documentation <https://qnngds-dev.readthedocs.io/en/latest/>`_.
 
+.. toctree::
+
+   Access `qnngds developer documentation <https://qnngds-dev.readthedocs.io/en/latest/>`_

@@ -88,7 +88,7 @@ The qnngds documentation is built as follow. The **docs** folder contains two
 subfolders **user** and **dev**. Those are two different Read the Docs projects.
 This configuration allows to have two seperate documentations: one for the
 package users and one for the developers (you). They share the same
-configuration file. For more details on multiprojects, see `Documentation for sphinx-multiproject<https://sphinx-multiproject.readthedocs.io/en/latest/>`_.
+configuration file. For more details on multiprojects, see `Documentation for sphinx-multiproject <https://sphinx-multiproject.readthedocs.io/en/latest/>`_.
 
 .. note::
     If you are modifying this documentation (for qnngds developers), you can 
