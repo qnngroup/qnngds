@@ -3,7 +3,7 @@
 Documenting
 ===========
 
-Updating qnngds documentation after a code moficiation
+Updating qnngds documentation after a code modification
 ------------------------------------------------------
 .. _doc steps:
 #. Modify the code as needed, see :ref:`Coding` for instructions and guides.
@@ -15,12 +15,11 @@ Updating qnngds documentation after a code moficiation
    **If you want the documentation to be automated and simple, correctly document 
    the functions you create!**
 
-
-.. warning::
-    Some files useful for automating the documentation are not fully modular. For example, 
-    if the qnngds modules were to change names or some were to be added/deleted, you would also need 
-    to manually update them in ``generate_libraries.py`` and ``api.rst``. Modifying the package 
-    structure should be taken with great care.
+   .. warning::
+       Some files useful for automating the documentation are not fully modular. For example, 
+       if the qnngds modules were to change names or some were to be added/deleted, you would also need 
+       to manually update them in ``generate_libraries.py`` and ``api.rst``. Modifying the package 
+       structure should be taken with great care.
 
 #. The functions you added should be part of the library?
 
@@ -42,9 +41,9 @@ Updating qnngds documentation after a code moficiation
       ``generate_libraries.py`` file. This will automatically generate the
       ``libraries.rst`` file.
 
-The next steps describe how to proceed if you are ready to make a pull request
-but want to preview the documentation first. Skip them if you don't need to version 
-the documentation.
+ The next steps describe how to proceed if you are ready to make a pull request
+ but want to preview the documentation first. Skip them if you don't need to version 
+ the documentation.
 
 #. Make sure you ``added``, ``committed`` and ``pushed`` your code to the branch 
    created for the modifications you brought.
@@ -89,8 +88,7 @@ The qnngds documentation is built as follow. The **docs** folder contains two
 subfolders **user** and **dev**. Those are two different Read the Docs projects.
 This configuration allows to have two seperate documentations: one for the
 package users and one for the developers (you). They share the same
-configuration file. For more details on multiprojects, see `sphinx-multiproject
-Documentation <https://sphinx-multiproject.readthedocs.io/en/latest/>`_
+configuration file. For more details on multiprojects, see `Documentation for sphinx-multiproject<https://sphinx-multiproject.readthedocs.io/en/latest/>`_.
 
 .. note::
     If you are modifying this documentation (for qnngds developers), you can 
