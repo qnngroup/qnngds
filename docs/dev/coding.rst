@@ -28,12 +28,6 @@ GitHub Management
 
 To contribute to our package, follow these steps:
 
-#. Clone the repository:
-
-    .. code-block:: bash
-
-        git clone https://github.com/qnngroup/qnngds.git
-
 #. Create a new branch for your work:
 
     .. code-block:: bash
