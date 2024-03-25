@@ -93,8 +93,8 @@ Choose your design parameters, create a new design and build the chip.
 
     CHIP = design.create_chip(create_devices_map_txt=False)
 
-.. image:: tutorials\tutorials_images\tuto_gettingstarted_basis.png
-   :alt: create_chip.png
+.. image:: tutorials_images/tuto_gettingstarted_basis.png
+   :alt: tuto_gettingstarted_basis.png
 
 Add test vehicules cells
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -137,7 +137,7 @@ Add etch test cell like:
     design.place_on_chip(ETCH_TEST, (3, 0))
 
 
-.. image:: .\tutorials_images\tuto_gettingstarted_test_structures.png
+.. image:: tutorials_images/tuto_gettingstarted_test_structures.png
    :alt: tuto_gettingstarted_test_structures.png
 
 
@@ -177,7 +177,7 @@ Some nanowire electronics
             remaining_cells.append(NTRON)
     design.place_remaining_devices(remaining_cells, write_remaining_devices_map_txt = False)
 
-.. image:: .\tutorials_images\tuto_gettingstarted_some_electronics.png
+.. image:: tutorials_images/tuto_gettingstarted_some_electronics.png
    :alt: tuto_gettingstarted_some_electronics.png
 
 See full code `in GitHub <https://github.com/qnngroup/qnngds>`_.
