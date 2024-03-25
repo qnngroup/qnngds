@@ -3,6 +3,34 @@
 Packaging 
 =========
 
+This section has to be executed by someone who is an owner or a maintainer of
+the `qnngds PyPI project <https://pypi.org/project/qnngds/>`_. Only the owners of the project can add
+contributors. 
+
+.. note:: 
+  In **QNN group**, the maintainers and owners are also the ones who
+  validate the pull request you make to the GitHub. It is their role to update the
+  package after a pull request has been accepted.
+
+First Time Maintainer Guideline
+-------------------------------
+
+If you wish to be a maintainer of the **qnngds PyPI project**, you will have to follow these steps:
+
+* Create a `PyPI account <https://pypi.org/account/register/>`_
+
+* Verify your e-mail address in PyPI.
+
+* Create an `API token <https://pypi.org/help/#apitoken>`_. 
+
+  * name = ``__token__``
+
+  * password: make sure you copy your token password before closing the window,
+    you will not be able to access it later for security reasons.
+
+* Contact one of the owner to ask them to add you to the project, provide them your PyPI username.
+
+
 .. _Updating qnngds package:
 
 Updating qnngds package after a pull request has been accepted
@@ -26,26 +54,22 @@ Updating qnngds package after a pull request has been accepted
 #. Delete ``.pdm-build`` and ``dist`` folders.
 
 #. Open terminal in **qnngds** directory. Run the following commands:
-    
-   .. code-block:: bash
-
-       py -m build
-       twine upload dist/*
-
-   Enter the token password. (Note that Ctrl+V might not work, you need to use 
-   Right-Click>Edit>Paste)
-
-   .. todo::
-       Figure out the token/account issue.
-
    .. warning::
-       Before executing the commands above, make sure you have the latest version 
+       Before executing the commands below, make sure you have the latest version 
        of PyPA's **build** and **twine**:
 
        .. code-block:: bash
 
            py -m pip install --upgrade build
            py -m pip install --upgrade twine
+
+   .. code-block:: bash
+
+       py -m build
+       twine upload dist/*
+
+   Enter your token's password. (Note that Ctrl+V might not work, you need to use 
+   Right-Click>Edit>Paste)
 
 Modifying qnngds PyPI webpages
 ------------------------------

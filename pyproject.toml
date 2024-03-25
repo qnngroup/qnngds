@@ -4,9 +4,10 @@ build-backend = "pdm.backend"
 
 [project]
 name = "qnngds"
-version = "0.0.5"
+version = "0.0.6"
 authors = [
-  { name="A. Jacquillat", email="audrey01@mid.edu" }
+  { name="A. Jacquillat", email="audrey01@mid.edu" },
+  { name="Z. Jacquillat", email="audrey.jacquillat@gmail.com" }
 ]
 maintainers = [
   {name="A. Jacquillat", email="audrey01@mit.edu" }
@@ -33,3 +34,5 @@ dependencies = [
 [project.urls]
 Homepage = "https://github.com/qnngroup/qnngds"
 Issues = "https://github.com/qnngroup/qnngds/issues"
+Documentation = "https://qnngds.readthedocs.io/en/latest/"
+How_to_contribute = "https://qnngds-dev.readthedocs.io/en/latest/"
