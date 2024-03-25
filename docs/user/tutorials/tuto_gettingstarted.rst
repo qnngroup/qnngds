@@ -108,7 +108,7 @@ Add alignement cells like:
                                                     text = 'LEFT')
     design.place_on_chip(ALIGN_CELL_LEFT, (0, 2))
 
-Add Van der pauw cells like:
+Add Van der Pauw cells like:
 
 .. code-block:: python
     :lineno-start: 46
