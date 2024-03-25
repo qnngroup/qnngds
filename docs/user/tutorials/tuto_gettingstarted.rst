@@ -93,7 +93,7 @@ Choose your design parameters, create a new design and build the chip.
 
     CHIP = design.create_chip(create_devices_map_txt=False)
 
-.. image:: .\tutorials_images\tuto_gettingstarted_basis.png
+.. image:: tutorials\tutorials_images\tuto_gettingstarted_basis.png
    :alt: create_chip.png
 
 Add test vehicules cells
