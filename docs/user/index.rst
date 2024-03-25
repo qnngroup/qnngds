@@ -29,5 +29,6 @@ Want to contribute?
 Access the `qnngds developer documentation <https://qnngds-dev.readthedocs.io/en/latest/>`_.
 
 .. toctree::
-
+   :hidden:
+   
    Access `qnngds developer documentation <https://qnngds-dev.readthedocs.io/en/latest/>`_

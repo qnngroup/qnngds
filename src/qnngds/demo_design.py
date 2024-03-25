@@ -33,6 +33,8 @@ design = qd.Design(name = 'demo_design',
 
 CHIP = design.create_chip(create_devices_map_txt=False)
 
+qp(CHIP)
+
 ## test devices
 
 ALIGN_CELL_LEFT = design.create_alignement_cell(layers_to_align = [layers['mgb2_coarse'], layers['pad']], 

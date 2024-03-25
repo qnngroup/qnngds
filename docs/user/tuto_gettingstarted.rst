@@ -4,15 +4,19 @@ Getting started
 Setup your workspace
 --------------------
 * Create a new folder that will contain everything related to your new design
-(versions, gds files, notes).
+  (versions, gds files, notes).
 
 * Create a new virtual environment:
 
     * Open a terminal in the directory you want to put your virtual environment.
-    * Execute 
-    .. codeblock:: bash
-        python -m venv/your-env-name
-        .\.venv\your-env-name\Scripts\Activate
+
+    * Execute:
+
+      .. code-block:: bash
+
+          python -m venv/your-env-name
+          .\.venv\your-env-name\Scripts\Activate
+
 
 Install the package
 -------------------
@@ -21,7 +25,8 @@ instruction `here <https://pypi.org/project/gdspy/>`_. For windows, what works
 best is to `install a pre-built wheel
 <https://github.com/heitzmann/gdspy/releases>`_ and run :
 
-.. codeblock:: bash
+.. code-block:: bash
+
     pip install path/to/gdspy-1.6.12-cp38-cp38-win_amd64.whl
 
 Make sure you download the wheel corresponding to your device:
@@ -31,7 +36,8 @@ Make sure you download the wheel corresponding to your device:
 
 Once gdspy is installed in your virtual environment, you can install qnngds by executing:
 
-.. codeblock:: bash
+.. code-block:: bash
+
     pip install qnngds
 
 Start coding
@@ -45,7 +51,8 @@ Start with the basis
 
 Import the packages.
 
-.. codeblock:: Python
+.. code-block:: python
+    :linenos:
 
     from phidl import quickplot as qp
     from phidl import set_quickplot_options
@@ -55,7 +62,8 @@ Import the packages.
 
 Choose your design parameters, create a new design and build the chip.
 
-.. codebock:: Python
+.. code-block:: python
+    :lineno-start: 7
 
     chip_w = 5000
     chip_margin = 50
@@ -85,20 +93,22 @@ Choose your design parameters, create a new design and build the chip.
 
     CHIP = design.create_chip(create_devices_map_txt=False)
 
-.. image:: images/design/create_chip.png
+.. image:: images\tutorials\tuto_gettingstarted_basis.png
    :alt: create_chip.png
 
 Add test vehicules cells
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. codeblock:: Python
+.. code-block:: python
+    :lineno-start: 
     
     # alignement cell
     ALIGN_CELL_LEFT = design.create_alignement_cell(layers_to_align = [layers['mgb2_coarse'], layers['pad']], 
                                                     text = 'LEFT')
     design.place_on_chip(ALIGN_CELL_LEFT, (0, 2))
 
-    # ...
+.. code-block:: python
+    :lineno-start: 
 
     # vand der pauw cell
     VDP_TEST_MGB2 = design.create_vdp_cell(layers_to_probe   = [layers['mgb2_coarse']], 
@@ -106,14 +116,16 @@ Add test vehicules cells
                                        text = 'MGB2')
     design.place_on_chip(VDP_TEST_MGB2, (0, 0))
 
-    # ...
+.. code-block:: python
+    :lineno-start: 
 
     # resolution test cell
     RES_TEST_MGB2_FINE = design.create_resolution_test_cell(layer_to_resolve = layers['mgb2_fine'],
                                                             text = 'MGB2 FINE')
     design.place_on_chip(RES_TEST_MGB2_FINE, (2, 2))
 
-    # ...
+.. code-block:: python
+    :lineno-start: 
 
     # etch test cell 
     ETCH_TEST = design.create_etch_test_cell(layers_to_etch = [[layers['pad']]],
@@ -121,14 +133,15 @@ Add test vehicules cells
     design.place_on_chip(ETCH_TEST, (3, 0))
 
 
-.. image:: images\__tutorials\tuto_gettingstarted_test_structures.png
+.. image:: images\tutorials\tuto_gettingstarted_test_structures.png
    :alt: tuto_gettingstarted_test_structures.png
 
 
 Some nanowire electronics
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. codeblock:: Python
+.. code-block:: python
+    :lineno-start: 
 
     #SNSPD-NTRON
 
@@ -160,5 +173,5 @@ Some nanowire electronics
             remaining_cells.append(NTRON)
     design.place_remaining_devices(remaining_cells, write_remaining_devices_map_txt = False)
 
-.. image:: images\__tutorials\tuto_gettingstarted_some_electronics.png
+.. image:: images\tutorials\tuto_gettingstarted_some_electronics.png
    :alt: tuto_gettingstarted_some_electronics.png
