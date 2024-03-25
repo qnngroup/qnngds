@@ -33,8 +33,6 @@ design = qd.Design(name = 'demo_design',
 
 CHIP = design.create_chip(create_devices_map_txt=False)
 
-qp(CHIP)
-
 ## test devices
 
 ALIGN_CELL_LEFT = design.create_alignement_cell(layers_to_align = [layers['mgb2_coarse'], layers['pad']], 
@@ -72,7 +70,6 @@ ETCH_TEST = design.create_etch_test_cell(layers_to_etch = [[layers['pad']]],
                                          text = 'PAD')
 design.place_on_chip(ETCH_TEST, (3, 0))
 
-qp(CHIP)
 ## nanowire electronics
 
 #SNSPD-NTRON

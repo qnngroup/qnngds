@@ -63,7 +63,7 @@ Import the packages.
 Choose your design parameters, create a new design and build the chip.
 
 .. code-block:: python
-    :lineno-start: 7
+    :lineno-start: 8
 
     chip_w = 5000
     chip_margin = 50
@@ -93,47 +93,51 @@ Choose your design parameters, create a new design and build the chip.
 
     CHIP = design.create_chip(create_devices_map_txt=False)
 
-.. image:: images\tutorials\tuto_gettingstarted_basis.png
+.. image:: docs\user\tutorials\tutorials_images\tuto_gettingstarted_basis.png
    :alt: create_chip.png
 
 Add test vehicules cells
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
+Add alignement cells like:
+
 .. code-block:: python
-    :lineno-start: 
+    :lineno-start: 38
     
-    # alignement cell
     ALIGN_CELL_LEFT = design.create_alignement_cell(layers_to_align = [layers['mgb2_coarse'], layers['pad']], 
                                                     text = 'LEFT')
     design.place_on_chip(ALIGN_CELL_LEFT, (0, 2))
 
-.. code-block:: python
-    :lineno-start: 
+Add Van der pauw cells like:
 
-    # vand der pauw cell
+.. code-block:: python
+    :lineno-start: 46
+
     VDP_TEST_MGB2 = design.create_vdp_cell(layers_to_probe   = [layers['mgb2_coarse']], 
                                        layers_to_outline = [layers['mgb2_coarse']], 
                                        text = 'MGB2')
     design.place_on_chip(VDP_TEST_MGB2, (0, 0))
 
-.. code-block:: python
-    :lineno-start: 
+Add resolution test cells like:
 
-    # resolution test cell
+.. code-block:: python
+    :lineno-start: 56
+
     RES_TEST_MGB2_FINE = design.create_resolution_test_cell(layer_to_resolve = layers['mgb2_fine'],
                                                             text = 'MGB2 FINE')
     design.place_on_chip(RES_TEST_MGB2_FINE, (2, 2))
 
-.. code-block:: python
-    :lineno-start: 
+Add etch test cell like:
 
-    # etch test cell 
+.. code-block:: python
+    :lineno-start: 69
+
     ETCH_TEST = design.create_etch_test_cell(layers_to_etch = [[layers['pad']]],
                                          text = 'PAD')
     design.place_on_chip(ETCH_TEST, (3, 0))
 
 
-.. image:: images\tutorials\tuto_gettingstarted_test_structures.png
+.. image:: docs\user\tutorials\tutorials_images\tuto_gettingstarted_test_structures.png
    :alt: tuto_gettingstarted_test_structures.png
 
 
@@ -141,7 +145,7 @@ Some nanowire electronics
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
-    :lineno-start: 
+    :lineno-start: 75
 
     #SNSPD-NTRON
 
@@ -173,5 +177,7 @@ Some nanowire electronics
             remaining_cells.append(NTRON)
     design.place_remaining_devices(remaining_cells, write_remaining_devices_map_txt = False)
 
-.. image:: images\tutorials\tuto_gettingstarted_some_electronics.png
+.. image:: docs\user\tutorials\tutorials_images\tuto_gettingstarted_some_electronics.png
    :alt: tuto_gettingstarted_some_electronics.png
+
+See full code `in GitHub <https://github.com/qnngroup/qnngds>`_.

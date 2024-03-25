@@ -23,6 +23,8 @@ Contents
    libraries
    tutorials
 
+.. _Want to contribute?:
+
 Want to contribute?
 -------------------
 
@@ -30,5 +32,5 @@ Access the `qnngds developer documentation <https://qnngds-dev.readthedocs.io/en
 
 .. toctree::
    :hidden:
-   
-   Access `qnngds developer documentation <https://qnngds-dev.readthedocs.io/en/latest/>`_
+
+   :ref:`Want to contribute?`

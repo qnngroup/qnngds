@@ -4,4 +4,5 @@ Tutorials
 .. toctree::
     :maxdepth: 2
 
-    tuto_gettingstarted
+    tutorials.tuto_gettingstarted
+    tutorials.tuto_creatingyourcells
