@@ -8,7 +8,7 @@ Libraries
 """
 
    # Define preferred order for plotting folders
-    preferred_order = ['devices', 'circuits', 'geometries', 'design']
+    preferred_order = ['devices', 'circuits', 'geometries', 'utilities', 'design']
 
     # Iterate through preferred order
     for subfolder in preferred_order:
