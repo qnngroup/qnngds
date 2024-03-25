@@ -41,9 +41,9 @@ Updating qnngds documentation after a code modification
       ``generate_libraries.py`` file. This will automatically generate the
       ``libraries.rst`` file.
 
- The next steps describe how to proceed if you are ready to make a pull request
- but want to preview the documentation first. Skip them if you don't need to version 
- the documentation.
+   *The next steps describe how to proceed if you are ready to make a pull request
+   but want to preview the documentation first. Skip them if you don't need to version 
+   the documentation.*
 
 #. Make sure you ``added``, ``committed`` and ``pushed`` your code to the branch 
    created for the modifications you brought.
