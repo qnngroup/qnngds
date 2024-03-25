@@ -59,17 +59,20 @@ hyper_taper
 .. image:: images/geometries/hyper_taper.png
    :alt: hyper_taper.png
 
-optimal_taper
-~~~~~~~~~~~~~
-
-.. image:: images/geometries/optimal_taper.png
-   :alt: optimal_taper.png
-
 resolution_test
 ~~~~~~~~~~~~~~~
 
 .. image:: images/geometries/resolution_test.png
    :alt: resolution_test.png
+
+utilities
+---------
+
+die_cell
+~~~~~~~~
+
+.. image:: images/utilities/die_cell.png
+   :alt: die_cell.png
 
 design
 ------
