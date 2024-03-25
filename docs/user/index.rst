@@ -33,4 +33,4 @@ Access the `qnngds developer documentation <https://qnngds-dev.readthedocs.io/en
 .. toctree::
    :hidden:
 
-   :ref:`Want to contribute?`
+   Developer Documentation <https://qnngds-dev.readthedocs.io/en/latest/>
