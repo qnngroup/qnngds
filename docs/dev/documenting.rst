@@ -50,27 +50,28 @@ Updating qnngds documentation after a code modification
 
 #. In `Read The Docs <https://readthedocs.org/projects>`_, select **qnngds** project.
 
-   .. todo::
-       Figure out the shared rtd projects: ideally, every group member of qnngds should 
-       be able to access it. To check.
+   .. note::
+      At this point, if you are not yet a **qnngds RTD maintainer**, you can reclaim 
+      access to one of the maintainer.
 
 #. Go to **Versions** and click on your branch. Select ``Activate`` and ``Hide`` for 
-   this version to remain private.
+   this version to remain private. Only the project's maintainers will be able to see it.
 
 #. Go to **Overview** and **build a version** after selecting your branch in the 
    dropdown list.
 
 #. Your documentation's version is available in **View docs**!
 
-   .. todo::
-       Note that if you are note a manager of qnngds github, the CICD won't work on 
-       your branch. Figure out who has access etc.
 
-Once you are satisfied with how your documentation looks, you can generate
-the pull request. The documentation will automatically be built in the
-``latest`` version. You will not need to manually generate the documentation
-in read the docs.
+Once you are satisfied with how your documentation looks, you can generate the
+pull request. The documentation will automatically be built in the ``latest``
+version once the request is accepted. You will not need to manually generate the
+documentation in read the docs.
 
+Please ``Deactivate`` your version once you are done with it. 
+
+.. todo::
+      CICD
 
 Modifying qnngds documentation's files
 --------------------------------------
@@ -88,7 +89,8 @@ The qnngds documentation is built as follow. The **docs** folder contains two
 subfolders **user** and **dev**. Those are two different Read the Docs projects.
 This configuration allows to have two seperate documentations: one for the
 package users and one for the developers (you). They share the same
-configuration file. For more details on multiprojects, see `Documentation for sphinx-multiproject <https://sphinx-multiproject.readthedocs.io/en/latest/>`_.
+configuration file. For more details on multiprojects, see `Documentation for
+sphinx-multiproject <https://sphinx-multiproject.readthedocs.io/en/latest/>`_.
 
 .. note::
     If you are modifying this documentation (for qnngds developers), you can 
