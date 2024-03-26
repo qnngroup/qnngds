@@ -3,7 +3,37 @@
 Documenting
 ===========
 
-now its automatic and I need to explain that
+Informations for contributors
+-----------------------------
+
+
+Informations for maintainers
+----------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 Updating qnngds documentation after a code modification
 ------------------------------------------------------
