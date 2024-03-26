@@ -3,6 +3,8 @@
 Documenting
 ===========
 
+now its automatic and I need to explain that
+
 Updating qnngds documentation after a code modification
 ------------------------------------------------------
 .. _doc steps:
