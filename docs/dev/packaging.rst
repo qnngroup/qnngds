@@ -3,6 +3,15 @@
 Packaging 
 =========
 
+CICD for PyPI
+
+Now, whenever you push a tagged commit to your Git repository remote on GitHub,
+this workflow will publish it to PyPI. And it'll publish any push to TestPyPI
+which is useful for providing test builds to your alpha users as well as making
+sure that your release pipeline remains healthy!
+
+
+
 This section has to be executed by someone who is an owner or a maintainer of
 the `qnngds PyPI project <https://pypi.org/project/qnngds/>`_. Only the owners of the project can add
 contributors. 
