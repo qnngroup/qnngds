@@ -4,7 +4,7 @@ build-backend = "pdm.backend"
 
 [project]
 name = "qnngds"
-version = dev_cicd_pack_0.0.1
+version = 0.0.1
 authors = [
   { name="A. Jacquillat", email="audrey01@mid.edu" },
   { email="audrey.jacquillat@gmail.com"}
