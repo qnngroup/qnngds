@@ -7,7 +7,7 @@ name = "qnngds"
 version = "0.0.6"
 authors = [
   { name="A. Jacquillat", email="audrey01@mid.edu" },
-  { name="Z. Jacquillat", email="audrey.jacquillat@gmail.com" }
+  { email="audrey.jacquillat@gmail.com"}
 ]
 maintainers = [
   {name="A. Jacquillat", email="audrey01@mit.edu" }
