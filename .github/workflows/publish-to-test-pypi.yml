@@ -31,8 +31,7 @@ jobs:
   publish-to-pypi:
     name: >-
       Publish Python 🐍 distribution 📦 to PyPI
-    # if: startsWith(github.ref, 'refs/tags/')  # only publish to PyPI on tag pushes
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' # only publish to PyPI on a push from main
     needs:
     - build
     runs-on: ubuntu-latest
@@ -96,7 +95,7 @@ jobs:
 
   publish-to-testpypi:
     name: Publish Python 🐍 distribution 📦 to TestPyPI
-    if: startswith(github.ref, 'refs/heads/dev') # && startswith(github.ref, 'refs/tags/v')
+    if: startswith(github.ref, 'refs/heads/dev-pypi') # only publish to test PyPI on a push from a branch "dev-pypi-YourBranch"
     needs:
     - build
     runs-on: ubuntu-latest
