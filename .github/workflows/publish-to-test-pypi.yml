@@ -96,7 +96,7 @@ jobs:
 
   publish-to-testpypi:
     name: Publish Python 🐍 distribution 📦 to TestPyPI
-    if: startswith(github.ref, 'refs/heads/dev') && startswith(github.ref, 'refs/tags/v')
+    if: startswith(github.ref, 'refs/heads/dev') # && startswith(github.ref, 'refs/tags/v')
     needs:
     - build
     runs-on: ubuntu-latest
