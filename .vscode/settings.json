@@ -1,0 +1,15 @@
+{
+    "folder-color.pathColors": [
+        {
+            "folderPath": "qnngds\\docs\\dev\\conf.py\\",
+            "color": "foldercolorizer.LightRed"
+        },
+        {
+            "folderPath": "qnngds\\"
+        },
+        {
+            "folderPath": "qnngds\\docs\\dev\\",
+            "color": "foldercolorizer.red"
+        }
+    ]
+}
