@@ -37,6 +37,7 @@ Comment your functions
 include coding.rst comments docstring
 
 .. _rtd version in qnngds:
+
 explain how to visualize your branch version of documentation (to make sure it
 is properly interpreted), explain how to run generate images and libraries.
 These functions will always be usefull for this type of use.
@@ -64,9 +65,9 @@ explain that the user documentation will auto build when push from main.
 explain that the python package will be auto built when the pull request is
 accepted and pushed from main.
 Explain that the contributor needs to MANUALLY update the version. Explain semantic versioning:
- 
+
 .. list-table:: Semantic Versioning
-    :widths: 0.30 0.20 0.35 0.10
+    :widths: 30 20 35 10
     :header-rows: 1
 
     * - Code status
