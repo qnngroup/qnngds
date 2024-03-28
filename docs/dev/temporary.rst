@@ -67,7 +67,7 @@ accepted and pushed from main.
 Explain that the contributor needs to MANUALLY update the version. Explain semantic versioning:
 
 .. list-table:: Semantic Versioning
-    :widths: 30 20 35 10
+    :widths: 20 13 23 6
     :header-rows: 1
 
     * - Code status
@@ -78,23 +78,23 @@ Explain that the contributor needs to MANUALLY update the version. Explain seman
       - New product
       - Start with 1.0.0
       - 1.0.0
-    * - | Backward compatible 
-        | bug fixes
+    * - Backward compatible 
+        bug fixes
       - Patch release
       - Increment the third digit
       - 1.0.1
-    * - | Backward compatible
-        | new features
+    * - Backward compatible
+        new features
       - Minor release
-      - | Increment the middle digit
-        | and reset last digit to zero
+      - Increment the middle digit
+        and reset last digit to zero
       - 1.1.0
-    * - | Changes that break backward 
-        | compatibility
+    * - Changes that break backward 
+        compatibility
       - Major release
-      - | Increment the first digit 
-        | and reset middle and last 
-        | digits to zero
+      - Increment the first digit 
+        and reset middle and last 
+        digits to zero
       - 2.0.0
 
 The END. (for contributors)
