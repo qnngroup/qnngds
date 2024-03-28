@@ -65,36 +65,54 @@ explain that the python package will be auto built when the pull request is
 accepted and pushed from main.
 Explain that the contributor needs to MANUALLY update the version. Explain semantic versioning:
  
-.. list-table:: Semantic Versioning
-    :widths: 30 20 35 15
-    :header-rows: 1
+.. .. list-table:: Semantic Versioning
+..     :widths: 30 20 35 15
+..     :header-rows: 1
 
-    * - Code status
-      - Stage
-      - Rule
-      - Example version
-    * - First release
-      - New product
-      - Start with 1.0.0
-      - 1.0.0
-    * - Backward compatible |
-        bug fixes
-      - Patch release
-      - Increment the third digit
-      - 1.0.1
-    * - Backward compatible |
-        new features
-      - Minor release
-      - Increment the middle digit |
-        and reset last digit to zero
-      - 1.1.0
-    * - Changes that break backward |
-        compatibility
-      - Major release
-      - Increment the first digit |
-        and reset middle and last |
-        digits to zero
-      - 2.0.0
+..     * - Code status
+..       - Stage
+..       - Rule
+..       - Example version
+..     * - First release
+..       - New product
+..       - Start with 1.0.0
+..       - 1.0.0
+..     * - Backward compatible |
+..         bug fixes
+..       - Patch release
+..       - Increment the third digit
+..       - 1.0.1
+..     * - Backward compatible |
+..         new features
+..       - Minor release
+..       - Increment the middle digit |
+..         and reset last digit to zero
+..       - 1.1.0
+..     * - Changes that break backward |
+..         compatibility
+..       - Major release
+..       - Increment the first digit |
+..         and reset middle and last |
+..         digits to zero
+..       - 2.0.0
+
++------------------------+----------------------+------------------------+------------------------+
+| Code status            | Stage                | Rule                   | Example version        |
++========================+======================+========================+========================+
+| First release          | New product          | Start with 1.0.0       | 1.0.0                  |
++------------------------+----------------------+------------------------+------------------------+
+| Backward compatible   | Patch release        | Increment the third    | 1.0.1                  |
+| bug fixes             |                      | digit                  |                        |
++------------------------+----------------------+------------------------+------------------------+
+| Backward compatible   | Minor release        | Increment the middle   | 1.1.0                  |
+| new features          |                      | digit and reset last   |                        |
+|                        |                      | digit to zero          |                        |
++------------------------+----------------------+------------------------+------------------------+
+| Changes that break    | Major release        | Increment the first    | 2.0.0                  |
+| backward compatibility|                      | digit and reset middle |                        |
+|                        |                      | and last digits to zero|                        |
++------------------------+----------------------+------------------------+------------------------+
+
 
 The END. (for contributors)
 
