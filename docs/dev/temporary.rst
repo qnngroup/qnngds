@@ -96,22 +96,22 @@ Explain that the contributor needs to MANUALLY update the version. Explain seman
 ..         digits to zero
 ..       - 2.0.0
 
-+------------------------+----------------------+------------------------+------------------------+
-| Code status            | Stage                | Rule                   | Example version        |
-+========================+======================+========================+========================+
-| First release          | New product          | Start with 1.0.0       | 1.0.0                  |
-+------------------------+----------------------+------------------------+------------------------+
++-----------------------+----------------------+------------------------+------------------------+
+| Code status           | Stage                | Rule                   | Example version        |
++=======================+======================+========================+========================+
+| First release         | New product          | Start with 1.0.0       | 1.0.0                  |
++-----------------------+----------------------+------------------------+------------------------+
 | Backward compatible   | Patch release        | Increment the third    | 1.0.1                  |
 | bug fixes             |                      | digit                  |                        |
-+------------------------+----------------------+------------------------+------------------------+
++-----------------------+----------------------+------------------------+------------------------+
 | Backward compatible   | Minor release        | Increment the middle   | 1.1.0                  |
 | new features          |                      | digit and reset last   |                        |
-|                        |                      | digit to zero          |                        |
-+------------------------+----------------------+------------------------+------------------------+
+|                       |                      | digit to zero          |                        |
++-----------------------+----------------------+------------------------+------------------------+
 | Changes that break    | Major release        | Increment the first    | 2.0.0                  |
 | backward compatibility|                      | digit and reset middle |                        |
-|                        |                      | and last digits to zero|                        |
-+------------------------+----------------------+------------------------+------------------------+
+|                       |                      | and last digits to zero|                        |
++-----------------------+----------------------+------------------------+------------------------+
 
 
 The END. (for contributors)
@@ -144,7 +144,7 @@ for the developers/contributors like you (`qnngds-dev
 <https://qnngds.readthedocs.io/projects/qnngds-dev/en/latest/>`_). Both projects
 share the same configuration file. 
 
-.. see-also::
+.. seealso::
     For more details on multiprojects, see `Documentation for 
     sphinx-multiproject <https://sphinx-multiproject.readthedocs.io/en/latest/>`_.
 
