@@ -18,4 +18,5 @@ Contents
    coding
    packaging
    documenting
+   temporary
    
