@@ -67,7 +67,7 @@ accepted and pushed from main.
 Explain that the contributor needs to MANUALLY update the version. Explain semantic versioning:
 
 .. list-table:: Semantic Versioning
-    :widths: 20 13 23 6
+    :widths: 10 6 12 3
     :header-rows: 1
 
     * - Code status
