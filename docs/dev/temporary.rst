@@ -64,6 +64,7 @@ explain that the user documentation will auto build when push from main.
 explain that the python package will be auto built when the pull request is
 accepted and pushed from main.
 Explain that the contributor needs to MANUALLY update the version. Explain semantic versioning:
+ 
 .. list-table:: Semantic Versioning
     :widths: 30 20 35 15
     :header-rows: 1
