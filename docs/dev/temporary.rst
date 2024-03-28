@@ -61,7 +61,27 @@ add the documenting few steps to manually build so far (create images, generate 
 
 explain that the user documentation will auto build when push from main.
 
-explain that the python package will be auto built when the pull request is accepted and pushed from main
+explain that the python package will be auto built when the pull request is
+accepted and pushed from main.
+Explain that the contributor needs to MANUALLY update the version. Explain semantic versioning:
++------------------------+----------------------+------------------------+------------------------+
+| Code status            | Stage                | Rule                   | Example version        |
++========================+======================+========================+========================+
+| First release          | New product          | Start with 1.0.0       | 1.0.0                  |
++------------------------+----------------------+------------------------+------------------------+
+| Backward compatible    | Patch release        | Increment the third    | 1.0.1                  |
+| bug fixes              |                      | digit                  |                        |
++------------------------+----------------------+------------------------+------------------------+
+| Backward compatible    | Minor release        | Increment the middle   | 1.1.0                  |
+| new features           |                      | digit and reset last   |                        |
+|                        |                      | digit to zero          |                        |
++------------------------+----------------------+------------------------+------------------------+
+| Changes that break     | Major release        | Increment the first    | 2.0.0                  |
+| backward compatibility |                      | digit and reset middle |                        |
+|                        |                      | and last digits to zero|                        |
++------------------------+----------------------+------------------------+------------------------+
+
+
 
 The END. (for contributors)
 
@@ -72,21 +92,30 @@ Documentation for developers of qnngds
 
 Setup 
 -----
+
 The setup is exactly the same than for contributors, except for **one**
 difference: the name of your branch. Indeed, developers will have access to
 platforms that normal contributors don't need. The CICD will not work on your
 branch if they don't have the correct prefix. 
 
-You plan to touch to the dev folder? Add a ``dev`` prefix to your branch.
-You will need to build test versions of the PyPI package? Use ``dev-pypi`` prefix.
+* You plan to touch to the ``dev`` folder? Add a ``dev-`` prefix to your branch.
 
-Modification relative to the documentation
-------------------------------------------
+* You need to build test versions of the PyPI package? Use ``dev-pypi`` prefix.
 
-Modifying the documentations structure:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Modifications relative to the documentation
+-------------------------------------------
 
-two docs independent: dev and user 
+The **qnngds documentation** is built as follow. The ``docs`` folder contains
+two subfolders ``user`` and ``dev``. Those are two different Read the Docs
+projects. This configuration allows to have two seperate documentations: one for
+the package users (`qnngds <https://qnngds.readthedocs.io/en/latest/>`_) and one
+for the developers/contributors like you (`qnngds-dev
+<https://qnngds.readthedocs.io/projects/qnngds-dev/en/latest/>`_). Both projects
+share the same configuration file. 
+
+.. see-also::
+    For more details on multiprojects, see `Documentation for 
+    sphinx-multiproject <https://sphinx-multiproject.readthedocs.io/en/latest/>`_.
 
 As a contributor, you can already preview every modification you bring to the
 **qnngds documentation** (for users), as described :ref:`above<rtd version in
@@ -101,13 +130,16 @@ generate a new version of the developer's documentation.
 When you are satisfied with the new versions you created, you can go on and
 create a pull request for review.
 
-More links
-~~~~~~~~~~
-* CICD for rtd
-* RTD basics
+Modifications relative to the PyPI package
+------------------------------------------
 
+As a contributor to the package, you do not need to modify any of the webpages
+of PyPI but only want to build a new version of it to be sure your modifications
+have been included. 
 
-
-
-Modification relative to the PyPI package
------------------------------------------
+As a developer, you may want to update things like the ``README`` file, the
+``LICENSE``, or add more complex features to the package. In each case, you will
+want to test those modifications before reveiling them to the great world. For
+this purpose, a `test PyPI version of qnngds package
+<https://test.pypi.org/project/qnngds/>`_ is automatically built every time code
+is pushed from a branch having a ``dev-pypi`` prefix.
