@@ -3,8 +3,8 @@
 Setup
 =====
 
-Setup your workspace
---------------------
+1. Setup your workspace
+-----------------------
 
 * Open a terminal where you want the ``qnngds`` folder to be. Clone the
   repository:
@@ -23,8 +23,9 @@ Setup your workspace
           .\.venv\your-env-name\Scripts\Activate
 
 
-Install the package
--------------------
+2. Install the package
+----------------------
+
 The qnngds package needs **gdspy** to be installed first. To do so, you can follow
 instruction `here <https://pypi.org/project/gdspy/>`_. For windows, what works
 best is to `install a pre-built wheel
@@ -49,8 +50,8 @@ changes made to the package without having to reinstall it every time.
     If any, make sure to delete the `.pdm-build` folder before trying to run the 
     previous steps.
 
-Start coding
-------------
+3. Start coding
+---------------
 
 Before you start coding, make sure you create a new branch of the git. To do so,
 open a terminal and execute:
@@ -98,13 +99,6 @@ Be careful, make sure the branch you are working on does **not** start with
     Once design is reorganized, send the contributors to the tuto ``creating 
     your cell``. This is what every contributor should ideally go through when
     adding a new circuit to the package. 
-
-Keep the code clean
--------------------
-
-(?)
-
-include coding.rst comments good coding practices
 
 .. _Comment your functions:
 
@@ -158,8 +152,8 @@ for more details.
 ----------------------
 
 .. todo::
-        Check how to automate that, running generate images and generate libraries 
-        before pull request?
+    Check how to automate that, running generate images and generate libraries 
+    before pull request?
 
 If the function created returns a Device object, it should be added to the
 library. You could manually upload the quickplot of this function by saving it
@@ -177,15 +171,12 @@ auto-generate the qnngds library:
 
 .. _rtd version in qnngds:
 
-explain how to visualize your branch version of documentation (to make sure it
-is properly interpreted), explain how to run generate images and libraries.
-These functions will always be usefull for this type of use.
+3. Preview the documentation: automatic versioning
+--------------------------------------------------
 
-.. todo::
-    really figure out how to automate the libraries
-
-3. Preview the documentation
-----------------------------
+You might want to check that the changes you made to the package are well
+generated in the documentation. When pushing your code on your branch, a new
+verison of qnngds' documentation will be accessible.
 
 Commit your changes:
 
@@ -195,36 +186,41 @@ Commit your changes:
 
 Push your branch to GitHub:
 
-.. code-block:: bash
-    git push origin your_new_branch_name
+* If you are pushing a new branch for the first time:
 
-Open the `documentation <https://qnngds.readthedocs.io/en/latest/>`_.
+  .. code-block:: bash
+      git push origin your_new_branch_name 
 
-You will find on the bottom left corner of the page something like ``v:
-latest``. Click on it and select the version corresponding to your branch. Your
-changes should appear in this documentation's version. Check that the API
-displays properly and that your new devices are part of the libraries (if
-applicable).
+* Any other time, you can simply use:
 
-.. note::
-    Can not see your documentation's version? 
+  .. code-block:: bash
+      git push
 
+Open the `documentation <https://qnngds.readthedocs.io/en/latest/>`_. You will
+find on the bottom left corner of the page something like ``v: latest``. Click
+on it and select the version corresponding to your branch. Your changes should
+appear in this documentation's version. Check that the API displays properly and
+that your new devices are part of the libraries (if applicable).
+
+.. note:: Cannot see your documentation's version? 
     * Be patient and refresh the page
-    * Check the `Read The Docs <https://readthedocs.org/projects/qnngds/>`
+
+    * Check the `Read The Docs <https://readthedocs.org/projects/qnngds/>`_
       project to make sure your verison is processing
 
-explain that the user
-documentation will auto build when push from main.
 
 4. Satisfied with your code, ready for a pull request
 -----------------------------------------------------
-Keep as little and specific as possible the content in each new branch. 
 
-complete with end of coding github blabla
+If you are satisfied with the modifications made to the package, and that the
+document was correctly updated, you are ready for a pull request.
 
 .. _version package:
 
-Explain that the contributor needs to MANUALLY update the version. Explain semantic versioning:
+In ``pyproject.toml``, manually update the ``version = x.x.x``. If your name is
+not yet cited, add it to the ``authors``! Below is a table explaining how to
+update the version. To avoid any mistake, you can check the latest version built
+in the project's `history <https://pypi.org/project/qnngds/#history>`_.
 
 +-------------------------+----------------------+--------------------------+------------------------+
 | Code status             | Stage                | Rule                     | Example version        |
@@ -243,11 +239,9 @@ Explain that the contributor needs to MANUALLY update the version. Explain seman
 |                         |                      | | and last digits to zero|                        |
 +-------------------------+----------------------+--------------------------+------------------------+
 
-
-explain that the python package will be auto built when the pull request is
-accepted and pushed from main.
-
-The END. (for contributors)
+You can now **create a pull request**. A new version of the ``qnngds`` package
+will automatically be built (using the updated version number you indicated)
+after the request is accepted.
 
 .. _doc for developers:
 
