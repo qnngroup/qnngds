@@ -111,6 +111,7 @@ verison of qnngds' documentation will be accessible.
 Commit your changes:
 
 .. code-block:: bash
+
     git add .
     git commit -m "Your descriptive commit message"
 
@@ -119,11 +120,13 @@ Push your branch to GitHub:
 * If you are pushing a new branch for the first time:
 
   .. code-block:: bash
+
       git push origin your_new_branch_name 
 
 * Any other time, you can simply use:
 
   .. code-block:: bash
+    
       git push
 
 Open the `documentation <https://qnngds.readthedocs.io/en/latest/>`_. You will

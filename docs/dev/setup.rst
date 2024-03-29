@@ -10,6 +10,7 @@ Setup
   repository:
 
   .. code-block:: bash
+
       git clone https://github.com/qnngroup/qnngds.git
 
 * Create a new virtual environment:
@@ -19,6 +20,7 @@ Setup
     * Execute:
 
       .. code-block:: bash
+
           python -m venv/your-env-name
           .\.venv\your-env-name\Scripts\Activate
 
@@ -32,6 +34,7 @@ best is to `install a pre-built wheel
 <https://github.com/heitzmann/gdspy/releases>`_ and run :
 
 .. code-block:: bash
+
     pip install path/to/gdspy-1.6.12-cp38-cp38-win_amd64.whl
 
 Make sure you download the wheel corresponding to your device:
@@ -44,10 +47,11 @@ package (that you intend to modify) in editable mode. This allows to test the
 changes made to the package without having to reinstall it every time.
 
 .. code-block:: bash
+
     pip install -e /path/to/qnngds
 
 .. note::
-    If any, make sure to delete the `.pdm-build` folder before trying to run the 
+    If any, make sure to delete the ``.pdm-build`` folder before trying to run the 
     previous steps.
 
 3. Start coding
@@ -57,6 +61,7 @@ Before you start coding, make sure you create a new branch of the git. To do so,
 open a terminal and execute:
 
 .. code-block:: bash
+
     cd path/to/qnngds
     git checkout -b your-branch-name
 
