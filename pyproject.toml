@@ -26,7 +26,8 @@ classifiers = [
 ]
 
 dependencies = [
-  "phidl"
+  "phidl",
+  "scipy"
 ]
 
 [project.urls]

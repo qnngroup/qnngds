@@ -16,6 +16,7 @@ It is made for helping in the design of gds files. The package is composed of 5 
 
 ### Dependencies
 - [phidl](https://pypi.org/project/phidl/)
+- [scipy](https://pypi.org/project/scipy/)
 
 ## License
 This project is licensed under the MIT License - see the LICENSE.txt file for details
