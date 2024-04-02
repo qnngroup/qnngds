@@ -5,6 +5,7 @@ build-backend = "pdm.backend"
 [project]
 name = "qnngds"
 version = "0.0.6"
+
 authors = [
   { name="A. Jacquillat", email="audrey01@mit.edu" },
   { name="A. Jacquillat", email="audrey.jacquillat@gmail.com" }
@@ -26,7 +27,6 @@ classifiers = [
 ]
 
 dependencies = [
-  "peppercorn",
   "phidl",
   "scipy"
 ]

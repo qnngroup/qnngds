@@ -15,7 +15,7 @@ Contents
    :maxdepth: 2
 
    setup
-   coding
-   packaging
-   documenting
+   contribute
+   develop
+
    
