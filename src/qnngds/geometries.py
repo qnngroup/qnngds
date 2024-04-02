@@ -1,9 +1,6 @@
-""" 
-Geometries contains common test structures as well as useful shapes/tools that are not
-available in phidl's geometry library.
-"""
+"""Geometries contains common test structures as well as useful shapes/tools
+that are not available in phidl's geometry library."""
 
-from __future__ import division, print_function, absolute_import
 from phidl import Device
 from phidl import quickplot as qp
 from phidl import set_quickplot_options
@@ -16,9 +13,8 @@ set_quickplot_options(blocking=True)
 # Basics
 
 
-def alignement_mark(layers: List[int] = [1, 2, 3, 4]) -> Device:
-    """
-    Creates an alignment mark for each photolithography.
+def alignment_mark(layers: List[int] = [1, 2, 3, 4]) -> Device:
+    """Creates an alignment mark for each photolithography.
 
     Args:
         layers (List[int]): An array of layers.
@@ -125,8 +121,7 @@ def resolution_test(
     inverted: Union[bool, float] = False,
     layer: int = 0,
 ) -> Device:
-    """
-    Creates test structures for determining a process resolution.
+    """Creates test structures for determining a process resolution.
 
     Args:
         resolutions (List[float]): List of resolutions (in µm) to be tested.
@@ -235,8 +230,7 @@ def resolution_test(
 
 
 def hyper_taper(length=10, wide_section=50, narrow_section=5, layer=0):
-    """
-    Hyperbolic taper (solid). Designed by colang.
+    """Hyperbolic taper (solid). Designed by colang.
 
     Args:
         length (float): Length of taper.

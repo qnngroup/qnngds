@@ -47,11 +47,11 @@ snspd_ntron
 geometries
 ----------
 
-alignement_mark
+alignment_mark
 ~~~~~~~~~~~~~~~
 
-.. image:: images/geometries/alignement_mark.png
-   :alt: alignement_mark.png
+.. image:: images/geometries/alignment_mark.png
+   :alt: alignment_mark.png
 
 hyper_taper
 ~~~~~~~~~~~
@@ -77,11 +77,11 @@ die_cell
 design
 ------
 
-create_alignement_cell
+create_alignment_cell
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. image:: images/design/create_alignement_cell.png
-   :alt: create_alignement_cell.png
+.. image:: images/design/create_alignment_cell.png
+   :alt: create_alignment_cell.png
 
 create_chip
 ~~~~~~~~~~~

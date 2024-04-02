@@ -1,11 +1,11 @@
-""" 
-Design's module is though for users to be able to access pre-built cells that
-are made of circuits, devices or test structures already integrated in a die
-cell. 
-It is a module that is sufficient in itself to build an entire new design.
+"""Design's module is though for users to be able to access pre-built cells
+that are made of circuits, devices or test structures already integrated in a
+die cell.
+
+It is a module that is sufficient in itself to build an entire new
+design.
 """
 
-from __future__ import division, print_function, absolute_import
 from phidl import Device
 
 # from phidl import quickplot as qp
@@ -55,8 +55,7 @@ def create_chip(
     Tuple[Device, Union[int, float], List[List[bool]]],
     Tuple[Device, Union[int, float]],
 ]:
-    """
-    Creates a chip map in the annotations layer.
+    """Creates a chip map in the annotations layer.
 
     If unpack_chip_map is set to True, creates a map (2D array) to monitor the
     states of each cell of the chip. The user should input N_dies xor die_w.
@@ -148,8 +147,7 @@ def place_on_chip(
     die_w: Union[int, float],
     devices_map_txt: Union[None, str] = None,
 ) -> bool:
-    """
-    Moves the chip to the coordinates specified.
+    """Moves the chip to the coordinates specified.
 
     Update the chip map with Occupied states where the device has been placed.
 
@@ -214,8 +212,8 @@ def place_remaining_devices(
     die_w: Union[int, float],
     write_devices_map_txt: Union[bool, str] = False,
 ) -> Optional[None]:
-    """
-    Go through the chip map and place the devices given, where the chip map is Free.
+    """Go through the chip map and place the devices given, where the chip map
+    is Free.
 
     Parameters:
         devices_to_place (list of Device objects): The devices to be placed.
@@ -260,15 +258,14 @@ def place_remaining_devices(
 ## basics:
 
 
-def create_alignement_cell(
+def create_alignment_cell(
     die_w: Union[int, float] = dflt_die_w,
     layers_to_align: List[int] = [dflt_layers["die"], dflt_layers["pad"]],
     outline_die: Union[int, float] = dflt_die_outline,
     die_layer: int = dflt_layers["die"],
     text: Union[None, str] = dflt_text,
 ) -> Device:
-    """
-    Creates alignment marks in an integer number of unit cells.
+    """Creates alignment marks in an integer number of unit cells.
 
     Parameters:
         die_w (int or float): Width of a unit die/cell in the design (the output device will be an integer number of unit cells).
@@ -285,7 +282,7 @@ def create_alignement_cell(
         text = ""
     DIE = Device(f"DIE ALIGN {text} ")
 
-    ALIGN = qg.alignement_mark(layers_to_align)
+    ALIGN = qg.alignment_mark(layers_to_align)
 
     n = math.ceil((ALIGN.xsize) / die_w)
     m = math.ceil((ALIGN.ysize) / die_w)
@@ -317,8 +314,8 @@ def create_vdp_cell(
     pad_layer: int = dflt_layers["pad"],
     text: Union[None, str] = dflt_text,
 ) -> Device:
-    r"""
-    Creates a cell containing a Van Der Pauw structure between 4 contact pads.
+    r"""Creates a cell containing a Van Der Pauw structure between 4 contact
+    pads.
 
     Parameters:
         die_w (int or float): Width of a unit die/cell in the design (the output device will be an integer number of unit cells).
@@ -395,8 +392,7 @@ def create_etch_test_cell(
     die_layer: int = dflt_layers["die"],
     text: Union[None, str] = dflt_text,
 ) -> Device:
-    """
-    Creates etch test structures in an integer number of unit cells.
+    """Creates etch test structures in an integer number of unit cells.
 
     These test structures are thought to be used by probing on pads (with a
     simple multimeter) that should be isolated one from another if the etching
@@ -470,8 +466,7 @@ def create_resolution_test_cell(
     die_layer: int = dflt_layers["die"],
     text: Union[None, str] = dflt_text,
 ) -> Device:
-    r"""
-    Creates a cell containing a resolution test.
+    r"""Creates a cell containing a resolution test.
 
     Parameters:
         die_w (int or float): Width of a unit die/cell in the design (the output device will be an integer number of unit cells).
@@ -538,8 +533,8 @@ def create_nanowires_cell(
     pad_layer: int = dflt_layers["pad"],
     text: Union[None, str] = dflt_text,
 ) -> Device:
-    """
-    Creates a cell that contains several nanowires of given channel and source.
+    """Creates a cell that contains several nanowires of given channel and
+    source.
 
     Parameters:
         die_w (int or float): Width of a unit die/cell in the design (the output device will be an integer number of unit cells).
@@ -652,8 +647,7 @@ def create_ntron_cell(
     pad_layer: int = dflt_layers["pad"],
     text: Union[None, str] = dflt_text,
 ) -> Device:
-    """
-    Creates a standardized cell specifically for a single ntron.
+    """Creates a standardized cell specifically for a single ntron.
 
     Unless specified, scales the ntron parameters as:
     gate_w = drain_w = source_w = 3 * channel_w
@@ -774,9 +768,8 @@ def create_snspd_ntron_cell(
     pad_layer: int = dflt_layers["pad"],
     text: Union[None, str] = dflt_text,
 ) -> Device:
-    """
-    Creates a cell that contains an SNSPD coupled to an NTRON.
-    The device's parameters are sized according to the SNSPD's width and the NTRON's choke.
+    """Creates a cell that contains an SNSPD coupled to an NTRON. The device's
+    parameters are sized according to the SNSPD's width and the NTRON's choke.
 
     Parameters:
         die_w (int or float): Width of a unit die/cell in the design (the output device will be an integer number of unit cells).
@@ -889,8 +882,8 @@ def create_snspd_ntron_cell(
 
 
 class Design:
-    """
-    A class for a design on a single layer of superconducting material, and additional contact pads.
+    """A class for a design on a single layer of superconducting material, and
+    additional contact pads.
 
     It is though for a process like:
 
@@ -939,7 +932,6 @@ class Design:
 
         >>> # Quickplot the chip skeletton!
         >>> qp(demo_project.CHIP)
-
     """
 
     def __init__(
@@ -997,8 +989,7 @@ class Design:
     # help building a design
 
     def create_chip(self, create_devices_map_txt: Union[bool, str] = True) -> Device:
-        """
-        Creates the chip, with unit cells.
+        """Creates the chip, with unit cells.
 
         The CHIP created will be the foundation of the design, the Device to add
         all references to. The function creates a chip_map (2D array) to help placing
@@ -1051,9 +1042,8 @@ class Design:
     def place_on_chip(
         self, cell: Device, coordinates: Tuple[int, int], add_to_chip: bool = True
     ) -> bool:
-        """
-        Moves the chip to the coordinates specified.
-        Update the chip map with Occupied states where the device has been placed.
+        """Moves the chip to the coordinates specified. Update the chip map
+        with Occupied states where the device has been placed.
 
         NB: the cell is aligned from its bottom left corner to the coordinates.
 
@@ -1069,10 +1059,10 @@ class Design:
             Warning: Prints a warning if the Device is overlapping with already occupied coordinates.
 
         Examples:
-            Here is an example of placing alignement cells on two given positions of the chip.
+            Here is an example of placing alignment cells on two given positions of the chip.
 
-            >>> align_left  = demo_project.create_alignement_cell(layers_to_align=[2, 3])
-            >>> align_right = demo_project.create_alignement_cell(layers_to_align=[2, 3])
+            >>> align_left  = demo_project.create_alignment_cell(layers_to_align=[2, 3])
+            >>> align_right = demo_project.create_alignment_cell(layers_to_align=[2, 3])
             >>> demo_project.place_on_chip(cell=align_left,  coordinates=(0, 5))
             >>> demo_project.place_on_chip(cell=align_right, coordinates=(10, 5))
         """
@@ -1093,8 +1083,8 @@ class Design:
         add_to_chip: bool = True,
         write_remaining_devices_map_txt: Union[bool, str] = False,
     ) -> Optional[None]:
-        """
-        Go through the chip map and place the devices given, where the chip map is Free.
+        """Go through the chip map and place the devices given, where the chip
+        map is Free.
 
         Parameters:
             devices_to_place (list of Device objects): The devices to be placed.
@@ -1136,8 +1126,7 @@ class Design:
         )
 
     def write_gds(self, text: Union[None, str] = dflt_text) -> Union[None, str]:
-        """
-        Write a GDS file.
+        """Write a GDS file.
 
         Args:
             text (str or None): The filename for the GDS file.
@@ -1152,11 +1141,10 @@ class Design:
 
     # basics:
 
-    def create_alignement_cell(
+    def create_alignment_cell(
         self, layers_to_align: List[int], text: Union[None, str] = dflt_text
     ) -> Device:
-        """
-        Creates alignment marks in an integer number of unit cells.
+        """Creates alignment marks in an integer number of unit cells.
 
         Parameters:
             layers_to_align (List[int]): Layers to align.
@@ -1165,7 +1153,7 @@ class Design:
         Returns:
             Device: A device that centers the alignment marks in an n*m unit cell.
         """
-        return create_alignement_cell(
+        return create_alignment_cell(
             die_w=self.die_w,
             layers_to_align=layers_to_align,
             outline_die=self.die_outline,
@@ -1179,8 +1167,8 @@ class Design:
         layers_to_outline: Union[List[int], None] = auto_param,
         text: Union[None, str] = dflt_text,
     ) -> Device:
-        r"""
-        Creates a cell containing a Van Der Pauw structure between 4 contact pads.
+        r"""Creates a cell containing a Van Der Pauw structure between 4 contact
+        pads.
 
         Parameters:
             layers_to_probe (List[int]): The layers on which to place the VDP structure.
@@ -1205,8 +1193,7 @@ class Design:
     def create_etch_test_cell(
         self, layers_to_etch: List[List[int]], text: Union[None, str] = dflt_text
     ) -> Device:
-        """
-        Creates etch test structures in an integer number of unit cells.
+        """Creates etch test structures in an integer number of unit cells.
 
         These test structures are thought to be used by probing on pads (with a simple multimeter)
         that should be isolated one from another if the etching is complete.
@@ -1244,8 +1231,7 @@ class Design:
         ],
         text: Union[None, str] = dflt_text,
     ) -> Device:
-        r"""
-        Creates a cell containing a resolution test.
+        r"""Creates a cell containing a resolution test.
 
         Parameters:
             layer_to_resolve (int): The layer to put the resolution test on.
@@ -1272,8 +1258,8 @@ class Design:
         channels_sources_w: List[Tuple[float, float]],
         text: Union[None, str] = dflt_text,
     ) -> Device:
-        """
-        Creates a cell containing several nanowires of given channel and source.
+        """Creates a cell containing several nanowires of given channel and
+        source.
 
         Parameters:
             channels_sources_w (List[Tuple[float, float]]): The list of
@@ -1309,8 +1295,7 @@ class Design:
         choke_shift: Union[float, None] = auto_param,
         text: Union[str, None] = dflt_text,
     ) -> Device:
-        r"""
-        Creates a standardized cell specifically for a single ntron.
+        r"""Creates a standardized cell specifically for a single ntron.
 
         Unless specified, scales the ntron parameters as:
         gate_w = drain_w = source_w = 3*channel_w
@@ -1354,9 +1339,9 @@ class Design:
         w_snspd: Union[float, None] = auto_param,
         text: Union[str, None] = dflt_text,
     ) -> Device:
-        """
-        Creates a cell that contains an SNSPD coupled to an NTRON.
-        The device's parameters are sized according to the SNSPD's width and the NTRON's choke.
+        """Creates a cell that contains an SNSPD coupled to an NTRON. The
+        device's parameters are sized according to the SNSPD's width and the
+        NTRON's choke.
 
         Parameters:
             w_choke (int or float): The width of the NTRON choke in µm.

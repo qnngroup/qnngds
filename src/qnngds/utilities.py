@@ -1,9 +1,10 @@
-""" Utilies is used for building cells in design. Cells are made of devices
+"""Utilies is used for building cells in design.
+
+Cells are made of devices
 (found in utilities) and a die_cell border, wich contains pads, text etc... The
-device and its die are linked thanks to functions present in this module. 
+device and its die are linked thanks to functions present in this module.
 """
 
-from __future__ import division, print_function, absolute_import
 from phidl import Device, Port
 
 # from phidl import quickplot as qp
@@ -48,8 +49,8 @@ def die_cell(
     pad_layer: int = dflt_layers["pad"],
     invert: bool = False,
 ) -> Device:
-    """
-    Creates a die cell with dicing marks, text, and pads to connect to a device.
+    """Creates a die cell with dicing marks, text, and pads to connect to a
+    device.
 
     Parameters:
         die_size (tuple of int): Overall size of the cell (width, height).
@@ -193,8 +194,7 @@ def add_hyptap_to_cell(
     contact_w: Union[int, float] = 5,
     layer: int = dflt_layers["device"],
 ) -> Tuple[Device, Device]:
-    """
-    Takes the cell and adds hyper taper at its ports.
+    """Takes the cell and adds hyper taper at its ports.
 
     Parameters:
         die_ports (list of Port): The ports of the die cell (use .get_ports()).
@@ -231,8 +231,7 @@ def add_hyptap_to_cell(
 def route_to_dev(
     ext_ports: List[Port], dev_ports: Set[Port], layer: int = dflt_layers["device"]
 ) -> Device:
-    """
-    Creates smooth routes from external ports to the device's ports.
+    """Creates smooth routes from external ports to the device's ports.
 
     Parameters:
         ext_ports (list of Port): The external ports, e.g., of the die or hyper tapers (use .get_ports()).

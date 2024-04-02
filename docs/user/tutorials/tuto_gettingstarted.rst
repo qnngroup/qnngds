@@ -99,12 +99,12 @@ Choose your design parameters, create a new design and build the chip.
 Add test vehicules cells
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Add alignement cells like:
+Add alignment cells like:
 
 .. code-block:: python
     :lineno-start: 38
     
-    ALIGN_CELL_LEFT = design.create_alignement_cell(layers_to_align = [layers['mgb2_coarse'], layers['pad']], 
+    ALIGN_CELL_LEFT = design.create_alignment_cell(layers_to_align = [layers['mgb2_coarse'], layers['pad']], 
                                                     text = 'LEFT')
     design.place_on_chip(ALIGN_CELL_LEFT, (0, 2))
 

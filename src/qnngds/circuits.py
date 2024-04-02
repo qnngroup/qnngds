@@ -1,8 +1,6 @@
-""" 
-Circuits module contains a library of QNN's circuits (e.g. snspd coupled to ntron, logic gates etc.)
-"""
+"""Circuits module contains a library of QNN's circuits (e.g. snspd coupled to
+ntron, logic gates etc.)"""
 
-from __future__ import division, print_function, absolute_import
 from phidl import Device
 from phidl import quickplot as qp
 from phidl import set_quickplot_options
@@ -28,8 +26,7 @@ def snspd_ntron(
     w_pad: Union[int, float] = 1,
     layer: int = 0,
 ) -> Device:
-    """
-    Creates a SNSPD coupled to an NTRON, with 3 inductors in the circuit as:
+    """Creates a SNSPD coupled to an NTRON, with 3 inductors in the circuit as:
 
     >>> |        |
     >>> L1       L3

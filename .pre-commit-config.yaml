@@ -1,6 +1,10 @@
 repos:
--   repo: https://github.com/psf/black
-    rev: 24.3.0
+  - repo: https://github.com/psf/black
+    rev: '24.3.0'  # Use the latest stable version of black
     hooks:
-    - id: black
-      language_version: python3
+      - id: black
+        language_version: python3
+  - repo: https://github.com/PyCQA/docformatter
+    rev: v1.7.5  # Use the latest stable version
+    hooks:
+      - id: docformatter

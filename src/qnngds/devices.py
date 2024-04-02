@@ -1,8 +1,6 @@
-""" 
-Devices module contain the basic devices that QNN uses in its circuits (e.g. ntron, htron etc).
-"""
+"""Devices module contain the basic devices that QNN uses in its circuits (e.g.
+ntron, htron etc)."""
 
-from __future__ import division, print_function, absolute_import
 from phidl import Device
 
 # from phidl import quickplot as qp
@@ -20,8 +18,7 @@ def ntron(
     choke_shift: float = -0.3,
     layer: int = 0,
 ) -> Device:
-    """
-    Creates a ntron device.
+    """Creates a ntron device.
 
     Args:
         choke_w (float): Width of the choke region.
@@ -75,7 +72,8 @@ def ntron_compassPorts(
     choke_shift: float = -0.3,
     layer: int = 0,
 ) -> Device:
-    """Creates a ntron device with compass ports (i.e. N1, W1, S1 for drain, gate, source respectively).
+    """Creates a ntron device with compass ports (i.e. N1, W1, S1 for drain,
+    gate, source respectively).
 
     Args:
         choke_w (float): Width of the choke region.
@@ -129,8 +127,7 @@ def ntron_sharp(
     drain_w: float = 0.3,
     layer: int = 0,
 ) -> Device:
-    """
-    Creates a sharp ntron device.
+    """Creates a sharp ntron device.
 
     Args:
         choke_w (float): Width of the choke region.
@@ -175,8 +172,8 @@ def ntron_sharp(
 def nanowire(
     channel_w: float = 0.1, source_w: float = 0.3, layer: int = 0, num_pts: int = 100
 ) -> Device:
-    """
-    Creates a single wire, with the same appearance as an NTRON but without the gate.
+    """Creates a single wire, with the same appearance as an NTRON but without
+    the gate.
 
     Args:
         channel_w (int or float): The width of the channel (at the hot-spot location).
@@ -212,8 +209,8 @@ def snspd_vert(
     extend: Optional[float] = None,
     layer: int = 0,
 ) -> Device:
-    """
-    Creates a vertical superconducting nanowire single-photon detector (SNSPD).
+    """Creates a vertical superconducting nanowire single-photon detector
+    (SNSPD).
 
     Args:
         wire_width (float): Width of the nanowire.
