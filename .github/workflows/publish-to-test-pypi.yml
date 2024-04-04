@@ -31,7 +31,7 @@ jobs:
   publish-to-pypi:
     name: >-
       Publish Python 🐍 distribution 📦 to PyPI
-    if: github.ref == 'refs/heads/main' # only publish to PyPI on a push from main
+    if: github.ref == 'refs/heads/master' # only publish to PyPI on a push from master
     needs:
     - build
     runs-on: ubuntu-latest
