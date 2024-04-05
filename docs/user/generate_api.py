@@ -1,8 +1,7 @@
 import os
 
 def generate_api_rst(filename):
-    content = """
-Libraries
+    content = """API
 =========
 
 """
@@ -18,8 +17,13 @@ Libraries
 
         # Add images from the subfolder
         subfolder_path = os.path.join(os.path.dirname(__file__), 'images', subfolder)
-        images = [f for f in os.listdir(subfolder_path) if os.path.isfile(os.path.join(subfolder_path, f))]
-        for image in sorted(images):
+        images = sorted([f for f in os.listdir(subfolder_path) if os.path.isfile(os.path.join(subfolder_path, f))])
+        content += f"    :members:\n"
+        content += f"    :exclude-members: {' '.join(os.path.splitext(i)[0] for i in images)}\n"
+        content += f"    :undoc-members:\n"
+        content += f"    :show-inheritance:\n"
+
+        for image in images:
             figurename, ext = os.path.splitext(image)
             content += f"    .. autofunction:: {figurename}\n"
             content += f"        .. image:: images/{subfolder}/{image}\n"
