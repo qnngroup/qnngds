@@ -49,8 +49,11 @@ def plot_and_save_functions(module, module_name):
                     qp(result)
                     plt.savefig(os.path.join(module_name, f'{func_name}.png'))
                     plt.close()
+                    print(f"Info: in module '{module_name}', function '{func_name}' was plotted")
         except Exception as e:
-            print(f"Warning: in module '{module_name}', error executing function '{func_name}': {e}")
+            if 'missing' in str(e):
+                print(f"Warning: in module '{module_name}', function '{func_name}' was not plotted: {e}")
+            
 
 def process_modules_in_folder(folder_path):
     """
