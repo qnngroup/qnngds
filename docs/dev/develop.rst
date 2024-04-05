@@ -39,7 +39,7 @@ qnngds>`. Every new branch will generate a new version of the documentation
     Some files useful for automating the documentation are not fully modular. For
     example, if the qnngds modules were to change names or some were to be
     added/deleted, you would also need to manually update them in
-    ``generate_libraries.py`` and ``api.rst``. Modifying the package structure
+    ``generate_api.py`` and ``api.rst``. Modifying the package structure
     should be taken with great care.
 
 As a **developer**, if you have precisions/modifications to bring to the

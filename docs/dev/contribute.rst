@@ -96,8 +96,8 @@ auto-generate the qnngds library:
    returned devices of every function in the qnngds package.
 
 #. Open a terminal in ``/path-to-qnngds/docs/user`` and run
-   ``generate_libraries.py`` file. This will automatically generate the
-   ``libraries.rst`` file.
+   ``generate_api.py`` file. This will automatically generate a new
+   ``api.rst`` file with inlined images
 
 .. _rtd version in qnngds:
 
