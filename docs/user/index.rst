@@ -15,7 +15,6 @@ Contents
    :maxdepth: 2
 
    api
-   libraries
    tutorials
 
 .. _Want to contribute?:
