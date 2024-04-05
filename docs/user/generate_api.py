@@ -24,8 +24,8 @@ def generate_api_rst(filename):
             figurename, ext = os.path.splitext(image)
             content += f"    .. autofunction:: {figurename}\n\n"
             content += f"        .. image:: images/{subfolder}/{image}\n"
-            #content += f"            :alt: {image}\n\n"
-            content += "\n"
+            content += f"            :alt: {image}\n\n"
+
     with open(filename, 'w') as file:
         file.write(content)
 
