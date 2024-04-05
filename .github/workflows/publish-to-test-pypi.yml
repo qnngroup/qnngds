@@ -78,7 +78,7 @@ jobs:
       uses: maybe-hello-world/pyproject-check-version@v4
       id: versioncheck
       with:
-        pyproject-path: "./pyproject.toml"
+        pyproject-path: "../../pyproject.toml"
     - name: Create GitHub Release
       env:
         GITHUB_TOKEN: ${{ github.token }}
