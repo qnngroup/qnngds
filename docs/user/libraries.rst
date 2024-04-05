@@ -5,11 +5,17 @@ Libraries
 devices
 -------
 
-nanowire
-~~~~~~~~
+resistor_sc_contacts
+~~~~~~~~~~~~~~~~~~~~
 
-.. image:: images/devices/nanowire.png
-   :alt: nanowire.png
+.. image:: images/devices/resistor_sc_contacts.png
+   :alt: resistor_sc_contacts.png
+
+ntron_sharp
+~~~~~~~~~~~
+
+.. image:: images/devices/ntron_sharp.png
+   :alt: ntron_sharp.png
 
 ntron
 ~~~~~
@@ -23,17 +29,23 @@ ntron_compassPorts
 .. image:: images/devices/ntron_compassPorts.png
    :alt: ntron_compassPorts.png
 
-ntron_sharp
-~~~~~~~~~~~
+resistor_meander
+~~~~~~~~~~~~~~~~
 
-.. image:: images/devices/ntron_sharp.png
-   :alt: ntron_sharp.png
+.. image:: images/devices/resistor_meander.png
+   :alt: resistor_meander.png
 
 snspd_vert
 ~~~~~~~~~~
 
 .. image:: images/devices/snspd_vert.png
    :alt: snspd_vert.png
+
+nanowire
+~~~~~~~~
+
+.. image:: images/devices/nanowire.png
+   :alt: nanowire.png
 
 circuits
 --------
@@ -47,17 +59,17 @@ snspd_ntron
 geometries
 ----------
 
-alignment_mark
-~~~~~~~~~~~~~~~
-
-.. image:: images/geometries/alignment_mark.png
-   :alt: alignment_mark.png
-
 hyper_taper
 ~~~~~~~~~~~
 
 .. image:: images/geometries/hyper_taper.png
    :alt: hyper_taper.png
+
+alignment_mark
+~~~~~~~~~~~~~~
+
+.. image:: images/geometries/alignment_mark.png
+   :alt: alignment_mark.png
 
 resolution_test
 ~~~~~~~~~~~~~~~
@@ -77,35 +89,17 @@ die_cell
 design
 ------
 
-create_alignment_cell
-~~~~~~~~~~~~~~~~~~~~~~
-
-.. image:: images/design/create_alignment_cell.png
-   :alt: create_alignment_cell.png
-
-create_chip
-~~~~~~~~~~~
-
-.. image:: images/design/create_chip.png
-   :alt: create_chip.png
-
-create_etch_test_cell
-~~~~~~~~~~~~~~~~~~~~~
-
-.. image:: images/design/create_etch_test_cell.png
-   :alt: create_etch_test_cell.png
-
-create_nanowires_cell
-~~~~~~~~~~~~~~~~~~~~~
-
-.. image:: images/design/create_nanowires_cell.png
-   :alt: create_nanowires_cell.png
-
 create_ntron_cell
 ~~~~~~~~~~~~~~~~~
 
 .. image:: images/design/create_ntron_cell.png
    :alt: create_ntron_cell.png
+
+create_alignement_cell
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. image:: images/design/create_alignement_cell.png
+   :alt: create_alignement_cell.png
 
 create_resolution_test_cell
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -113,15 +107,39 @@ create_resolution_test_cell
 .. image:: images/design/create_resolution_test_cell.png
    :alt: create_resolution_test_cell.png
 
-create_snspd_ntron_cell
-~~~~~~~~~~~~~~~~~~~~~~~
+create_chip
+~~~~~~~~~~~
 
-.. image:: images/design/create_snspd_ntron_cell.png
-   :alt: create_snspd_ntron_cell.png
+.. image:: images/design/create_chip.png
+   :alt: create_chip.png
 
 create_vdp_cell
 ~~~~~~~~~~~~~~~
 
 .. image:: images/design/create_vdp_cell.png
    :alt: create_vdp_cell.png
+
+create_alignment_cell
+~~~~~~~~~~~~~~~~~~~~~
+
+.. image:: images/design/create_alignment_cell.png
+   :alt: create_alignment_cell.png
+
+create_nanowires_cell
+~~~~~~~~~~~~~~~~~~~~~
+
+.. image:: images/design/create_nanowires_cell.png
+   :alt: create_nanowires_cell.png
+
+create_etch_test_cell
+~~~~~~~~~~~~~~~~~~~~~
+
+.. image:: images/design/create_etch_test_cell.png
+   :alt: create_etch_test_cell.png
+
+create_snspd_ntron_cell
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. image:: images/design/create_snspd_ntron_cell.png
+   :alt: create_snspd_ntron_cell.png
 
