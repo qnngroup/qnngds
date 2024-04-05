@@ -65,5 +65,5 @@ def process_modules_in_folder(folder_path):
         plot_and_save_functions(module, filename.split('.')[0])
 
 if __name__ == "__main__":
-    folder_path = '..\..\src\qnngds'
+    folder_path = os.path.join('..', '..', '..', 'src', 'qnngds')
     process_modules_in_folder(folder_path)
