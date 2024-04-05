@@ -1,11 +1,14 @@
-
-Libraries
+API
 =========
 
 Devices
 -------
 
 .. automodule:: qnngds.devices
+    :members:
+    :exclude-members: nanowire ntron ntron_compassPorts ntron_sharp snspd_vert
+    :undoc-members:
+    :show-inheritance:
     .. autofunction:: nanowire
         .. image:: images/devices/nanowire.png
         :alt: nanowire.png
@@ -30,6 +33,10 @@ Circuits
 --------
 
 .. automodule:: qnngds.circuits
+    :members:
+    :exclude-members: snspd_ntron
+    :undoc-members:
+    :show-inheritance:
     .. autofunction:: snspd_ntron
         .. image:: images/circuits/snspd_ntron.png
         :alt: snspd_ntron.png
@@ -38,6 +45,10 @@ Geometries
 ----------
 
 .. automodule:: qnngds.geometries
+    :members:
+    :exclude-members: alignment_mark hyper_taper resolution_test
+    :undoc-members:
+    :show-inheritance:
     .. autofunction:: alignment_mark
         .. image:: images/geometries/alignment_mark.png
         :alt: alignment_mark.png
@@ -54,6 +65,10 @@ Utilities
 ---------
 
 .. automodule:: qnngds.utilities
+    :members:
+    :exclude-members: die_cell
+    :undoc-members:
+    :show-inheritance:
     .. autofunction:: die_cell
         .. image:: images/utilities/die_cell.png
         :alt: die_cell.png
@@ -62,6 +77,10 @@ Design
 ------
 
 .. automodule:: qnngds.design
+    :members:
+    :exclude-members: create_alignement_cell create_chip create_etch_test_cell create_nanowires_cell create_ntron_cell create_resolution_test_cell create_snspd_ntron_cell create_vdp_cell
+    :undoc-members:
+    :show-inheritance:
     .. autofunction:: create_alignement_cell
         .. image:: images/design/create_alignement_cell.png
         :alt: create_alignement_cell.png
