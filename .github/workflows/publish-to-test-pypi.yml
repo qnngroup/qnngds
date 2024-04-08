@@ -74,17 +74,17 @@ jobs:
         inputs: >-
           ./dist/*.tar.gz
           ./dist/*.whl
-    - name: Get pypi version
-      uses: maybe-hello-world/pyproject-check-version@v4
-      id: versioncheck
-      with:
-        pyproject-path: "../../pyproject.toml"
+    - name: Get project version
+      id: getversion 
+      run: >-
+        version=$(grep 'version = "[0-9\.]*"' pyproject.toml | sed -n 's/[^0-9]*\([0-9\.]*\).*/\1/p')
+        echo "$version" >> $GITHUB_OUTPUT
     - name: Create GitHub Release
       env:
         GITHUB_TOKEN: ${{ github.token }}
       run: >-
         gh release create
-        '${{ steps.versioncheck.outputs.local_version }}'
+        '${{ steps.getversion.outputs.version }}'
         --repo '${{ github.repository }}'
         --notes ""
     - name: Upload artifact signatures to GitHub Release
