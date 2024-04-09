@@ -4,11 +4,12 @@ build-backend = "pdm.backend"
 
 [project]
 name = "qnngds"
-version = "1.0.1"
+version = "1.0.13"
 
 authors = [
   { name="A. Jacquillat", email="audrey01@mit.edu" },
-  { name="A. Jacquillat", email="audrey.jacquillat@gmail.com" }
+  { name="A. Jacquillat", email="audrey.jacquillat@gmail.com" },
+  { name="R. Foster", email="reedf@mit.edu" }
 ]
 maintainers = [
   {name="A. Jacquillat", email="audrey01@mit.edu" }

@@ -23,7 +23,6 @@ This project is licensed under the MIT License - see the LICENSE.txt file for de
 
 ## [Documentation](https://qnngds.readthedocs.io/en/latest/)
 - [API](https://qnngds.readthedocs.io/en/latest/api.html)
-- [Libraries](https://qnngds.readthedocs.io/en/latest/libraries.html)
 - [Tutorials](https://qnngds.readthedocs.io/en/latest/tutorials.html)
 
 ## How to contribute
