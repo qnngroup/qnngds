@@ -96,6 +96,7 @@ jobs:
         "$VERSION"
         --repo '${{ github.repository }}'
         --notes ""
+        --title "$VERSION"
     - name: Upload artifact signatures to GitHub Release
       env:
         GITHUB_TOKEN: ${{ github.token }}
