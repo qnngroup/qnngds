@@ -79,12 +79,15 @@ jobs:
       run: |
         ls -la
         pwd
+        cat pyproject.toml
     - name: Get project version
       id: getversion 
-      run: >-
-        version=$(grep 'version = "[0-9\.]*"' pyproject.toml | sed -n 's/[^0-9]*\([0-9\.]*\).*/v\1/p')
-        echo $version
-        echo "version=$version" >> "$GITHUB_OUTPUT"
+      run: |
+        rawversion=$(grep 'version = "[0-9\.]*"' pyproject.toml)
+        echo $rawversion
+        trimmed=$(echo $rawversion | sed -n 's/[^0-9]*\([0-9\.]*\).*/v\1/p')
+        echo $trimmed
+        echo "version=$trimmed" >> "$GITHUB_OUTPUT"
     - name: Create GitHub Release
       env:
         GITHUB_TOKEN: ${{ github.token }}
