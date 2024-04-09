@@ -284,6 +284,7 @@ def resistor_meander(
     """Create resistor meander with specified number of squares.
 
     If squares*width > max_length, meander the resistor, otherwise just return a straight line
+
     Args:
         width (float): width in microns
         pitch (float): desired pitch of meander in microns
@@ -389,6 +390,7 @@ def resistor_sc_contacts(
     """Create resistor meander with superconducting contacts.
 
     If squares*width > max_length, meander the resistor.
+
     Args:
         width (float): width of resistor
         squares (float): desired number of squares
