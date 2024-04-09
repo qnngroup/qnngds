@@ -82,14 +82,16 @@ jobs:
     - name: Get project version
       id: getversion 
       run: >-
-        version=$(grep 'version = "[0-9\.]*"' pyproject.toml | sed -n 's/[^0-9]*\([0-9\.]*\).*/\1/p')
-        echo "version=$version" >> $GITHUB_OUTPUT
+        version=$(grep 'version = "[0-9\.]*"' pyproject.toml | sed -n 's/[^0-9]*\([0-9\.]*\).*/v\1/p')
+        echo $version
+        echo "version=$version" >> "$GITHUB_OUTPUT"
     - name: Create GitHub Release
       env:
         GITHUB_TOKEN: ${{ github.token }}
+        VERSION: ${{ steps.getversion.outputs.version }}
       run: >-
         gh release create
-        '${{ steps.getversion.outputs.version }}'
+        "$VERSION"
         --repo '${{ github.repository }}'
         --notes ""
     - name: Upload artifact signatures to GitHub Release
