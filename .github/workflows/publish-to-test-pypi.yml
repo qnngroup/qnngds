@@ -63,6 +63,7 @@ jobs:
       id-token: write  # IMPORTANT: mandatory for sigstore
 
     steps:
+      - uses: actions/checkout@v4
     - name: Download all the dists
       uses: actions/download-artifact@v3
       with:
@@ -74,10 +75,14 @@ jobs:
         inputs: >-
           ./dist/*.tar.gz
           ./dist/*.whl
+    - name: print directory
+      run: |
+        ls -la
+        pwd
     - name: Get project version
       id: getversion 
       run: >-
-        version=$(grep 'version = "[0-9\.]*"' ../../pyproject.toml | sed -n 's/[^0-9]*\([0-9\.]*\).*/\1/p')
+        version=$(grep 'version = "[0-9\.]*"' pyproject.toml | sed -n 's/[^0-9]*\([0-9\.]*\).*/\1/p')
         echo "$version" >> $GITHUB_OUTPUT
     - name: Create GitHub Release
       env:
