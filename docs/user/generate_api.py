@@ -5,7 +5,7 @@ def generate_api_rst(filename):
     content = "API\n===\n\n"
 
     # Define preferred order for plotting folders
-    preferred_order = ["devices", "circuits", "geometries", "utilities", "design"]
+    preferred_order = ["devices", "circuits", "tests", "geometries", "utilities", "cells", "design"]
 
     # Iterate through preferred order
     for subfolder in preferred_order:

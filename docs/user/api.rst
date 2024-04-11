@@ -59,6 +59,15 @@ Circuits
         .. image:: images/circuits/snspd_ntron.png
             :alt: snspd_ntron.png
 
+Tests
+-----
+
+.. automodule:: qnngds.tests
+    :members:
+    :exclude-members: 
+    :undoc-members:
+    :show-inheritance:
+
 Geometries
 ----------
 
@@ -96,6 +105,15 @@ Utilities
 
         .. image:: images/utilities/die_cell.png
             :alt: die_cell.png
+
+Cells
+-----
+
+.. automodule:: qnngds.cells
+    :members:
+    :exclude-members: 
+    :undoc-members:
+    :show-inheritance:
 
 Design
 ------
