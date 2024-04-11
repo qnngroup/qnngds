@@ -7,15 +7,13 @@ design.
 """
 
 from phidl import Device
-
-# from phidl import quickplot as qp
-# from phidl import set_quickplot_options
 import phidl.geometry as pg
 import phidl.routing as pr
 from typing import Tuple, List, Union, Optional
 import math
 import os
-import qnngds.geometries as qg
+
+import qnngds.tests as qt
 import qnngds.devices as qd
 import qnngds.circuits as qc
 import qnngds.utilities as qu
@@ -282,7 +280,7 @@ def create_alignment_cell(
         text = ""
     DIE = Device(f"DIE ALIGN {text} ")
 
-    ALIGN = qg.alignment_mark(layers_to_align)
+    ALIGN = qt.alignment_mark(layers_to_align)
 
     n = math.ceil((ALIGN.xsize) / die_w)
     m = math.ceil((ALIGN.ysize) / die_w)
@@ -486,10 +484,10 @@ def create_resolution_test_cell(
 
     ## Create the test structure
     TEST_RES = Device(f"RESOLUTION TEST {text} ")
-    test_res = TEST_RES << qg.resolution_test(
+    test_res = TEST_RES << qt.resolution_test(
         resolutions=resolutions_to_test, inverted=False, layer=layer_to_resolve
     )
-    test_res_invert = TEST_RES << qg.resolution_test(
+    test_res_invert = TEST_RES << qt.resolution_test(
         resolutions=resolutions_to_test,
         inverted=resolutions_to_test[-1],
         layer=layer_to_resolve,
@@ -567,7 +565,7 @@ def create_nanowires_cell(
     NANOWIRES = Device()
     nanowires_ref = []
     for i, channel_source_w in enumerate(channels_sources_w):
-        nanowire_ref = NANOWIRES << qd.nanowire(
+        nanowire_ref = NANOWIRES << qd.nanowire.spot(
             channel_source_w[0], channel_source_w[1]
         )
         nanowires_ref.append(nanowire_ref)
@@ -690,7 +688,7 @@ def create_ntron_cell(
     if choke_shift is None:
         choke_shift = -3 * channel_w
 
-    NTRON = qd.ntron_compassPorts(
+    NTRON = qd.ntron.smooth_compassPorts(
         choke_w, gate_w, channel_w, source_w, drain_w, choke_shift, device_layer
     )
 

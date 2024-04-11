@@ -2,15 +2,11 @@
 ntron, logic gates etc.)"""
 
 from phidl import Device
-from phidl import quickplot as qp
-from phidl import set_quickplot_options
 import phidl.geometry as pg
 from typing import Tuple, Union
 import math
 
 import qnngds.devices as qd
-
-set_quickplot_options(blocking=True)
 
 
 def snspd_ntron(
@@ -199,7 +195,7 @@ def snspd_ntron(
 
     def create_ntron():
         ## NTRON
-        NTRON = SNSPD_NTRON << qd.ntron(
+        NTRON = SNSPD_NTRON << qd.ntron.smooth(
             choke_w=w_choke,
             gate_w=w_inductor,
             channel_w=w_channel,
