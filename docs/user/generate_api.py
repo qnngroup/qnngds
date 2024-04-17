@@ -21,7 +21,8 @@ def automodule(module, image_folder):
     for image in images:
         figurename, ext = os.path.splitext(image)
         content += f"    .. autofunction:: {figurename}\n\n"
-        content += f"        .. image:: images/{image_folder}/{image}\n"
+        image_path = os.path.join("images", image_folder, image)
+        content += f"        .. image:: {image_path}\n"
         content += f"            :alt: {image}\n\n"
 
     return content
@@ -44,7 +45,7 @@ def generate_api(src_path):
             for submodule in submodules:
                 api += f"{submodule[:-3]}\n"
                 api += f"{'~' * len(submodule[:-3])}\n\n" 
-                api += automodule(submodule, image_folder=f"{module}_{submodule[:-3]}")
+                api += automodule(submodule, image_folder=f"{os.path.join(module, submodule[:-3])}")
 
     with open("api.rst", "w") as file:
         file.write(api)

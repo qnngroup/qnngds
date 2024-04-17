@@ -38,14 +38,12 @@ def process_modules_in_folder(folder_path, module_prefix=""):
         full_path = os.path.join(folder_path, item)
         if os.path.isdir(full_path):
             # For submodules, we append the current folder's name to the prefix
-            new_prefix = f"{module_prefix}{item}_" if module_prefix else f"{item}_"
+            new_prefix = f"{module_prefix}{item}/" if module_prefix else f"{item}/"
             process_modules_in_folder(full_path, new_prefix)
         elif item.endswith(".py"):
             module_name = item[:-3]
-            full_module_name = f"{module_prefix}{module_name}" if module_prefix else module_name
+            full_module_name = os.path.join(module_prefix, module_name) if module_prefix else module_name
             module = import_module(full_path, module_name)
-            output_folder = os.path.join(folder_path, full_module_name)
-            print(output_folder)
             plot_and_save_functions(module, full_module_name)
 
 if __name__ == "__main__":
