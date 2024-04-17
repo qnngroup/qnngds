@@ -1,54 +1,54 @@
 API
 ===
 
-Devices
--------
+Cells
+-----
 
-.. automodule:: qnngds.devices
+.. automodule:: qnngds.cells.py
     :members:
-    :exclude-members: nanowire, ntron, ntron_compassPorts, ntron_sharp, resistor_meander, resistor_sc_contacts, snspd_vert
+    :exclude-members: alignment, etch_test, nanowires, ntron, resolution_test, snspd_ntron, vdp
     :undoc-members:
     :show-inheritance:
 
-    .. autofunction:: nanowire
+    .. autofunction:: alignment
 
-        .. image:: images/devices/nanowire.png
-            :alt: nanowire.png
+        .. image:: images/cells/alignment.png
+            :alt: alignment.png
+
+    .. autofunction:: etch_test
+
+        .. image:: images/cells/etch_test.png
+            :alt: etch_test.png
+
+    .. autofunction:: nanowires
+
+        .. image:: images/cells/nanowires.png
+            :alt: nanowires.png
 
     .. autofunction:: ntron
 
-        .. image:: images/devices/ntron.png
+        .. image:: images/cells/ntron.png
             :alt: ntron.png
 
-    .. autofunction:: ntron_compassPorts
+    .. autofunction:: resolution_test
 
-        .. image:: images/devices/ntron_compassPorts.png
-            :alt: ntron_compassPorts.png
+        .. image:: images/cells/resolution_test.png
+            :alt: resolution_test.png
 
-    .. autofunction:: ntron_sharp
+    .. autofunction:: snspd_ntron
 
-        .. image:: images/devices/ntron_sharp.png
-            :alt: ntron_sharp.png
+        .. image:: images/cells/snspd_ntron.png
+            :alt: snspd_ntron.png
 
-    .. autofunction:: resistor_meander
+    .. autofunction:: vdp
 
-        .. image:: images/devices/resistor_meander.png
-            :alt: resistor_meander.png
-
-    .. autofunction:: resistor_sc_contacts
-
-        .. image:: images/devices/resistor_sc_contacts.png
-            :alt: resistor_sc_contacts.png
-
-    .. autofunction:: snspd_vert
-
-        .. image:: images/devices/snspd_vert.png
-            :alt: snspd_vert.png
+        .. image:: images/cells/vdp.png
+            :alt: vdp.png
 
 Circuits
 --------
 
-.. automodule:: qnngds.circuits
+.. automodule:: qnngds.circuits.py
     :members:
     :exclude-members: snspd_ntron
     :undoc-members:
@@ -59,43 +59,140 @@ Circuits
         .. image:: images/circuits/snspd_ntron.png
             :alt: snspd_ntron.png
 
-Tests
------
+Design
+------
 
-.. automodule:: qnngds.tests
+.. automodule:: qnngds.design.py
+    :members:
+    :exclude-members: create_chip
+    :undoc-members:
+    :show-inheritance:
+
+    .. autofunction:: create_chip
+
+        .. image:: images/design/create_chip.png
+            :alt: create_chip.png
+
+Devices
+-------
+
+htron
+~~~~~
+
+.. automodule:: qnngds.htron.py
     :members:
     :exclude-members: 
     :undoc-members:
     :show-inheritance:
 
-Geometries
-----------
+nanowire
+~~~~~~~~
 
-.. automodule:: qnngds.geometries
+.. automodule:: qnngds.nanowire.py
     :members:
-    :exclude-members: alignment_mark, hyper_taper, resolution_test
+    :exclude-members: spot
     :undoc-members:
     :show-inheritance:
 
-    .. autofunction:: alignment_mark
+    .. autofunction:: spot
 
-        .. image:: images/geometries/alignment_mark.png
-            :alt: alignment_mark.png
+        .. image:: images/devices_nanowire/spot.png
+            :alt: spot.png
+
+ntron
+~~~~~
+
+.. automodule:: qnngds.ntron.py
+    :members:
+    :exclude-members: sharp, smooth, smooth_compassPorts
+    :undoc-members:
+    :show-inheritance:
+
+    .. autofunction:: sharp
+
+        .. image:: images/devices_ntron/sharp.png
+            :alt: sharp.png
+
+    .. autofunction:: smooth
+
+        .. image:: images/devices_ntron/smooth.png
+            :alt: smooth.png
+
+    .. autofunction:: smooth_compassPorts
+
+        .. image:: images/devices_ntron/smooth_compassPorts.png
+            :alt: smooth_compassPorts.png
+
+resistor
+~~~~~~~~
+
+.. automodule:: qnngds.resistor.py
+    :members:
+    :exclude-members: meander, sc_contacts
+    :undoc-members:
+    :show-inheritance:
+
+    .. autofunction:: meander
+
+        .. image:: images/devices_resistor/meander.png
+            :alt: meander.png
+
+    .. autofunction:: sc_contacts
+
+        .. image:: images/devices_resistor/sc_contacts.png
+            :alt: sc_contacts.png
+
+snspd
+~~~~~
+
+.. automodule:: qnngds.snspd.py
+    :members:
+    :exclude-members: vertical
+    :undoc-members:
+    :show-inheritance:
+
+    .. autofunction:: vertical
+
+        .. image:: images/devices_snspd/vertical.png
+            :alt: vertical.png
+
+Geometries
+----------
+
+.. automodule:: qnngds.geometries.py
+    :members:
+    :exclude-members: hyper_taper
+    :undoc-members:
+    :show-inheritance:
 
     .. autofunction:: hyper_taper
 
         .. image:: images/geometries/hyper_taper.png
             :alt: hyper_taper.png
 
+Tests
+-----
+
+.. automodule:: qnngds.tests.py
+    :members:
+    :exclude-members: alignment_mark, resolution_test
+    :undoc-members:
+    :show-inheritance:
+
+    .. autofunction:: alignment_mark
+
+        .. image:: images/tests/alignment_mark.png
+            :alt: alignment_mark.png
+
     .. autofunction:: resolution_test
 
-        .. image:: images/geometries/resolution_test.png
+        .. image:: images/tests/resolution_test.png
             :alt: resolution_test.png
 
 Utilities
 ---------
 
-.. automodule:: qnngds.utilities
+.. automodule:: qnngds.utilities.py
     :members:
     :exclude-members: die_cell
     :undoc-members:
@@ -105,67 +202,4 @@ Utilities
 
         .. image:: images/utilities/die_cell.png
             :alt: die_cell.png
-
-Cells
------
-
-.. automodule:: qnngds.cells
-    :members:
-    :exclude-members: 
-    :undoc-members:
-    :show-inheritance:
-
-Design
-------
-
-.. automodule:: qnngds.design
-    :members:
-    :exclude-members: create_alignement_cell, create_alignment_cell, create_chip, create_etch_test_cell, create_nanowires_cell, create_ntron_cell, create_resolution_test_cell, create_snspd_ntron_cell, create_vdp_cell
-    :undoc-members:
-    :show-inheritance:
-
-    .. autofunction:: create_alignement_cell
-
-        .. image:: images/design/create_alignement_cell.png
-            :alt: create_alignement_cell.png
-
-    .. autofunction:: create_alignment_cell
-
-        .. image:: images/design/create_alignment_cell.png
-            :alt: create_alignment_cell.png
-
-    .. autofunction:: create_chip
-
-        .. image:: images/design/create_chip.png
-            :alt: create_chip.png
-
-    .. autofunction:: create_etch_test_cell
-
-        .. image:: images/design/create_etch_test_cell.png
-            :alt: create_etch_test_cell.png
-
-    .. autofunction:: create_nanowires_cell
-
-        .. image:: images/design/create_nanowires_cell.png
-            :alt: create_nanowires_cell.png
-
-    .. autofunction:: create_ntron_cell
-
-        .. image:: images/design/create_ntron_cell.png
-            :alt: create_ntron_cell.png
-
-    .. autofunction:: create_resolution_test_cell
-
-        .. image:: images/design/create_resolution_test_cell.png
-            :alt: create_resolution_test_cell.png
-
-    .. autofunction:: create_snspd_ntron_cell
-
-        .. image:: images/design/create_snspd_ntron_cell.png
-            :alt: create_snspd_ntron_cell.png
-
-    .. autofunction:: create_vdp_cell
-
-        .. image:: images/design/create_vdp_cell.png
-            :alt: create_vdp_cell.png
 
