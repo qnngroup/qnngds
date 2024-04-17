@@ -70,7 +70,7 @@ def process_modules_in_folder(folder_path):
     Parameters:
         folder_path (str): Path to the folder containing the modules.
     """
-    for filename in ["devices", "circuits", "tests", "geometries", "utilities", "cells", "design"]:
+    for filename in ["circuits", "tests", "geometries", "utilities", "cells", "design"]:
         module_path = os.path.join(folder_path, filename + ".py")
         module = import_module(module_path)
         plot_and_save_functions(module, filename.split(".")[0])
