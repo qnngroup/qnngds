@@ -180,4 +180,4 @@ Some nanowire electronics
 .. image:: tutorials_images/tuto_gettingstarted_some_electronics.png
    :alt: tuto_gettingstarted_some_electronics.png
 
-See full code `in GitHub <https://github.com/qnngroup/qnngds>`_.
+See full code `in GitHub <https://github.com/qnngroup/qnngds/blob/master/docs/user/tutorials/getting_started.py>`_.
