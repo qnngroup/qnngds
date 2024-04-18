@@ -10,7 +10,7 @@ def automodule(module, image_folder):
         [
             f
             for f in os.listdir(image_folder_path)
-            if os.path.isfile(os.path.join(image_folder_path, f))
+            if os.path.isfile(os.path.join(image_folder_path, f)) and not f.startswith('__')
         ]
     )
     content += f"    :members:\n"
