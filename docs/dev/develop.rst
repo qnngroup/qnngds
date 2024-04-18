@@ -35,13 +35,6 @@ qnngds documentation (for users), as described :ref:`above<rtd version in
 qnngds>`. Every new branch will generate a new version of the documentation
 (except a branch that starts with "dev").
 
-.. warning::
-    Some files useful for automating the documentation are not fully modular. For
-    example, if the qnngds modules were to change names or some were to be
-    added/deleted, you would also need to manually update them in
-    ``generate_api.py`` and ``api.rst``. Modifying the package structure
-    should be taken with great care.
-
 As a **developer**, if you have precisions/modifications to bring to the
 qnngds-dev documentation (for contributors and developpers), you will need to
 create a branch which name starts with ``dev``. 
