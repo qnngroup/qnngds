@@ -505,7 +505,7 @@ class Design:
         Returns:
             Device: A device that centers the alignment marks in an n*m unit cell.
         """
-        return cell.alignment_cell(
+        return cell.alignment(
             die_w=self.die_w,
             layers_to_align=layers_to_align,
             outline_die=self.die_outline,
