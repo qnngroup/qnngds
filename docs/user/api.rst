@@ -1,6 +1,7 @@
 API
 ===
 
+.. _Cells:
 Cells
 -----
 
@@ -45,6 +46,7 @@ Cells
         .. image:: images/cells/vdp.png
             :alt: vdp.png
 
+.. _Circuits:
 Circuits
 --------
 
@@ -59,6 +61,7 @@ Circuits
         .. image:: images/circuits/snspd_ntron.png
             :alt: snspd_ntron.png
 
+.. _Design:
 Design
 ------
 
@@ -73,6 +76,7 @@ Design
         .. image:: images/design/create_chip.png
             :alt: create_chip.png
 
+.. _Devices:
 Devices
 -------
 
@@ -156,6 +160,7 @@ snspd
         .. image:: images/devices/snspd/vertical.png
             :alt: vertical.png
 
+.. _Geometries:
 Geometries
 ----------
 
@@ -170,6 +175,7 @@ Geometries
         .. image:: images/geometries/hyper_taper.png
             :alt: hyper_taper.png
 
+.. _Tests:
 Tests
 -----
 
@@ -189,6 +195,7 @@ Tests
         .. image:: images/tests/resolution_test.png
             :alt: resolution_test.png
 
+.. _Utilities:
 Utilities
 ---------
 
