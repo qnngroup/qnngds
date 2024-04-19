@@ -6,12 +6,34 @@ from phidl import set_quickplot_options
 import matplotlib.pyplot as plt
 
 def import_module(module_path, module_name):
+    """
+    Imports a module dynamically from a given file path and module name.
+
+    Args:
+        module_path (str): The path to the Python file from which to import the module.
+        module_name (str): The name to assign to the imported module.
+
+    Returns:
+        Module: The module loaded from the specified file.
+    """
     spec = importlib.util.spec_from_file_location(module_name, module_path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
 
 def plot_and_save_functions(module, module_name):
+    """
+    Plots and saves visual representations of PHIDL Device objects returned by functions within a module.
+
+    Args:
+        module (Module): The module containing the functions to be visualized.
+        module_name (str): The name of the module, used to create a directory for saving plots.
+
+    This function iterates over all attributes of the module, checking for callable objects that
+    are not class definitions. If the callable returns a PHIDL Device or a tuple containing a PHIDL Device,
+    it uses PHIDL's quickplot function to plot and then saves the plot to a directory corresponding to
+    the module name. Plots are saved in PNG format.
+    """
     os.makedirs(module_name, exist_ok=True)
     func_names = dir(module)
     set_quickplot_options(blocking=False)
@@ -32,6 +54,18 @@ def plot_and_save_functions(module, module_name):
                 print(f"Warning: in module '{module_name}', function '{func_name}' was not plotted: {e}")
 
 def process_modules_in_folder(folder_path, module_prefix=""):
+    """
+    Recursively processes Python files in a given folder (and subfolders) to plot and save functions.
+
+    Args:
+        folder_path (str): Path to the directory containing module files and possibly other subdirectories.
+        module_prefix (str): A prefix to append to module names for subdirectories (used for nested modules).
+
+    This function scans through all files and directories in a given folder, skipping items that start
+    with '__' (like __init__.py and __pycache__). For Python files, it imports the module, and for directories,
+    it recursively calls itself to handle any nested modules or Python files, appending the directory name to
+    the module prefix.
+    """
     for item in os.listdir(folder_path):
         if item.startswith('__'):
             continue  # Skip files or directories starting with __
