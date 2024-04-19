@@ -15,7 +15,7 @@ Be careful, make sure the branch you are working on does **not** start with
 Before contributing to the package, make sure its structure and organization are
 clear to you. The contributions should go in the same direction as how the
 package was though in terms of hierarchy. If you are already a user of the
-package, the contribution should be quite straigh forward; otherwise, please
+package, the contribution should be quite straighforward; otherwise, please
 first refer to `qnngds user's documentation
 <https://qnngds.readthedocs.io/en/latest/>`_, you can also check the `tutorials
 <https://qnngds.readthedocs.io/en/latest/tutorials.html>`_. 
