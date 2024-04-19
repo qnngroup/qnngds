@@ -8,7 +8,7 @@ import qnngds.tests as qt
 import qnngds.devices as qd
 import qnngds.circuits as qc
 import qnngds.utilities as qu
-import qnngds.__default_param as dflt
+import qnngds._default_param as dflt
 
 # basics
 

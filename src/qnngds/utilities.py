@@ -14,7 +14,7 @@ from phidl.device_layout import (
     Port,
 )
 import qnngds.geometries as qg
-import qnngds.__default_param as dflt
+import qnngds._default_param as dflt
 
 
 die_cell_border = 80

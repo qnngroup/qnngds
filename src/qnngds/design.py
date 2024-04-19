@@ -12,7 +12,7 @@ from typing import Tuple, List, Union, Optional
 import os
 
 import qnngds.cells as cell
-import qnngds.__default_param as dflt
+import qnngds._default_param as dflt
 
 Free = True
 Occupied = False
