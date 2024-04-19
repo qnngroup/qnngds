@@ -2,6 +2,23 @@ import os
 
 
 def automodule(module, image_folder):
+    """
+    Generates the documentation block for a specific module with links to images for each function.
+
+    Args:
+        module (str): The module file name (e.g., 'module.py').
+        image_folder (str): The folder where images corresponding to the module's functions are stored.
+
+    Returns:
+        str: A string containing the Sphinx documentation directives for the module including
+             links to function images.
+
+    This function constructs a string that is formatted as an automodule directive for Sphinx.
+    It includes images stored in a specified subdirectory that match the names of the functions
+    in the module. The function assumes that images are named similarly to the functions they
+    correspond to and are stored in a folder structure that mirrors the module structure under
+    a base 'images' directory.
+    """
     content = f".. automodule:: qnngds.{module[:-3]}\n"
 
     # Add images from the image folder
@@ -28,6 +45,16 @@ def automodule(module, image_folder):
 
 
 def generate_api(src_path):
+    """
+    Generates the complete API documentation for all modules in a given source directory.
+
+    Args:
+        src_path (str): The path to the source directory containing the Python modules.
+
+    This function constructs a complete API documentation file in reStructuredText format by iterating
+    over all Python modules in the specified source path. For each module, it calls `automodule` to get
+    the documentation block and compiles these into a single documentation file.
+    """
 
     api = "API\n===\n\n"
 
