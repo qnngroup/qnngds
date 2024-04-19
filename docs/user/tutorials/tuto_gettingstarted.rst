@@ -46,8 +46,8 @@ Start coding
 .. note::
     This section is not yet completed because the ``design`` module is susceptible to change (class management).
 
-Start with the basis
-~~~~~~~~~~~~~~~~~~~~
+Start with the basics
+~~~~~~~~~~~~~~~~~~~~~
 
 Import the packages.
 
