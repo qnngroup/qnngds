@@ -67,7 +67,7 @@ Design
 
 .. automodule:: qnngds.design
     :members:
-    :exclude-members: create_chip, teeeest
+    :exclude-members: create_chip
     :undoc-members:
     :show-inheritance:
 
@@ -75,11 +75,6 @@ Design
 
         .. image:: images/design/create_chip.png
             :alt: create_chip.png
-
-    .. autofunction:: teeeest
-
-        .. image:: images/design/teeeest.png
-            :alt: teeeest.png
 
 .. _Devices:
 Devices

@@ -1,0 +1,14 @@
+#!/bin/bash
+
+echo "Do you want to generate the API? (y/n)"
+read answer
+
+if [ "$answer" != "${answer#[Yy]}" ]; then
+    # If answer starts with 'Y' or 'y'
+    cd docs/user # Navigate to the directory containing generate_api.py
+    python generate_api.py  # Replace with your actual Python script and command
+    cd - # Return to the previous directory
+fi
+
+# Continue with the push operation
+exit 0
