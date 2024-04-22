@@ -50,7 +50,7 @@ instruction `here <https://pypi.org/project/gdspy/>`_.
 
     pip install gdspy
 
-Once gdspy is installed in your virtual environment, you can install ``qnngds``
+Once ``gdspy`` is installed in your virtual environment, you can install ``qnngds``
 package (that you intend to modify) in editable mode. This allows to test the
 changes made to the package without having to reinstall it every time.
 

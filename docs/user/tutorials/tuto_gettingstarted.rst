@@ -20,21 +20,29 @@ Setup your workspace
 
 Install the package
 -------------------
-The qnngds package needs gdspy to be installed first. To do so, you can follow
-instruction `here <https://pypi.org/project/gdspy/>`_. For windows, what works
-best is to `install a pre-built wheel
-<https://github.com/heitzmann/gdspy/releases>`_ and run :
+The qnngds package needs ``gdspy`` to be installed first. To do so, you can follow
+instruction `here <https://pypi.org/project/gdspy/>`_.
 
-.. code-block:: bash
+* For **windows**, what works
+  best is to `install a pre-built wheel <https://github.com/heitzmann/gdspy/releases>`_ 
+  and run :
+
+  .. code-block:: bash
 
     pip install path/to/gdspy-1.6.12-cp38-cp38-win_amd64.whl
 
-Make sure you download the wheel corresponding to your device:
+  Make sure you download the wheel corresponding to your device:
 
-* `cpXX` is the version of python that it is built for.
-* `winxx_amdXX` should be selected based on your system type.
+    * `cpXX` is the version of python that it is built for.
+    * `winxx_amdXX` should be selected based on your system type.
 
-Once gdspy is installed in your virtual environment, you can install qnngds by executing:
+* On **Linux**, just install with pip :
+
+  .. code-block:: bash
+
+    pip install gdspy
+
+Once ``gdspy`` is installed in your virtual environment, you can install ``qnngds`` by executing:
 
 .. code-block:: bash
 
