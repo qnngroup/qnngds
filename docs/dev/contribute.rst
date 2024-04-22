@@ -110,7 +110,7 @@ Push your branch to GitHub:
 
   .. code-block:: bash
 
-      git push (optional: --set-upstream) origin your_new_branch_name 
+      git push [--set-upstream] origin your_new_branch_name 
 
 * Any other time, you can simply use:
 
