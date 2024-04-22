@@ -41,9 +41,6 @@ Additionally, a given format of the function's docstring should be respected.
 Indeed, the documentation is automatically generated and will not work properly
 if the :ref:`format<docstring format>` is not respected.
 
-.. todo::
-    Add pre-commit hooks with auto-formatting (black, ruff).
-
 .. _docstring format:
 
 See `the Google Python Style Guide
