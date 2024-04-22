@@ -6,9 +6,6 @@ device and its die are linked thanks to functions present in this module.
 """
 
 from phidl import Device, Port
-
-# from phidl import quickplot as qp
-# from phidl import set_quickplot_options
 import phidl.geometry as pg
 import phidl.routing as pr
 from typing import Tuple, List, Union, Dict, Set
@@ -17,36 +14,25 @@ from phidl.device_layout import (
     Port,
 )
 import qnngds.geometries as qg
+import qnngds._default_param as dflt
 
-auto_param = None
+
 die_cell_border = 80
-
-# default parameters
-dflt_chip_w = 10000
-dflt_chip_margin = 100
-dflt_N_dies = 11
-dflt_die_w = 980
-dflt_pad_size = (150, 250)
-dflt_device_outline = 0.5
-dflt_die_outline = 10
-dflt_ebeam_overlap = 10
-dflt_layers = {"annotation": 0, "device": 1, "die": 2, "pad": 3}
-dflt_text = auto_param
 
 
 def die_cell(
-    die_size: Tuple[int, int] = (dflt_die_w, dflt_die_w),
+    die_size: Tuple[int, int] = (dflt.die_w, dflt.die_w),
     device_max_size: Tuple[int, int] = (100, 100),
-    pad_size: Tuple[int, int] = dflt_pad_size,
+    pad_size: Tuple[int, int] = dflt.pad_size,
     contact_w: Union[int, float] = 50,
-    contact_l: Union[int, float] = dflt_ebeam_overlap,
+    contact_l: Union[int, float] = dflt.ebeam_overlap,
     ports: Dict[str, int] = {"N": 1, "E": 1, "W": 1, "S": 1},
     ports_gnd: List[str] = ["E", "S"],
-    isolation: Union[int, float] = dflt_die_outline,
+    isolation: Union[int, float] = dflt.die_outline,
     text: str = "",
     text_size: Union[int, float] = die_cell_border / 2,
-    layer: int = dflt_layers["die"],
-    pad_layer: int = dflt_layers["pad"],
+    layer: int = dflt.layers["die"],
+    pad_layer: int = dflt.layers["pad"],
     invert: bool = False,
 ) -> Device:
     """Creates a die cell with dicing marks, text, and pads to connect to a
@@ -190,9 +176,9 @@ def die_cell(
 
 def add_hyptap_to_cell(
     die_ports: List[Port],
-    overlap_w: Union[int, float] = dflt_ebeam_overlap,
+    overlap_w: Union[int, float] = dflt.ebeam_overlap,
     contact_w: Union[int, float] = 5,
-    layer: int = dflt_layers["device"],
+    layer: int = dflt.layers["device"],
 ) -> Tuple[Device, Device]:
     """Takes the cell and adds hyper taper at its ports.
 
@@ -229,7 +215,7 @@ def add_hyptap_to_cell(
 
 
 def route_to_dev(
-    ext_ports: List[Port], dev_ports: Set[Port], layer: int = dflt_layers["device"]
+    ext_ports: List[Port], dev_ports: Set[Port], layer: int = dflt.layers["device"]
 ) -> Device:
     """Creates smooth routes from external ports to the device's ports.
 

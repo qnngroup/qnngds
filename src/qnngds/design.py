@@ -7,46 +7,23 @@ design.
 """
 
 from phidl import Device
-
-# from phidl import quickplot as qp
-# from phidl import set_quickplot_options
 import phidl.geometry as pg
-import phidl.routing as pr
 from typing import Tuple, List, Union, Optional
-import math
 import os
-import qnngds.geometries as qg
-import qnngds.devices as qd
-import qnngds.circuits as qc
-import qnngds.utilities as qu
+
+import qnngds.cells as cell
+import qnngds._default_param as dflt
 
 Free = True
 Occupied = False
 
-auto_param = None
-die_cell_border = 80
-
-# default parameters
-dflt_chip_w = 10000
-dflt_chip_margin = 100
-dflt_N_dies = 11
-dflt_die_w = 980
-dflt_pad_size = (150, 250)
-dflt_device_outline = 0.5
-dflt_die_outline = 10
-dflt_ebeam_overlap = 10
-dflt_layers = {"annotation": 0, "device": 1, "die": 2, "pad": 3}
-dflt_text = auto_param
-
-## to build a design
-
 
 def create_chip(
-    chip_w: Union[int, float] = dflt_chip_w,
-    margin: Union[int, float] = dflt_chip_margin,
-    N_dies: int = dflt_N_dies,
-    die_w: Union[None, int, float] = auto_param,
-    annotations_layer: int = dflt_layers["annotation"],
+    chip_w: Union[int, float] = dflt.chip_w,
+    margin: Union[int, float] = dflt.chip_margin,
+    N_dies: int = dflt.N_dies,
+    die_w: Union[None, int, float] = dflt.auto_param,
+    annotations_layer: int = dflt.layers["annotation"],
     unpack_chip_map: bool = True,
     create_devices_map_txt: Union[bool, str] = False,
 ) -> Union[
@@ -255,631 +232,6 @@ def place_remaining_devices(
         )
 
 
-## basics:
-
-
-def create_alignment_cell(
-    die_w: Union[int, float] = dflt_die_w,
-    layers_to_align: List[int] = [dflt_layers["die"], dflt_layers["pad"]],
-    outline_die: Union[int, float] = dflt_die_outline,
-    die_layer: int = dflt_layers["die"],
-    text: Union[None, str] = dflt_text,
-) -> Device:
-    """Creates alignment marks in an integer number of unit cells.
-
-    Parameters:
-        die_w (int or float): Width of a unit die/cell in the design (the output device will be an integer number of unit cells).
-        layers_to_align (list of int): Layers to align.
-        outline_die (int or float): The width of the die's outline.
-        die_layer (int): The layer where the die is placed.
-        text (str): Text to be displayed.
-
-    Returns:
-        DIE_ALIGN (Device): A device that centers the alignment marks in an n*m unit cell.
-    """
-
-    if text is None:
-        text = ""
-    DIE = Device(f"DIE ALIGN {text} ")
-
-    ALIGN = qg.alignment_mark(layers_to_align)
-
-    n = math.ceil((ALIGN.xsize) / die_w)
-    m = math.ceil((ALIGN.ysize) / die_w)
-
-    BORDER = qu.die_cell(
-        die_size=(n * die_w, m * die_w),
-        device_max_size=(ALIGN.xsize + 20, ALIGN.ysize + 20),
-        ports={},
-        ports_gnd={},
-        isolation=outline_die,
-        text=f"ALIGN {text}",
-        layer=die_layer,
-        invert=True,
-    )
-
-    DIE << BORDER.flatten()
-    DIE << ALIGN
-
-    return DIE
-
-
-def create_vdp_cell(
-    die_w: Union[int, float] = dflt_die_w,
-    pad_size: Tuple[float] = dflt_pad_size,
-    layers_to_probe: List[int] = [dflt_layers["pad"]],
-    layers_to_outline: Union[None, List[int]] = auto_param,
-    outline: Union[int, float] = dflt_die_outline,
-    die_layer: Union[int, float] = dflt_layers["die"],
-    pad_layer: int = dflt_layers["pad"],
-    text: Union[None, str] = dflt_text,
-) -> Device:
-    r"""Creates a cell containing a Van Der Pauw structure between 4 contact
-    pads.
-
-    Parameters:
-        die_w (int or float): Width of a unit die/cell in the design (the output device will be an integer number of unit cells).
-        pad_size (tuple of int or float): Dimensions of the die's pads (width, height).
-        layers_to_probe (list of int): The layers on which to place the VDP structure.
-        layers_to_outline (list of int): Among the VDP layers, the ones for which structure must not be filled but outlined.
-        outline (int or float): The width of the VDP and die's outline.
-        die_layer (int or tuple of int): The layer where the die is placed.
-        pad_layer (int or tuple of int): The layer where the pads are placed.
-        text (str, optional): If None, the text is f"VDP \n{layers_to_probe}".
-
-    Returns:
-        DIE_VANDP (Device): The created device.
-    """
-
-    if text is None:
-        text = layers_to_probe
-    DIE_VANDP = Device(f"DIE VAN DER PAUW {text} ")
-
-    ## Create the die
-    w = die_w - 2 * (pad_size[1] + 2 * outline)  # width of max device size
-    BORDER = qu.die_cell(
-        die_size=(die_w, die_w),
-        device_max_size=(w, w),
-        pad_size=pad_size,
-        contact_w=pad_size[0],
-        contact_l=0,
-        ports={"N": 1, "E": 1, "W": 1, "S": 1},
-        ports_gnd=["N", "E", "W", "S"],
-        text=f"VDP \n{text} ",
-        isolation=outline,
-        layer=die_layer,
-        pad_layer=pad_layer,
-        invert=True,
-    )
-    PADS = pg.deepcopy(BORDER)
-    PADS = PADS.remove_layers([pad_layer], invert_selection=True)
-
-    DIE_VANDP << BORDER.flatten()
-
-    ## Create the test structure
-    DEVICE = Device()
-
-    # the test structure is an hexagonal shape between the die's ports
-    TEST = Device()
-    TEST << PADS
-    rect = TEST << pg.straight((PADS.ports["E1"].x - PADS.ports["W1"].x, pad_size[0]))
-    rect.move(rect.center, (0, 0))
-    TEST << pr.route_quad(PADS.ports["N1"], rect.ports[1])
-    TEST << pr.route_quad(PADS.ports["S1"], rect.ports[2])
-    TEST = pg.union(TEST)
-
-    # outline the test structure for layers that need to be outlined
-
-    if layers_to_outline is None:
-        layers_to_outline = [die_layer]
-    for layer in layers_to_probe:
-        TEST_LAY = pg.deepcopy(TEST)
-        if layer in layers_to_outline:
-            TEST_LAY = pg.outline(TEST_LAY, outline)
-        DEVICE << TEST_LAY.flatten(single_layer=layer)
-
-    DIE_VANDP << DEVICE
-
-    DIE_VANDP = pg.union(DIE_VANDP, by_layer=True)
-    DIE_VANDP.name = f"DIE VAN DER PAUW {text} "
-    return DIE_VANDP
-
-
-def create_etch_test_cell(
-    die_w: Union[int, float] = dflt_die_w,
-    layers_to_etch: List[List[int]] = [[dflt_layers["pad"]]],
-    outline_die: Union[int, float] = dflt_die_outline,
-    die_layer: int = dflt_layers["die"],
-    text: Union[None, str] = dflt_text,
-) -> Device:
-    """Creates etch test structures in an integer number of unit cells.
-
-    These test structures are thought to be used by probing on pads (with a
-    simple multimeter) that should be isolated one from another if the etching
-    is complete.
-
-    Parameters:
-        die_w (int or float): Width of a unit die/cell in the design (the output device will be an integer number of unit cells).
-        layers_to_etch (list of list of int): Each element of the list corresponds to one test point, to put on the list of layers specified.
-                                               Example: [[1, 2], [1], [2]]
-        outline_die (int or float): The width of the die's outline.
-        die_layer (int): The layer where the die is placed.
-        text (str): Text to be displayed.
-
-    Returns:
-        DIE_ETCH_TEST (Device): A device (with size n*m of unit cells) with etch tests in its center.
-    """
-
-    if text is None:
-        text = f"{layers_to_etch}"
-    DIE_ETCH_TEST = Device(f"DIE ETCH TEST {text} ")
-
-    TEST = Device()
-
-    ## Create the probing areas
-
-    margin = 0.12 * die_w
-    rect = pg.rectangle((die_w - 2 * margin, die_w - 2 * margin))
-    for i, layer_to_etch in enumerate(layers_to_etch):
-        probe = Device()
-        probe.add_array(rect, 2, 1, (die_w, die_w))
-        for layer in layer_to_etch:
-            TEST << pg.outline(probe, -outline_die, layer=layer).movey(i * die_w)
-
-    ## Create the die
-
-    n = math.ceil((TEST.xsize + 2 * die_cell_border) / die_w)
-    m = math.ceil((TEST.ysize + 2 * die_cell_border) / die_w)
-    BORDER = qu.die_cell(
-        die_size=(n * die_w, m * die_w),
-        ports={},
-        ports_gnd={},
-        text=f"ETCH TEST {text}",
-        isolation=10,
-        layer=die_layer,
-        invert=True,
-    )
-
-    BORDER.move(TEST.center)
-    DIE_ETCH_TEST << BORDER.flatten()
-    DIE_ETCH_TEST << TEST
-    DIE_ETCH_TEST.move(DIE_ETCH_TEST.center, (0, 0))
-
-    return DIE_ETCH_TEST
-
-
-def create_resolution_test_cell(
-    die_w: Union[int, float] = dflt_die_w,
-    layer_to_resolve: int = dflt_layers["device"],
-    resolutions_to_test: List[float] = [
-        0.025,
-        0.05,
-        0.075,
-        0.1,
-        0.25,
-        0.5,
-        1,
-        1.5,
-        2.0,
-    ],
-    outline: Union[int, float] = dflt_die_outline,
-    die_layer: int = dflt_layers["die"],
-    text: Union[None, str] = dflt_text,
-) -> Device:
-    r"""Creates a cell containing a resolution test.
-
-    Parameters:
-        die_w (int or float): Width of a unit die/cell in the design (the output device will be an integer number of unit cells).
-        layer_to_resolve (int): The layer to put the resolution test on.
-        resolutions_to_test (list of float): The resolutions to test in µm.
-        outline (int or float): The width of the VDP and die's outline.
-        die_layer (int or tuple of int): The layer where the die is placed.
-        text (str, optional): If None, the text is f"RES TEST \n{layer_to_resolve}".
-
-    Returns:
-        DIE_RES_TEST (Device): The created device.
-    """
-
-    if text is None:
-        text = layer_to_resolve
-    DIE_RES_TEST = Device(f"DIE RESOLUTION TEST {text} ")
-
-    ## Create the test structure
-    TEST_RES = Device(f"RESOLUTION TEST {text} ")
-    test_res = TEST_RES << qg.resolution_test(
-        resolutions=resolutions_to_test, inverted=False, layer=layer_to_resolve
-    )
-    test_res_invert = TEST_RES << qg.resolution_test(
-        resolutions=resolutions_to_test,
-        inverted=resolutions_to_test[-1],
-        layer=layer_to_resolve,
-    )
-    test_res_invert.movey(
-        test_res_invert.ymin, test_res.ymax + 5 * resolutions_to_test[-1]
-    )
-
-    DIE_RES_TEST << TEST_RES.move(TEST_RES.center, (0, 0))
-
-    ## Create the die
-    n = math.ceil((TEST_RES.xsize) / die_w)
-    m = math.ceil((TEST_RES.ysize) / die_w)
-    BORDER = qu.die_cell(
-        die_size=(n * die_w, m * die_w),
-        ports={},
-        ports_gnd=[],
-        text=f"RES TEST \n{text} ",
-        isolation=outline,
-        layer=die_layer,
-        invert=True,
-    )
-
-    DIE_RES_TEST << BORDER.flatten()
-
-    return DIE_RES_TEST
-
-
-## devices:
-
-
-def create_nanowires_cell(
-    die_w: Union[int, float] = dflt_die_w,
-    pad_size: Tuple[float] = dflt_pad_size,
-    channels_sources_w: List[Tuple[float, float]] = [(0.1, 1), (0.5, 3), (1, 10)],
-    overlap_w: Union[int, float] = dflt_ebeam_overlap,
-    outline_die: Union[int, float] = dflt_die_outline,
-    outline_dev: Union[int, float] = dflt_device_outline,
-    device_layer: int = dflt_layers["device"],
-    die_layer: int = dflt_layers["die"],
-    pad_layer: int = dflt_layers["pad"],
-    text: Union[None, str] = dflt_text,
-) -> Device:
-    """Creates a cell that contains several nanowires of given channel and
-    source.
-
-    Parameters:
-        die_w (int or float): Width of a unit die/cell in the design (the output device will be an integer number of unit cells).
-        pad_size (tuple of int or float): Dimensions of the die's pads (width, height).
-        channels_sources_w (list of tuple of float): The list of (channel_w, source_w) of the nanowires to create.
-        overlap_w (int or float): Extra length of the routes above the die's ports to assure alignment with the device
-                                   (useful for ebeam lithography).
-        outline_die (int or float): The width of the pads outline.
-        outline_dev (int or float): The width of the device's outline.
-        device_layer (int or tuple of int): The layer where the device is placed.
-        die_layer (int or tuple of int): The layer where the die is placed.
-        pad_layer (int or tuple of int): The layer where the pads are placed.
-        text (str, optional): If None, the text is "NWIRES".
-
-    Returns:
-        Device: A device (of size n*m unit cells) containing the nanowires, the
-        border of the die (created with die_cell function), and the connections
-        between the nanowires and pads.
-    """
-
-    if text is None:
-        text = ""
-
-    NANOWIRES_DIE = Device(f"DIE NWIRES {text} ")
-
-    DEVICE = Device(f"NWIRES {text} ")
-
-    ## Create the NANOWIRES
-
-    NANOWIRES = Device()
-    nanowires_ref = []
-    for i, channel_source_w in enumerate(channels_sources_w):
-        nanowire_ref = NANOWIRES << qd.nanowire(
-            channel_source_w[0], channel_source_w[1]
-        )
-        nanowires_ref.append(nanowire_ref)
-    DEVICE << NANOWIRES
-
-    ## Create the DIE
-
-    # die parameters, checkup conditions
-    n = len(channels_sources_w)
-    die_size = (math.ceil((2 * (n + 1) * pad_size[0]) / die_w) * die_w, die_w)
-    die_contact_w = NANOWIRES.xsize + overlap_w
-    dev_contact_w = NANOWIRES.xsize
-    routes_margin = 4 * die_contact_w
-    dev_max_size = (2 * n * pad_size[0], NANOWIRES.ysize + routes_margin)
-
-    # die, with calculated parameters
-    BORDER = qu.die_cell(
-        die_size=die_size,
-        device_max_size=dev_max_size,
-        pad_size=pad_size,
-        contact_w=die_contact_w,
-        contact_l=overlap_w,
-        ports={"N": n, "S": n},
-        ports_gnd=["S"],
-        isolation=outline_die,
-        text=f"NWIRES {text}",
-        layer=die_layer,
-        pad_layer=pad_layer,
-        invert=True,
-    )
-
-    ## Place the nanowires
-
-    for i, nanowire_ref in enumerate(nanowires_ref):
-        nanowire_ref.movex(BORDER.ports[f"N{i+1}"].x)
-        NANOWIRES.add_port(port=nanowire_ref.ports[1], name=f"N{i+1}")
-        NANOWIRES.add_port(port=nanowire_ref.ports[2], name=f"S{i+1}")
-
-    ## Route the nanowires and the die
-
-    # hyper tapers
-    HT, dev_ports = qu.add_hyptap_to_cell(BORDER.get_ports(), overlap_w, dev_contact_w)
-    DEVICE.ports = dev_ports.ports
-    DEVICE << HT
-
-    # routes from nanowires to hyper tapers
-    ROUTES = qu.route_to_dev(HT.get_ports(), NANOWIRES.ports)
-    DEVICE << ROUTES
-
-    DEVICE.ports = dev_ports.ports
-    DEVICE = pg.outline(DEVICE, outline_dev, open_ports=2 * outline_dev)
-    DEVICE = pg.union(DEVICE, layer=device_layer)
-    DEVICE.name = f"NWIRES {text} "
-
-    NANOWIRES_DIE << DEVICE
-    NANOWIRES_DIE << BORDER
-
-    NANOWIRES_DIE = pg.union(NANOWIRES_DIE, by_layer=True)
-    NANOWIRES_DIE.name = f"DIE NWIRES {text} "
-    return NANOWIRES_DIE
-
-
-def create_ntron_cell(
-    die_w: Union[int, float] = dflt_die_w,
-    pad_size: Tuple[float, float] = dflt_pad_size,
-    choke_w: Union[int, float] = 0.1,
-    channel_w: Union[int, float] = 0.5,
-    gate_w: Union[None, int, float] = auto_param,
-    source_w: Union[None, int, float] = auto_param,
-    drain_w: Union[None, int, float] = auto_param,
-    choke_shift: Union[None, int, float] = auto_param,
-    overlap_w: Union[None, int, float] = dflt_ebeam_overlap,
-    outline_die: Union[None, int, float] = dflt_die_outline,
-    outline_dev: Union[None, int, float] = dflt_device_outline,
-    device_layer: int = dflt_layers["device"],
-    die_layer: int = dflt_layers["die"],
-    pad_layer: int = dflt_layers["pad"],
-    text: Union[None, str] = dflt_text,
-) -> Device:
-    """Creates a standardized cell specifically for a single ntron.
-
-    Unless specified, scales the ntron parameters as:
-    gate_w = drain_w = source_w = 3 * channel_w
-    choke_shift = -3 * channel_w
-
-    Parameters:
-        die_w (int or float): Width of a unit die/cell in the design (the output device will be an integer number of unit cells).
-        pad_size (tuple of int or float): Dimensions of the die's pads (width, height).
-        choke_w (int or float): The width of the ntron's choke in µm.
-        channel_w (int or float): The width of the ntron's channel in µm.
-        gate_w (int or float, optional): If None, gate width is 3 times the channel width.
-        source_w (int or float, optional): If None, source width is 3 times the channel width.
-        drain_w (int or float, optional): If None, drain width is 3 times the channel width.
-        choke_shift (int or float, optional): If None, choke shift is -3 times the channel width.
-        overlap_w (int or float): Extra length of the routes above the die's ports to assure alignment with the device
-                                             (useful for ebeam lithography).
-        outline_die (int or float): The width of the pads outline.
-        outline_dev (int or float): The width of the device's outline.
-        device_layer (int or array-like[2]): The layer where the device is placed.
-        die_layer (int or array-like[2]): The layer where the die is placed.
-        pad_layer (int or array-like[2]): The layer where the pads are placed.
-        text (string, optional): If None, the text is the ntron's choke and channel widths.
-
-    Returns:
-        Device: A device containing the ntron, the border of the die (created with die_cell function),
-        and the connections between the ports.
-    """
-
-    ## Create the NTRON
-
-    # sizes the ntron parameters that were not given
-    if source_w is None and drain_w is None:
-        drain_w = source_w = 3 * channel_w
-    elif source_w is None:
-        source_w = drain_w
-    else:
-        drain_w = source_w
-    if gate_w is None:
-        gate_w = source_w
-    if choke_shift is None:
-        choke_shift = -3 * channel_w
-
-    NTRON = qd.ntron_compassPorts(
-        choke_w, gate_w, channel_w, source_w, drain_w, choke_shift, device_layer
-    )
-
-    if text is None:
-        text = f"chk: {choke_w} \nchnl: {channel_w}"
-    DIE_NTRON = Device(f"DIE NTRON {text} ")
-
-    DEVICE = Device(f"NTRON {text} ")
-    DEVICE << NTRON
-
-    ## Create the DIE
-
-    # die parameters, checkup conditions
-    die_contact_w = NTRON.ports["N1"].width + overlap_w
-    routes_margin = 2 * die_contact_w
-    dev_min_w = (
-        die_contact_w + 3 * outline_die
-    )  # condition imposed by the die parameters (contacts width)
-    device_max_w = max(2 * routes_margin + max(NTRON.size), dev_min_w)
-
-    # the die with calculated parameters
-    BORDER = qu.die_cell(
-        die_size=(die_w, die_w),
-        device_max_size=(device_max_w, device_max_w),
-        pad_size=pad_size,
-        contact_w=die_contact_w,
-        contact_l=overlap_w,
-        ports={"N": 1, "W": 1, "S": 1},
-        ports_gnd=["S"],
-        text=text,
-        isolation=10,
-        layer=die_layer,
-        pad_layer=pad_layer,
-        invert=True,
-    )
-
-    # place the ntron
-    NTRON.movex(NTRON.ports["N1"].midpoint[0], BORDER.ports["N1"].midpoint[0])
-
-    # Route DIE and NTRON
-
-    # hyper tapers
-    dev_contact_w = NTRON.ports["N1"].width
-    HT, device_ports = qu.add_hyptap_to_cell(
-        BORDER.get_ports(), overlap_w, dev_contact_w, device_layer
-    )
-    DEVICE << HT
-    DEVICE.ports = device_ports.ports
-    # routes
-    ROUTES = qu.route_to_dev(HT.get_ports(), NTRON.ports, device_layer)
-    DEVICE << ROUTES
-
-    DEVICE = pg.outline(DEVICE, outline_dev, precision=0.000001, open_ports=outline_dev)
-    DEVICE = pg.union(DEVICE, layer=device_layer)
-    DEVICE.name = f"NTRON {text} "
-
-    DIE_NTRON << DEVICE
-    DIE_NTRON << BORDER
-
-    DIE_NTRON = pg.union(DIE_NTRON, by_layer=True)
-    DIE_NTRON.name = f"DIE NTRON {text} "
-    return DIE_NTRON
-
-
-def create_snspd_ntron_cell(
-    die_w: Union[int, float] = dflt_die_w,
-    pad_size: Tuple[float, float] = dflt_pad_size,
-    w_choke: Union[int, float] = 0.1,
-    w_snspd: Union[int, float] = auto_param,
-    overlap_w: Union[int, float] = dflt_ebeam_overlap,
-    outline_die: Union[int, float] = dflt_die_outline,
-    outline_dev: Union[int, float] = dflt_device_outline,
-    device_layer: int = dflt_layers["device"],
-    die_layer: int = dflt_layers["die"],
-    pad_layer: int = dflt_layers["pad"],
-    text: Union[None, str] = dflt_text,
-) -> Device:
-    """Creates a cell that contains an SNSPD coupled to an NTRON. The device's
-    parameters are sized according to the SNSPD's width and the NTRON's choke.
-
-    Parameters:
-        die_w (int or float): Width of a unit die/cell in the design (the output device will be an integer number of unit cells).
-        pad_size (tuple of int or float): Dimensions of the die's pads (width, height).
-        w_choke (int or float): The width of the NTRON choke in µm.
-        w_snspd (int or float, optional): The width of the SNSPD nanowire in µm (if None, scaled to 5 * w_choke).
-        overlap_w (int or float): Extra length of the routes above the die's ports to assure alignment with the device
-                                             (useful for ebeam lithography).
-        outline_die (int or float): The width of the pads outline.
-        outline_dev (int or float): The width of the device's outline.
-        device_layer (int or array-like[2]): The layer where the device is placed.
-        die_layer (int or array-like[2]): The layer where the die is placed.
-        pad_layer (int or array-like[2]): The layer where the pads are placed.
-        text (string, optional): If None, text = f'SNSPD {w_choke}'.
-
-    Returns:
-        Device: A cell containing a die in die_layer, pads in pad layer,
-        and an SNSPD-NTRON properly routed in the device layer.
-    """
-
-    # Create SNSPD-NTRON
-    if w_snspd is None:
-        w_snspd = 5 * w_choke
-
-    if text is None:
-        text = f"SNSPD \n{w_snspd} {w_choke} "
-    DIE_SNSPD_NTRON = Device(f"DIE {text} ")
-    DEVICE = Device(f"{text} ")
-
-    SNSPD_NTRON = qc.snspd_ntron(
-        w_snspd=w_snspd,
-        pitch_snspd=3 * w_snspd,
-        size_snspd=(30 * w_snspd, 30 * w_snspd),
-        w_inductor=3 * w_snspd,
-        pitch_inductor=6 * w_snspd,
-        k_inductor13=20 * w_snspd,
-        k_inductor2=8 * w_snspd,
-        w_choke=w_choke,
-        w_channel=6 * w_choke,
-        w_pad=10 * w_snspd,
-        layer=device_layer,
-    )
-    DEVICE << SNSPD_NTRON
-
-    # Create DIE
-
-    die_contact_w = min(
-        10 * SNSPD_NTRON.ports["N1"].width + overlap_w, 0.5 * pad_size[0]
-    )
-
-    routes_margin = 2 * die_contact_w
-    margin = 2 * (pad_size[1] + outline_die + routes_margin)
-    n = max(2, math.ceil((SNSPD_NTRON.xsize + margin) / die_w))
-    m = max(1, math.ceil((SNSPD_NTRON.ysize + margin) / die_w))
-
-    dev_min_size = [
-        (die_contact_w + 3 * outline_die) * x for x in (5, 3)
-    ]  # condition imposed by the die parameters (contacts width)
-    device_max_size = (
-        max(
-            min(n * die_w - margin, 8 * routes_margin + SNSPD_NTRON.size[0]),
-            dev_min_size[0],
-        ),
-        max(
-            min(m * die_w - margin, 2 * routes_margin + SNSPD_NTRON.size[1]),
-            dev_min_size[1],
-        ),
-    )
-
-    BORDER = qu.die_cell(
-        die_size=(n * die_w, m * die_w),
-        device_max_size=device_max_size,
-        pad_size=pad_size,
-        contact_w=die_contact_w,
-        contact_l=overlap_w,
-        ports={"N": 3, "E": 1, "W": 1, "S": 2},
-        ports_gnd=["S"],
-        text=text,
-        isolation=outline_die,
-        layer=die_layer,
-        pad_layer=pad_layer,
-        invert=True,
-    )
-
-    # Route DIE and SNSPD-NTRON
-
-    # hyper tapers
-    dev_contact_w = min(4 * SNSPD_NTRON.ports["N1"].width, 0.8 * die_contact_w)
-    HT, device_ports = qu.add_hyptap_to_cell(
-        BORDER.get_ports(), overlap_w, dev_contact_w, device_layer
-    )
-    DEVICE << HT
-    DEVICE.ports = device_ports.ports
-
-    # routes
-    ROUTES = qu.route_to_dev(HT.get_ports(), SNSPD_NTRON.ports, device_layer)
-    DEVICE << ROUTES
-
-    DEVICE = pg.outline(DEVICE, outline_dev, precision=0.000001, open_ports=outline_dev)
-    DEVICE = pg.union(DEVICE, layer=device_layer)
-    DEVICE.name = f"DIE {text} "
-
-    DIE_SNSPD_NTRON << DEVICE
-    DIE_SNSPD_NTRON << BORDER
-
-    DIE_SNSPD_NTRON = pg.union(DIE_SNSPD_NTRON, by_layer=True)
-    DIE_SNSPD_NTRON.name = f"SNSPD \n{w_snspd} {w_choke} "
-
-    return DIE_SNSPD_NTRON
-
 
 class Design:
     """A class for a design on a single layer of superconducting material, and
@@ -937,18 +289,18 @@ class Design:
     def __init__(
         self,
         name="new_design",
-        chip_w=dflt_chip_w,
-        chip_margin=dflt_chip_margin,
-        N_dies=dflt_N_dies,
-        die_w=auto_param,
-        pad_size=dflt_pad_size,
-        device_outline=dflt_device_outline,
-        die_outline=dflt_die_outline,
-        ebeam_overlap=dflt_ebeam_overlap,
-        annotation_layer=dflt_layers["annotation"],
-        device_layer=dflt_layers["device"],
-        die_layer=dflt_layers["die"],
-        pad_layer=dflt_layers["pad"],
+        chip_w=dflt.chip_w,
+        chip_margin=dflt.chip_margin,
+        N_dies=dflt.N_dies,
+        die_w=dflt.auto_param,
+        pad_size=dflt.pad_size,
+        device_outline=dflt.device_outline,
+        die_outline=dflt.die_outline,
+        ebeam_overlap=dflt.ebeam_overlap,
+        annotation_layer=dflt.layers["annotation"],
+        device_layer=dflt.layers["device"],
+        die_layer=dflt.layers["die"],
+        pad_layer=dflt.layers["pad"],
     ):
         """
         Args:
@@ -1125,7 +477,7 @@ class Design:
             write_devices_map_txt=write_devices_map_txt,
         )
 
-    def write_gds(self, text: Union[None, str] = dflt_text) -> Union[None, str]:
+    def write_gds(self, text: Union[None, str] = dflt.text) -> Union[None, str]:
         """Write a GDS file.
 
         Args:
@@ -1141,8 +493,8 @@ class Design:
 
     # basics:
 
-    def create_alignment_cell(
-        self, layers_to_align: List[int], text: Union[None, str] = dflt_text
+    def alignment_cell(
+        self, layers_to_align: List[int], text: Union[None, str] = dflt.text
     ) -> Device:
         """Creates alignment marks in an integer number of unit cells.
 
@@ -1153,7 +505,7 @@ class Design:
         Returns:
             Device: A device that centers the alignment marks in an n*m unit cell.
         """
-        return create_alignment_cell(
+        return cell.alignment(
             die_w=self.die_w,
             layers_to_align=layers_to_align,
             outline_die=self.die_outline,
@@ -1161,11 +513,11 @@ class Design:
             text=text,
         )
 
-    def create_vdp_cell(
+    def vdp_cell(
         self,
         layers_to_probe: List[int],
-        layers_to_outline: Union[List[int], None] = auto_param,
-        text: Union[None, str] = dflt_text,
+        layers_to_outline: Union[List[int], None] = dflt.auto_param,
+        text: Union[None, str] = dflt.text,
     ) -> Device:
         r"""Creates a cell containing a Van Der Pauw structure between 4 contact
         pads.
@@ -1179,7 +531,7 @@ class Design:
             Device: The created device.
         """
 
-        return create_vdp_cell(
+        return cell.vdp(
             die_w=self.die_w,
             pad_size=self.pad_size,
             layers_to_probe=layers_to_probe,
@@ -1190,8 +542,8 @@ class Design:
             text=text,
         )
 
-    def create_etch_test_cell(
-        self, layers_to_etch: List[List[int]], text: Union[None, str] = dflt_text
+    def etch_test_cell(
+        self, layers_to_etch: List[List[int]], text: Union[None, str] = dflt.text
     ) -> Device:
         """Creates etch test structures in an integer number of unit cells.
 
@@ -1207,7 +559,7 @@ class Design:
             Device: A device (with size n*m of unit cells) with etch tests in its center.
         """
 
-        return create_etch_test_cell(
+        return cell.etch_test(
             die_w=self.die_w,
             layers_to_etch=layers_to_etch,
             outline_die=self.die_outline,
@@ -1215,7 +567,7 @@ class Design:
             text=text,
         )
 
-    def create_resolution_test_cell(
+    def resolution_test_cell(
         self,
         layer_to_resolve: int,
         resolutions_to_test: List[float] = [
@@ -1229,7 +581,7 @@ class Design:
             1.5,
             2,
         ],
-        text: Union[None, str] = dflt_text,
+        text: Union[None, str] = dflt.text,
     ) -> Device:
         r"""Creates a cell containing a resolution test.
 
@@ -1242,7 +594,7 @@ class Design:
             Device: The created device.
         """
 
-        return create_resolution_test_cell(
+        return cell.resolution_test(
             die_w=self.die_w,
             layer_to_resolve=layer_to_resolve,
             resolutions_to_test=resolutions_to_test,
@@ -1253,10 +605,10 @@ class Design:
 
     # devices:
 
-    def create_nanowires_cell(
+    def nanowires_cell(
         self,
         channels_sources_w: List[Tuple[float, float]],
-        text: Union[None, str] = dflt_text,
+        text: Union[None, str] = dflt.text,
     ) -> Device:
         """Creates a cell containing several nanowires of given channel and
         source.
@@ -1272,7 +624,7 @@ class Design:
             nanowires and pads.
         """
 
-        return create_nanowires_cell(
+        return cell.nanowires(
             die_w=self.die_w,
             pad_size=self.pad_size,
             channels_sources_w=channels_sources_w,
@@ -1285,15 +637,15 @@ class Design:
             text=text,
         )
 
-    def create_ntron_cell(
+    def ntron_cell(
         self,
         choke_w: float,
         channel_w: float,
-        gate_w: Union[float, None] = auto_param,
-        source_w: Union[float, None] = auto_param,
-        drain_w: Union[float, None] = auto_param,
-        choke_shift: Union[float, None] = auto_param,
-        text: Union[str, None] = dflt_text,
+        gate_w: Union[float, None] = dflt.auto_param,
+        source_w: Union[float, None] = dflt.auto_param,
+        drain_w: Union[float, None] = dflt.auto_param,
+        choke_shift: Union[float, None] = dflt.auto_param,
+        text: Union[str, None] = dflt.text,
     ) -> Device:
         r"""Creates a standardized cell specifically for a single ntron.
 
@@ -1315,7 +667,7 @@ class Design:
             and the connections between the ports.
         """
 
-        return create_ntron_cell(
+        return cell.ntron(
             die_w=self.die_w,
             pad_size=self.pad_size,
             choke_w=choke_w,
@@ -1333,11 +685,11 @@ class Design:
             text=text,
         )
 
-    def create_snspd_ntron_cell(
+    def snspd_ntron_cell(
         self,
         w_choke: float,
-        w_snspd: Union[float, None] = auto_param,
-        text: Union[str, None] = dflt_text,
+        w_snspd: Union[float, None] = dflt.auto_param,
+        text: Union[str, None] = dflt.text,
     ) -> Device:
         """Creates a cell that contains an SNSPD coupled to an NTRON. The
         device's parameters are sized according to the SNSPD's width and the
@@ -1352,7 +704,7 @@ class Design:
             Device: A cell containing a die in die_layer, pads in pad layer, and an SNSPD-NTRON properly routed in the device layer.
         """
 
-        return create_snspd_ntron_cell(
+        return cell.snspd_ntron(
             die_w=self.die_w,
             pad_size=self.pad_size,
             w_choke=w_choke,

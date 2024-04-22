@@ -5,48 +5,42 @@ from phidl import quickplot as qp
 from phidl import set_quickplot_options
 import matplotlib.pyplot as plt
 
+def import_module(module_path, module_name):
+    """
+    Imports a module dynamically from a given file path and module name.
 
-def import_module(module_path):
-    """Dynamically imports a Python module given its file path.
-
-    Parameters:
-        module_path (str): Path to the Python module.
+    Args:
+        module_path (str): The path to the Python file from which to import the module.
+        module_name (str): The name to assign to the imported module.
 
     Returns:
-        module: Imported module object.
+        Module: The module loaded from the specified file.
     """
-    module_name = os.path.basename(module_path).split(".")[0]
     spec = importlib.util.spec_from_file_location(module_name, module_path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
 
-
 def plot_and_save_functions(module, module_name):
-    """Iterates through the functions of a module, executes them, plots their
-    return, and saves the plots.
-
-    Parameters:
-        module: Module object.
-        module_name (str): Name of the module.
     """
-    # Create folder for saving plots
+    Plots and saves visual representations of PHIDL Device objects returned by functions within a module.
+
+    Args:
+        module (Module): The module containing the functions to be visualized.
+        module_name (str): The name of the module, used to create a directory for saving plots.
+
+    This function iterates over all attributes of the module, checking for callable objects that
+    are not class definitions. If the callable returns a PHIDL Device or a tuple containing a PHIDL Device,
+    it uses PHIDL's quickplot function to plot and then saves the plot to a directory corresponding to
+    the module name. Plots are saved in PNG format.
+    """
     os.makedirs(module_name, exist_ok=True)
-
-    # Get all functions defined in the module
     func_names = dir(module)
-
     set_quickplot_options(blocking=False)
     for func_name in func_names:
-
         func = getattr(module, func_name)
-        # Try several sets of conditions to create the images only for functions that return a device object
         try:
-            if (
-                callable(func)
-                and hasattr(func, "__call__")
-                and not isinstance(func, type)
-            ):
+            if callable(func) and hasattr(func, "__call__") and not isinstance(func, type):
                 result = func()
                 if isinstance(result, tuple):
                     result = result[0]
@@ -54,27 +48,37 @@ def plot_and_save_functions(module, module_name):
                     qp(result)
                     plt.savefig(os.path.join(module_name, f"{func_name}.png"))
                     plt.close()
-                    print(
-                        f"Info: in module '{module_name}', function '{func_name}' was plotted"
-                    )
+                    print(f"Info: in module '{module_name}', function '{func_name}' was plotted")
         except Exception as e:
             if "missing" in str(e):
-                print(
-                    f"Warning: in module '{module_name}', function '{func_name}' was not plotted: {e}"
-                )
+                print(f"Warning: in module '{module_name}', function '{func_name}' was not plotted: {e}")
 
-
-def process_modules_in_folder(folder_path):
-    """Processes all modules in a folder.
-
-    Parameters:
-        folder_path (str): Path to the folder containing the modules.
+def process_modules_in_folder(folder_path, module_prefix=""):
     """
-    for filename in ["devices", "circuits", "geometries", "utilities", "design"]:
-        module_path = os.path.join(folder_path, filename + ".py")
-        module = import_module(module_path)
-        plot_and_save_functions(module, filename.split(".")[0])
+    Recursively processes Python files in a given folder (and subfolders) to plot and save functions.
 
+    Args:
+        folder_path (str): Path to the directory containing module files and possibly other subdirectories.
+        module_prefix (str): A prefix to append to module names for subdirectories (used for nested modules).
+
+    This function scans through all files and directories in a given folder, skipping items that start
+    with '__' (like __init__.py and __pycache__). For Python files, it imports the module, and for directories,
+    it recursively calls itself to handle any nested modules or Python files, appending the directory name to
+    the module prefix.
+    """
+    for item in os.listdir(folder_path):
+        if item.startswith('__'):
+            continue  # Skip files or directories starting with __
+        full_path = os.path.join(folder_path, item)
+        if os.path.isdir(full_path):
+            # For submodules, we append the current folder's name to the prefix
+            new_prefix = f"{module_prefix}{item}/" if module_prefix else f"{item}/"
+            process_modules_in_folder(full_path, new_prefix)
+        elif item.endswith(".py"):
+            module_name = item[:-3]
+            full_module_name = os.path.join(module_prefix, module_name) if module_prefix else module_name
+            module = import_module(full_path, module_name)
+            plot_and_save_functions(module, full_module_name)
 
 if __name__ == "__main__":
     folder_path = os.path.join("..", "..", "..", "src", "qnngds")

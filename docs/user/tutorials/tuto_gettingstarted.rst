@@ -46,8 +46,8 @@ Start coding
 .. note::
     This section is not yet completed because the ``design`` module is susceptible to change (class management).
 
-Start with the basis
-~~~~~~~~~~~~~~~~~~~~
+Start with the basics
+~~~~~~~~~~~~~~~~~~~~~
 
 Import the packages.
 
@@ -104,7 +104,7 @@ Add alignment cells like:
 .. code-block:: python
     :lineno-start: 38
     
-    ALIGN_CELL_LEFT = design.create_alignment_cell(layers_to_align = [layers['mgb2_coarse'], layers['pad']], 
+    ALIGN_CELL_LEFT = design.alignment_cell(layers_to_align = [layers['mgb2_coarse'], layers['pad']], 
                                                     text = 'LEFT')
     design.place_on_chip(ALIGN_CELL_LEFT, (0, 2))
 
@@ -113,7 +113,7 @@ Add Van der Pauw cells like:
 .. code-block:: python
     :lineno-start: 46
 
-    VDP_TEST_MGB2 = design.create_vdp_cell(layers_to_probe   = [layers['mgb2_coarse']], 
+    VDP_TEST_MGB2 = design.vdp_cell(layers_to_probe   = [layers['mgb2_coarse']], 
                                        layers_to_outline = [layers['mgb2_coarse']], 
                                        text = 'MGB2')
     design.place_on_chip(VDP_TEST_MGB2, (0, 0))
@@ -123,7 +123,7 @@ Add resolution test cells like:
 .. code-block:: python
     :lineno-start: 56
 
-    RES_TEST_MGB2_FINE = design.create_resolution_test_cell(layer_to_resolve = layers['mgb2_fine'],
+    RES_TEST_MGB2_FINE = design.resolution_test_cell(layer_to_resolve = layers['mgb2_fine'],
                                                             text = 'MGB2 FINE')
     design.place_on_chip(RES_TEST_MGB2_FINE, (2, 2))
 
@@ -132,7 +132,7 @@ Add etch test cell like:
 .. code-block:: python
     :lineno-start: 69
 
-    ETCH_TEST = design.create_etch_test_cell(layers_to_etch = [[layers['pad']]],
+    ETCH_TEST = design.etch_test_cell(layers_to_etch = [[layers['pad']]],
                                          text = 'PAD')
     design.place_on_chip(ETCH_TEST, (3, 0))
 
@@ -149,19 +149,19 @@ Some nanowire electronics
 
     #SNSPD-NTRON
 
-    SNSPD_NTRON_01  = design.create_snspd_ntron_cell(w_choke=0.1)
+    SNSPD_NTRON_01  = design.snspd_ntron_cell(w_choke=0.1)
     design.place_on_chip(SNSPD_NTRON_01, (1, 0))
 
     # NANOWIRES
 
     channels_w = [0.025, 0.1, 0.5, 1, 2]
     channels_sources_w = [(x, 10*x) for x in channels_w]
-    NANOWIRES = design.create_nanowires_cell(channels_sources_w=channels_sources_w,
+    NANOWIRES = design.nanowires_cell(channels_sources_w=channels_sources_w,
                                             text = '\nsrc=10chn')
     design.place_on_chip(NANOWIRES, (1, 1))
 
     channels_sources_w = [(x, 4*x) for x in channels_w]
-    NANOWIRES = design.create_nanowires_cell(channels_sources_w=channels_sources_w,
+    NANOWIRES = design.nanowires_cell(channels_sources_w=channels_sources_w,
                                             text = '\nsrc=4chn')
     design.place_on_chip(NANOWIRES, (3, 1))
 
@@ -173,11 +173,11 @@ Some nanowire electronics
     for ratio in channel_to_choke_ratios:
         for choke_w in chokes_w:
             channel_w = choke_w*ratio
-            NTRON = design.create_ntron_cell(choke_w, channel_w)
+            NTRON = design.ntron_cell(choke_w, channel_w)
             remaining_cells.append(NTRON)
     design.place_remaining_devices(remaining_cells, write_remaining_devices_map_txt = False)
 
 .. image:: tutorials_images/tuto_gettingstarted_some_electronics.png
    :alt: tuto_gettingstarted_some_electronics.png
 
-See full code `in GitHub <https://github.com/qnngroup/qnngds>`_.
+See full code `in GitHub <https://github.com/qnngroup/qnngds/blob/master/docs/user/tutorials/getting_started.py>`_.

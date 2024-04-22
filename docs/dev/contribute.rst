@@ -12,21 +12,16 @@ Be careful, make sure the branch you are working on does **not** start with
 0. What and where to add
 ------------------------
 
-* New **test structures** (alignment marks, vdp...) and new **geometries**
-  (hyper taper...) go to ``geometries``.
-* New **devices** (ntron, htron, snspd...) go to ``devices``.
-* New **circuits** (logic gates, counter, any kinf of circuit made of
-  devices...) go to ``circuits``.
-* New **design tools** (functions useful for building designs) go to
-  ``utilities``.
-* New **cells** (made of circuits integrated with utilities tools) go to
-  ``design``. 
+Before contributing to the package, make sure its structure and organization are
+clear to you. The contributions should go in the same direction as how the
+package was though in terms of hierarchy. If you are already a user of the
+package, the contribution should be quite straighforward; otherwise, please
+first refer to `qnngds user's documentation
+<https://qnngds.readthedocs.io/en/latest/>`_, you can also check the `tutorials
+<https://qnngds.readthedocs.io/en/latest/tutorials.html>`_. 
 
 .. todo::
-    Reorganize design.
-
-.. todo::
-    Once design is reorganized, send the contributors to the tuto ``creating 
+    Send the contributors to the tuto ``creating 
     your cell``. This is what every contributor should ideally go through when
     adding a new circuit to the package. 
 
