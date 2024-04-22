@@ -94,7 +94,7 @@ contribution. The generated API inlines the plotted images of the devices.
 --------------------------------------------------
 
 You might want to check that the changes you made to the package are well
-generated and properly disply in the documentation. When pushing your code on
+generated and properly display in the documentation. When pushing your code on
 your branch, a new verison of qnngds' documentation will be accessible.
 
 Commit your changes:
