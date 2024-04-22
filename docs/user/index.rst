@@ -17,7 +17,7 @@ easily and quickly. It offers various devices, circuits, and test structures
 used and designed in the `QNN group <https://qnn-rle.mit.edu/>`_. The package
 hierarchy is though as follow:
 
-.. image:: images/__home_page/hierarchy.png
+.. image:: images/_home_page/hierarchy.png
 
 * :ref:`Design`: contains classes from which a complete design can be built. The class
   inputs are the basic parameters of the chip. Its methods are pre-built cells
@@ -41,7 +41,7 @@ hierarchy is though as follow:
 
 Below is an example of the modules used to build a design.
 
-.. image:: images/__home_page/example_hierarchy.png
+.. image:: images/_home_page/example_hierarchy.png
 
 
 Contents
