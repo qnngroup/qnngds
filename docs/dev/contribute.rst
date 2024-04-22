@@ -6,8 +6,9 @@ Documentation for qnngds' contributors
 You are a user of the package and wish to complete it with your newly created
 functions. You will find here the instructions to contribute to the package.
 
-Be careful, make sure the branch you are working on does **not** start with
-``dev-``, this prefix is reserved for developers.
+.. warning::
+    Be careful, make sure the branch you are working on does **not** start with
+    ``dev-``, this prefix is reserved for developers.
  
 0. What and where to add
 ------------------------
@@ -40,9 +41,6 @@ to use the function if this helps making its use clearer.
 Additionally, a given format of the function's docstring should be respected.
 Indeed, the documentation is automatically generated and will not work properly
 if the :ref:`format<docstring format>` is not respected.
-
-.. todo::
-    Add pre-commit hooks with auto-formatting (black, ruff).
 
 .. _docstring format:
 
@@ -116,7 +114,7 @@ Push your branch to GitHub:
 
   .. code-block:: bash
 
-      git push origin your_new_branch_name 
+      git push [--set-upstream] origin your_new_branch_name 
 
 * Any other time, you can simply use:
 
