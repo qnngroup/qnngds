@@ -85,6 +85,10 @@ changes made to the package without having to reinstall it every time.
     cd path/to/qnngds
     git checkout -b your-branch-name
 
+.. warning::
+  Be careful, if you are a contributor, make sure your branch does **not** start 
+  with ``dev-``, this prefix is reserved for developers.
+
 You can now modify the package as wanted. 
 
 Continue to the :ref:`documentation for qnngds' contributors<doc for
