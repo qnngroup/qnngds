@@ -22,9 +22,9 @@ first refer to `qnngds user's documentation
 <https://qnngds.readthedocs.io/en/latest/tutorials.html>`_. 
 
 .. todo::
-    Send the contributors to the tuto ``creating 
-    your cell``. This is what every contributor should ideally go through when
-    adding a new circuit to the package. 
+    Send the contributors to the tuto ``creating your cell``. This is what 
+    every contributor should ideally go through when adding a new circuit 
+    to the package. 
 
 .. _Comment your functions:
 
@@ -71,26 +71,22 @@ for more details.
         """
         # Implementation of the function
 
-2. Build the libraries
-----------------------
+2. Build the documentation
+--------------------------
 
-.. todo::
-    Check how to automate that, running generate images and generate libraries 
-    before pull request?
+After modifying, adding or deleting any function of the package, you will
+obviously want to update the package's `documentation
+<https://qnngds.readthedocs.io/en/latest/>`_. To do so, open a terminal and
+execute:
 
-If the function created returns a Device object, it should be added to the
-library. You could manually upload the quickplot of this function by saving it
-to ``docs>user>images>module-containing-your-function`` under
-``your-function.png`` name. However, you can also follow these steps to
-auto-generate the qnngds library:
+.. code-block:: python
+    cd /path-to-qnngds/docs/user
+    python generate_api.py
 
-#. Open a terminal in ``/path-to-qnngds/docs/user/images`` and run
-   ``plot_images.py`` file. This will automatically create png images of
-   returned devices of every function in the qnngds package.
-
-#. Open a terminal in ``/path-to-qnngds/docs/user`` and run
-   ``generate_api.py`` file. This will automatically generate a new
-   ``api.rst`` file with inlined images
+Executing this file will automatically call the ``plot_images.py`` script. This
+script saves png images for every function of the package that returns a
+``Device`` Phidl object. Then, it generates the updated API including your
+contribution. The generated API inlines the plotted images of the devices.
 
 .. _rtd version in qnngds:
 
@@ -98,8 +94,8 @@ auto-generate the qnngds library:
 --------------------------------------------------
 
 You might want to check that the changes you made to the package are well
-generated in the documentation. When pushing your code on your branch, a new
-verison of qnngds' documentation will be accessible.
+generated and properly disply in the documentation. When pushing your code on
+your branch, a new verison of qnngds' documentation will be accessible.
 
 Commit your changes:
 
