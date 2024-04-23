@@ -218,6 +218,7 @@ def route_to_dev(
     ext_ports: List[Port], dev_ports: Set[Port], layer: int = dflt.layers["device"]
 ) -> Device:
     """Creates smooth routes from external ports to the device's ports.
+    If route_smooth is not working, routes quad.
 
     Parameters:
         ext_ports (list of Port): The external ports, e.g., of the die or hyper tapers (use .get_ports()).
@@ -253,8 +254,10 @@ def route_to_dev(
                     length2=length2,
                 )
             except ValueError:
-                print("Error: Could not route to device.")
-                return ROUTES
+                ROUTES << pr.route_quad(
+                    port,
+                    dev_port
+                )
     ROUTES.flatten(single_layer=layer)
     return ROUTES
 
