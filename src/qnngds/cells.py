@@ -4,10 +4,10 @@ import phidl.routing as pr
 from typing import Tuple, List, Union
 import math
 
-import qnngds.tests as qt
-import qnngds.devices as qd
-import qnngds.circuits as qc
-import qnngds.utilities as qu
+import qnngds.tests as test
+import qnngds.devices as device
+import qnngds.circuits as circuit
+import qnngds.utilities as utility
 import qnngds._default_param as dflt
 
 # basics
@@ -36,12 +36,12 @@ def alignment(
         text = ""
     DIE = Device(f"DIE ALIGN {text} ")
 
-    ALIGN = qt.alignment_mark(layers_to_align)
+    ALIGN = test.alignment_mark(layers_to_align)
 
     n = math.ceil((ALIGN.xsize) / die_w)
     m = math.ceil((ALIGN.ysize) / die_w)
 
-    BORDER = qu.die_cell(
+    BORDER = utility.die_cell(
         die_size=(n * die_w, m * die_w),
         device_max_size=(ALIGN.xsize + 20, ALIGN.ysize + 20),
         ports={},
@@ -61,7 +61,7 @@ def alignment(
 def vdp(
     die_w: Union[int, float] = dflt.die_w,
     pad_size: Tuple[float] = dflt.pad_size,
-    layers_to_probe: List[int] = [dflt.layers["pad"]],
+    layers_to_probe: List[int] = [dflt.layers["die"]],
     layers_to_outline: Union[None, List[int]] = dflt.auto_param,
     outline: Union[int, float] = dflt.die_outline,
     die_layer: Union[int, float] = dflt.layers["die"],
@@ -84,58 +84,84 @@ def vdp(
     Returns:
         DIE_VANDP (Device): The created device.
     """
+    # Initialize parameters left to default (=None)
 
     if text is None:
-        text = layers_to_probe
+        text = str(layers_to_probe)
+    if layers_to_outline is None:
+        layers_to_outline = [die_layer] # default layer to outline if None is given
+    
     DIE_VANDP = Device(f"DIE VAN DER PAUW {text} ")
 
-    ## Create the die
-    w = die_w - 2 * (pad_size[1] + 2 * outline)  # width of max device size
-    BORDER = qu.die_cell(
+    device_max_w = die_w - 2 * (pad_size[1] + 2 * outline)  # width of max device size for this cell
+    contact_w = device_max_w/10            # choosing a contact width 10 times smaller
+    device_w = device_max_w - 2*contact_w  # choosing a smaller device to have space for routing from pad to contact
+
+    # Creates the DIE, it contains only the cell text and bordure
+
+    DIE = utility.die_cell(
         die_size=(die_w, die_w),
-        device_max_size=(w, w),
+        device_max_size=(device_max_w, device_max_w),
+        ports={},
+        ports_gnd=[],
+        isolation=outline,
+        text=text,
+        layer=die_layer,
+        pad_layer=pad_layer,
+        invert=True,
+    )
+    DIE_VANDP << DIE
+
+    # Creates the vdp structure, add pads and route
+
+    VDP = Device()
+
+    ## VDP probed area
+    AREA = test.vdp(device_w, contact_w)
+    VDP << AREA
+
+    ## pads
+    PADS = utility.die_cell(
+        die_size=(die_w, die_w),
+        device_max_size=(device_max_w, device_max_w),
         pad_size=pad_size,
         contact_w=pad_size[0],
         contact_l=0,
         ports={"N": 1, "E": 1, "W": 1, "S": 1},
         ports_gnd=["N", "E", "W", "S"],
-        text=f"VDP \n{text} ",
         isolation=outline,
-        layer=die_layer,
+        text="PADS ONLY",
+        layer=0,
         pad_layer=pad_layer,
-        invert=True,
+        invert=False,
     )
-    PADS = pg.deepcopy(BORDER)
-    PADS = PADS.remove_layers([pad_layer], invert_selection=True)
+    PADS.remove_layers([pad_layer], invert_selection=True)
+    VDP << PADS
 
-    DIE_VANDP << BORDER.flatten()
+    ## routes from pads to probing area 
+    ROUTES = utility.route_to_dev(PADS.get_ports(), AREA.ports)
+    VDP << ROUTES
 
-    ## Create the test structure
-    DEVICE = Device()
+    VDP.flatten(0)
 
-    # the test structure is an hexagonal shape between the die's ports
-    TEST = Device()
-    TEST << PADS
-    rect = TEST << pg.straight((PADS.ports["E1"].x - PADS.ports["W1"].x, pad_size[0]))
-    rect.move(rect.center, (0, 0))
-    TEST << pr.route_quad(PADS.ports["N1"], rect.ports[1])
-    TEST << pr.route_quad(PADS.ports["S1"], rect.ports[2])
-    TEST = pg.union(TEST)
+    # Outline the vdp structure for layers that need to be outlined
 
-    # outline the test structure for layers that need to be outlined
+    DEVICE = Device("VAN DER PAUW")
 
-    if layers_to_outline is None:
-        layers_to_outline = [die_layer]
     for layer in layers_to_probe:
-        TEST_LAY = pg.deepcopy(TEST)
+        TEST_LAY = pg.deepcopy(VDP)
         if layer in layers_to_outline:
             TEST_LAY = pg.outline(TEST_LAY, outline)
         DEVICE << TEST_LAY.flatten(single_layer=layer)
 
     DIE_VANDP << DEVICE
 
-    DIE_VANDP = pg.union(DIE_VANDP, by_layer=True)
-    DIE_VANDP.name = f"DIE VAN DER PAUW {text} "
+    # Add pads if they are not in already present
+    if pad_layer not in layers_to_probe:
+        PADS = pg.union(PADS, layer=pad_layer)
+        PADS.name = "PADS"
+        DIE_VANDP << PADS
+
     return DIE_VANDP
 
 
@@ -184,7 +210,7 @@ def etch_test(
 
     n = math.ceil((TEST.xsize + 2 * dflt.die_cell_border) / die_w)
     m = math.ceil((TEST.ysize + 2 * dflt.die_cell_border) / die_w)
-    BORDER = qu.die_cell(
+    BORDER = utility.die_cell(
         die_size=(n * die_w, m * die_w),
         ports={},
         ports_gnd={},
@@ -240,10 +266,10 @@ def resolution_test(
 
     ## Create the test structure
     TEST_RES = Device(f"RESOLUTION TEST {text} ")
-    test_res = TEST_RES << qt.resolution_test(
+    test_res = TEST_RES << test.resolution_test(
         resolutions=resolutions_to_test, inverted=False, layer=layer_to_resolve
     )
-    test_res_invert = TEST_RES << qt.resolution_test(
+    test_res_invert = TEST_RES << test.resolution_test(
         resolutions=resolutions_to_test,
         inverted=resolutions_to_test[-1],
         layer=layer_to_resolve,
@@ -257,7 +283,7 @@ def resolution_test(
     ## Create the die
     n = math.ceil((TEST_RES.xsize) / die_w)
     m = math.ceil((TEST_RES.ysize) / die_w)
-    BORDER = qu.die_cell(
+    BORDER = utility.die_cell(
         die_size=(n * die_w, m * die_w),
         ports={},
         ports_gnd=[],
@@ -321,7 +347,7 @@ def nanowires(
     NANOWIRES = Device()
     nanowires_ref = []
     for i, channel_source_w in enumerate(channels_sources_w):
-        nanowire_ref = NANOWIRES << qd.nanowire.spot(
+        nanowire_ref = NANOWIRES << device.nanowire.spot(
             channel_source_w[0], channel_source_w[1]
         )
         nanowires_ref.append(nanowire_ref)
@@ -338,7 +364,7 @@ def nanowires(
     dev_max_size = (2 * n * pad_size[0], NANOWIRES.ysize + routes_margin)
 
     # die, with calculated parameters
-    BORDER = qu.die_cell(
+    BORDER = utility.die_cell(
         die_size=die_size,
         device_max_size=dev_max_size,
         pad_size=pad_size,
@@ -363,12 +389,12 @@ def nanowires(
     ## Route the nanowires and the die
 
     # hyper tapers
-    HT, dev_ports = qu.add_hyptap_to_cell(BORDER.get_ports(), overlap_w, dev_contact_w)
+    HT, dev_ports = utility.add_hyptap_to_cell(BORDER.get_ports(), overlap_w, dev_contact_w)
     DEVICE.ports = dev_ports.ports
     DEVICE << HT
 
     # routes from nanowires to hyper tapers
-    ROUTES = qu.route_to_dev(HT.get_ports(), NANOWIRES.ports)
+    ROUTES = utility.route_to_dev(HT.get_ports(), NANOWIRES.ports)
     DEVICE << ROUTES
 
     DEVICE.ports = dev_ports.ports
@@ -444,7 +470,7 @@ def ntron(
     if choke_shift is None:
         choke_shift = -3 * channel_w
 
-    NTRON = qd.ntron.smooth_compassPorts(
+    NTRON = device.ntron.smooth_compassPorts(
         choke_w, gate_w, channel_w, source_w, drain_w, choke_shift, device_layer
     )
 
@@ -466,7 +492,7 @@ def ntron(
     device_max_w = max(2 * routes_margin + max(NTRON.size), dev_min_w)
 
     # the die with calculated parameters
-    BORDER = qu.die_cell(
+    BORDER = utility.die_cell(
         die_size=(die_w, die_w),
         device_max_size=(device_max_w, device_max_w),
         pad_size=pad_size,
@@ -488,13 +514,13 @@ def ntron(
 
     # hyper tapers
     dev_contact_w = NTRON.ports["N1"].width
-    HT, device_ports = qu.add_hyptap_to_cell(
+    HT, device_ports = utility.add_hyptap_to_cell(
         BORDER.get_ports(), overlap_w, dev_contact_w, device_layer
     )
     DEVICE << HT
     DEVICE.ports = device_ports.ports
     # routes
-    ROUTES = qu.route_to_dev(HT.get_ports(), NTRON.ports, device_layer)
+    ROUTES = utility.route_to_dev(HT.get_ports(), NTRON.ports, device_layer)
     DEVICE << ROUTES
 
     DEVICE = pg.outline(DEVICE, outline_dev, precision=0.000001, open_ports=outline_dev)
@@ -553,7 +579,7 @@ def snspd_ntron(
     DIE_SNSPD_NTRON = Device(f"DIE {text} ")
     DEVICE = Device(f"{text} ")
 
-    SNSPD_NTRON = qc.snspd_ntron(
+    SNSPD_NTRON = circuit.snspd_ntron(
         w_snspd=w_snspd,
         pitch_snspd=3 * w_snspd,
         size_snspd=(30 * w_snspd, 30 * w_snspd),
@@ -593,7 +619,7 @@ def snspd_ntron(
         ),
     )
 
-    BORDER = qu.die_cell(
+    BORDER = utility.die_cell(
         die_size=(n * die_w, m * die_w),
         device_max_size=device_max_size,
         pad_size=pad_size,
@@ -612,14 +638,14 @@ def snspd_ntron(
 
     # hyper tapers
     dev_contact_w = min(4 * SNSPD_NTRON.ports["N1"].width, 0.8 * die_contact_w)
-    HT, device_ports = qu.add_hyptap_to_cell(
+    HT, device_ports = utility.add_hyptap_to_cell(
         BORDER.get_ports(), overlap_w, dev_contact_w, device_layer
     )
     DEVICE << HT
     DEVICE.ports = device_ports.ports
 
     # routes
-    ROUTES = qu.route_to_dev(HT.get_ports(), SNSPD_NTRON.ports, device_layer)
+    ROUTES = utility.route_to_dev(HT.get_ports(), SNSPD_NTRON.ports, device_layer)
     DEVICE << ROUTES
 
     DEVICE = pg.outline(DEVICE, outline_dev, precision=0.000001, open_ports=outline_dev)
