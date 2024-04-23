@@ -1,5 +1,5 @@
 import os
-
+from images import plot_images
 
 def automodule(module, image_folder):
     """
@@ -27,7 +27,7 @@ def automodule(module, image_folder):
         [
             f
             for f in os.listdir(image_folder_path)
-            if os.path.isfile(os.path.join(image_folder_path, f)) and not f.startswith('__')
+            if os.path.isfile(os.path.join(image_folder_path, f)) and not f.startswith('_')
         ]
     )
     content += f"    :members:\n"
@@ -58,7 +58,7 @@ def generate_api(src_path):
 
     api = "API\n===\n\n"
 
-    modules = [m for m in os.listdir(src_path) if not m.startswith('__')]
+    modules = [m for m in os.listdir(src_path) if not m.startswith('_')]
     for module in modules:
         if module.endswith('.py'):
             api += f".. _{module[:-3].capitalize()}:\n"  # For referencing this section
@@ -70,7 +70,7 @@ def generate_api(src_path):
             api += f"{module.capitalize()}\n"      # The section title
             api += f"{'-' * len(module)}\n\n"      # -----------------
             module_path = os.path.join(src_path, module)
-            submodules = [m for m in os.listdir(module_path) if not m.startswith('__') and m.endswith('.py')]
+            submodules = [m for m in os.listdir(module_path) if not m.startswith('_') and m.endswith('.py')]
             for submodule in submodules:
                 api += f"{submodule[:-3]}\n"                # The subsection title
                 api += f"{'~' * len(submodule[:-3])}\n\n"   # ~~~~~~~~~~~~~~~~~~~~
@@ -81,4 +81,5 @@ def generate_api(src_path):
 
 if __name__ == "__main__":
     qnngds_path = os.path.join("..", "..", "src", "qnngds")
+    plot_images.process_modules_in_folder(qnngds_path)
     generate_api(qnngds_path)
