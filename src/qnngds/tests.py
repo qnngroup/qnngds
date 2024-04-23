@@ -241,9 +241,9 @@ def vdp(l: float = 400, w: float = 40, layer: int = 1) -> Device:
     VDP << polygon
     VDP.flatten()
 
-    VDP.add_port(port= polygon.ports['1'], name='N')
-    VDP.add_port(port= polygon.ports['3'], name='E')
-    VDP.add_port(port= polygon.ports['5'], name='S')
-    VDP.add_port(port= polygon.ports['7'], name='W')
+    VDP.add_port(port= polygon.ports['1'], name='N1')
+    VDP.add_port(port= polygon.ports['3'], name='E1')
+    VDP.add_port(port= polygon.ports['5'], name='S1')
+    VDP.add_port(port= polygon.ports['7'], name='W1')
 
     return VDP
