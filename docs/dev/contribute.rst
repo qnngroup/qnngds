@@ -79,7 +79,8 @@ obviously want to update the package's `documentation
 <https://qnngds.readthedocs.io/en/latest/>`_. To do so, open a terminal and
 execute:
 
-.. code-block:: python
+.. code-block:: bash
+    
     cd /path-to-qnngds/docs/user
     python generate_api.py
 
