@@ -181,7 +181,7 @@ Tests
 
 .. automodule:: qnngds.tests
     :members:
-    :exclude-members: alignment_mark, resolution_test
+    :exclude-members: alignment_mark, resolution_test, vdp
     :undoc-members:
     :show-inheritance:
 
@@ -194,6 +194,11 @@ Tests
 
         .. image:: images/tests/resolution_test.png
             :alt: resolution_test.png
+
+    .. autofunction:: vdp
+
+        .. image:: images/tests/vdp.png
+            :alt: vdp.png
 
 .. _Utilities:
 Utilities
