@@ -1,7 +1,7 @@
 from phidl import Device
 import phidl.geometry as pg
 import phidl.routing as pr
-from typing import Tuple, List, Union
+from typing import Tuple, List, Union, Optional
 import math
 
 import qnngds.tests as test
@@ -9,6 +9,7 @@ import qnngds.devices as device
 import qnngds.circuits as circuit
 import qnngds.utilities as utility
 import qnngds._default_param as dflt
+
 
 # basics
 
@@ -533,6 +534,99 @@ def ntron(
     DIE_NTRON = pg.union(DIE_NTRON, by_layer=True)
     DIE_NTRON.name = f"DIE NTRON {text} "
     return DIE_NTRON
+
+
+def snspd_cell(
+    die_w: Union[int, float] = dflt.die_w,
+    pad_size: Tuple[float] = dflt.pad_size,
+    snspd_width: float = 0.2,
+    snspd_pitch: float = 0.6,
+    # size: Tuple[int, int] = (6, 10), # to implement (go to next unit cell size if too big)
+    # num_squares: Optional[int] = None, # to implement (go to next unit cell size if too big)
+    overlap_w: Union[int, float] = dflt.ebeam_overlap,
+    outline_die: Union[int, float] = dflt.die_outline,
+    outline_dev: Union[int, float] = dflt.device_outline,
+    device_layer: int = dflt.layers["device"],
+    die_layer: int = dflt.layers["die"],
+    pad_layer: int = dflt.layers["pad"],
+    text: Union[None, str] = dflt.text,
+) -> Device:
+    """Creates a cell that contains a vertical superconducting nanowire
+    single-photon detector (SNSPD).
+
+    Parameters:
+        die_w (int or float): Width of a unit die/cell in the design (the output
+        device will be an integer number of unit cells). pad_size (tuple of int
+        or float): Dimensions of the die's pads (width, height).
+        
+        overlap_w (int or float): Extra length of the routes above the die's
+        ports to assure alignment with the device
+                                             (useful for ebeam lithography).
+        outline_die (int or float): The width of the pads outline. outline_dev
+        (int or float): The width of the device's outline. device_layer (int or
+        array-like[2]): The layer where the device is placed. die_layer (int or
+        array-like[2]): The layer where the die is placed. pad_layer (int or
+        array-like[2]): The layer where the pads are placed. text (string,
+        optional): If None, text = f'SNSPD {w_choke}'.
+
+    Returns:
+        Device: A cell containing a SNSPD.
+    """
+    if text is None:
+        text = f"{snspd_width}"
+
+    SNSPD_DIE = Device(f"DIE SNSPD {text} ")
+
+    DEVICE = Device(f"SNSPD {text} ")
+
+    device_max_w = die_w - 2 * (pad_size[1] + 2 * outline_die)  # width of max device size for this cell
+    snspd_size = device_max_w/10
+    SNSPD = device.snspd.vertical(wire_pitch=snspd_width,
+                                  wire_width=snspd_pitch,
+                                  size = (snspd_size, snspd_size))
+    DEVICE << SNSPD
+
+    die_contact_w = SNSPD.ports["N1"].width*2 + overlap_w  # refine with min/max conditions
+    dev_contact_w = SNSPD.ports["N1"].width*50  # refine with min/max conditions
+    
+    device_max_w = device_max_w/2 # refine with min/max conditions
+
+    ## Create the DIE
+    BORDER = utility.die_cell(
+        die_size=(die_w, die_w),
+        device_max_size=(device_max_w, device_max_w),
+        pad_size=pad_size,
+        contact_w=die_contact_w,
+        contact_l=overlap_w,
+        ports={"N": 1, "S": 1},
+        ports_gnd=["S"],
+        text=text,
+        isolation=10,
+        layer=die_layer,
+        pad_layer=pad_layer,
+        invert=True,
+    )
+
+    # hyper tapers
+    HT, dev_ports = utility.add_hyptap_to_cell(BORDER.get_ports(), overlap_w, dev_contact_w, SNSPD.ports["N1"].width)
+    DEVICE.ports = dev_ports.ports
+    DEVICE << HT
+
+    # routes from nanowires to hyper tapers
+    ROUTES = utility.route_to_dev(HT.get_ports(), SNSPD.ports)
+    DEVICE << ROUTES
+
+    DEVICE.ports = dev_ports.ports
+    DEVICE = pg.outline(DEVICE, outline_dev, open_ports=2 * outline_dev)
+    DEVICE = pg.union(DEVICE, layer=device_layer)
+    DEVICE.name = f"SNSPD {text} "
+
+    SNSPD_DIE << DEVICE
+    SNSPD_DIE << BORDER
+
+    SNSPD_DIE = pg.union(SNSPD_DIE, by_layer=True)
+    SNSPD_DIE.name = f"DIE SNSPD {text} "
+    return SNSPD_DIE
 
 
 def snspd_ntron(
