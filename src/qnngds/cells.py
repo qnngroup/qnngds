@@ -536,7 +536,7 @@ def ntron(
     return DIE_NTRON
 
 
-def snspd_cell(
+def snspd(
     die_w: Union[int, float] = dflt.die_w,
     pad_size: Tuple[float] = dflt.pad_size,
     snspd_width: float = 0.2,
@@ -558,7 +558,8 @@ def snspd_cell(
         die_w (int or float): Width of a unit die/cell in the design (the output
         device will be an integer number of unit cells). pad_size (tuple of int
         or float): Dimensions of the die's pads (width, height).
-        
+        snspd_width (float)
+        snspd_pitch (float)
         overlap_w (int or float): Extra length of the routes above the die's
         ports to assure alignment with the device
                                              (useful for ebeam lithography).
@@ -568,6 +569,7 @@ def snspd_cell(
         array-like[2]): The layer where the die is placed. pad_layer (int or
         array-like[2]): The layer where the pads are placed. text (string,
         optional): If None, text = f'SNSPD {w_choke}'.
+        text (string, optional): If None, text = f'SNSPD {w_choke}'.
 
     Returns:
         Device: A cell containing a SNSPD.
