@@ -80,6 +80,8 @@ Design
 Devices
 -------
 
+.. automodule:: qnngds.devices
+
 htron
 ~~~~~
 
