@@ -1,3 +1,5 @@
+"""Nanocryotron `[1] <https://doi.org/10.1021/nl502629x>`_ variants."""
+
 from phidl import Device
 
 import phidl.geometry as pg

@@ -1,3 +1,6 @@
+"""Library of pre-built cells containing text, border marks, and an experiment,
+connected to pads for wirebonding."""
+
 from phidl import Device
 import phidl.geometry as pg
 import phidl.routing as pr
@@ -11,6 +14,7 @@ import qnngds.utilities as utility
 import qnngds._default_param as dflt
 
 # basics
+
 
 def alignment(
     die_w: Union[int, float] = dflt.die_w,
@@ -89,13 +93,17 @@ def vdp(
     if text is None:
         text = str(layers_to_probe)
     if layers_to_outline is None:
-        layers_to_outline = [die_layer] # default layer to outline if None is given
-    
+        layers_to_outline = [die_layer]  # default layer to outline if None is given
+
     DIE_VANDP = Device(f"DIE VAN DER PAUW {text} ")
 
-    device_max_w = die_w - 2 * (pad_size[1] + 2 * outline)  # width of max device size for this cell
-    contact_w = device_max_w/10            # choosing a contact width 10 times smaller
-    device_w = device_max_w - 2*contact_w  # choosing a smaller device to have space for routing from pad to contact
+    device_max_w = die_w - 2 * (
+        pad_size[1] + 2 * outline
+    )  # width of max device size for this cell
+    contact_w = device_max_w / 10  # choosing a contact width 10 times smaller
+    device_w = (
+        device_max_w - 2 * contact_w
+    )  # choosing a smaller device to have space for routing from pad to contact
 
     # Creates the DIE, it contains only the cell text and bordure
 
@@ -138,7 +146,7 @@ def vdp(
     PADS.remove_layers([pad_layer], invert_selection=True)
     VDP << PADS
 
-    ## routes from pads to probing area 
+    ## routes from pads to probing area
     ROUTES = utility.route_to_dev(PADS.get_ports(), AREA.ports)
     VDP << ROUTES
 
@@ -389,7 +397,9 @@ def nanowires(
     ## Route the nanowires and the die
 
     # hyper tapers
-    HT, dev_ports = utility.add_hyptap_to_cell(BORDER.get_ports(), overlap_w, dev_contact_w)
+    HT, dev_ports = utility.add_hyptap_to_cell(
+        BORDER.get_ports(), overlap_w, dev_contact_w
+    )
     DEVICE.ports = dev_ports.ports
     DEVICE << HT
 
@@ -659,4 +669,3 @@ def snspd_ntron(
     DIE_SNSPD_NTRON.name = f"SNSPD \n{w_snspd} {w_choke} "
 
     return DIE_SNSPD_NTRON
-

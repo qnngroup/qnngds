@@ -1,3 +1,5 @@
+"""Single nanowire constriction."""
+
 from phidl import Device
 
 import phidl.geometry as pg
