@@ -1,9 +1,10 @@
 import os
 from images import plot_images
 
+
 def automodule(module, image_folder):
-    """
-    Generates the documentation block for a specific module with links to images for each function.
+    """Generates the documentation block for a specific module with links to
+    images for each function.
 
     Args:
         module (str): The module file name (e.g., 'module.py').
@@ -27,11 +28,14 @@ def automodule(module, image_folder):
         [
             f
             for f in os.listdir(image_folder_path)
-            if os.path.isfile(os.path.join(image_folder_path, f)) and not f.startswith('_')
+            if os.path.isfile(os.path.join(image_folder_path, f))
+            and not f.startswith("_")
         ]
     )
     content += f"    :members:\n"
-    content += f"    :exclude-members: {', '.join(os.path.splitext(i)[0] for i in images)}\n"
+    content += (
+        f"    :exclude-members: {', '.join(os.path.splitext(i)[0] for i in images)}\n"
+    )
     content += f"    :undoc-members:\n"
     content += f"    :show-inheritance:\n\n"
 
@@ -45,8 +49,8 @@ def automodule(module, image_folder):
 
 
 def generate_api(src_path):
-    """
-    Generates the complete API documentation for all modules in a given source directory.
+    """Generates the complete API documentation for all modules in a given
+    source directory.
 
     Args:
         src_path (str): The path to the source directory containing the Python modules.
@@ -58,26 +62,34 @@ def generate_api(src_path):
 
     api = "API\n===\n\n"
 
-    modules = [m for m in os.listdir(src_path) if not m.startswith('_')]
-    for module in modules:
-        if module.endswith('.py'):
+    modules = [m for m in os.listdir(src_path) if not m.startswith("_")]
+    for module in sorted(modules):
+        if module.endswith(".py"):
             api += f".. _{module[:-3].capitalize()}:\n"  # For referencing this section
-            api += f"{module[:-3].capitalize()}\n"      # The section title
-            api += f"{'-' * len(module[:-3])}\n\n"      # -----------------
+            api += f"{module[:-3].capitalize()}\n"  # The section title
+            api += f"{'-' * len(module[:-3])}\n\n"  # -----------------
             api += automodule(module, image_folder=module[:-3])
         else:
             api += f".. _{module.capitalize()}:\n"  # For referencing this section
-            api += f"{module.capitalize()}\n"      # The section title
-            api += f"{'-' * len(module)}\n\n"      # -----------------
+            api += f"{module.capitalize()}\n"  # The section title
+            api += f"{'-' * len(module)}\n\n"  # -----------------
+            api += f".. automodule:: qnngds.{module}\n\n"
             module_path = os.path.join(src_path, module)
-            submodules = [m for m in os.listdir(module_path) if not m.startswith('_') and m.endswith('.py')]
+            submodules = [
+                m
+                for m in os.listdir(module_path)
+                if not m.startswith("_") and m.endswith(".py")
+            ]
             for submodule in submodules:
-                api += f"{submodule[:-3]}\n"                # The subsection title
-                api += f"{'~' * len(submodule[:-3])}\n\n"   # ~~~~~~~~~~~~~~~~~~~~
-                api += automodule(f"{module}.{submodule}", image_folder=f"{module}/{submodule[:-3]}")
+                api += f"{submodule[:-3]}\n"  # The subsection title
+                api += f"{'~' * len(submodule[:-3])}\n\n"  # ~~~~~~~~~~~~~~~~~~~~
+                api += automodule(
+                    f"{module}.{submodule}", image_folder=f"{module}/{submodule[:-3]}"
+                )
 
     with open("api.rst", "w") as file:
         file.write(api)
+
 
 if __name__ == "__main__":
     qnngds_path = os.path.join("..", "..", "src", "qnngds")
