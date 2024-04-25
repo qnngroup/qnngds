@@ -10,6 +10,8 @@ import qnngds.circuits as circuit
 import qnngds.utilities as utility
 import qnngds._default_param as dflt
 
+from phidl import quickplot as qp
+from phidl import set_quickplot_options
 
 # basics
 
@@ -535,9 +537,7 @@ def ntron(
     DIE_NTRON.name = f"DIE NTRON {text} "
     return DIE_NTRON
 
-
-def snspd(
-    die_w: Union[int, float] = dflt.die_w,
+def snspd(die_w: Union[int, float] = dflt.die_w,
     pad_size: Tuple[float] = dflt.pad_size,
     snspd_width: float = 0.2,
     snspd_pitch: float = 0.6,
@@ -580,12 +580,19 @@ def snspd(
     SNSPD_DIE = Device(f"DIE SNSPD {text} ")
 
     DEVICE = Device(f"SNSPD {text} ")
-
+    
     device_max_w = die_w - 2 * (pad_size[1] + 2 * outline_die)  # width of max device size for this cell
-    snspd_size = device_max_w/10
-    SNSPD = device.snspd.vertical(wire_pitch=snspd_width,
-                                  wire_width=snspd_pitch,
+    snspd_size = device_max_w/30
+
+    snspd = device.snspd.vertical(wire_width=snspd_width,
+                                  wire_pitch=snspd_pitch,
                                   size = (snspd_size, snspd_size))
+    # Rename the ports to compass multi
+    SNSPD = Device()
+    SNSPD << snspd
+    SNSPD.add_port(port=snspd.ports[1], name="N1")
+    SNSPD.add_port(port=snspd.ports[2], name="S1")
+    
     DEVICE << SNSPD
 
     die_contact_w = SNSPD.ports["N1"].width*2 + overlap_w  # refine with min/max conditions

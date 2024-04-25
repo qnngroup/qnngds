@@ -29,6 +29,7 @@ def vertical(
         Device: The vertical SNSPD device.
     """
     D = Device("snspd_vert")
+
     S = pg.snspd(
         wire_width=wire_width,
         wire_pitch=wire_pitch,
@@ -76,4 +77,5 @@ def vertical(
         D.add_port(name=2, port=t2.ports[2])
 
     D.info = S.info
+    D.move(D.center, (0, 0))
     return D
