@@ -22,7 +22,7 @@ die_cell_border = 80
 
 def die_cell(
     die_size: Tuple[int, int] = (dflt.die_w, dflt.die_w),
-    device_max_size: Tuple[int, int] = (100, 100),
+    device_max_size: Tuple[int, int] = (dflt.die_w / 3, dflt.die_w / 3),
     pad_size: Tuple[int, int] = dflt.pad_size,
     contact_w: Union[int, float] = 50,
     contact_l: Union[int, float] = dflt.ebeam_overlap,
@@ -174,6 +174,20 @@ def die_cell(
     return DIE
 
 
+def calculate_dev_max_size(
+    die_size: Tuple[int, int] = (dflt.die_w, dflt.die_w),
+    pad_size: Tuple[int, int] = dflt.pad_size,
+    contact_l: Union[int, float] = dflt.ebeam_overlap,
+    isolation: Union[int, float] = dflt.die_outline,
+) -> Tuple[float, float]:
+
+    dev_max_size = [
+        2 * (die_w / 2 - 3 * isolation - pad_size[1] - 2 * contact_l)
+        for die_w in die_size
+    ]
+    return dev_max_size[0], dev_max_size[1]
+
+
 def add_hyptap_to_cell(
     die_ports: List[Port],
     overlap_w: Union[int, float] = dflt.ebeam_overlap,
@@ -217,8 +231,8 @@ def add_hyptap_to_cell(
 def route_to_dev(
     ext_ports: List[Port], dev_ports: Set[Port], layer: int = dflt.layers["device"]
 ) -> Device:
-    """Creates smooth routes from external ports to the device's ports.
-    If route_smooth is not working, routes quad.
+    """Creates smooth routes from external ports to the device's ports. If
+    route_smooth is not working, routes quad.
 
     Parameters:
         ext_ports (list of Port): The external ports, e.g., of the die or hyper tapers (use .get_ports()).
@@ -254,10 +268,7 @@ def route_to_dev(
                     length2=length2,
                 )
             except ValueError:
-                ROUTES << pr.route_quad(
-                    port,
-                    dev_port
-                )
+                ROUTES << pr.route_quad(port, dev_port)
     ROUTES.flatten(single_layer=layer)
     return ROUTES
 
