@@ -16,14 +16,16 @@ from phidl.device_layout import (
 import qnngds.geometries as geometry
 import qnngds._default_param as dflt
 
-
-die_cell_border = 80
+die_cell_border = dflt.die_cell_border
 
 
 def die_cell(
-    die_size: Tuple[int, int] = (dflt.die_w, dflt.die_w),
-    device_max_size: Tuple[int, int] = (dflt.die_w / 3, dflt.die_w / 3),
-    pad_size: Tuple[int, int] = dflt.pad_size,
+    die_size: Tuple[Union[int, float], Union[int, float]] = (dflt.die_w, dflt.die_w),
+    device_max_size: Tuple[Union[int, float], Union[int, float]] = (
+        round(dflt.die_w / 3),
+        round(dflt.die_w / 3),
+    ),
+    pad_size: Tuple[Union[int, float], Union[int, float]] = dflt.pad_size,
     contact_w: Union[int, float] = 50,
     contact_l: Union[int, float] = dflt.ebeam_overlap,
     ports: Dict[str, int] = {"N": 1, "E": 1, "W": 1, "S": 1},
@@ -39,9 +41,9 @@ def die_cell(
     device.
 
     Parameters:
-        die_size (tuple of int): Overall size of the cell (width, height).
-        device_max_size (tuple of int): Max dimensions of the device inside the cell (width, height).
-        pad_size (tuple of int): Dimensions of the cell's pads (width, height).
+        die_size (tuple of int or float): Overall size of the cell (width, height).
+        device_max_size (tuple of int or float): Max dimensions of the device inside the cell (width, height).
+        pad_size (tuple of int or float): Dimensions of the cell's pads (width, height).
         contact_w (int or float): Width of the ports and route to be connected to a device.
         contact_l (int or float): Extra length of the routes above the ports to assure alignment with the device
                                    (useful for ebeam lithography).
@@ -176,8 +178,8 @@ def die_cell(
 
 
 def calculate_available_space_for_dev(
-    die_size: Tuple[int, int] = (dflt.die_w, dflt.die_w),
-    pad_size: Tuple[int, int] = dflt.pad_size,
+    die_size: Tuple[Union[int, float], Union[int, float]] = (dflt.die_w, dflt.die_w),
+    pad_size: Tuple[Union[int, float], Union[int, float]] = dflt.pad_size,
     contact_l: Union[int, float] = dflt.ebeam_overlap,
     isolation: Union[int, float] = dflt.die_outline,
 ) -> Tuple[float, float]:
@@ -187,15 +189,15 @@ def calculate_available_space_for_dev(
     it does not account for routing from the device to the die's ports.
 
     Parameters:
-        die_size (tuple of int): Overall size of the cell (width, height).
-        pad_size (tuple of int): Dimensions of the cell's pads (width, height).
+        die_size (tuple of int or float): Overall size of the cell (width, height).
+        pad_size (tuple of int or float): Dimensions of the cell's pads (width, height).
         contact_l (int or float): Extra length of the routes above the ports to
             assure alignment with the device (useful for ebeam lithography).
         isolation (int or float): The width of the pads outline.
 
     Returns:
         Tuple[float, float]: A tuple containing the width and height of space
-            available for a device in a die_cell
+        available for a device in a die_cell
     """
 
     dev_max_size = [
@@ -223,7 +225,7 @@ def calculate_contact_w(
 
     Returns:
         (int or float): the suggested contact_w to input in the die_cell of the
-            given circuit
+        given circuit
     """
     max_circuit_port_width = max([port.width for port in circuit_ports])
     return max(max_circuit_port_width, overlap_w)
@@ -245,8 +247,8 @@ def add_optimalStep_to_dev(
 
     Returns:
         (Device): The given Device, with additional steps on its ports. The
-            ports of the returned device have the same name than the ports of
-            the input device and correspond to the steps extremities.
+        ports of the returned device have the same name than the ports of the
+        input device and correspond to the steps extremities.
     """
     DEV_STP = Device(DEVICE.name)
 
@@ -264,20 +266,23 @@ def add_optimalStep_to_dev(
 
 
 def find_num_diecells_for_dev(
-    device_max_size: Tuple[int, int] = (dflt.die_w, dflt.die_w),
-    die_size: Tuple[int, int] = (dflt.die_w, dflt.die_w),
-    pad_size: Tuple[int, int] = dflt.pad_size,
+    device_max_size: Tuple[Union[int, float], Union[int, float]] = (
+        dflt.die_w,
+        dflt.die_w,
+    ),
+    die_size: Tuple[Union[int, float], Union[int, float]] = (dflt.die_w, dflt.die_w),
+    pad_size: Tuple[Union[int, float], Union[int, float]] = dflt.pad_size,
     contact_l: Union[int, float] = dflt.ebeam_overlap,
     isolation: Union[int, float] = dflt.die_outline,
 ) -> Tuple[float, float]:
     """Finds the number of die cells that can accommodate a device.
 
     Parameters:
-        device_max_size (Tuple[int, int], optional): Max dimensions of the
+        device_max_size(tuple of int or float, optional): Max dimensions of the
             device inside the cell (width, height).
-        die_size (Tuple[int, int], optional): Overall size of the cell (width,
+        die_size(tuple of int or float, optional): Overall size of the cell (width,
             height).
-        pad_size (Tuple[int, int], optional): Dimensions of the cell's pads
+        pad_size(tuple of int or float, optional): Dimensions of the cell's pads
             (width, height).
         contact_l (Union[int, float], optional): Extra length of the routes
             above the ports to assure alignment with the device (useful for
@@ -286,7 +291,7 @@ def find_num_diecells_for_dev(
 
     Returns:
         Tuple[float, float]: A tuple containing the number of die cells in width
-            and height required to accommodate the device
+        and height required to accommodate the device
     """
     n = 1
     dev_x_bigger = True

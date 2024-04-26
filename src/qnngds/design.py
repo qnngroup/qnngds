@@ -688,7 +688,7 @@ class Design:
         self,
         snspd_width: float = 0.2,
         snspd_pitch: float = 0.6,
-        snspd_size: Tuple[int, int] = (100, 100),
+        snspd_size: Tuple[Union[int, float], Union[int, float]] = (100, 100),
         snspd_num_squares: Optional[int] = None,
         text: Union[None, str] = dflt.text,
     ) -> Device:
@@ -698,7 +698,7 @@ class Design:
         Parameters:
             snspd_width (float): Width of the nanowire.
             snspd_pitch (float): Pitch of the nanowire.
-            snspd_size (Tuple[int, int]): Size of the detector in squares (width, height).
+            snspd_size (tuple of int or float): Size of the detector in squares (width, height).
             snspd_num_squares (Optional[int]): Number of squares in the detector.
             text (string, optional): If None, text = f'SNSPD {w_choke}'.
 
