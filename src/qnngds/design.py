@@ -69,7 +69,7 @@ def create_chip(
     useful_area.move((margin, margin))
 
     if die_w is not None:
-        N_dies = useful_w / die_w
+        N_dies = int(useful_w / die_w)
         return_N_or_w = N_dies
     else:
         die_w = useful_w / N_dies
