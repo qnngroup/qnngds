@@ -232,7 +232,6 @@ def place_remaining_devices(
         )
 
 
-
 class Design:
     """A class for a design on a single layer of superconducting material, and
     additional contact pads.
