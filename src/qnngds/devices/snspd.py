@@ -28,7 +28,7 @@ def vertical(
     Returns:
         Device: The vertical SNSPD device.
     """
-    D = Device("snspd_vert")
+    D = Device("SNSPD VERTICAL")
 
     S = pg.snspd(
         wire_width=wire_width,
@@ -78,4 +78,5 @@ def vertical(
 
     D.info = S.info
     D.move(D.center, (0, 0))
+    D.name = "SNSPD VERTICAL"
     return D
