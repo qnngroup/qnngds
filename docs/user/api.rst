@@ -66,16 +66,6 @@ Circuits
         .. image:: images/circuits/snspd_ntron.png
             :alt: snspd_ntron.png
 
-.. _Contrib:
-Contrib
--------
-
-.. automodule:: qnngds.contrib
-    :members:
-    :exclude-members: 
-    :undoc-members:
-    :show-inheritance:
-
 .. _Design:
 Design
 ------
