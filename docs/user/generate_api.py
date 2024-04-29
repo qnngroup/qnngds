@@ -75,11 +75,15 @@ def generate_api(src_path):
             api += f"{'-' * len(module)}\n\n"  # -----------------
             api += f".. automodule:: qnngds.{module}\n\n"
             module_path = os.path.join(src_path, module)
-            submodules = [
-                m
-                for m in os.listdir(module_path)
-                if not m.startswith("_") and m.endswith(".py")
-            ]
+
+            submodules = sorted(
+                [
+                    m
+                    for m in os.listdir(module_path)
+                    if not m.startswith("_") and m.endswith(".py")
+                ]
+            )
+
             for submodule in submodules:
                 api += f"{submodule[:-3]}\n"  # The subsection title
                 api += f"{'~' * len(submodule[:-3])}\n\n"  # ~~~~~~~~~~~~~~~~~~~~

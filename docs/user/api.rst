@@ -87,24 +87,14 @@ Devices
 
 .. automodule:: qnngds.devices
 
-resistor
-~~~~~~~~
+htron
+~~~~~
 
-.. automodule:: qnngds.devices.resistor
+.. automodule:: qnngds.devices.htron
     :members:
-    :exclude-members: meander, sc_contacts
+    :exclude-members: 
     :undoc-members:
     :show-inheritance:
-
-    .. autofunction:: meander
-
-        .. image:: images/devices/resistor/meander.png
-            :alt: meander.png
-
-    .. autofunction:: sc_contacts
-
-        .. image:: images/devices/resistor/sc_contacts.png
-            :alt: sc_contacts.png
 
 nanowire
 ~~~~~~~~
@@ -144,14 +134,24 @@ ntron
         .. image:: images/devices/ntron/smooth_compassPorts.png
             :alt: smooth_compassPorts.png
 
-htron
-~~~~~
+resistor
+~~~~~~~~
 
-.. automodule:: qnngds.devices.htron
+.. automodule:: qnngds.devices.resistor
     :members:
-    :exclude-members: 
+    :exclude-members: meander, sc_contacts
     :undoc-members:
     :show-inheritance:
+
+    .. autofunction:: meander
+
+        .. image:: images/devices/resistor/meander.png
+            :alt: meander.png
+
+    .. autofunction:: sc_contacts
+
+        .. image:: images/devices/resistor/sc_contacts.png
+            :alt: sc_contacts.png
 
 snspd
 ~~~~~
