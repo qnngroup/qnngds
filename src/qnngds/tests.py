@@ -158,7 +158,8 @@ def resolution_test(
 
         grid_spacing = (13 * res, 13 * res)
 
-        for i, percent in enumerate([0.8, 1, 1.2]):
+        space = [0.8, 1, 1.2]
+        for i, percent in enumerate(space):
             lll = LLL << create_L(percent * res, 2 * res)
             lll.move([i * space for space in grid_spacing])
 
@@ -167,6 +168,8 @@ def resolution_test(
             text.get_bounding_box()[0], [(i + 1) * space for space in grid_spacing]
         )
 
+        LLL.flatten(single_layer=layer)
+        LLL.name = f"3L({space} x {res})"
         return LLL
 
     def create_waffle(res=1):
@@ -193,9 +196,9 @@ def resolution_test(
             (2 * res, -2 * res),
         )
 
+        WAFFLE.flatten(single_layer=layer)
+        WAFFLE.name = f"WAFFLE({res})"
         return WAFFLE
-
-    RES_TEST = Device("RESOLUTION TEST ")
 
     RES_TEST1 = pg.gridsweep(
         function=create_3L,
@@ -203,29 +206,33 @@ def resolution_test(
         param_y={},
         spacing=10,
         align_y="ymin",
+        label_layer=None,
     )
+    RES_TEST1.name = "3Ls"
     RES_TEST2 = pg.gridsweep(
         function=create_waffle,
         param_x={"res": resolutions},
         param_y={},
         spacing=10,
         align_y="ymax",
+        label_layer=None,
     )
-
-    RES_TEST << pg.grid(
-        device_list=[[RES_TEST1], [RES_TEST2]], spacing=20, align_x="xmin"
+    RES_TEST2.name = "WAFFLES"
+    RES_TEST = pg.grid(
+        device_list=[[RES_TEST1], [RES_TEST2]],
+        spacing=20,
+        align_x="xmin",
     )
 
     if inverted:
         if inverted == True:
             RES_TEST = pg.invert(RES_TEST, border=5, precision=0.0000001, layer=layer)
         else:
-            RES_TEST = pg.outline(RES_TEST, inverted)
+            RES_TEST = pg.outline(RES_TEST, inverted, layer=layer)
         res_test_name = "RESOLUTION TEST INVERTED "
     else:
         res_test_name = "RESOLUTION TEST "
 
-    RES_TEST = pg.union(RES_TEST, layer=layer)
     RES_TEST.move(RES_TEST.center, (0, 0))
     RES_TEST.name = res_test_name
     return RES_TEST
