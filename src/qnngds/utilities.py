@@ -60,7 +60,7 @@ def die_cell(
         invert (bool): If True, the cell is inverted (useful for positive tone
             resists exposure).
         fill_pad_layer (bool): If True, the space reserved for pads in the
-            die_cell in filled in pad's layer.
+            die_cell is filled in pad's layer.
 
     Returns:
         DIE (Device): The cell, with ports of width contact_w positioned around a device_max_size area.
