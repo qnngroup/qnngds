@@ -263,6 +263,8 @@ class Design:
         device_layer (int or array-like[2]): The layer where the device is placed.
         die_layer (int or array-like[2]): The layer where the die is placed.
         pad_layer (int or array-like[2]): The layer where the pads are placed.
+        fill_pad_layer (bool): If True, the space reserved for pads in the
+            die_cell in filled in pad's layer.
 
     Example:
         Here is an example of how to create the class.
@@ -300,6 +302,7 @@ class Design:
         device_layer=dflt.layers["device"],
         die_layer=dflt.layers["die"],
         pad_layer=dflt.layers["pad"],
+        fill_pad_layer=False,
     ):
         """
         Args:
@@ -307,15 +310,20 @@ class Design:
             chip_w (int or float): The overall width of the chip.
             chip_margin (int or float): The width of the outline of the chip where no device should be placed.
             N_dies (int): Number of dies/units to be placed by row and column.
-            die_w (int or float, optional): Width of a unit die/cell in the design (the output device will be an integer number of unit cells).
+            die_w (int or float, optional): Width of a unit die/cell in the
+                design (the output device will be an integer number of unit cells).
             pad_size (tuple of int or float): Dimensions of the die's pads (width, height).
             device_outline (int or float): The width of the device's outline.
             die_outline (int or float): The width of the pads outline.
-            ebeam_overlap (int or float): Extra length of the routes above the die's ports to assure alignment with the device (useful for ebeam lithography).
+            ebeam_overlap (int or float): Extra length of the routes above the
+                die's ports to assure alignment with the device (useful for ebeam
+                lithography).
             annotation_layer (int): The layer where to put the annotations.
             device_layer (int or array-like[2]): The layer where the device is placed.
             die_layer (int or array-like[2]): The layer where the die is placed.
             pad_layer (int or array-like[2]): The layer where the pads are placed.
+            fill_pad_layer (bool): If True, the space reserved for pads in the
+                die_cell in filled in pad's layer.
         """
 
         self.name = name
@@ -336,6 +344,8 @@ class Design:
             "die": die_layer,
             "pad": pad_layer,
         }
+
+        self.fill_pad_layer = fill_pad_layer
 
     # help building a design
 
@@ -539,6 +549,7 @@ class Design:
             die_layer=self.layers["die"],
             pad_layer=self.layers["pad"],
             text=text,
+            fill_pad_layer=self.fill_pad_layer,
         )
 
     def etch_test_cell(
@@ -634,6 +645,7 @@ class Design:
             die_layer=self.layers["die"],
             pad_layer=self.layers["pad"],
             text=text,
+            fill_pad_layer=self.fill_pad_layer,
         )
 
     def ntron_cell(
@@ -682,6 +694,7 @@ class Design:
             die_layer=self.layers["die"],
             pad_layer=self.layers["pad"],
             text=text,
+            fill_pad_layer=self.fill_pad_layer,
         )
 
     def snspd_cell(
@@ -720,6 +733,7 @@ class Design:
             die_layer=self.layers["die"],
             pad_layer=self.layers["pad"],
             text=text,
+            fill_pad_layer=self.fill_pad_layer,
         )
 
     def snspd_ntron_cell(
@@ -753,4 +767,5 @@ class Design:
             die_layer=self.layers["die"],
             pad_layer=self.layers["pad"],
             text=text,
+            fill_pad_layer=self.fill_pad_layer,
         )
