@@ -106,7 +106,9 @@ def alignment_mark(layers: List[int] = [1, 2, 3, 4]) -> Device:
             text = ALIGN << pg.text(str(layer1), size=160, layer=layer1)
             text.move(text.center, (-340, i * markers_pitch))
 
-    ALIGN.move(ALIGN.center, (0, 0))
+    num_layers = len(layers)
+    offset = -(num_layers - 2) * markers_pitch / 2
+    ALIGN.move((0, 0), (offset, offset))
     return ALIGN
 
 

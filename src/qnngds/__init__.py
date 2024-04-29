@@ -1,4 +1,4 @@
-from . import devices, circuits, design, geometries, tests, utilities
+from . import devices, circuits, design, geometries, tests, utilities, cells
 
 
 def help():
