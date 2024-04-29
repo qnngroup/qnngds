@@ -23,10 +23,12 @@ def alignment_mark(layers: List[int] = [1, 2, 3, 4]) -> Device:
 
         # central part with cross
 
-        cross = MARK << pg.cross(length=190, width=20, layer=layer1)
+        CROSS = Device("CROSS")
+        cross = CROSS << pg.union(pg.cross(length=190, width=20), layer=layer1)
         rect = pg.rectangle((65, 65), layer=layer2)
-        window = MARK.add_array(rect, 2, 2, (125, 125))
+        window = CROSS.add_array(rect, 2, 2, (125, 125))
         window.move(window.center, cross.center)
+        MARK << CROSS.flatten()
 
         # combs
         def create_comb(pitch1=500, pitch2=100, layer1=1, layer2=2):
@@ -65,33 +67,38 @@ def alignment_mark(layers: List[int] = [1, 2, 3, 4]) -> Device:
 
             return COMB
 
+        VERNIER = Device("VERNIER(500, 200, 100, 50)")
         comb51 = create_comb(pitch1=500, pitch2=100, layer1=layer1, layer2=layer2)
 
-        top = MARK.add_ref(comb51)
+        top = VERNIER.add_ref(comb51)
         top.move((0, 0), (0, 200))
 
-        left = MARK.add_ref(comb51)
+        left = VERNIER.add_ref(comb51)
         left.rotate(90)
         left.move((0, 0), (-200, 0))
 
         comb205 = create_comb(pitch1=200, pitch2=50, layer1=layer1, layer2=layer2)
 
-        bottom = MARK.add_ref(comb205)
+        bottom = VERNIER.add_ref(comb205)
         bottom.rotate(180)
         bottom.move((0, 0), (0, -200))
 
-        right = MARK.add_ref(comb205)
+        right = VERNIER.add_ref(comb205)
         right.rotate(-90)
         right.move((0, 0), (200, 0))
+        MARK << VERNIER.flatten()
 
         MARK.move(MARK.center, (0, 0))
 
         # text
-        text1 = MARK << pg.text(str(layer2), size=50, layer={layer1, layer2})
+        TEXT = Device(f"TEXT({layer2} ON {layer1})")
+        text1 = TEXT << pg.text(str(layer2), size=50, layer={layer1, layer2})
         text1.move(text1.center, (220, 200))
-        text2 = MARK << pg.text(f"{layer2} ON {layer1}", size=10, layer=layer2)
+        text2 = TEXT << pg.text(f"{layer2} ON {layer1}", size=10, layer=layer2)
         text2.move(text2.center, (220, 240))
+        MARK << TEXT.flatten()
 
+        MARK.name = f"ALIGN {layer2} ON {layer1}"
         return MARK
 
     ALIGN = Device("ALIGN ")
@@ -103,8 +110,10 @@ def alignment_mark(layers: List[int] = [1, 2, 3, 4]) -> Device:
                 MARK = create_marker(layer1, layer2)
                 MARK.move((j * markers_pitch, i * markers_pitch))
                 ALIGN << MARK
-            text = ALIGN << pg.text(str(layer1), size=160, layer=layer1)
+            text = pg.text(str(layer1), size=160, layer=layer1)
+            text.name = f"TEXT({str(layer1)})"
             text.move(text.center, (-340, i * markers_pitch))
+            ALIGN << text
 
     num_layers = len(layers)
     offset = -(num_layers - 2) * markers_pitch / 2
