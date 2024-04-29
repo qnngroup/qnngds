@@ -1,10 +1,11 @@
-""" Tests contains common test structures for following/characterizing a
-fabrication process and its effect on the materials. """
+"""Tests contains common test structures for following/characterizing a
+fabrication process and its effect on the materials."""
 
 from phidl import Device
 import phidl.geometry as pg
 from typing import List, Union
 import math
+
 
 def alignment_mark(layers: List[int] = [1, 2, 3, 4]) -> Device:
     """Creates an alignment mark for each photolithography.
@@ -105,7 +106,9 @@ def alignment_mark(layers: List[int] = [1, 2, 3, 4]) -> Device:
             text = ALIGN << pg.text(str(layer1), size=160, layer=layer1)
             text.move(text.center, (-340, i * markers_pitch))
 
-    ALIGN.move(ALIGN.center, (0, 0))
+    num_layers = len(layers)
+    offset = -(num_layers - 2) * markers_pitch / 2
+    ALIGN.move((0, 0), (offset, offset))
     return ALIGN
 
 
@@ -220,8 +223,7 @@ def resolution_test(
 
 
 def vdp(l: float = 400, w: float = 40, layer: int = 1) -> Device:
-    """
-    Creates a Van der Pauw (VDP) device with specified dimensions.
+    """Creates a Van der Pauw (VDP) device with specified dimensions.
 
     Args:
         l (float): Length of the VDP device, overall maximum dimension, in µm.
@@ -230,20 +232,19 @@ def vdp(l: float = 400, w: float = 40, layer: int = 1) -> Device:
 
     Returns:
         Device: VDP device object.
-
     """
     VDP = pg.Device("VAN DER PAUW")
-    
-    xpts = [-w/2, w/2, l/2, l/2, w/2, -w/2, -l/2, -l/2]
-    ypts = [l/2, l/2, w/2, -w/2, -l/2, -l/2, -w/2, w/2]
+
+    xpts = [-w / 2, w / 2, l / 2, l / 2, w / 2, -w / 2, -l / 2, -l / 2]
+    ypts = [l / 2, l / 2, w / 2, -w / 2, -l / 2, -l / 2, -w / 2, w / 2]
 
     polygon = pg.polygon_ports(xpts=xpts, ypts=ypts, layer=layer)
     VDP << polygon
     VDP.flatten()
 
-    VDP.add_port(port= polygon.ports['1'], name='N1')
-    VDP.add_port(port= polygon.ports['3'], name='E1')
-    VDP.add_port(port= polygon.ports['5'], name='S1')
-    VDP.add_port(port= polygon.ports['7'], name='W1')
+    VDP.add_port(port=polygon.ports["1"], name="N1")
+    VDP.add_port(port=polygon.ports["3"], name="E1")
+    VDP.add_port(port=polygon.ports["5"], name="S1")
+    VDP.add_port(port=polygon.ports["7"], name="W1")
 
     return VDP
