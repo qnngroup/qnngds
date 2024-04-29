@@ -152,24 +152,28 @@ def place_on_chip(
     m_cell = round(cell.ysize / die_w)
     for n in range(n_cell):
         for m in range(m_cell):
+            cell_name = cell.name.replace("\n", "")
             try:
                 if chip_map[coordinates[1] + m][coordinates[0] + n] == Occupied:
                     print(
-                        f"Warning, placing Device {cell.name} "
+                        f"Warning, placing Device {cell_name} "
                         + f"in an occupied state ({coordinates[1]+m}, {coordinates[0]+n})"
                     )
                 else:
                     chip_map[coordinates[1] + m][coordinates[0] + n] = Occupied
             except IndexError:
                 print(
-                    f"Error, Device {cell.name} "
+                    f"Error, Device {cell_name} "
                     + f"falls out of the chip map ({coordinates[1]+m}, {coordinates[0]+n})"
                 )
                 return False
 
     # move the cell
-    cell_bottom_left = cell.get_bounding_box()[0]
-    cell.move(cell_bottom_left, (coordinates[0] * die_w, coordinates[1] * die_w))
+    cell_bottom_left = (
+        -(n_cell - 1 + (n_cell % 2) * 0.5) * die_w,
+        -(m_cell - 1 + (m_cell % 2) * 0.5) * die_w,
+    )
+    cell.move(cell_bottom_left, ((coordinates[0]) * die_w, (coordinates[1]) * die_w))
 
     # write the cell's place on the devices map text file
     if devices_map_txt is not None:
