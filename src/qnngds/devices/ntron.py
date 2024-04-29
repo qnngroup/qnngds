@@ -55,7 +55,7 @@ def smooth(
     D.add_port(name=3, port=k.ports[1])
     D.add_port(name=1, port=d.ports[1])
     D.add_port(name=2, port=s.ports[2])
-    D.name = f"NTRON {choke_w} {channel_w} "
+    D.name = f"NTRON.SMOOTH(choke_w={choke_w}, channel_w={channel_w})"
     D.info = locals()
 
     return D
@@ -110,9 +110,8 @@ def smooth_compassPorts(
     D.add_port(name="N1", port=d.ports[1])
     D.add_port(name="S1", port=s.ports[2])
     D.add_port(name="W1", port=k.ports[1])
-    D.name = f"NTRON {choke_w} {channel_w} "
+    D.name = f"NTRON.SMOOTH(choke_w={choke_w}, channel_w={channel_w})"
     D.info = locals()
-
     return D
 
 
@@ -140,7 +139,7 @@ def sharp(
         Device: The sharp ntron device.
     """
 
-    D = Device("nTron")
+    D = Device()
 
     choke = pg.taper(choke_l, gate_w, choke_w)
     k = D << choke
@@ -162,6 +161,6 @@ def sharp(
     D.add_port(name="g", port=k.ports[1])
     D.add_port(name="d", port=d.ports[1])
     D.add_port(name="s", port=s.ports[2])
-    D.name = "nTron"
+    D.name = f"NTRON.SHARP(choke_w={choke_w}, channel_w={channel_w})"
     D.info = locals()
     return D

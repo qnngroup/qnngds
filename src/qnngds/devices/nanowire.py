@@ -26,7 +26,7 @@ def spot(
         Device: A device containing 2 optimal steps joined at their channel_w end.
     """
 
-    NANOWIRE = Device(f"NANOWIRE {channel_w} ")
+    NANOWIRE = Device(f"NANOWIRE.SPOT(w={channel_w})")
     wire = pg.optimal_step(channel_w, source_w, symmetric=True, num_pts=num_pts)
     source = NANOWIRE << wire
     gnd = NANOWIRE << wire

@@ -105,11 +105,13 @@ def meander(
     D = pg.union(D, by_layer=True, precision=0.01)
     D.add_port(name=1, port=stub_top.ports[2])
     D.add_port(name=2, port=stub_bot.ports[2])
+
+    D.name = f"RESISTOR.MEANDER (w={width}, pitch={pitch})"
     D.info = locals()
     return D
 
 
-def sc_contacts(
+def meander_sc_contacts(
     width: float = 1,
     squares: float = 60,
     max_length: float = 10,
@@ -171,5 +173,6 @@ def sc_contacts(
     D = pg.union(D, by_layer=True)
     D.add_port(port=ports[0], name=1)
     D.add_port(port=ports[1], name=2)
+    D.name = f"RESISTOR.MEANDER_SC_CONTACTS (w={width}, pitch={meander_pitch})"
     D.info = locals()
     return D

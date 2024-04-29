@@ -81,5 +81,9 @@ def vertical(
 
     D.info = S.info
     D.move(D.center, (0, 0))
-    D.name = "SNSPD VERTICAL"
+    if num_squares is not None:
+        size_or_numsquares = num_squares
+    else:
+        size_or_numsquares = size
+    D.name = f"SNSPD.VERTICAL(w={wire_width}, pitch={wire_pitch})"
     return D
