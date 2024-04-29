@@ -3,9 +3,12 @@ geometry library."""
 
 from phidl import Device
 import numpy as np
+import qnngds._default_param as dflt
 
 
-def hyper_taper(length=10, wide_section=50, narrow_section=5, layer=0):
+def hyper_taper(
+    length=10, wide_section=50, narrow_section=5, layer=dflt.layers["device"]
+):
     """Hyperbolic taper (solid). Designed by colang.
 
     Args:

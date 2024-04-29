@@ -4,7 +4,7 @@ fabrication process and its effect on the materials."""
 from phidl import Device
 import phidl.geometry as pg
 from typing import List, Union
-import math
+import qnngds._default_param as dflt
 
 
 def alignment_mark(layers: List[int] = [1, 2, 3, 4]) -> Device:
@@ -115,7 +115,7 @@ def alignment_mark(layers: List[int] = [1, 2, 3, 4]) -> Device:
 def resolution_test(
     resolutions: List[float] = [0.8, 1, 1.2, 1.4, 1.6, 1.8, 2.0],
     inverted: Union[bool, float] = False,
-    layer: int = 0,
+    layer: int = dflt.layers["device"],
 ) -> Device:
     """Creates test structures for determining a process resolution.
 
@@ -222,7 +222,7 @@ def resolution_test(
     return RES_TEST
 
 
-def vdp(l: float = 400, w: float = 40, layer: int = 1) -> Device:
+def vdp(l: float = 400, w: float = 40, layer: int = dflt.layers["device"]) -> Device:
     """Creates a Van der Pauw (VDP) device with specified dimensions.
 
     Args:
