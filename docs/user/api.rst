@@ -7,7 +7,7 @@ Cells
 
 .. automodule:: qnngds.cells
     :members:
-    :exclude-members: alignment, etch_test, nanowires, ntron, resolution_test, snspd_ntron, vdp
+    :exclude-members: alignment, etch_test, nanowires, ntron, resolution_test, snspd, snspd_ntron, vdp
     :undoc-members:
     :show-inheritance:
 
@@ -35,6 +35,11 @@ Cells
 
         .. image:: images/cells/resolution_test.png
             :alt: resolution_test.png
+
+    .. autofunction:: snspd
+
+        .. image:: images/cells/snspd.png
+            :alt: snspd.png
 
     .. autofunction:: snspd_ntron
 

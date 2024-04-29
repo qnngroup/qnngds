@@ -38,7 +38,7 @@ def plot_and_save_functions(module, module_name):
     script_dir = os.path.dirname(__file__)
     os.makedirs(os.path.join(script_dir, module_name), exist_ok=True)
     func_names = dir(module)
-    set_quickplot_options(blocking=False)
+    set_quickplot_options(blocking=False, show_subports=False)
     for func_name in func_names:
         func = getattr(module, func_name)
         try:

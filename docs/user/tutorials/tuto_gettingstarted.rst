@@ -14,7 +14,7 @@ Setup your workspace
 
       .. code-block:: bash
 
-          python -m venv/your-env-name
+          python -m venv .venv/your-env-name
           .\.venv\your-env-name\Scripts\Activate
 
 
