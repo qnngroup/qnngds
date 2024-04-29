@@ -84,7 +84,6 @@ def vdp(
         die_layer (int or tuple of int): The layer where the die is placed.
         pad_layer (int or tuple of int): The layer where the pads are placed.
         text (str, optional): If None, the text is f"VDP \n{layers_to_probe}".
-
     Returns:
         DIE_VANDP (Device): The created device.
     """
@@ -117,6 +116,7 @@ def vdp(
         layer=die_layer,
         pad_layer=pad_layer,
         invert=True,
+        fill_pad_layer=False,
     )
     DIE_VANDP << DIE
 
@@ -142,6 +142,7 @@ def vdp(
         layer=0,
         pad_layer=pad_layer,
         invert=False,
+        fill_pad_layer=False,
     )
     PADS.remove_layers([pad_layer], invert_selection=True)
     VDP << PADS
@@ -320,6 +321,7 @@ def nanowires(
     die_layer: int = dflt.layers["die"],
     pad_layer: int = dflt.layers["pad"],
     text: Union[None, str] = dflt.text,
+    fill_pad_layer: bool = False,
 ) -> Device:
     """Creates a cell that contains several nanowires of given channel and
     source.
@@ -340,6 +342,8 @@ def nanowires(
         die_layer (int or tuple of int): The layer where the die is placed.
         pad_layer (int or tuple of int): The layer where the pads are placed.
         text (str, optional): If None, the text is "NWIRES".
+        fill_pad_layer (bool): If True, the space reserved for pads in the
+            die_cell in filled in pad's layer.
 
     Returns:
         Device: A device (of size n*m unit cells) containing the nanowires, the
@@ -389,6 +393,7 @@ def nanowires(
         layer=die_layer,
         pad_layer=pad_layer,
         invert=True,
+        fill_pad_layer=fill_pad_layer,
     )
 
     ## Place the nanowires
@@ -440,6 +445,7 @@ def ntron(
     die_layer: int = dflt.layers["die"],
     pad_layer: int = dflt.layers["pad"],
     text: Union[None, str] = dflt.text,
+    fill_pad_layer: bool = False,
 ) -> Device:
     """Creates a standardized cell specifically for a single ntron.
 
@@ -448,7 +454,8 @@ def ntron(
     choke_shift = -3 * channel_w
 
     Parameters:
-        die_w (int or float): Width of a unit die/cell in the design (the output device will be an integer number of unit cells).
+        die_w (int or float): Width of a unit die/cell in the design (the output
+            device will be an integer number of unit cells).
         pad_size (tuple of int or float): Dimensions of the die's pads (width, height).
         choke_w (int or float): The width of the ntron's choke in µm.
         channel_w (int or float): The width of the ntron's channel in µm.
@@ -456,14 +463,17 @@ def ntron(
         source_w (int or float, optional): If None, source width is 3 times the channel width.
         drain_w (int or float, optional): If None, drain width is 3 times the channel width.
         choke_shift (int or float, optional): If None, choke shift is -3 times the channel width.
-        overlap_w (int or float): Extra length of the routes above the die's ports to assure alignment with the device
-                                             (useful for ebeam lithography).
+        overlap_w (int or float): Extra length of the routes above the die's
+            ports to assure alignment with the device (useful for ebeam
+            lithography).
         outline_die (int or float): The width of the pads outline.
         outline_dev (int or float): The width of the device's outline.
         device_layer (int or array-like[2]): The layer where the device is placed.
         die_layer (int or array-like[2]): The layer where the die is placed.
         pad_layer (int or array-like[2]): The layer where the pads are placed.
         text (string, optional): If None, the text is the ntron's choke and channel widths.
+        fill_pad_layer (bool): If True, the space reserved for pads in the
+            die_cell in filled in pad's layer.
 
     Returns:
         Device: A device containing the ntron, the border of the die (created with die_cell function),
@@ -519,6 +529,7 @@ def ntron(
         layer=die_layer,
         pad_layer=pad_layer,
         invert=True,
+        fill_pad_layer=fill_pad_layer,
     )
 
     # place the ntron
@@ -565,6 +576,7 @@ def snspd(
     die_layer: int = dflt.layers["die"],
     pad_layer: int = dflt.layers["pad"],
     text: Union[None, str] = dflt.text,
+    fill_pad_layer: bool = False,
 ) -> Device:
     """Creates a cell that contains a vertical superconducting nanowire single-
     photon detector (SNSPD).
@@ -587,6 +599,8 @@ def snspd(
         die_layer (int or array-like[2]): The layer where the die is placed.
         pad_layer (int or array-like[2]): The layer where the pads are placed.
         text (string, optional): If None, text = f'SNSPD {w_choke}'.
+        fill_pad_layer (bool): If True, the space reserved for pads in the
+            die_cell in filled in pad's layer.
 
     Returns:
         Device: A cell (of size n*m unit die_cells) containing the SNSPD.
@@ -632,6 +646,7 @@ def snspd(
         layer=die_layer,
         pad_layer=pad_layer,
         invert=True,
+        fill_pad_layer=fill_pad_layer,
     )
 
     # add hyper tapers at die pads
@@ -670,6 +685,7 @@ def snspd_ntron(
     die_layer: int = dflt.layers["die"],
     pad_layer: int = dflt.layers["pad"],
     text: Union[None, str] = dflt.text,
+    fill_pad_layer: bool = False,
 ) -> Device:
     """Creates a cell that contains an SNSPD coupled to an NTRON. The device's
     parameters are sized according to the SNSPD's width and the NTRON's choke.
@@ -687,6 +703,8 @@ def snspd_ntron(
         die_layer (int or array-like[2]): The layer where the die is placed.
         pad_layer (int or array-like[2]): The layer where the pads are placed.
         text (string, optional): If None, text = f'SNSPD {w_choke}'.
+        fill_pad_layer (bool): If True, the space reserved for pads in the
+            die_cell in filled in pad's layer.
 
     Returns:
         Device: A cell containing a die in die_layer, pads in pad layer,
@@ -755,6 +773,7 @@ def snspd_ntron(
         layer=die_layer,
         pad_layer=pad_layer,
         invert=True,
+        fill_pad_layer=fill_pad_layer,
     )
 
     # Route DIE and SNSPD-NTRON
