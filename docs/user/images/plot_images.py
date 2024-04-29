@@ -62,10 +62,8 @@ def plot_and_save_functions(module, module_name):
         except Exception as e:
             if "missing" in str(e):
                 print(
-                    f"Warning: in module '{module_name}', function '{func_name}' was not plotted: {e}"
-                )
-                print(
-                    f"function {func_name} did not specify default arguments, and will not be plotted"
+                    f"""Warning: in module '{module_name}', function '{func_name}' did not
+                    specify default arguments and will not be plotted: {e}"""
                 )
 
 
