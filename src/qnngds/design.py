@@ -553,7 +553,6 @@ class Design:
             die_layer=self.layers["die"],
             pad_layer=self.layers["pad"],
             text=text,
-            fill_pad_layer=self.fill_pad_layer,
         )
 
     def etch_test_cell(

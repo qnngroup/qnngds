@@ -71,7 +71,6 @@ def vdp(
     die_layer: Union[int, float] = dflt.layers["die"],
     pad_layer: int = dflt.layers["pad"],
     text: Union[None, str] = dflt.text,
-    fill_pad_layer: bool = False,
 ) -> Device:
     r"""Creates a cell containing a Van Der Pauw structure between 4 contact
     pads.
@@ -85,9 +84,6 @@ def vdp(
         die_layer (int or tuple of int): The layer where the die is placed.
         pad_layer (int or tuple of int): The layer where the pads are placed.
         text (str, optional): If None, the text is f"VDP \n{layers_to_probe}".
-        fill_pad_layer (bool): If True, the space reserved for pads in the
-            die_cell is filled in pad's layer.
-
     Returns:
         DIE_VANDP (Device): The created device.
     """
@@ -146,7 +142,7 @@ def vdp(
         layer=0,
         pad_layer=pad_layer,
         invert=False,
-        fill_pad_layer=fill_pad_layer,
+        fill_pad_layer=False,
     )
     PADS.remove_layers([pad_layer], invert_selection=True)
     VDP << PADS
