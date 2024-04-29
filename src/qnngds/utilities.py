@@ -36,17 +36,20 @@ def die_cell(
     layer: int = dflt.layers["die"],
     pad_layer: int = dflt.layers["pad"],
     invert: bool = False,
+    fill_pad_layer: bool = False,
 ) -> Device:
     """Creates a die cell with dicing marks, text, and pads to connect to a
     device.
 
     Parameters:
         die_size (tuple of int or float): Overall size of the cell (width, height).
-        device_max_size (tuple of int or float): Max dimensions of the device inside the cell (width, height).
+        device_max_size (tuple of int or float): Max dimensions of the device
+            inside the cell (width, height).
         pad_size (tuple of int or float): Dimensions of the cell's pads (width, height).
-        contact_w (int or float): Width of the ports and route to be connected to a device.
-        contact_l (int or float): Extra length of the routes above the ports to assure alignment with the device
-                                   (useful for ebeam lithography).
+        contact_w (int or float): Width of the ports and route to be connected
+            to a device.
+        contact_l (int or float): Extra length of the routes above the ports to
+            assure alignment with the device (useful for ebeam lithography).
         ports (dict): The ports of the device, format must be {'N':m, 'E':n, 'W':p, 'S':q}.
         ports_gnd (list of string): The ports connected to ground.
         isolation (int or float): The width of the pads outline.
@@ -54,7 +57,10 @@ def die_cell(
         text_size (int or float): Size of text, corresponds to phidl geometry std.
         layer (int or array-like[2]): The layer where to put the cell.
         pad_layer (int or array-like[2]): The layer where to put the contact pads.
-        invert (bool): If True, the cell is inverted (useful for positive tone resists exposure).
+        invert (bool): If True, the cell is inverted (useful for positive tone
+            resists exposure).
+        fill_pad_layer (bool): If True, the space reserved for pads in the
+            die_cell in filled in pad's layer.
 
     Returns:
         DIE (Device): The cell, with ports of width contact_w positioned around a device_max_size area.
@@ -75,6 +81,7 @@ def die_cell(
 
     border = pg.rectangle(die_size)
     border.move(border.center, (0, 0))
+
     borderOut = Device()
 
     ## Make the routes and pads
@@ -162,6 +169,16 @@ def die_cell(
     border = pg.boolean(border, borderOut, "A-B", layer=layer)
     DIE << border
 
+    if fill_pad_layer:
+        border_filled = pg.rectangle(die_size)
+        center = pg.rectangle(device_max_size)
+        border_filled.move(border_filled.center, (0, 0))
+        center.move(center.center, (0, 0))
+        border_filled = pg.boolean(border_filled, center, "A-B")
+
+        border_filled = pg.boolean(border_filled, borderOut, "A-B", layer=pad_layer)
+        DIE << border_filled
+
     DIE.flatten()
     ports = DIE.get_ports()
     DIE = pg.union(DIE, by_layer=True)
@@ -173,6 +190,7 @@ def die_cell(
         DIE << PADS
     for port in ports:
         DIE.add_port(port)
+
     DIE.name = f"DIE {text}"
     return DIE
 
