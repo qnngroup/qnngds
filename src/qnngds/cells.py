@@ -606,7 +606,7 @@ def snspd(
         layer=device_layer,
     )
     SNSPD = utility.rename_ports_to_compass(SNSPD)
-    SNSPD = utility.add_optimalStep_to_dev(SNSPD, ratio=10)
+    SNSPD = utility.add_optimalstep_to_dev(SNSPD, ratio=10)
     DEVICE << SNSPD
 
     # create die

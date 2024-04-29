@@ -231,7 +231,7 @@ def calculate_contact_w(
     return max(max_circuit_port_width, overlap_w)
 
 
-def add_optimalStep_to_dev(
+def add_optimalstep_to_dev(
     DEVICE: Device, ratio: Union[int, float] = 10, layer: int = dflt.layers["device"]
 ) -> Device:
     """Add an optimal step to the device's ports.
