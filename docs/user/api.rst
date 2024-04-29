@@ -139,7 +139,7 @@ resistor
 
 .. automodule:: qnngds.devices.resistor
     :members:
-    :exclude-members: meander, sc_contacts
+    :exclude-members: meander, meander_sc_contacts, sc_contacts
     :undoc-members:
     :show-inheritance:
 
@@ -147,6 +147,11 @@ resistor
 
         .. image:: images/devices/resistor/meander.png
             :alt: meander.png
+
+    .. autofunction:: meander_sc_contacts
+
+        .. image:: images/devices/resistor/meander_sc_contacts.png
+            :alt: meander_sc_contacts.png
 
     .. autofunction:: sc_contacts
 
