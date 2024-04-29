@@ -4,6 +4,7 @@ from phidl import Device
 
 import phidl.geometry as pg
 from typing import Tuple, Optional, Union
+import qnngds._default_param as dflt
 
 
 def vertical(
@@ -13,7 +14,7 @@ def vertical(
     num_squares: Optional[int] = None,
     terminals_same_side: bool = False,
     extend: Optional[float] = None,
-    layer: int = 0,
+    layer: int = dflt.layers["device"],
 ) -> Device:
     """Creates a vertical superconducting nanowire single-photon detector
     (SNSPD).
