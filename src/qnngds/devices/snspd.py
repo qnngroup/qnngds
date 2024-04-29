@@ -1,3 +1,5 @@
+"""Superconducting nanowire single photon detector geometries."""
+
 from phidl import Device
 
 import phidl.geometry as pg

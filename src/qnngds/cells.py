@@ -1,3 +1,6 @@
+"""Library of pre-built cells containing text, border marks, and an experiment,
+connected to pads for wirebonding."""
+
 from phidl import Device
 import phidl.geometry as pg
 import phidl.routing as pr

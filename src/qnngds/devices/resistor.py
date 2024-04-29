@@ -1,3 +1,5 @@
+"""Layouts for resistors and resistors with superconducting contacts."""
+
 from phidl import Device
 
 import phidl.geometry as pg
@@ -104,6 +106,7 @@ def meander(
     D.add_port(name=2, port=stub_bot.ports[2])
     D.info = locals()
     return D
+
 
 def sc_contacts(
     width: float = 1,
