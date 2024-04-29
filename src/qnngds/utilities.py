@@ -13,17 +13,19 @@ from phidl.device_layout import (
     Device,
     Port,
 )
-import qnngds.geometries as qg
+import qnngds.geometries as geometry
 import qnngds._default_param as dflt
 
-
-die_cell_border = 80
+die_cell_border = dflt.die_cell_border
 
 
 def die_cell(
-    die_size: Tuple[int, int] = (dflt.die_w, dflt.die_w),
-    device_max_size: Tuple[int, int] = (100, 100),
-    pad_size: Tuple[int, int] = dflt.pad_size,
+    die_size: Tuple[Union[int, float], Union[int, float]] = (dflt.die_w, dflt.die_w),
+    device_max_size: Tuple[Union[int, float], Union[int, float]] = (
+        round(dflt.die_w / 3),
+        round(dflt.die_w / 3),
+    ),
+    pad_size: Tuple[Union[int, float], Union[int, float]] = dflt.pad_size,
     contact_w: Union[int, float] = 50,
     contact_l: Union[int, float] = dflt.ebeam_overlap,
     ports: Dict[str, int] = {"N": 1, "E": 1, "W": 1, "S": 1},
@@ -39,9 +41,9 @@ def die_cell(
     device.
 
     Parameters:
-        die_size (tuple of int): Overall size of the cell (width, height).
-        device_max_size (tuple of int): Max dimensions of the device inside the cell (width, height).
-        pad_size (tuple of int): Dimensions of the cell's pads (width, height).
+        die_size (tuple of int or float): Overall size of the cell (width, height).
+        device_max_size (tuple of int or float): Max dimensions of the device inside the cell (width, height).
+        pad_size (tuple of int or float): Dimensions of the cell's pads (width, height).
         contact_w (int or float): Width of the ports and route to be connected to a device.
         contact_l (int or float): Extra length of the routes above the ports to assure alignment with the device
                                    (useful for ebeam lithography).
@@ -166,12 +168,198 @@ def die_cell(
     if invert:
         PADS = pg.deepcopy(DIE)
         PADS.remove_layers([layer])
+        PADS.name = "pads"
         DIE = pg.invert(DIE, border=0, layer=layer)
         DIE << PADS
     for port in ports:
         DIE.add_port(port)
     DIE.name = f"DIE {text}"
     return DIE
+
+
+def calculate_available_space_for_dev(
+    die_size: Tuple[Union[int, float], Union[int, float]] = (dflt.die_w, dflt.die_w),
+    pad_size: Tuple[Union[int, float], Union[int, float]] = dflt.pad_size,
+    contact_l: Union[int, float] = dflt.ebeam_overlap,
+    isolation: Union[int, float] = dflt.die_outline,
+) -> Tuple[float, float]:
+    """Calculates the maximum space available for a device in a die_cell.
+
+    Note that the device should be even smaller than this function's output, as
+    it does not account for routing from the device to the die's ports.
+
+    Parameters:
+        die_size (tuple of int or float): Overall size of the cell (width, height).
+        pad_size (tuple of int or float): Dimensions of the cell's pads (width, height).
+        contact_l (int or float): Extra length of the routes above the ports to
+            assure alignment with the device (useful for ebeam lithography).
+        isolation (int or float): The width of the pads outline.
+
+    Returns:
+        Tuple[float, float]: A tuple containing the width and height of space
+        available for a device in a die_cell
+    """
+
+    dev_max_size = [
+        2 * (die_w / 2 - 3 * isolation - pad_size[1] - 2 * contact_l)
+        for die_w in die_size
+    ]
+    return dev_max_size[0], dev_max_size[1]
+
+
+def calculate_contact_w(
+    circuit_ports: List[Port] = [Port(width=50)],
+    overlap_w: Union[int, float] = dflt.ebeam_overlap,
+) -> Union[int, float]:
+    """Calculate the minimal width acceptable for the contact from the die_cell
+    to the circuit/experiment.
+
+    The conditions are that the contact width should be bigger than (1) the
+    biggest port of the circuit, (2) the overlap_w (to avoid a short).
+
+    Parameters:
+        circuit_ports (list of Port): The ports of the circuit to be placed in the
+            cell (use .get_ports()).
+        overlap_w (int or float): The overlap width in µm (accounts for
+            misalignment between 1st and 2nd ebeam exposures).
+
+    Returns:
+        (int or float): the suggested contact_w to input in the die_cell of the
+        given circuit
+    """
+    max_circuit_port_width = max([port.width for port in circuit_ports])
+    return max(max_circuit_port_width, overlap_w)
+
+
+def add_optimalstep_to_dev(
+    DEVICE: Device, ratio: Union[int, float] = 10, layer: int = dflt.layers["device"]
+) -> Device:
+    """Add an optimal step to the device's ports.
+
+    Note that the subports of the input Device are ignored but still conserved
+    in the returned device.
+
+    Parameters:
+        DEVICE (Device): The Phidl Device to add the optimal steps to.
+        ratio (int or float): the ratio between the width at the end of the step
+            and the width of the device's ports.
+        layer (int or array-like[2]): the layer to place the optimal steps into.
+
+    Returns:
+        (Device): The given Device, with additional steps on its ports. The
+        ports of the returned device have the same name than the ports of the
+        input device and correspond to the steps extremities.
+    """
+    DEV_STP = Device(DEVICE.name)
+
+    DEV_STP << DEVICE
+    for port in DEVICE.flatten().get_ports():
+        STP = pg.optimal_step(
+            port.width, port.width * ratio, symmetric=True, layer=layer
+        )
+        STP.name = f"optimal step x{ratio} "
+        stp = DEV_STP << STP
+        stp.connect(port=1, destination=port)
+        DEV_STP.add_port(port=stp.ports[2], name=port.name)
+
+    return DEV_STP
+
+
+def find_num_diecells_for_dev(
+    device_max_size: Tuple[Union[int, float], Union[int, float]] = (
+        dflt.die_w,
+        dflt.die_w,
+    ),
+    die_size: Tuple[Union[int, float], Union[int, float]] = (dflt.die_w, dflt.die_w),
+    pad_size: Tuple[Union[int, float], Union[int, float]] = dflt.pad_size,
+    contact_l: Union[int, float] = dflt.ebeam_overlap,
+    isolation: Union[int, float] = dflt.die_outline,
+) -> Tuple[float, float]:
+    """Finds the number of die cells that can accommodate a device.
+
+    Parameters:
+        device_max_size(tuple of int or float, optional): Max dimensions of the
+            device inside the cell (width, height).
+        die_size(tuple of int or float, optional): Overall size of the cell (width,
+            height).
+        pad_size(tuple of int or float, optional): Dimensions of the cell's pads
+            (width, height).
+        contact_l (Union[int, float], optional): Extra length of the routes
+            above the ports to assure alignment with the device (useful for
+            ebeam lithography).
+        isolation (Union[int, float], optional): The width of the pads outline.
+
+    Returns:
+        Tuple[float, float]: A tuple containing the number of die cells in width
+        and height required to accommodate the device
+    """
+    n = 1
+    dev_x_bigger = True
+
+    while dev_x_bigger:
+        available_space_for_dev = calculate_available_space_for_dev(
+            (n * die_size[0], die_size[1]), pad_size, contact_l, isolation
+        )
+
+        if device_max_size[0] > available_space_for_dev[0]:
+            n += 1
+        else:
+            break
+
+    m = 1
+    dev_y_bigger = True
+
+    while dev_y_bigger:
+        available_space_for_dev = calculate_available_space_for_dev(
+            (n * die_size[0], m * die_size[1]), pad_size, contact_l, isolation
+        )
+
+        if device_max_size[1] > available_space_for_dev[1]:
+            m += 1
+        else:
+            break
+
+    return n, m
+
+
+def rename_ports_to_compass(DEVICE: Device) -> Device:
+    """Rename ports of a Device based on compass directions.
+
+    Parameters:
+        DEVICE (Device): The Phidl Device object whose ports are to be renamed.
+
+    Returns:
+        Device: A new Phidl Device object with ports renamed to compass directions.
+    """
+    # Create a new Device object to store renamed ports
+    DEV_COMPASS = Device(DEVICE.name)
+
+    # Copy ports from the original device to the new device
+    DEV_COMPASS << DEVICE.flatten()
+
+    # Initialize counters for each direction
+    E_count = 1
+    N_count = 1
+    W_count = 1
+    S_count = 1
+
+    # Iterate through each port in the original device
+    for port in DEVICE.get_ports():
+        # Determine the orientation of the port and rename it accordingly
+        if port.orientation % 360 == 0:
+            DEV_COMPASS.add_port(port=port, name=f"E{E_count}")
+            E_count += 1
+        elif port.orientation % 360 == 90:
+            DEV_COMPASS.add_port(port=port, name=f"N{N_count}")
+            N_count += 1
+        elif port.orientation % 360 == 180:
+            DEV_COMPASS.add_port(port=port, name=f"W{W_count}")
+            W_count += 1
+        elif port.orientation % 360 == 270:
+            DEV_COMPASS.add_port(port=port, name=f"S{S_count}")
+            S_count += 1
+
+    return DEV_COMPASS
 
 
 def add_hyptap_to_cell(
@@ -205,7 +393,7 @@ def add_hyptap_to_cell(
 
     for port in die_ports:
         ht_w = port.width + 2 * overlap_w
-        ht = HT << qg.hyper_taper(overlap_w, ht_w, contact_w)
+        ht = HT << geometry.hyper_taper(overlap_w, ht_w, contact_w)
         ht.connect(ht.ports[2], port)
         HT.add_port(port=ht.ports[1], name=port.name)
         device_ports.add_port(port=ht.ports[2], name=port.name)
@@ -217,8 +405,8 @@ def add_hyptap_to_cell(
 def route_to_dev(
     ext_ports: List[Port], dev_ports: Set[Port], layer: int = dflt.layers["device"]
 ) -> Device:
-    """Creates smooth routes from external ports to the device's ports.
-    If route_smooth is not working, routes quad.
+    """Creates smooth routes from external ports to the device's ports. If
+    route_smooth is not working, routes quad.
 
     Parameters:
         ext_ports (list of Port): The external ports, e.g., of the die or hyper tapers (use .get_ports()).
@@ -254,10 +442,7 @@ def route_to_dev(
                     length2=length2,
                 )
             except ValueError:
-                ROUTES << pr.route_quad(
-                    port,
-                    dev_port
-                )
+                ROUTES << pr.route_quad(port, dev_port)
     ROUTES.flatten(single_layer=layer)
     return ROUTES
 

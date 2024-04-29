@@ -1,3 +1,6 @@
+"""Library of pre-built cells containing text, border marks, and an experiment,
+connected to pads for wirebonding."""
+
 from phidl import Device
 import phidl.geometry as pg
 import phidl.routing as pr
@@ -10,8 +13,8 @@ import qnngds.circuits as circuit
 import qnngds.utilities as utility
 import qnngds._default_param as dflt
 
-
 # basics
+
 
 def alignment(
     die_w: Union[int, float] = dflt.die_w,
@@ -90,13 +93,17 @@ def vdp(
     if text is None:
         text = str(layers_to_probe)
     if layers_to_outline is None:
-        layers_to_outline = [die_layer] # default layer to outline if None is given
-    
+        layers_to_outline = [die_layer]  # default layer to outline if None is given
+
     DIE_VANDP = Device(f"DIE VAN DER PAUW {text} ")
 
-    device_max_w = die_w - 2 * (pad_size[1] + 2 * outline)  # width of max device size for this cell
-    contact_w = device_max_w/10            # choosing a contact width 10 times smaller
-    device_w = device_max_w - 2*contact_w  # choosing a smaller device to have space for routing from pad to contact
+    device_max_w = die_w - 2 * (
+        pad_size[1] + 2 * outline
+    )  # width of max device size for this cell
+    contact_w = device_max_w / 10  # choosing a contact width 10 times smaller
+    device_w = (
+        device_max_w - 2 * contact_w
+    )  # choosing a smaller device to have space for routing from pad to contact
 
     # Creates the DIE, it contains only the cell text and bordure
 
@@ -139,7 +146,7 @@ def vdp(
     PADS.remove_layers([pad_layer], invert_selection=True)
     VDP << PADS
 
-    ## routes from pads to probing area 
+    ## routes from pads to probing area
     ROUTES = utility.route_to_dev(PADS.get_ports(), AREA.ports)
     VDP << ROUTES
 
@@ -216,7 +223,7 @@ def etch_test(
         ports={},
         ports_gnd={},
         text=f"ETCH TEST {text}",
-        isolation=10,
+        isolation=outline_die,
         layer=die_layer,
         invert=True,
     )
@@ -318,11 +325,15 @@ def nanowires(
     source.
 
     Parameters:
-        die_w (int or float): Width of a unit die/cell in the design (the output device will be an integer number of unit cells).
-        pad_size (tuple of int or float): Dimensions of the die's pads (width, height).
-        channels_sources_w (list of tuple of float): The list of (channel_w, source_w) of the nanowires to create.
-        overlap_w (int or float): Extra length of the routes above the die's ports to assure alignment with the device
-                                   (useful for ebeam lithography).
+        die_w (int or float): Width of a unit die/cell in the design (the output
+            device will be an integer number of unit cells).
+        pad_size (tuple of int or float): Dimensions of the die's pads (width,
+            height).
+        channels_sources_w (list of tuple of float): The list of (channel_w,
+            source_w) of the nanowires to create.
+        overlap_w (int or float): Extra length of the routes above the die's
+            ports to assure alignment with the device (useful for ebeam
+            lithography).
         outline_die (int or float): The width of the pads outline.
         outline_dev (int or float): The width of the device's outline.
         device_layer (int or tuple of int): The layer where the device is placed.
@@ -390,7 +401,9 @@ def nanowires(
     ## Route the nanowires and the die
 
     # hyper tapers
-    HT, dev_ports = utility.add_hyptap_to_cell(BORDER.get_ports(), overlap_w, dev_contact_w)
+    HT, dev_ports = utility.add_hyptap_to_cell(
+        BORDER.get_ports(), overlap_w, dev_contact_w
+    )
     DEVICE.ports = dev_ports.ports
     DEVICE << HT
 
@@ -502,7 +515,7 @@ def ntron(
         ports={"N": 1, "W": 1, "S": 1},
         ports_gnd=["S"],
         text=text,
-        isolation=10,
+        isolation=outline_die,
         layer=die_layer,
         pad_layer=pad_layer,
         invert=True,
@@ -541,8 +554,10 @@ def snspd(
     pad_size: Tuple[float] = dflt.pad_size,
     snspd_width: float = 0.2,
     snspd_pitch: float = 0.6,
-    # size: Tuple[int, int] = (6, 10), # to implement (go to next unit cell size if too big)
-    # num_squares: Optional[int] = None, # to implement (go to next unit cell size if too big)
+    snspd_size: Tuple[Union[int, float], Union[int, float]] = tuple(
+        x / 2 for x in utility.calculate_available_space_for_dev()
+    ),
+    snspd_num_squares: Optional[int] = None,
     overlap_w: Union[int, float] = dflt.ebeam_overlap,
     outline_die: Union[int, float] = dflt.die_outline,
     outline_dev: Union[int, float] = dflt.device_outline,
@@ -551,84 +566,96 @@ def snspd(
     pad_layer: int = dflt.layers["pad"],
     text: Union[None, str] = dflt.text,
 ) -> Device:
-    """Creates a cell that contains a vertical superconducting nanowire
-    single-photon detector (SNSPD).
+    """Creates a cell that contains a vertical superconducting nanowire single-
+    photon detector (SNSPD).
 
     Parameters:
         die_w (int or float): Width of a unit die/cell in the design (the output
-        device will be an integer number of unit cells). pad_size (tuple of int
-        or float): Dimensions of the die's pads (width, height).
-        snspd_width (float)
-        snspd_pitch (float)
+        device will be an integer number of unit cells).
+        pad_size (tuple of int or float): Dimensions of the die's pads (width,
+            height).
+        snspd_width (float): Width of the nanowire.
+        snspd_pitch (float): Pitch of the nanowire.
+        snspd_size (tuple of int or float): Size of the detector in squares (width, height).
+        snspd_num_squares (Optional[int]): Number of squares in the detector.
         overlap_w (int or float): Extra length of the routes above the die's
-        ports to assure alignment with the device
-                                             (useful for ebeam lithography).
-        outline_die (int or float): The width of the pads outline. outline_dev
-        (int or float): The width of the device's outline. device_layer (int or
-        array-like[2]): The layer where the device is placed. die_layer (int or
-        array-like[2]): The layer where the die is placed. pad_layer (int or
-        array-like[2]): The layer where the pads are placed. text (string,
-        optional): If None, text = f'SNSPD {w_choke}'.
+            ports to assure alignment with the device (useful for ebeam
+            lithography).
+        outline_die (int or float): The width of the pads outline.
+        outline_dev (int or float): The width of the device's outline.
+        device_layer (int or array-like[2]): The layer where the device is placed.
+        die_layer (int or array-like[2]): The layer where the die is placed.
+        pad_layer (int or array-like[2]): The layer where the pads are placed.
         text (string, optional): If None, text = f'SNSPD {w_choke}'.
 
     Returns:
-        Device: A cell containing a SNSPD.
+        Device: A cell (of size n*m unit die_cells) containing the SNSPD.
     """
     if text is None:
         text = f"{snspd_width}"
 
-    SNSPD_DIE = Device(f"DIE SNSPD {text} ")
-
+    SNSPD_CELL = Device(f"CELL SNSPD {text} ")
     DEVICE = Device(f"SNSPD {text} ")
 
-    device_max_w = die_w - 2 * (pad_size[1] + 2 * outline_die)  # width of max device size for this cell
-    snspd_size = device_max_w/10
-    SNSPD = device.snspd.vertical(wire_pitch=snspd_width,
-                                  wire_width=snspd_pitch,
-                                  size = (snspd_size, snspd_size))
+    # create SNSPD, make its ports compass, add safe optimal step
+    SNSPD = device.snspd.vertical(
+        wire_width=snspd_width,
+        wire_pitch=snspd_pitch,
+        size=snspd_size,
+        num_squares=snspd_num_squares,
+        layer=device_layer,
+    )
+    SNSPD = utility.rename_ports_to_compass(SNSPD)
+    SNSPD = utility.add_optimalstep_to_dev(SNSPD, ratio=10)
     DEVICE << SNSPD
 
-    die_contact_w = SNSPD.ports["N1"].width*2 + overlap_w  # refine with min/max conditions
-    dev_contact_w = SNSPD.ports["N1"].width*50  # refine with min/max conditions
-    
-    device_max_w = device_max_w/2 # refine with min/max conditions
-
-    ## Create the DIE
+    # create die
+    die_contact_w = utility.calculate_contact_w(
+        circuit_ports=SNSPD.get_ports(), overlap_w=overlap_w
+    )
+    device_max_size = tuple(
+        x + 2 * overlap_w for x in SNSPD.size
+    )  # not valide anymore if pads are not aligned with dev ports
+    n, m = utility.find_num_diecells_for_dev(
+        device_max_size, (die_w, die_w), pad_size, overlap_w, outline_die
+    )
     BORDER = utility.die_cell(
-        die_size=(die_w, die_w),
-        device_max_size=(device_max_w, device_max_w),
+        die_size=(n * die_w, m * die_w),
+        device_max_size=device_max_size,
         pad_size=pad_size,
         contact_w=die_contact_w,
         contact_l=overlap_w,
         ports={"N": 1, "S": 1},
         ports_gnd=["S"],
-        text=text,
-        isolation=10,
+        text=f"SNSPD {text}",
+        isolation=outline_die,
         layer=die_layer,
         pad_layer=pad_layer,
         invert=True,
     )
 
-    # hyper tapers
-    HT, dev_ports = utility.add_hyptap_to_cell(BORDER.get_ports(), overlap_w, dev_contact_w, SNSPD.ports["N1"].width)
+    # add hyper tapers at die pads
+    dev_contact_w = SNSPD.ports["N1"].width
+    HT, dev_ports = utility.add_hyptap_to_cell(
+        BORDER.get_ports(), overlap_w, dev_contact_w, device_layer
+    )
     DEVICE.ports = dev_ports.ports
     DEVICE << HT
 
-    # routes from nanowires to hyper tapers
-    ROUTES = utility.route_to_dev(HT.get_ports(), SNSPD.ports)
+    # link hyper tapers to the device
+    ROUTES = utility.route_to_dev(
+        HT.get_ports(), SNSPD.ports
+    )  # absolutly no need to route, but will be useful when ports are no longer aligned with pads
     DEVICE << ROUTES
 
-    DEVICE.ports = dev_ports.ports
-    DEVICE = pg.outline(DEVICE, outline_dev, open_ports=2 * outline_dev)
-    DEVICE = pg.union(DEVICE, layer=device_layer)
+    DEVICE = pg.outline(
+        DEVICE, outline_dev, open_ports=2 * outline_dev, layer=device_layer
+    )
     DEVICE.name = f"SNSPD {text} "
 
-    SNSPD_DIE << DEVICE
-    SNSPD_DIE << BORDER
-
-    SNSPD_DIE = pg.union(SNSPD_DIE, by_layer=True)
-    SNSPD_DIE.name = f"DIE SNSPD {text} "
-    return SNSPD_DIE
+    SNSPD_CELL << DEVICE
+    SNSPD_CELL << BORDER
+    return SNSPD_CELL
 
 
 def snspd_ntron(
@@ -755,4 +782,3 @@ def snspd_ntron(
     DIE_SNSPD_NTRON.name = f"SNSPD \n{w_snspd} {w_choke} "
 
     return DIE_SNSPD_NTRON
-

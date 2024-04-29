@@ -5,9 +5,9 @@ from phidl import quickplot as qp
 from phidl import set_quickplot_options
 import matplotlib.pyplot as plt
 
+
 def import_module(module_path, module_name):
-    """
-    Imports a module dynamically from a given file path and module name.
+    """Imports a module dynamically from a given file path and module name.
 
     Args:
         module_path (str): The path to the Python file from which to import the module.
@@ -21,9 +21,10 @@ def import_module(module_path, module_name):
     spec.loader.exec_module(module)
     return module
 
+
 def plot_and_save_functions(module, module_name):
-    """
-    Plots and saves visual representations of PHIDL Device objects returned by functions within a module.
+    """Plots and saves visual representations of PHIDL Device objects returned
+    by functions within a module.
 
     Args:
         module (Module): The module containing the functions to be visualized.
@@ -37,26 +38,37 @@ def plot_and_save_functions(module, module_name):
     script_dir = os.path.dirname(__file__)
     os.makedirs(os.path.join(script_dir, module_name), exist_ok=True)
     func_names = dir(module)
-    set_quickplot_options(blocking=False)
+    set_quickplot_options(blocking=False, show_subports=False)
     for func_name in func_names:
         func = getattr(module, func_name)
         try:
-            if callable(func) and hasattr(func, "__call__") and not isinstance(func, type):
+            if (
+                callable(func)
+                and hasattr(func, "__call__")
+                and not isinstance(func, type)
+            ):
                 result = func()
                 if isinstance(result, tuple):
                     result = result[0]
                 if isinstance(result, Device):
                     qp(result)
-                    plt.savefig(os.path.join(script_dir, module_name, f"{func_name}.png"))
+                    plt.savefig(
+                        os.path.join(script_dir, module_name, f"{func_name}.png")
+                    )
                     plt.close()
-                    print(f"Info: in module '{module_name}', function '{func_name}' was plotted")
+                    print(
+                        f"Info: in module '{module_name}', function '{func_name}' was plotted"
+                    )
         except Exception as e:
             if "missing" in str(e):
-                print(f"Warning: in module '{module_name}', function '{func_name}' was not plotted: {e}")
+                print(
+                    f"""Warning: in module '{module_name}', function '{func_name}' did not
+                    specify default arguments and will not be plotted: {e}"""
+                )
+
 
 def process_modules_in_folder(folder_path, module_prefix=""):
-    """
-    Recursively processes Python files in a given folder (and subfolders) to
+    """Recursively processes Python files in a given folder (and subfolders) to
     plot and save functions.
 
     Args:
@@ -71,7 +83,7 @@ def process_modules_in_folder(folder_path, module_prefix=""):
     Python files, appending the directory name to the module prefix.
     """
     for item in os.listdir(folder_path):
-        if item.startswith('_'):
+        if item.startswith("_"):
             continue  # Skip files or directories starting with __
         full_path = os.path.join(folder_path, item)
         if os.path.isdir(full_path):
@@ -80,9 +92,14 @@ def process_modules_in_folder(folder_path, module_prefix=""):
             process_modules_in_folder(full_path, new_prefix)
         elif item.endswith(".py"):
             module_name = item[:-3]
-            full_module_name = os.path.join(module_prefix, module_name) if module_prefix else module_name
+            full_module_name = (
+                os.path.join(module_prefix, module_name)
+                if module_prefix
+                else module_name
+            )
             module = import_module(full_path, module_name)
             plot_and_save_functions(module, full_module_name)
+
 
 if __name__ == "__main__":
     folder_path = os.path.join("..", "..", "..", "src", "qnngds")

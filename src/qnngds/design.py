@@ -69,7 +69,7 @@ def create_chip(
     useful_area.move((margin, margin))
 
     if die_w is not None:
-        N_dies = useful_w / die_w
+        N_dies = int(useful_w / die_w)
         return_N_or_w = N_dies
     else:
         die_w = useful_w / N_dies
@@ -232,7 +232,6 @@ def place_remaining_devices(
         )
 
 
-
 class Design:
     """A class for a design on a single layer of superconducting material, and
     additional contact pads.
@@ -291,8 +290,8 @@ class Design:
         name="new_design",
         chip_w=dflt.chip_w,
         chip_margin=dflt.chip_margin,
-        N_dies=dflt.N_dies,
-        die_w=dflt.auto_param,
+        N_dies=dflt.auto_param,
+        die_w=dflt.die_w,
         pad_size=dflt.pad_size,
         device_outline=dflt.device_outline,
         die_outline=dflt.die_outline,
@@ -686,38 +685,42 @@ class Design:
         )
 
     def snspd_cell(
-            self,
-            snspd_width: float = 0.2,
-            snspd_pitch: float = 0.6,
-            # size: Tuple[int, int] = (6, 10), # to implement (go to next unit cell size if too big)
-            # num_squares: Optional[int] = None, # to implement (go to next unit cell size if too big)
-            text: Union[None, str] = dflt.text,
+        self,
+        snspd_width: float = 0.2,
+        snspd_pitch: float = 0.6,
+        snspd_size: Tuple[Union[int, float], Union[int, float]] = (100, 100),
+        snspd_num_squares: Optional[int] = None,
+        text: Union[None, str] = dflt.text,
     ) -> Device:
         """Creates a cell that contains a vertical superconducting nanowire
         single-photon detector (SNSPD).
 
         Parameters:
-            snspd_width (float)
-            snspd_pitch (float)
+            snspd_width (float): Width of the nanowire.
+            snspd_pitch (float): Pitch of the nanowire.
+            snspd_size (tuple of int or float): Size of the detector in squares (width, height).
+            snspd_num_squares (Optional[int]): Number of squares in the detector.
             text (string, optional): If None, text = f'SNSPD {w_choke}'.
 
         Returns:
-            Device: A cell containing a SNSPD.
+            Device: A cell (of size n*m unit die_cells) containing the SNSPD.
         """
 
-        return cell.snspd(die_w=self.die_w,
-                    pad_size=self.pad_size,
-                    snspd_width = snspd_width,
-                    snspd_pitch = snspd_pitch,
-                    # size = size, # to implement (go to next unit cell size if too big)
-                    # num_squares = num_squares, # to implement (go to next unit cell size if too big)
-                    overlap_w=self.ebeam_overlap,
-                    outline_die=self.die_outline,
-                    outline_dev=self.device_outline,
-                    device_layer=self.layers["device"],
-                    die_layer=self.layers["die"],
-                    pad_layer=self.layers["pad"],
-                    text=text)
+        return cell.snspd(
+            die_w=self.die_w,
+            pad_size=self.pad_size,
+            snspd_width=snspd_width,
+            snspd_pitch=snspd_pitch,
+            size=snspd_size,
+            num_squares=snspd_num_squares,
+            overlap_w=self.ebeam_overlap,
+            outline_die=self.die_outline,
+            outline_dev=self.device_outline,
+            device_layer=self.layers["device"],
+            die_layer=self.layers["die"],
+            pad_layer=self.layers["pad"],
+            text=text,
+        )
 
     def snspd_ntron_cell(
         self,

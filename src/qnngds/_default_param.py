@@ -16,4 +16,3 @@ layers = {"annotation": 0, "device": 1, "die": 2, "pad": 3}
 # constants
 
 die_cell_border = 80
-

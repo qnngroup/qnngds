@@ -1,13 +1,15 @@
+"""Superconducting nanowire single photon detector geometries."""
+
 from phidl import Device
 
 import phidl.geometry as pg
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Union
 
 
 def vertical(
     wire_width: float = 0.2,
     wire_pitch: float = 0.6,
-    size: Tuple[int, int] = (6, 10),
+    size: Tuple[Union[int, float], Union[int, float]] = (6, 10),
     num_squares: Optional[int] = None,
     terminals_same_side: bool = False,
     extend: Optional[float] = None,
@@ -19,7 +21,7 @@ def vertical(
     Args:
         wire_width (float): Width of the nanowire.
         wire_pitch (float): Pitch of the nanowire.
-        size (Tuple[int, int]): Size of the detector in squares (width, height).
+        size (tuple of int or float): Size of the detector in squares (width, height).
         num_squares (Optional[int]): Number of squares in the detector.
         terminals_same_side (bool): Whether the terminals are on the same side of the detector.
         extend (Optional[bool]): Whether or not to extend the ports.
@@ -28,7 +30,8 @@ def vertical(
     Returns:
         Device: The vertical SNSPD device.
     """
-    D = Device("snspd_vert")
+    D = Device("SNSPD VERTICAL")
+
     S = pg.snspd(
         wire_width=wire_width,
         wire_pitch=wire_pitch,
@@ -76,4 +79,6 @@ def vertical(
         D.add_port(name=2, port=t2.ports[2])
 
     D.info = S.info
+    D.move(D.center, (0, 0))
+    D.name = "SNSPD VERTICAL"
     return D
