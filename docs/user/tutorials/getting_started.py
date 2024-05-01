@@ -114,5 +114,5 @@ for ratio in channel_to_choke_ratios:
 design.place_remaining_devices(remaining_cells, write_remaining_devices_map_txt=False)
 
 
-# qp(CHIP)
-design.write_gds()
+qp(CHIP)
+# design.write_gds()
