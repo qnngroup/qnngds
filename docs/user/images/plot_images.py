@@ -104,4 +104,15 @@ def process_modules_in_folder(folder_path, module_prefix=""):
 
 if __name__ == "__main__":
     folder_path = os.path.join("..", "..", "..", "src", "qnngds")
-    process_modules_in_folder(folder_path)
+    try:
+        process_modules_in_folder(folder_path)
+    except FileNotFoundError as e:
+        print(e)
+        print(
+            "\nMake sure you are running the file in the correct directory. "
+            "To fix this, you can run: \n"
+        )
+        current_file_path = os.path.realpath(__file__)
+        parent_folder = os.path.dirname(current_file_path)
+        print("     cd ", parent_folder)
+        print()

@@ -97,5 +97,18 @@ def generate_api(src_path):
 
 if __name__ == "__main__":
     qnngds_path = os.path.join("..", "..", "src", "qnngds")
-    plot_images.process_modules_in_folder(qnngds_path)
-    generate_api(qnngds_path)
+
+    try:
+        plot_images.process_modules_in_folder(qnngds_path)
+        generate_api(qnngds_path)
+
+    except FileNotFoundError as e:
+        print(e)
+        print(
+            "\nMake sure you are executing the file in the correct directory. "
+            "To fix this, you can run: \n"
+        )
+        current_file_path = os.path.realpath(__file__)
+        parent_folder = os.path.dirname(current_file_path)
+        print("     cd ", parent_folder)
+        print()
