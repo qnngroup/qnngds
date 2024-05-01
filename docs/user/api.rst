@@ -163,9 +163,14 @@ snspd
 
 .. automodule:: qnngds.devices.snspd
     :members:
-    :exclude-members: vertical
+    :exclude-members: basic, vertical
     :undoc-members:
     :show-inheritance:
+
+    .. autofunction:: basic
+
+        .. image:: images/devices/snspd/basic.png
+            :alt: basic.png
 
     .. autofunction:: vertical
 
