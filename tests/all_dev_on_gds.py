@@ -43,6 +43,11 @@ def write_devices_from_module(module_name, src_path):
             if isinstance(result, Device):
                 FUNCTION << result
                 print(f"From '{module_name}', writing '{name}' on the gds.")
+            elif isinstance(result, tuple):
+                result = [item for item in result if isinstance(item, Device)]
+                for result in result:
+                    FUNCTION << result
+                    print(f"From '{module_name}', writing '{name}' on the gds.")
         except TypeError:
             pass
 

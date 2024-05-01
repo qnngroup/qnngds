@@ -49,7 +49,16 @@ def plot_and_save_functions(module, module_name):
             ):
                 result = func()
                 if isinstance(result, tuple):
-                    result = result[0]
+                    result = [item for item in result if isinstance(item, Device)]
+                    for result in result:
+                        qp(result)
+                        plt.savefig(
+                            os.path.join(script_dir, module_name, f"{func_name}.png")
+                        )
+                        plt.close()
+                        print(
+                            f"Info: in module '{module_name}', function '{func_name}' was plotted"
+                        )
                 if isinstance(result, Device):
                     qp(result)
                     plt.savefig(
