@@ -77,7 +77,8 @@ def die_cell(
         elif port_name == "E":
             overlap_port.midpoint[0] += -contact_l
 
-    DIE = Device(f"DIE {text} ")
+    die_name = text.replace("\n", "")
+    DIE = Device(f"DIE {die_name} ")
 
     border = pg.rectangle(die_size)
     border.move(border.center, (0, 0))
@@ -191,7 +192,7 @@ def die_cell(
     for port in ports:
         DIE.add_port(port)
 
-    DIE.name = f"DIE {text}"
+    DIE.name = f"DIE {die_name}"
     return DIE
 
 

@@ -502,7 +502,7 @@ class Design:
         """
         if text is None:
             text = self.name
-        return self.CHIP.write_gds(filename=f"{text}.gds")
+        return self.CHIP.write_gds(filename=f"{text}.gds", max_cellname_length=32000)
 
     # basics:
 

@@ -91,13 +91,13 @@ design.place_on_chip(SNSPD_NTRON_01, (1, 0))
 channels_w = [0.025, 0.1, 0.5, 1, 2]
 channels_sources_w = [(x, 10 * x) for x in channels_w]
 NANOWIRES = design.nanowires_cell(
-    channels_sources_w=channels_sources_w, text="\nsrc=10chn"
+    channels_sources_w=channels_sources_w, text="src=10chn"
 )
 design.place_on_chip(NANOWIRES, (1, 1))
 
 channels_sources_w = [(x, 4 * x) for x in channels_w]
 NANOWIRES = design.nanowires_cell(
-    channels_sources_w=channels_sources_w, text="\nsrc=4chn"
+    channels_sources_w=channels_sources_w, text="src=4chn"
 )
 design.place_on_chip(NANOWIRES, (3, 1))
 
@@ -114,5 +114,5 @@ for ratio in channel_to_choke_ratios:
 design.place_remaining_devices(remaining_cells, write_remaining_devices_map_txt=False)
 
 
-qp(CHIP)
-# design.write_gds()
+# qp(CHIP)
+design.write_gds()
