@@ -12,7 +12,6 @@ def vertical(
     wire_pitch: float = 0.6,
     size: Tuple[Union[int, float], Union[int, float]] = (6, 10),
     num_squares: Optional[int] = None,
-    terminals_same_side: bool = False,
     extend: Optional[float] = None,
     layer: int = dflt.layers["device"],
 ) -> Device:
@@ -24,7 +23,6 @@ def vertical(
         wire_pitch (float): Pitch of the nanowire.
         size (tuple of int or float): Size of the detector in squares (width, height).
         num_squares (Optional[int]): Number of squares in the detector.
-        terminals_same_side (bool): Whether the terminals are on the same side of the detector.
         extend (Optional[bool]): Whether or not to extend the ports.
         layer (int): Layer for the device to be created on.
 
@@ -38,7 +36,7 @@ def vertical(
         wire_pitch=wire_pitch,
         size=size,
         num_squares=num_squares,
-        terminals_same_side=terminals_same_side,
+        terminals_same_side=False,
         layer=layer,
     )
     s1 = D << S
@@ -81,9 +79,5 @@ def vertical(
 
     D.info = S.info
     D.move(D.center, (0, 0))
-    if num_squares is not None:
-        size_or_numsquares = num_squares
-    else:
-        size_or_numsquares = size
     D.name = f"SNSPD.VERTICAL(w={wire_width}, pitch={wire_pitch})"
     return D
