@@ -354,14 +354,15 @@ def nanowires(
     if text is None:
         channels_w = [item[0] for item in channels_sources_w]
         text = f"w={channels_w}"
+    cell_text = text.replace(" \n", ", ")
 
-    NANOWIRES_DIE = Device(f"CELL.NWIRES({text})")
+    NANOWIRES_DIE = Device(f"CELL.NWIRES({cell_text})")
 
-    DEVICE = Device(f"NWIRES({text})")
+    DEVICE = Device(f"NWIRES({cell_text})")
 
     ## Create the NANOWIRES
 
-    NANOWIRES = Device(f"NWIRES({text})")
+    NANOWIRES = Device(f"NWIRES({cell_text})")
     nanowires_ref = []
     for i, channel_source_w in enumerate(channels_sources_w):
         nanowire_ref = NANOWIRES << device.nanowire.spot(
@@ -421,7 +422,7 @@ def nanowires(
     DEVICE = pg.outline(
         DEVICE, outline_dev, open_ports=2 * outline_dev, layer=device_layer
     )
-    DEVICE.name = f"NWIRES({text})"
+    DEVICE.name = f"NWIRES({cell_text})"
 
     NANOWIRES_DIE << DEVICE
     NANOWIRES_DIE << BORDER
@@ -606,9 +607,10 @@ def snspd(
     """
     if text is None:
         text = f"w={snspd_width}"
+    cell_text = text.replace(" \n", ", ")
 
-    SNSPD_CELL = Device(f"CELL.SNSPD({text})")
-    DEVICE = Device(f"SNSPD({text})")
+    SNSPD_CELL = Device(f"CELL.SNSPD({cell_text})")
+    DEVICE = Device(f"SNSPD({cell_text})")
 
     # create SNSPD, make its ports compass, add safe optimal step
     SNSPD = device.snspd.vertical(
@@ -665,7 +667,7 @@ def snspd(
     DEVICE = pg.outline(
         DEVICE, outline_dev, open_ports=2 * outline_dev, layer=device_layer
     )
-    DEVICE.name = f"SNSPD({text})"
+    DEVICE.name = f"SNSPD({cell_text})"
 
     SNSPD_CELL << DEVICE
     SNSPD_CELL << BORDER
@@ -716,9 +718,10 @@ def snspd_ntron(
 
     if text is None:
         text = f"w={w_snspd}, {w_choke}"
+    cell_text = text.replace(" \n", ", ")
 
-    DIE_SNSPD_NTRON = Device(f"CELL.SNSPD-NTRON({text})")
-    DEVICE = Device(f"SNSPD-NTRON({text})")
+    DIE_SNSPD_NTRON = Device(f"CELL.SNSPD-NTRON({cell_text})")
+    DEVICE = Device(f"SNSPD-NTRON({cell_text})")
 
     SNSPD_NTRON = circuit.snspd_ntron(
         w_snspd=w_snspd,
@@ -792,7 +795,7 @@ def snspd_ntron(
 
     DEVICE = pg.outline(DEVICE, outline_dev, precision=0.000001, open_ports=outline_dev)
     DEVICE = pg.union(DEVICE, layer=device_layer)
-    DEVICE.name = f"SNSPD-NTRON({text})"
+    DEVICE.name = f"SNSPD-NTRON({cell_text})"
 
     DIE_SNSPD_NTRON << DEVICE
     DIE_SNSPD_NTRON << BORDER
