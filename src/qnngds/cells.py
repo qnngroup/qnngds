@@ -30,7 +30,7 @@ def alignment(
         layers_to_align (list of int): Layers to align.
         outline_die (int or float): The width of the die's outline.
         die_layer (int): The layer where the die is placed.
-        text (str): Text to be displayed.
+        text (str, optional): If None, the text is f"lay={layers_to_align}".
 
     Returns:
         DIE_ALIGN (Device): A device that centers the alignment marks in an n*m unit cell.
@@ -83,7 +83,7 @@ def vdp(
         outline (int or float): The width of the VDP and die's outline.
         die_layer (int or tuple of int): The layer where the die is placed.
         pad_layer (int or tuple of int): The layer where the pads are placed.
-        text (str, optional): If None, the text is f"VDP \n{layers_to_probe}".
+        text (str, optional): If None, the text is f"lay={layers_to_probe}".
     Returns:
         DIE_VANDP (Device): The created device.
     """
@@ -194,7 +194,7 @@ def etch_test(
                                                Example: [[1, 2], [1], [2]]
         outline_die (int or float): The width of the die's outline.
         die_layer (int): The layer where the die is placed.
-        text (str): Text to be displayed.
+        text (str, optional): If None, the text is f"lay={layers_to_etch}".
 
     Returns:
         DIE_ETCH_TEST (Device): A device (with size n*m of unit cells) with etch tests in its center.
@@ -264,7 +264,7 @@ def resolution_test(
         resolutions_to_test (list of float): The resolutions to test in µm.
         outline (int or float): The width of the VDP and die's outline.
         die_layer (int or tuple of int): The layer where the die is placed.
-        text (str, optional): If None, the text is f"RES TEST \n{layer_to_resolve}".
+        text (str, optional): If None, the text is f"lay={layer_to_resolve}".
 
     Returns:
         DIE_RES_TEST (Device): The created device.
@@ -341,7 +341,7 @@ def nanowires(
         device_layer (int or tuple of int): The layer where the device is placed.
         die_layer (int or tuple of int): The layer where the die is placed.
         pad_layer (int or tuple of int): The layer where the pads are placed.
-        text (str, optional): If None, the text is "NWIRES".
+        text (str, optional): If None, the text is f"w={channels_w}".
         fill_pad_layer (bool): If True, the space reserved for pads in the
             die_cell in filled in pad's layer.
 
@@ -448,7 +448,7 @@ def ntron(
     text: Union[None, str] = dflt.text,
     fill_pad_layer: bool = False,
 ) -> Device:
-    """Creates a standardized cell specifically for a single ntron.
+    r"""Creates a standardized cell specifically for a single ntron.
 
     Unless specified, scales the ntron parameters as:
     gate_w = drain_w = source_w = 3 * channel_w
@@ -472,7 +472,7 @@ def ntron(
         device_layer (int or array-like[2]): The layer where the device is placed.
         die_layer (int or array-like[2]): The layer where the die is placed.
         pad_layer (int or array-like[2]): The layer where the pads are placed.
-        text (string, optional): If None, the text is the ntron's choke and channel widths.
+        text (string, optional): If None, the text is f"chk: {choke_w} \\nchnl: {channel_w}".
         fill_pad_layer (bool): If True, the space reserved for pads in the
             die_cell in filled in pad's layer.
 
@@ -598,7 +598,7 @@ def snspd(
         device_layer (int or array-like[2]): The layer where the device is placed.
         die_layer (int or array-like[2]): The layer where the die is placed.
         pad_layer (int or array-like[2]): The layer where the pads are placed.
-        text (string, optional): If None, text = f'SNSPD {w_choke}'.
+        text (string, optional): If None, the text is f"w={snspd_width}".
         fill_pad_layer (bool): If True, the space reserved for pads in the
             die_cell in filled in pad's layer.
 
@@ -703,7 +703,7 @@ def snspd_ntron(
         device_layer (int or array-like[2]): The layer where the device is placed.
         die_layer (int or array-like[2]): The layer where the die is placed.
         pad_layer (int or array-like[2]): The layer where the pads are placed.
-        text (string, optional): If None, text = f'SNSPD {w_choke}'.
+        text (string, optional): If None, the text is f"w={w_snspd}, {w_choke}".
         fill_pad_layer (bool): If True, the space reserved for pads in the
             die_cell in filled in pad's layer.
 
