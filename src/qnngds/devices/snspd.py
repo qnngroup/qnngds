@@ -14,11 +14,11 @@ def basic(
     num_squares: Optional[int] = None,
     turn_ratio: Union[int, float] = 4,
     terminals_same_side: bool = False,
-    layer: int = 0,
+    layer: int = dflt.layers["device"],
 ) -> Device:
     """Creates an optimally-rounded SNSPD.
 
-    Takes Phidl's snspd, rename it and flatten the device.
+    Takes Phidl's snspd, perform a union and rename it.
 
     Parameters:
         wire_width (float): Width of the nanowire.
@@ -34,7 +34,7 @@ def basic(
 
     Returns:
         Device: A Device containing an optimally-rounded SNSPD, as provided by
-        Phidl but renamed and flattened.
+        Phidl but renamed and unified.
     """
     # check parameters constrains
     if wire_pitch <= wire_width:
@@ -53,7 +53,9 @@ def basic(
         terminals_same_side,
         layer,
     )
-    SNSPD.flatten()
+    ports = SNSPD.ports
+    SNSPD = pg.union(SNSPD, layer=layer)
+    SNSPD.ports = ports
     SNSPD.name = f"SNSPD.BASIC(w={wire_width}, pitch={wire_pitch})"
     return SNSPD
 

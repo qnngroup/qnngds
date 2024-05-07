@@ -170,8 +170,8 @@ def place_on_chip(
 
     # move the cell
     cell_bottom_left = (
-        -(n_cell - 1 + (n_cell % 2) * 0.5) * die_w,
-        -(m_cell - 1 + (m_cell % 2) * 0.5) * die_w,
+        -n_cell * 0.5 * die_w,
+        -m_cell * 0.5 * die_w,
     )
     cell.move(cell_bottom_left, ((coordinates[0]) * die_w, (coordinates[1]) * die_w))
 

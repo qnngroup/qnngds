@@ -7,7 +7,7 @@ Cells
 
 .. automodule:: qnngds.cells
     :members:
-    :exclude-members: alignment, etch_test, nanowires, ntron, resolution_test, snspd, snspd_ntron, vdp
+    :exclude-members: alignment, etch_test, nanowires, ntron, resolution_test, snspd, vdp
     :undoc-members:
     :show-inheritance:
 
@@ -41,11 +41,6 @@ Cells
         .. image:: images/cells/snspd.png
             :alt: snspd.png
 
-    .. autofunction:: snspd_ntron
-
-        .. image:: images/cells/snspd_ntron.png
-            :alt: snspd_ntron.png
-
     .. autofunction:: vdp
 
         .. image:: images/cells/vdp.png
@@ -57,14 +52,9 @@ Circuits
 
 .. automodule:: qnngds.circuits
     :members:
-    :exclude-members: snspd_ntron
+    :exclude-members: 
     :undoc-members:
     :show-inheritance:
-
-    .. autofunction:: snspd_ntron
-
-        .. image:: images/circuits/snspd_ntron.png
-            :alt: snspd_ntron.png
 
 .. _Design:
 Design
@@ -115,7 +105,7 @@ ntron
 
 .. automodule:: qnngds.devices.ntron
     :members:
-    :exclude-members: sharp, smooth, smooth_compassPorts
+    :exclude-members: sharp, smooth
     :undoc-members:
     :show-inheritance:
 
@@ -129,17 +119,12 @@ ntron
         .. image:: images/devices/ntron/smooth.png
             :alt: smooth.png
 
-    .. autofunction:: smooth_compassPorts
-
-        .. image:: images/devices/ntron/smooth_compassPorts.png
-            :alt: smooth_compassPorts.png
-
 resistor
 ~~~~~~~~
 
 .. automodule:: qnngds.devices.resistor
     :members:
-    :exclude-members: meander, meander_sc_contacts, sc_contacts
+    :exclude-members: meander, meander_sc_contacts
     :undoc-members:
     :show-inheritance:
 
@@ -152,11 +137,6 @@ resistor
 
         .. image:: images/devices/resistor/meander_sc_contacts.png
             :alt: meander_sc_contacts.png
-
-    .. autofunction:: sc_contacts
-
-        .. image:: images/devices/resistor/sc_contacts.png
-            :alt: sc_contacts.png
 
 snspd
 ~~~~~

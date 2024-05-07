@@ -500,7 +500,7 @@ def ntron(
     NTRON = utility.rename_ports_to_compass(NTRON)
     if text is None:
         text = f"chk: {choke_w} \nchnl: {channel_w}"
-    cell_text = text.replace("\n", ",")
+    cell_text = text.replace(" \n", ", ")
     DIE_NTRON = Device(f"CELL.NTRON({cell_text})")
 
     DEVICE = Device(f"NTRON({cell_text})")
@@ -640,7 +640,7 @@ def snspd(
         contact_l=overlap_w,
         ports={"N": 1, "S": 1},
         ports_gnd=["S"],
-        text=f"SNSPD {text}",
+        text=f"SNSPD \n{text}",
         isolation=outline_die,
         layer=die_layer,
         pad_layer=pad_layer,
