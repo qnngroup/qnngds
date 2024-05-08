@@ -217,7 +217,6 @@ def calculate_available_space_for_dev(
         Tuple[float, float]: A tuple containing the width and height of space
         available for a device in a die_cell
     """
-
     dev_max_size = [
         2 * (die_w / 2 - 3 * isolation - pad_size[1] - 2 * contact_l)
         for die_w in die_size
@@ -318,7 +317,6 @@ def find_num_diecells_for_dev(
         available_space_for_dev = calculate_available_space_for_dev(
             (n * die_size[0], die_size[1]), pad_size, contact_l, isolation
         )
-
         if device_max_size[0] > available_space_for_dev[0]:
             n += 1
         else:
@@ -340,7 +338,7 @@ def find_num_diecells_for_dev(
     return n, m
 
 
-def rename_ports_to_compass(DEVICE: Device) -> Device:
+def rename_ports_to_compass(DEVICE: Device, depth: Union[int, None] = 0) -> Device:
     """Rename ports of a Device based on compass directions.
 
     Parameters:
@@ -349,11 +347,13 @@ def rename_ports_to_compass(DEVICE: Device) -> Device:
     Returns:
         Device: A new Phidl Device object with ports renamed to compass directions.
     """
+
+    ports = DEVICE.get_ports(depth=depth)
     # Create a new Device object to store renamed ports
     DEV_COMPASS = Device(DEVICE.name)
 
     # Copy ports from the original device to the new device
-    DEV_COMPASS << DEVICE.flatten()
+    DEV_COMPASS << DEVICE
 
     # Initialize counters for each direction
     E_count = 1
@@ -362,7 +362,7 @@ def rename_ports_to_compass(DEVICE: Device) -> Device:
     S_count = 1
 
     # Iterate through each port in the original device
-    for port in DEVICE.get_ports():
+    for port in ports:
         # Determine the orientation of the port and rename it accordingly
         if port.orientation % 360 == 0:
             DEV_COMPASS.add_port(port=port, name=f"E{E_count}")
