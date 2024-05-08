@@ -581,18 +581,17 @@ def snspd(
     text: Union[None, str] = dflt.text,
     fill_pad_layer: bool = False,
 ) -> Device:
-    """Creates a cell that contains a vertical superconducting nanowire single-
-    photon detector (SNSPD).
+    """Creates a cell that contains vertical superconducting nanowire single-
+    photon detectors (SNSPD).
 
     Parameters:
         die_w (int or float): Width of a unit die/cell in the design (the output
         device will be an integer number of unit cells).
         pad_size (tuple of int or float): Dimensions of the die's pads (width,
             height).
-        snspd_width (float): Width of the nanowire.
-        snspd_pitch (float): Pitch of the nanowire.
-        snspd_size (tuple of int or float): Size of the detector in squares (width, height).
-        snspd_num_squares (Optional[int]): Number of squares in the detector.
+        snspds_width_pitch (list of tuple of float): list of (width, pitch) of the nanowires.
+        snspd_size (tuple of int or float): Size of the detectors in squares (width, height).
+        snspd_num_squares (Optional[int]): Number of squares in the detectors.
         overlap_w (int or float): Extra length of the routes above the die's
             ports to assure alignment with the device (useful for ebeam
             lithography).
@@ -601,12 +600,12 @@ def snspd(
         device_layer (int or array-like[2]): The layer where the device is placed.
         die_layer (int or array-like[2]): The layer where the die is placed.
         pad_layer (int or array-like[2]): The layer where the pads are placed.
-        text (string, optional): If None, text = f'SNSPD {w_choke}'.
+        text (string, optional): If None, the text is f"w={snspds_width}".
         fill_pad_layer (bool): If True, the space reserved for pads in the
             die_cell in filled in pad's layer.
 
     Returns:
-        Device: A cell (of size n*m unit die_cells) containing the SNSPD.
+        Device: A cell (of size n*m unit die_cells) containing the SNSPDs.
     """
     if text is None:
         snspds_width = [item[0] for item in snspds_width_pitch]
