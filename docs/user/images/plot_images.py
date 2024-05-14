@@ -47,20 +47,19 @@ def plot_and_save_functions(module, module_name):
                 and hasattr(func, "__call__")
                 and not isinstance(func, type)
             ):
+                device = False
+
                 result = func()
-                if isinstance(result, tuple):
-                    results = [item for item in result if isinstance(item, Device)]
-                    for result in results:
-                        qp(result)
-                        plt.savefig(
-                            os.path.join(script_dir, module_name, f"{func_name}.png")
-                        )
-                        plt.close()
-                        print(
-                            f"Info: in module '{module_name}', function '{func_name}' was plotted"
-                        )
                 if isinstance(result, Device):
-                    qp(result)
+                    device = result
+                elif isinstance(result, tuple):
+                    devices = [
+                        item for item in result if isinstance(item, Device)
+                    ]  # gets all results that are devices
+                    device = devices[0]  # keep only the first device returned
+
+                if device:
+                    qp(device)
                     plt.savefig(
                         os.path.join(script_dir, module_name, f"{func_name}.png")
                     )
