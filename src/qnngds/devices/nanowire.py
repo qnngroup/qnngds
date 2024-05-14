@@ -13,8 +13,8 @@ def spot(
     layer: int = dflt.layers["device"],
     num_pts: int = 100,
 ) -> Device:
-    """Creates a single wire, with the same appearance as an NTRON but without
-    the gate.
+    """Creates a single wire, made of two optimal steps from channel_w to
+    source_w.
 
     Args:
         channel_w (int or float): The width of the channel (at the hot-spot location).

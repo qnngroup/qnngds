@@ -7,7 +7,7 @@ Cells
 
 .. automodule:: qnngds.cells
     :members:
-    :exclude-members: alignment, etch_test, nanowires, ntron, resolution_test, snspd, vdp
+    :exclude-members: alignment, etch_test, nanowires, ntron, resolution_test, snspd, snspd_ntron, vdp
     :undoc-members:
     :show-inheritance:
 
@@ -41,6 +41,11 @@ Cells
         .. image:: images/cells/snspd.png
             :alt: snspd.png
 
+    .. autofunction:: snspd_ntron
+
+        .. image:: images/cells/snspd_ntron.png
+            :alt: snspd_ntron.png
+
     .. autofunction:: vdp
 
         .. image:: images/cells/vdp.png
@@ -52,9 +57,14 @@ Circuits
 
 .. automodule:: qnngds.circuits
     :members:
-    :exclude-members: 
+    :exclude-members: snspd_ntron
     :undoc-members:
     :show-inheritance:
+
+    .. autofunction:: snspd_ntron
+
+        .. image:: images/circuits/snspd_ntron.png
+            :alt: snspd_ntron.png
 
 .. _Design:
 Design
