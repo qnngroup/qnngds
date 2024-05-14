@@ -68,8 +68,8 @@ def vertical(
     extend: Optional[float] = None,
     layer: int = dflt.layers["device"],
 ) -> Device:
-    """Creates a vertical superconducting nanowire single-photon detector
-    (SNSPD).
+    """Creates an optimally-rounded SNSPD, with terminals in its center instead
+    of the side.
 
     Parameters:
         wire_width (float): Width of the nanowire.
