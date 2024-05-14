@@ -49,8 +49,8 @@ def plot_and_save_functions(module, module_name):
             ):
                 result = func()
                 if isinstance(result, tuple):
-                    result = [item for item in result if isinstance(item, Device)]
-                    for result in result:
+                    results = [item for item in result if isinstance(item, Device)]
+                    for result in results:
                         qp(result)
                         plt.savefig(
                             os.path.join(script_dir, module_name, f"{func_name}.png")
