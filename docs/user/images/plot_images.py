@@ -47,11 +47,19 @@ def plot_and_save_functions(module, module_name):
                 and hasattr(func, "__call__")
                 and not isinstance(func, type)
             ):
+                device = False
+
                 result = func()
-                if isinstance(result, tuple):
-                    result = result[0]
                 if isinstance(result, Device):
-                    qp(result)
+                    device = result
+                elif isinstance(result, tuple):
+                    devices = [
+                        item for item in result if isinstance(item, Device)
+                    ]  # gets all results that are devices
+                    device = devices[0]  # keep only the first device returned
+
+                if device:
+                    qp(device)
                     plt.savefig(
                         os.path.join(script_dir, module_name, f"{func_name}.png")
                     )
@@ -104,4 +112,15 @@ def process_modules_in_folder(folder_path, module_prefix=""):
 
 if __name__ == "__main__":
     folder_path = os.path.join("..", "..", "..", "src", "qnngds")
-    process_modules_in_folder(folder_path)
+    try:
+        process_modules_in_folder(folder_path)
+    except FileNotFoundError as e:
+        print(e)
+        print(
+            "\nMake sure you are running the file in the correct directory. "
+            "To fix this, you can run: \n"
+        )
+        current_file_path = os.path.realpath(__file__)
+        parent_folder = os.path.dirname(current_file_path)
+        print("     cd ", parent_folder)
+        print()

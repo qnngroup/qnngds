@@ -170,8 +170,8 @@ def place_on_chip(
 
     # move the cell
     cell_bottom_left = (
-        -(n_cell - 1 + (n_cell % 2) * 0.5) * die_w,
-        -(m_cell - 1 + (m_cell % 2) * 0.5) * die_w,
+        -n_cell * 0.5 * die_w,
+        -m_cell * 0.5 * die_w,
     )
     cell.move(cell_bottom_left, ((coordinates[0]) * die_w, (coordinates[1]) * die_w))
 
@@ -502,7 +502,7 @@ class Design:
         """
         if text is None:
             text = self.name
-        return self.CHIP.write_gds(filename=f"{text}.gds")
+        return self.CHIP.write_gds(filename=f"{text}.gds", max_cellname_length=32000)
 
     # basics:
 
@@ -513,7 +513,7 @@ class Design:
 
         Parameters:
             layers_to_align (List[int]): Layers to align.
-            text (str): The text of the cell is f"ALIGN {text}".
+            text (str, optional): If None, the text is f"lay={layers_to_align}".
 
         Returns:
             Device: A device that centers the alignment marks in an n*m unit cell.
@@ -538,7 +538,7 @@ class Design:
         Parameters:
             layers_to_probe (List[int]): The layers on which to place the VDP structure.
             layers_to_outline (List[int]): Among the VDP layers, the ones for which structure must not be filled but outlined.
-            text (str, optional): If None, the text is f"VDP \n{layers_to_probe}". Otherwise, f"VDP \n{text}".
+            text (str, optional): If None, the text is f"lay={layers_to_probe}".
 
         Returns:
             Device: The created device.
@@ -566,7 +566,7 @@ class Design:
         Parameters:
             layers_to_etch (List[List[int]]): Each element of the list corresponds to one test point,
                 to put on the list of layers specified. Example: [[1, 2], [1], [2]].
-            text (str, optional): If None, the cell text is f"ETCH TEST {layers_to_etch}".
+            text (str, optional): If None, the text is f"lay={layers_to_etch}".
 
         Returns:
             Device: A device (with size n*m of unit cells) with etch tests in its center.
@@ -601,7 +601,7 @@ class Design:
         Parameters:
             layer_to_resolve (int): The layer to put the resolution test on.
             resolutions_to_test (List[float]): The resolutions to test in µm.
-            text (str, optional): If None, the text is f"RES TEST \n{layer_to_resolve}".
+            text (str, optional): If None, the text is f"lay={layer_to_resolve}".
 
         Returns:
             Device: The created device.
@@ -629,7 +629,7 @@ class Design:
         Parameters:
             channels_sources_w (List[Tuple[float, float]]): The list of
                 (channel_w, source_w) of the nanowires to create.
-            text (str, optional): If None, the text is "NWIRES".
+            text (str, optional): If None, the text is f"w={channels_w}".
 
         Returns:
             Device: A device containing the nanowires, the border of the die
@@ -674,7 +674,7 @@ class Design:
             source_w (int or float, optional): If None, source width is 3 times the channel width.
             drain_w (int or float, optional): If None, drain width is 3 times the channel width.
             choke_shift (int or float, optional): If None, choke shift is -3 times the channel width.
-            text (str, optional): If None, the text is f"chk: {choke_w} /n chnl: {channel_w}".
+            text (str, optional): If None, the text is f"chk: {choke_w} \\nchnl: {channel_w}".
 
         Returns:
             Device: A device containing the ntron, the border of the die (created with die_cell function),
@@ -716,7 +716,7 @@ class Design:
             snspd_pitch (float): Pitch of the nanowire.
             snspd_size (tuple of int or float): Size of the detector in squares (width, height).
             snspd_num_squares (Optional[int]): Number of squares in the detector.
-            text (string, optional): If None, text = f'SNSPD {w_choke}'.
+            text (string, optional): If None, the text is f"w={snspd_width}".
 
         Returns:
             Device: A cell (of size n*m unit die_cells) containing the SNSPD.
@@ -727,8 +727,8 @@ class Design:
             pad_size=self.pad_size,
             snspd_width=snspd_width,
             snspd_pitch=snspd_pitch,
-            size=snspd_size,
-            num_squares=snspd_num_squares,
+            snspd_size=snspd_size,
+            snspd_num_squares=snspd_num_squares,
             overlap_w=self.ebeam_overlap,
             outline_die=self.die_outline,
             outline_dev=self.device_outline,
@@ -752,7 +752,7 @@ class Design:
         Parameters:
             w_choke (int or float): The width of the NTRON choke in µm.
             w_snspd (int or float, optional): The width of the SNSPD nanowire in µm. If None, scaled to 5*w_choke.
-            text (str, optional): If None, text = f'SNSPD {w_choke}'.
+            text (string, optional): If None, the text is f"w={w_snspd}, {w_choke}".
 
         Returns:
             Device: A cell containing a die in die_layer, pads in pad layer, and an SNSPD-NTRON properly routed in the device layer.

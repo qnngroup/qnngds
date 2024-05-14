@@ -4,7 +4,7 @@ fabrication process and its effect on the materials."""
 from phidl import Device
 import phidl.geometry as pg
 from typing import List, Union
-import math
+import qnngds._default_param as dflt
 
 
 def alignment_mark(layers: List[int] = [1, 2, 3, 4]) -> Device:
@@ -23,10 +23,12 @@ def alignment_mark(layers: List[int] = [1, 2, 3, 4]) -> Device:
 
         # central part with cross
 
-        cross = MARK << pg.cross(length=190, width=20, layer=layer1)
+        CROSS = Device("CROSS")
+        cross = CROSS << pg.union(pg.cross(length=190, width=20), layer=layer1)
         rect = pg.rectangle((65, 65), layer=layer2)
-        window = MARK.add_array(rect, 2, 2, (125, 125))
+        window = CROSS.add_array(rect, 2, 2, (125, 125))
         window.move(window.center, cross.center)
+        MARK << CROSS.flatten()
 
         # combs
         def create_comb(pitch1=500, pitch2=100, layer1=1, layer2=2):
@@ -65,33 +67,38 @@ def alignment_mark(layers: List[int] = [1, 2, 3, 4]) -> Device:
 
             return COMB
 
+        VERNIER = Device("VERNIER(500, 200, 100, 50)")
         comb51 = create_comb(pitch1=500, pitch2=100, layer1=layer1, layer2=layer2)
 
-        top = MARK.add_ref(comb51)
+        top = VERNIER.add_ref(comb51)
         top.move((0, 0), (0, 200))
 
-        left = MARK.add_ref(comb51)
+        left = VERNIER.add_ref(comb51)
         left.rotate(90)
         left.move((0, 0), (-200, 0))
 
         comb205 = create_comb(pitch1=200, pitch2=50, layer1=layer1, layer2=layer2)
 
-        bottom = MARK.add_ref(comb205)
+        bottom = VERNIER.add_ref(comb205)
         bottom.rotate(180)
         bottom.move((0, 0), (0, -200))
 
-        right = MARK.add_ref(comb205)
+        right = VERNIER.add_ref(comb205)
         right.rotate(-90)
         right.move((0, 0), (200, 0))
+        MARK << VERNIER.flatten()
 
         MARK.move(MARK.center, (0, 0))
 
         # text
-        text1 = MARK << pg.text(str(layer2), size=50, layer={layer1, layer2})
+        TEXT = Device(f"TEXT({layer2} ON {layer1})")
+        text1 = TEXT << pg.text(str(layer2), size=50, layer={layer1, layer2})
         text1.move(text1.center, (220, 200))
-        text2 = MARK << pg.text(f"{layer2} ON {layer1}", size=10, layer=layer2)
+        text2 = TEXT << pg.text(f"{layer2} ON {layer1}", size=10, layer=layer2)
         text2.move(text2.center, (220, 240))
+        MARK << TEXT.flatten()
 
+        MARK.name = f"ALIGN {layer2} ON {layer1}"
         return MARK
 
     ALIGN = Device("ALIGN ")
@@ -103,8 +110,10 @@ def alignment_mark(layers: List[int] = [1, 2, 3, 4]) -> Device:
                 MARK = create_marker(layer1, layer2)
                 MARK.move((j * markers_pitch, i * markers_pitch))
                 ALIGN << MARK
-            text = ALIGN << pg.text(str(layer1), size=160, layer=layer1)
+            text = pg.text(str(layer1), size=160, layer=layer1)
+            text.name = f"TEXT({str(layer1)})"
             text.move(text.center, (-340, i * markers_pitch))
+            ALIGN << text
 
     num_layers = len(layers)
     offset = -(num_layers - 2) * markers_pitch / 2
@@ -115,7 +124,7 @@ def alignment_mark(layers: List[int] = [1, 2, 3, 4]) -> Device:
 def resolution_test(
     resolutions: List[float] = [0.8, 1, 1.2, 1.4, 1.6, 1.8, 2.0],
     inverted: Union[bool, float] = False,
-    layer: int = 0,
+    layer: int = dflt.layers["device"],
 ) -> Device:
     """Creates test structures for determining a process resolution.
 
@@ -149,7 +158,8 @@ def resolution_test(
 
         grid_spacing = (13 * res, 13 * res)
 
-        for i, percent in enumerate([0.8, 1, 1.2]):
+        space = [0.8, 1, 1.2]
+        for i, percent in enumerate(space):
             lll = LLL << create_L(percent * res, 2 * res)
             lll.move([i * space for space in grid_spacing])
 
@@ -158,6 +168,8 @@ def resolution_test(
             text.get_bounding_box()[0], [(i + 1) * space for space in grid_spacing]
         )
 
+        LLL.flatten(single_layer=layer)
+        LLL.name = f"3L({space} x {res})"
         return LLL
 
     def create_waffle(res=1):
@@ -184,9 +196,9 @@ def resolution_test(
             (2 * res, -2 * res),
         )
 
+        WAFFLE.flatten(single_layer=layer)
+        WAFFLE.name = f"WAFFLE({res})"
         return WAFFLE
-
-    RES_TEST = Device("RESOLUTION TEST ")
 
     RES_TEST1 = pg.gridsweep(
         function=create_3L,
@@ -194,35 +206,39 @@ def resolution_test(
         param_y={},
         spacing=10,
         align_y="ymin",
+        label_layer=None,
     )
+    RES_TEST1.name = "3Ls"
     RES_TEST2 = pg.gridsweep(
         function=create_waffle,
         param_x={"res": resolutions},
         param_y={},
         spacing=10,
         align_y="ymax",
+        label_layer=None,
     )
-
-    RES_TEST << pg.grid(
-        device_list=[[RES_TEST1], [RES_TEST2]], spacing=20, align_x="xmin"
+    RES_TEST2.name = "WAFFLES"
+    RES_TEST = pg.grid(
+        device_list=[[RES_TEST1], [RES_TEST2]],
+        spacing=20,
+        align_x="xmin",
     )
 
     if inverted:
         if inverted == True:
             RES_TEST = pg.invert(RES_TEST, border=5, precision=0.0000001, layer=layer)
         else:
-            RES_TEST = pg.outline(RES_TEST, inverted)
+            RES_TEST = pg.outline(RES_TEST, inverted, layer=layer)
         res_test_name = "RESOLUTION TEST INVERTED "
     else:
         res_test_name = "RESOLUTION TEST "
 
-    RES_TEST = pg.union(RES_TEST, layer=layer)
     RES_TEST.move(RES_TEST.center, (0, 0))
     RES_TEST.name = res_test_name
     return RES_TEST
 
 
-def vdp(l: float = 400, w: float = 40, layer: int = 1) -> Device:
+def vdp(l: float = 400, w: float = 40, layer: int = dflt.layers["device"]) -> Device:
     """Creates a Van der Pauw (VDP) device with specified dimensions.
 
     Args:
