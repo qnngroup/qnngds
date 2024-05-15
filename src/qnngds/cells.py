@@ -560,16 +560,16 @@ def ntron(
     return DIE_NTRON
 
 
-from phidl import quickplot as qp
-from phidl import Device
-
-
-def snspd(
+def snspds(
     die_w: Union[int, float] = dflt.die_w,
     pad_size: Tuple[float] = dflt.pad_size,
-    snspds_width_pitch: List[Tuple[float, float]] = [(0.2, 0.6)],
+    snspds_width_pitch: List[Tuple[float, float]] = [
+        (0.1, 0.3),
+        (0.2, 0.6),
+        (0.3, 0.9),
+    ],
     snspd_size: Tuple[Union[int, float], Union[int, float]] = tuple(
-        x / 2 for x in utility.calculate_available_space_for_dev()
+        x / 3 for x in utility.calculate_available_space_for_dev()
     ),
     snspd_num_squares: Optional[int] = None,
     overlap_w: Union[int, float] = dflt.ebeam_overlap,
@@ -631,18 +631,23 @@ def snspd(
         snspds_ref.append(snspd_ref)
 
     # create die
+    num_snspds = len(snspds_width_pitch)
     die_contact_w = utility.calculate_contact_w(
         circuit_ports=DEVICE.get_ports(depth=1), overlap_w=overlap_w
     )
-    _, device_max_y = tuple(x + 2 * overlap_w for x in DEVICE.size)
-    device_max_x = len(snspds_width_pitch) * max(
-        pad_size[0] * 1.5, DEVICE.xsize + 2 * outline_die
-    )
+    device_max_y = DEVICE.ysize + 2 * overlap_w
+    device_max_x = num_snspds * max(pad_size[0] * 1.5, DEVICE.xsize + 2 * outline_die)
     device_max_size = (device_max_x, device_max_y)
 
     n, m = utility.find_num_diecells_for_dev(
-        device_max_size, (die_w, die_w), pad_size, overlap_w, outline_die
+        device_max_size,
+        {"N": num_snspds, "S": num_snspds},
+        (die_w, die_w),
+        pad_size,
+        overlap_w,
+        outline_die,
     )
+
     BORDER = utility.die_cell(
         die_size=(n * die_w, m * die_w),
         device_max_size=device_max_size,

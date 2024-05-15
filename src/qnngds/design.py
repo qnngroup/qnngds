@@ -700,7 +700,7 @@ class Design:
             fill_pad_layer=self.fill_pad_layer,
         )
 
-    def snspd_cell(
+    def snspds_cell(
         self,
         snspds_width_pitch: List[Tuple[float, float]] = [(0.2, 0.6)],
         snspd_size: Tuple[Union[int, float], Union[int, float]] = (100, 100),
@@ -721,7 +721,7 @@ class Design:
             Device: A cell (of size n*m unit die_cells) containing the SNSPDs.
         """
 
-        return cell.snspd(
+        return cell.snspds(
             die_w=self.die_w,
             pad_size=self.pad_size,
             snspds_width_pitch=snspds_width_pitch,

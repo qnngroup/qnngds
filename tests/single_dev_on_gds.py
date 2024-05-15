@@ -27,7 +27,7 @@ def test_qnngds_device(DEV: Device):
 
     GDS = Device()
     GDS << DEV
-    GDS.write_gds("single_dev.gds", max_cellname_length=32000)
+    # GDS.write_gds("single_dev.gds", max_cellname_length=32000)
 
     qp(DEV)
 
@@ -35,6 +35,6 @@ def test_qnngds_device(DEV: Device):
 if __name__ == "__main__":
 
     # Modify below the device to be tested, eg: DEV = qnngds.circuits.snspd_ntron()
-    DEV = Device()
+    DEV = qnngds.cells.snspds()
 
     test_qnngds_device(DEV)
