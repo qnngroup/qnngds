@@ -30,15 +30,15 @@ def alignment(
         layers_to_align (list of int): Layers to align.
         outline_die (int or float): The width of the die's outline.
         die_layer (int): The layer where the die is placed.
-        text (str): Text to be displayed.
+        text (str, optional): If None, the text is f"lay={layers_to_align}".
 
     Returns:
         DIE_ALIGN (Device): A device that centers the alignment marks in an n*m unit cell.
     """
 
     if text is None:
-        text = ""
-    DIE = Device(f"DIE ALIGN {text} ")
+        text = f"lay={layers_to_align}"
+    DIE = Device(f"CELL.ALIGN({text})")
 
     ALIGN = test.alignment_mark(layers_to_align)
 
@@ -83,18 +83,18 @@ def vdp(
         outline (int or float): The width of the VDP and die's outline.
         die_layer (int or tuple of int): The layer where the die is placed.
         pad_layer (int or tuple of int): The layer where the pads are placed.
-        text (str, optional): If None, the text is f"VDP \n{layers_to_probe}".
+        text (str, optional): If None, the text is f"lay={layers_to_probe}".
     Returns:
         DIE_VANDP (Device): The created device.
     """
     # Initialize parameters left to default (=None)
 
     if text is None:
-        text = str(layers_to_probe)
+        text = f"lay={layers_to_probe}"
     if layers_to_outline is None:
         layers_to_outline = [die_layer]  # default layer to outline if None is given
 
-    DIE_VANDP = Device(f"DIE VAN DER PAUW {text} ")
+    DIE_VANDP = Device(f"CELL.VDP({text})")
 
     device_max_w = die_w - 2 * (
         pad_size[1] + 2 * outline
@@ -112,13 +112,13 @@ def vdp(
         ports={},
         ports_gnd=[],
         isolation=outline,
-        text=text,
+        text=f"VDP \n{text}",
         layer=die_layer,
         pad_layer=pad_layer,
         invert=True,
         fill_pad_layer=False,
     )
-    DIE_VANDP << DIE
+    DIE_VANDP << DIE.flatten()
 
     # Creates the vdp structure, add pads and route
 
@@ -155,12 +155,13 @@ def vdp(
 
     # Outline the vdp structure for layers that need to be outlined
 
-    DEVICE = Device("VAN DER PAUW")
+    DEVICE = Device(f"VDP(lay={layers_to_probe})")
 
     for layer in layers_to_probe:
         TEST_LAY = pg.deepcopy(VDP)
         if layer in layers_to_outline:
             TEST_LAY = pg.outline(TEST_LAY, outline)
+        TEST_LAY.name = f"VDP(lay={layer})"
         DEVICE << TEST_LAY.flatten(single_layer=layer)
 
     DIE_VANDP << DEVICE
@@ -193,17 +194,17 @@ def etch_test(
                                                Example: [[1, 2], [1], [2]]
         outline_die (int or float): The width of the die's outline.
         die_layer (int): The layer where the die is placed.
-        text (str): Text to be displayed.
+        text (str, optional): If None, the text is f"lay={layers_to_etch}".
 
     Returns:
         DIE_ETCH_TEST (Device): A device (with size n*m of unit cells) with etch tests in its center.
     """
 
     if text is None:
-        text = f"{layers_to_etch}"
-    DIE_ETCH_TEST = Device(f"DIE ETCH TEST {text} ")
+        text = f"lay={layers_to_etch}"
+    DIE_ETCH_TEST = Device(f"CELL.ETCH_TEST({text})")
 
-    TEST = Device()
+    TEST = Device(f"ETCH_TEST({text})")
 
     ## Create the probing areas
 
@@ -231,7 +232,7 @@ def etch_test(
 
     BORDER.move(TEST.center)
     DIE_ETCH_TEST << BORDER.flatten()
-    DIE_ETCH_TEST << TEST
+    DIE_ETCH_TEST << TEST.flatten()
     DIE_ETCH_TEST.move(DIE_ETCH_TEST.center, (0, 0))
 
     return DIE_ETCH_TEST
@@ -263,18 +264,18 @@ def resolution_test(
         resolutions_to_test (list of float): The resolutions to test in µm.
         outline (int or float): The width of the VDP and die's outline.
         die_layer (int or tuple of int): The layer where the die is placed.
-        text (str, optional): If None, the text is f"RES TEST \n{layer_to_resolve}".
+        text (str, optional): If None, the text is f"lay={layer_to_resolve}".
 
     Returns:
         DIE_RES_TEST (Device): The created device.
     """
 
     if text is None:
-        text = layer_to_resolve
-    DIE_RES_TEST = Device(f"DIE RESOLUTION TEST {text} ")
+        text = f"lay={layer_to_resolve}"
+    DIE_RES_TEST = Device(f"CELL.RESOLUTION_TEST({text})")
 
     ## Create the test structure
-    TEST_RES = Device(f"RESOLUTION TEST {text} ")
+    TEST_RES = Device(f"RESOLUTION_TEST({text})")
     test_res = TEST_RES << test.resolution_test(
         resolutions=resolutions_to_test, inverted=False, layer=layer_to_resolve
     )
@@ -296,14 +297,13 @@ def resolution_test(
         die_size=(n * die_w, m * die_w),
         ports={},
         ports_gnd=[],
-        text=f"RES TEST \n{text} ",
+        text=f"RES TEST \n{text}",
         isolation=outline,
         layer=die_layer,
         invert=True,
     )
 
     DIE_RES_TEST << BORDER.flatten()
-
     return DIE_RES_TEST
 
 
@@ -341,7 +341,7 @@ def nanowires(
         device_layer (int or tuple of int): The layer where the device is placed.
         die_layer (int or tuple of int): The layer where the die is placed.
         pad_layer (int or tuple of int): The layer where the pads are placed.
-        text (str, optional): If None, the text is "NWIRES".
+        text (str, optional): If None, the text is f"w={channels_w}".
         fill_pad_layer (bool): If True, the space reserved for pads in the
             die_cell in filled in pad's layer.
 
@@ -352,15 +352,17 @@ def nanowires(
     """
 
     if text is None:
-        text = ""
+        channels_w = [item[0] for item in channels_sources_w]
+        text = f"w={channels_w}"
+    cell_text = text.replace(" \n", ", ")
 
-    NANOWIRES_DIE = Device(f"DIE NWIRES {text} ")
+    NANOWIRES_DIE = Device(f"CELL.NWIRES({cell_text})")
 
-    DEVICE = Device(f"NWIRES {text} ")
+    DEVICE = Device(f"NWIRES({cell_text})")
 
     ## Create the NANOWIRES
 
-    NANOWIRES = Device()
+    NANOWIRES = Device(f"NWIRES({cell_text})")
     nanowires_ref = []
     for i, channel_source_w in enumerate(channels_sources_w):
         nanowire_ref = NANOWIRES << device.nanowire.spot(
@@ -389,7 +391,7 @@ def nanowires(
         ports={"N": n, "S": n},
         ports_gnd=["S"],
         isolation=outline_die,
-        text=f"NWIRES {text}",
+        text=f"NWIRES\n{text}",
         layer=die_layer,
         pad_layer=pad_layer,
         invert=True,
@@ -417,15 +419,14 @@ def nanowires(
     DEVICE << ROUTES
 
     DEVICE.ports = dev_ports.ports
-    DEVICE = pg.outline(DEVICE, outline_dev, open_ports=2 * outline_dev)
-    DEVICE = pg.union(DEVICE, layer=device_layer)
-    DEVICE.name = f"NWIRES {text} "
+    DEVICE = pg.outline(
+        DEVICE, outline_dev, open_ports=2 * outline_dev, layer=device_layer
+    )
+    DEVICE.name = f"NWIRES({cell_text})"
 
     NANOWIRES_DIE << DEVICE
     NANOWIRES_DIE << BORDER
 
-    NANOWIRES_DIE = pg.union(NANOWIRES_DIE, by_layer=True)
-    NANOWIRES_DIE.name = f"DIE NWIRES {text} "
     return NANOWIRES_DIE
 
 
@@ -447,7 +448,7 @@ def ntron(
     text: Union[None, str] = dflt.text,
     fill_pad_layer: bool = False,
 ) -> Device:
-    """Creates a standardized cell specifically for a single ntron.
+    r"""Creates a standardized cell specifically for a single ntron.
 
     Unless specified, scales the ntron parameters as:
     gate_w = drain_w = source_w = 3 * channel_w
@@ -471,7 +472,7 @@ def ntron(
         device_layer (int or array-like[2]): The layer where the device is placed.
         die_layer (int or array-like[2]): The layer where the die is placed.
         pad_layer (int or array-like[2]): The layer where the pads are placed.
-        text (string, optional): If None, the text is the ntron's choke and channel widths.
+        text (string, optional): If None, the text is f"chk: {choke_w} \\nchnl: {channel_w}".
         fill_pad_layer (bool): If True, the space reserved for pads in the
             die_cell in filled in pad's layer.
 
@@ -494,15 +495,16 @@ def ntron(
     if choke_shift is None:
         choke_shift = -3 * channel_w
 
-    NTRON = device.ntron.smooth_compassPorts(
+    NTRON = device.ntron.smooth(
         choke_w, gate_w, channel_w, source_w, drain_w, choke_shift, device_layer
     )
-
+    NTRON = utility.rename_ports_to_compass(NTRON)
     if text is None:
         text = f"chk: {choke_w} \nchnl: {channel_w}"
-    DIE_NTRON = Device(f"DIE NTRON {text} ")
+    cell_text = text.replace(" \n", ", ")
+    DIE_NTRON = Device(f"CELL.NTRON({cell_text})")
 
-    DEVICE = Device(f"NTRON {text} ")
+    DEVICE = Device(f"NTRON({cell_text})")
     DEVICE << NTRON
 
     ## Create the DIE
@@ -524,7 +526,7 @@ def ntron(
         contact_l=overlap_w,
         ports={"N": 1, "W": 1, "S": 1},
         ports_gnd=["S"],
-        text=text,
+        text=f"NTRON \n{text}",
         isolation=outline_die,
         layer=die_layer,
         pad_layer=pad_layer,
@@ -550,13 +552,11 @@ def ntron(
 
     DEVICE = pg.outline(DEVICE, outline_dev, precision=0.000001, open_ports=outline_dev)
     DEVICE = pg.union(DEVICE, layer=device_layer)
-    DEVICE.name = f"NTRON {text} "
+    DEVICE.name = f"NTRON({cell_text})"
 
     DIE_NTRON << DEVICE
     DIE_NTRON << BORDER
 
-    DIE_NTRON = pg.union(DIE_NTRON, by_layer=True)
-    DIE_NTRON.name = f"DIE NTRON {text} "
     return DIE_NTRON
 
 
@@ -612,8 +612,8 @@ def snspd(
         text = f"w={snspds_width}"
     cell_text = text.replace(" \n", ", ")
 
-    SNSPD_CELL = Device(f"CELL SNSPD {text} ")
-    DEVICE = Device(f"SNSPD {text} ")
+    SNSPD_CELL = Device(f"CELL.SNSPD({cell_text})")
+    DEVICE = Device(f"SNSPD({cell_text})")
 
     # create SNSPD, make its ports compass, add safe optimal step
     snspds_ref = []
@@ -651,7 +651,7 @@ def snspd(
         contact_l=overlap_w,
         ports={"N": len(snspds_width_pitch), "S": len(snspds_width_pitch)},
         ports_gnd=["S"],
-        text=f"SNSPD {text}",
+        text=f"SNSPD \n{text}",
         isolation=outline_die,
         layer=die_layer,
         pad_layer=pad_layer,
@@ -680,7 +680,7 @@ def snspd(
     DEVICE = pg.outline(
         DEVICE, outline_dev, open_ports=2 * outline_dev, layer=device_layer
     )
-    DEVICE.name = f"SNSPD {text} "
+    DEVICE.name = f"SNSPD({cell_text})"
 
     SNSPD_CELL << DEVICE
     SNSPD_CELL << BORDER
@@ -716,7 +716,7 @@ def snspd_ntron(
         device_layer (int or array-like[2]): The layer where the device is placed.
         die_layer (int or array-like[2]): The layer where the die is placed.
         pad_layer (int or array-like[2]): The layer where the pads are placed.
-        text (string, optional): If None, text = f'SNSPD {w_choke}'.
+        text (string, optional): If None, the text is f"w={w_snspd}, {w_choke}".
         fill_pad_layer (bool): If True, the space reserved for pads in the
             die_cell in filled in pad's layer.
 
@@ -730,9 +730,11 @@ def snspd_ntron(
         w_snspd = 5 * w_choke
 
     if text is None:
-        text = f"SNSPD \n{w_snspd} {w_choke} "
-    DIE_SNSPD_NTRON = Device(f"DIE {text} ")
-    DEVICE = Device(f"{text} ")
+        text = f"w={w_snspd}, {w_choke}"
+    cell_text = text.replace(" \n", ", ")
+
+    DIE_SNSPD_NTRON = Device(f"CELL.SNSPD-NTRON({cell_text})")
+    DEVICE = Device(f"SNSPD-NTRON({cell_text})")
 
     SNSPD_NTRON = circuit.snspd_ntron(
         w_snspd=w_snspd,
@@ -782,7 +784,7 @@ def snspd_ntron(
         contact_l=overlap_w,
         ports={"N": 3, "E": 1, "W": 1, "S": 2},
         ports_gnd=["S"],
-        text=text,
+        text=f"SNSPD-NTRON\n{text}",
         isolation=outline_die,
         layer=die_layer,
         pad_layer=pad_layer,
@@ -806,12 +808,9 @@ def snspd_ntron(
 
     DEVICE = pg.outline(DEVICE, outline_dev, precision=0.000001, open_ports=outline_dev)
     DEVICE = pg.union(DEVICE, layer=device_layer)
-    DEVICE.name = f"DIE {text} "
+    DEVICE.name = f"SNSPD-NTRON({cell_text})"
 
     DIE_SNSPD_NTRON << DEVICE
     DIE_SNSPD_NTRON << BORDER
-
-    DIE_SNSPD_NTRON = pg.union(DIE_SNSPD_NTRON, by_layer=True)
-    DIE_SNSPD_NTRON.name = f"SNSPD \n{w_snspd} {w_choke} "
 
     return DIE_SNSPD_NTRON

@@ -4,6 +4,7 @@ from phidl import Device
 
 import phidl.geometry as pg
 from typing import Tuple, Optional
+import qnngds._default_param as dflt
 
 
 def meander(
@@ -12,7 +13,7 @@ def meander(
     squares: float = 100,
     max_length: float = 20,
     aspect_ratio: float = 1,
-    layer: int = 1,
+    layer: int = dflt.layers["device"],
 ) -> Device:
     """Create resistor meander with specified number of squares.
 
@@ -104,11 +105,13 @@ def meander(
     D = pg.union(D, by_layer=True, precision=0.01)
     D.add_port(name=1, port=stub_top.ports[2])
     D.add_port(name=2, port=stub_bot.ports[2])
+
+    D.name = f"RESISTOR.MEANDER (w={width}, pitch={pitch})"
     D.info = locals()
     return D
 
 
-def sc_contacts(
+def meander_sc_contacts(
     width: float = 1,
     squares: float = 60,
     max_length: float = 10,
@@ -117,8 +120,8 @@ def sc_contacts(
     contact_height: float = 2,
     outline_sc: float = 1,
     width_routing: float = 1,
-    layer_res: int = 2,
-    layer_sc: int = 1,
+    layer_res: int = dflt.layers["pad"],
+    layer_sc: int = dflt.layers["device"],
 ) -> Device:
     """Create resistor meander with superconducting contacts.
 
@@ -139,9 +142,13 @@ def sc_contacts(
     Returns:
         D (Device): the resistor meander
     """
-    D = Device("resistor_negtone")
+    MEAN_SC_CONT = Device(
+        f"RESISTOR.MEANDER_SC_CONTACTS (w={width}, pitch={meander_pitch})"
+    )
+    CONTACTS = Device("CONTACTS")
+
     aspect_ratio = (contact_width + 2 * outline_sc) / max_length * 1.5
-    res = D << meander(
+    res = MEAN_SC_CONT << meander(
         layer=layer_res,
         width=width,
         pitch=max(meander_pitch, width + 1),
@@ -158,17 +165,21 @@ def sc_contacts(
     rout = pg.straight(size=(width_routing, 2 * width_routing), layer=layer_sc)
     ports = []
     for p, port in res.ports.items():
-        s = D << stub
+        s = CONTACTS << stub
         s.connect(s.ports[1], port)
-        c = D << contact
+        c = CONTACTS << contact
         c.connect(c.ports[1], s.ports[2])
-        c_sc = D << contact_sc
+        c_sc = CONTACTS << contact_sc
         c_sc.center = c.center
-        r = D << rout
+        r = CONTACTS << rout
         r.connect(r.ports[1], c_sc.ports[2 - (p % 2)])
         ports.append(r.ports[2])
-    D = pg.union(D, by_layer=True)
-    D.add_port(port=ports[0], name=1)
-    D.add_port(port=ports[1], name=2)
-    D.info = locals()
-    return D
+
+    CONTACTS = pg.union(CONTACTS, by_layer=True)
+    CONTACTS.name = "CONTACTS"
+    MEAN_SC_CONT << CONTACTS
+
+    MEAN_SC_CONT.add_port(port=ports[0], name=1)
+    MEAN_SC_CONT.add_port(port=ports[1], name=2)
+    MEAN_SC_CONT.info = locals()
+    return MEAN_SC_CONT
