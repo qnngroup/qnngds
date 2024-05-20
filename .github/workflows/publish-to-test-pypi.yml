@@ -17,7 +17,7 @@ jobs:
     - name: Install dependencies
       run: |
         python3 -m pip install --upgrade pip
-        pip install build securesystemslib sigstore
+        pip install build securesystemslib==0.24.0 sigstore==1.2.3
 
     - name: Build a binary wheel and a source tarball
       run: python3 -m build
@@ -67,7 +67,7 @@ jobs:
     - name: Install dependencies
       run: |
         python3 -m pip install --upgrade pip
-        pip install securesystemslib sigstore
+        pip install securesystemslib==0.24.0 sigstore==1.2.3
 
     - name: Download all the dists
       uses: actions/download-artifact@v4
