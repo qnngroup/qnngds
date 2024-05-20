@@ -16,8 +16,6 @@ from phidl.device_layout import (
 import qnngds.geometries as geometry
 import qnngds._default_param as dflt
 
-die_cell_border = dflt.die_cell_border
-
 
 class Die:
 
@@ -31,7 +29,7 @@ class Die:
         contact_w: Union[int, float] = 50,
         contact_l: Union[int, float] = dflt.ebeam_overlap,
         isolation: Union[int, float] = dflt.die_outline,
-        text_size: Union[int, float] = die_cell_border / 2,
+        text_size: Union[int, float] = dflt.die_cell_border / 2,
         layer: int = dflt.layers["die"],
         pad_layer: int = dflt.layers["pad"],
         invert: bool = True,
@@ -48,6 +46,7 @@ class Die:
         self.pad_layer = pad_layer
         self.invert = invert
         self.fill_pad_layer = fill_pad_layer
+        self.die_border_w = dflt.die_cell_border
 
 
 def die_cell(
@@ -168,25 +167,25 @@ def die_cell(
 
     corners_coord = [
         (
-            -die.die_size[0] / 2 + die_cell_border / 2,
-            -die.die_size[1] / 2 + die_cell_border / 2,
+            -die.die_size[0] / 2 + die.die_border_w / 2,
+            -die.die_size[1] / 2 + die.die_border_w / 2,
         ),
         (
-            die.die_size[0] / 2 - die_cell_border / 2,
-            -die.die_size[1] / 2 + die_cell_border / 2,
+            die.die_size[0] / 2 - die.die_border_w / 2,
+            -die.die_size[1] / 2 + die.die_border_w / 2,
         ),
         (
-            die.die_size[0] / 2 - die_cell_border / 2,
-            die.die_size[1] / 2 - die_cell_border / 2,
+            die.die_size[0] / 2 - die.die_border_w / 2,
+            die.die_size[1] / 2 - die.die_border_w / 2,
         ),
         (
-            -die.die_size[0] / 2 + die_cell_border / 2,
-            die.die_size[1] / 2 - die_cell_border / 2,
+            -die.die_size[0] / 2 + die.die_border_w / 2,
+            die.die_size[1] / 2 - die.die_border_w / 2,
         ),
     ]
     for corner_coord in corners_coord:
         corner = pg.rectangle(
-            (die_cell_border - die.isolation, die_cell_border - die.isolation)
+            (die.die_border_w - die.isolation, die.die_border_w - die.isolation)
         )
         corner = pg.outline(corner, -1 * die.isolation)
         corner.move(corner.center, corner_coord)
@@ -236,10 +235,7 @@ def die_cell(
 
 
 def calculate_available_space_for_dev(
-    die_size: Tuple[Union[int, float], Union[int, float]] = (dflt.die_w, dflt.die_w),
-    pad_size: Tuple[Union[int, float], Union[int, float]] = dflt.pad_size,
-    contact_l: Union[int, float] = dflt.ebeam_overlap,
-    isolation: Union[int, float] = dflt.die_outline,
+    self,
     device_ports: List[str] = ["N", "W", "S", "E"],
 ) -> Tuple[float, float]:
     """Calculates the maximum space available for a device in a die_cell.
@@ -273,19 +269,19 @@ def calculate_available_space_for_dev(
         num_pads_x += 1
 
     dev_max_x = (
-        die_size[0]
-        - 2 * isolation
+        self.die_size[0]
+        - 2 * self.isolation
         - max(
-            2 * die_cell_border,
-            num_pads_x * (2 * isolation + pad_size[1] + 2 * contact_l),
+            2 * self.die_border_w,
+            num_pads_x * (2 * self.isolation + self.pad_size[1] + 2 * self.contact_l),
         )
     )
     dev_max_y = (
-        die_size[1]
-        - 2 * isolation
+        self.die_size[1]
+        - 2 * self.isolation
         - max(
-            2 * die_cell_border,
-            num_pads_y * (2 * isolation + pad_size[1] + 2 * contact_l),
+            2 * self.die_border_w,
+            num_pads_y * (2 * self.isolation + self.pad_size[1] + 2 * self.contact_l),
         )
     )
     return dev_max_x, dev_max_y
@@ -350,15 +346,13 @@ def add_optimalstep_to_dev(
 
 
 def find_num_diecells_for_dev(
+    self,
+    die: Die = Die(),
     device_max_size: Tuple[Union[int, float], Union[int, float]] = (
         dflt.die_w,
         dflt.die_w,
     ),
     device_ports: Dict[str, int] = {"N": 1, "E": 1, "W": 1, "S": 1},
-    die_size: Tuple[Union[int, float], Union[int, float]] = (dflt.die_w, dflt.die_w),
-    pad_size: Tuple[Union[int, float], Union[int, float]] = dflt.pad_size,
-    contact_l: Union[int, float] = dflt.ebeam_overlap,
-    isolation: Union[int, float] = dflt.die_outline,
 ) -> Tuple[float, float]:
     """Finds the number of die cells that can accommodate a device.
 
@@ -384,10 +378,12 @@ def find_num_diecells_for_dev(
     max_num_ports_x = max(device_ports.get("N", 0), device_ports.get("S", 0))
 
     max_x = max(
-        device_max_size[0], max_num_ports_x * 1.5 * pad_size[0] + 2 * die_cell_border
+        device_max_size[0],
+        max_num_ports_x * 1.5 * self.pad_size[0] + 2 * die.die_border_w,
     )
     max_y = max(
-        device_max_size[1], max_num_ports_y * 1.5 * pad_size[0] + 2 * die_cell_border
+        device_max_size[1],
+        max_num_ports_y * 1.5 * die.pad_size[0] + 2 * die.die_border_w,
     )
     compass_ports = [W for W in ["N", "E", "S", "W"] if device_ports.get(W, 0) != 0]
 
@@ -396,10 +392,10 @@ def find_num_diecells_for_dev(
 
     while dev_x_bigger:
         available_space_for_dev = calculate_available_space_for_dev(
-            (n * die_size[0], die_size[1]),
-            pad_size,
-            contact_l,
-            isolation,
+            (n * die.die_size[0], die.die_size[1]),
+            die.pad_size,
+            die.contact_l,
+            die.isolation,
             compass_ports,
         )
         if max_x > available_space_for_dev[0]:
@@ -412,10 +408,10 @@ def find_num_diecells_for_dev(
 
     while dev_y_bigger:
         available_space_for_dev = calculate_available_space_for_dev(
-            (n * die_size[0], m * die_size[1]),
-            pad_size,
-            contact_l,
-            isolation,
+            (n * die.die_size[0], m * die.die_size[1]),
+            die.pad_size,
+            die.contact_l,
+            die.isolation,
             compass_ports,
         )
 
