@@ -560,13 +560,16 @@ def ntron(
     return DIE_NTRON
 
 
-def snspd(
+def snspds(
     die_w: Union[int, float] = dflt.die_w,
     pad_size: Tuple[float] = dflt.pad_size,
-    snspd_width: float = 0.2,
-    snspd_pitch: float = 0.6,
+    snspds_width_pitch: List[Tuple[float, float]] = [
+        (0.1, 0.3),
+        (0.2, 0.6),
+        (0.3, 0.9),
+    ],
     snspd_size: Tuple[Union[int, float], Union[int, float]] = tuple(
-        x / 2 for x in utility.calculate_available_space_for_dev()
+        round(x / 3) for x in utility.calculate_available_space_for_dev()
     ),
     snspd_num_squares: Optional[int] = None,
     overlap_w: Union[int, float] = dflt.ebeam_overlap,
@@ -578,18 +581,19 @@ def snspd(
     text: Union[None, str] = dflt.text,
     fill_pad_layer: bool = False,
 ) -> Device:
-    """Creates a cell that contains a vertical superconducting nanowire single-
-    photon detector (SNSPD).
+    """Creates a cell that contains vertical superconducting nanowire single-
+    photon detectors (SNSPD).
 
     Parameters:
         die_w (int or float): Width of a unit die/cell in the design (the output
-        device will be an integer number of unit cells).
+            device will be an integer number of unit cells).
         pad_size (tuple of int or float): Dimensions of the die's pads (width,
             height).
-        snspd_width (float): Width of the nanowire.
-        snspd_pitch (float): Pitch of the nanowire.
-        snspd_size (tuple of int or float): Size of the detector in squares (width, height).
-        snspd_num_squares (Optional[int]): Number of squares in the detector.
+        snspds_width_pitch (list of tuple of float): list of (width, pitch) of
+            the nanowires. For creating n SNSPD, the list of snspds_width_pitch
+            should have a size of n.
+        snspd_size (tuple of int or float): Size of the detectors in squares (width, height).
+        snspd_num_squares (Optional[int]): Number of squares in the detectors.
         overlap_w (int or float): Extra length of the routes above the die's
             ports to assure alignment with the device (useful for ebeam
             lithography).
@@ -598,49 +602,61 @@ def snspd(
         device_layer (int or array-like[2]): The layer where the device is placed.
         die_layer (int or array-like[2]): The layer where the die is placed.
         pad_layer (int or array-like[2]): The layer where the pads are placed.
-        text (string, optional): If None, the text is f"w={snspd_width}".
+        text (string, optional): If None, the text is f"w={snspds_width}".
         fill_pad_layer (bool): If True, the space reserved for pads in the
             die_cell in filled in pad's layer.
 
     Returns:
-        Device: A cell (of size n*m unit die_cells) containing the SNSPD.
+        Device: A cell (of size n*m unit die_cells) containing the SNSPDs.
     """
     if text is None:
-        text = f"w={snspd_width}"
+        snspds_width = [item[0] for item in snspds_width_pitch]
+        text = f"w={snspds_width}"
     cell_text = text.replace(" \n", ", ")
 
     SNSPD_CELL = Device(f"CELL.SNSPD({cell_text})")
     DEVICE = Device(f"SNSPD({cell_text})")
 
     # create SNSPD, make its ports compass, add safe optimal step
-    SNSPD = device.snspd.vertical(
-        wire_width=snspd_width,
-        wire_pitch=snspd_pitch,
-        size=snspd_size,
-        num_squares=snspd_num_squares,
-        layer=device_layer,
-    )
-    SNSPD = utility.rename_ports_to_compass(SNSPD)
-    SNSPD = utility.add_optimalstep_to_dev(SNSPD, ratio=10)
-    DEVICE << SNSPD
+    snspds_ref = []
+    for i, snspd_width_pitch in enumerate(snspds_width_pitch):
+        SNSPD = device.snspd.vertical(
+            wire_width=snspd_width_pitch[0],
+            wire_pitch=snspd_width_pitch[1],
+            size=snspd_size,
+            num_squares=snspd_num_squares,
+            layer=device_layer,
+        )
+        SNSPD = utility.rename_ports_to_compass(SNSPD)
+        SNSPD = utility.add_optimalstep_to_dev(SNSPD, ratio=10)
+        snspd_ref = DEVICE << SNSPD
+        snspds_ref.append(snspd_ref)
 
     # create die
+    num_snspds = len(snspds_width_pitch)
     die_contact_w = utility.calculate_contact_w(
-        circuit_ports=SNSPD.get_ports(), overlap_w=overlap_w
+        circuit_ports=DEVICE.get_ports(depth=1), overlap_w=overlap_w
     )
-    device_max_size = tuple(
-        x + 2 * overlap_w for x in SNSPD.size
-    )  # not valide anymore if pads are not aligned with dev ports
+    device_max_y = DEVICE.ysize + 2 * overlap_w
+    device_max_x = num_snspds * max(pad_size[0] * 1.5, DEVICE.xsize + 2 * outline_die)
+    device_max_size = (device_max_x, device_max_y)
+
     n, m = utility.find_num_diecells_for_dev(
-        device_max_size, (die_w, die_w), pad_size, overlap_w, outline_die
+        device_max_size,
+        {"N": num_snspds, "S": num_snspds},
+        (die_w, die_w),
+        pad_size,
+        overlap_w,
+        outline_die,
     )
+
     BORDER = utility.die_cell(
         die_size=(n * die_w, m * die_w),
         device_max_size=device_max_size,
         pad_size=pad_size,
         contact_w=die_contact_w,
         contact_l=overlap_w,
-        ports={"N": 1, "S": 1},
+        ports={"N": len(snspds_width_pitch), "S": len(snspds_width_pitch)},
         ports_gnd=["S"],
         text=f"SNSPD \n{text}",
         isolation=outline_die,
@@ -650,8 +666,14 @@ def snspd(
         fill_pad_layer=fill_pad_layer,
     )
 
+    # align SNSPDs to the die's ports
+    for i, ref in enumerate(snspds_ref):
+        ref.movex(0, BORDER.ports[f"N{i+1}"].x)
+    DEVICE = utility.rename_ports_to_compass(DEVICE, depth=1)
+    snspds_ports = DEVICE.ports
+
     # add hyper tapers at die pads
-    dev_contact_w = SNSPD.ports["N1"].width
+    dev_contact_w = max([port.width for port in DEVICE.get_ports()])
     HT, dev_ports = utility.add_hyptap_to_cell(
         BORDER.get_ports(), overlap_w, dev_contact_w, device_layer
     )
@@ -659,9 +681,7 @@ def snspd(
     DEVICE << HT
 
     # link hyper tapers to the device
-    ROUTES = utility.route_to_dev(
-        HT.get_ports(), SNSPD.ports
-    )  # absolutly no need to route, but will be useful when ports are no longer aligned with pads
+    ROUTES = utility.route_to_dev(HT.get_ports(), snspds_ports)
     DEVICE << ROUTES
 
     DEVICE = pg.outline(

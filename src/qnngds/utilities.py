@@ -201,6 +201,7 @@ def calculate_available_space_for_dev(
     pad_size: Tuple[Union[int, float], Union[int, float]] = dflt.pad_size,
     contact_l: Union[int, float] = dflt.ebeam_overlap,
     isolation: Union[int, float] = dflt.die_outline,
+    device_ports: List[str] = ["N", "W", "S", "E"],
 ) -> Tuple[float, float]:
     """Calculates the maximum space available for a device in a die_cell.
 
@@ -213,17 +214,42 @@ def calculate_available_space_for_dev(
         contact_l (int or float): Extra length of the routes above the ports to
             assure alignment with the device (useful for ebeam lithography).
         isolation (int or float): The width of the pads outline.
+        device_ports (List of string): a list of existing ports in the device.
+            E.g.: the device has 2 ports North and 1 South, device_ports = ["N", "S"].
 
     Returns:
         Tuple[float, float]: A tuple containing the width and height of space
         available for a device in a die_cell
     """
 
-    dev_max_size = [
-        2 * (die_w / 2 - 3 * isolation - pad_size[1] - 2 * contact_l)
-        for die_w in die_size
-    ]
-    return dev_max_size[0], dev_max_size[1]
+    num_pads_y = 0
+    num_pads_x = 0
+    if "N" in device_ports:
+        num_pads_y += 1
+    if "S" in device_ports:
+        num_pads_y += 1
+    if "E" in device_ports:
+        num_pads_x += 1
+    if "W" in device_ports:
+        num_pads_x += 1
+
+    dev_max_x = (
+        die_size[0]
+        - 2 * isolation
+        - max(
+            2 * die_cell_border,
+            num_pads_x * (2 * isolation + pad_size[1] + 2 * contact_l),
+        )
+    )
+    dev_max_y = (
+        die_size[1]
+        - 2 * isolation
+        - max(
+            2 * die_cell_border,
+            num_pads_y * (2 * isolation + pad_size[1] + 2 * contact_l),
+        )
+    )
+    return dev_max_x, dev_max_y
 
 
 def calculate_contact_w(
@@ -289,6 +315,7 @@ def find_num_diecells_for_dev(
         dflt.die_w,
         dflt.die_w,
     ),
+    device_ports: Dict[str, int] = {"N": 1, "E": 1, "W": 1, "S": 1},
     die_size: Tuple[Union[int, float], Union[int, float]] = (dflt.die_w, dflt.die_w),
     pad_size: Tuple[Union[int, float], Union[int, float]] = dflt.pad_size,
     contact_l: Union[int, float] = dflt.ebeam_overlap,
@@ -297,9 +324,10 @@ def find_num_diecells_for_dev(
     """Finds the number of die cells that can accommodate a device.
 
     Parameters:
-        device_max_size(tuple of int or float, optional): Max dimensions of the
+        device_max_size (tuple of int or float, optional): Max dimensions of the
             device inside the cell (width, height).
-        die_size(tuple of int or float, optional): Overall size of the cell (width,
+        device_ports (dict): The ports of the device, format must be {'N':m, 'E':n, 'W':p, 'S':q}.
+        die_size (tuple of int or float, optional): Overall size of the cell (width,
             height).
         pad_size(tuple of int or float, optional): Dimensions of the cell's pads
             (width, height).
@@ -312,15 +340,30 @@ def find_num_diecells_for_dev(
         Tuple[float, float]: A tuple containing the number of die cells in width
         and height required to accommodate the device
     """
+
+    max_num_ports_y = max(device_ports.get("E", 0), device_ports.get("W", 0))
+    max_num_ports_x = max(device_ports.get("N", 0), device_ports.get("S", 0))
+
+    max_x = max(
+        device_max_size[0], max_num_ports_x * 1.5 * pad_size[0] + 2 * die_cell_border
+    )
+    max_y = max(
+        device_max_size[1], max_num_ports_y * 1.5 * pad_size[0] + 2 * die_cell_border
+    )
+    compass_ports = [W for W in ["N", "E", "S", "W"] if device_ports.get(W, 0) != 0]
+
     n = 1
     dev_x_bigger = True
 
     while dev_x_bigger:
         available_space_for_dev = calculate_available_space_for_dev(
-            (n * die_size[0], die_size[1]), pad_size, contact_l, isolation
+            (n * die_size[0], die_size[1]),
+            pad_size,
+            contact_l,
+            isolation,
+            compass_ports,
         )
-
-        if device_max_size[0] > available_space_for_dev[0]:
+        if max_x > available_space_for_dev[0]:
             n += 1
         else:
             break
@@ -330,7 +373,11 @@ def find_num_diecells_for_dev(
 
     while dev_y_bigger:
         available_space_for_dev = calculate_available_space_for_dev(
-            (n * die_size[0], m * die_size[1]), pad_size, contact_l, isolation
+            (n * die_size[0], m * die_size[1]),
+            pad_size,
+            contact_l,
+            isolation,
+            compass_ports,
         )
 
         if device_max_size[1] > available_space_for_dev[1]:
@@ -341,7 +388,7 @@ def find_num_diecells_for_dev(
     return n, m
 
 
-def rename_ports_to_compass(DEVICE: Device) -> Device:
+def rename_ports_to_compass(DEVICE: Device, depth: Union[int, None] = 0) -> Device:
     """Rename ports of a Device based on compass directions.
 
     Parameters:
@@ -350,11 +397,13 @@ def rename_ports_to_compass(DEVICE: Device) -> Device:
     Returns:
         Device: A new Phidl Device object with ports renamed to compass directions.
     """
+
+    ports = DEVICE.get_ports(depth=depth)
     # Create a new Device object to store renamed ports
     DEV_COMPASS = Device(DEVICE.name)
 
     # Copy ports from the original device to the new device
-    DEV_COMPASS << DEVICE.flatten()
+    DEV_COMPASS << DEVICE
 
     # Initialize counters for each direction
     E_count = 1
@@ -363,7 +412,7 @@ def rename_ports_to_compass(DEVICE: Device) -> Device:
     S_count = 1
 
     # Iterate through each port in the original device
-    for port in DEVICE.get_ports():
+    for port in ports:
         # Determine the orientation of the port and rename it accordingly
         if port.orientation % 360 == 0:
             DEV_COMPASS.add_port(port=port, name=f"E{E_count}")

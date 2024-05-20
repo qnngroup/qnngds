@@ -14,16 +14,16 @@ jobs:
       with:
         python-version: "3.x"
 
-    - name: Install pypa/build
-      run: >-
-        python3 -m
-        pip install
-        build
-        --user
+    - name: Install dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        pip install build securesystemslib sigstore
+
     - name: Build a binary wheel and a source tarball
       run: python3 -m build
+
     - name: Store the distribution packages
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: python-package-distributions
         path: dist/
@@ -43,7 +43,7 @@ jobs:
 
     steps:
     - name: Download all the dists
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: python-package-distributions
         path: dist/
@@ -64,8 +64,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Install dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        pip install securesystemslib sigstore
+
     - name: Download all the dists
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: python-package-distributions
         path: dist/
@@ -91,7 +96,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ github.token }}
         VERSION: ${{ steps.getversion.outputs.version }}
-      run: >-
+      run: >
         gh release create
         "$VERSION"
         --repo '${{ github.repository }}'
@@ -104,7 +109,7 @@ jobs:
       # Upload to GitHub Release using the `gh` CLI.
       # `dist/` contains the built packages, and the
       # sigstore-produced signatures and certificates.
-      run: >-
+      run: >
         gh release upload
         "$VERSION" dist/**
         --repo '${{ github.repository }}'
@@ -125,7 +130,7 @@ jobs:
 
     steps:
     - name: Download all the dists
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: python-package-distributions
         path: dist/

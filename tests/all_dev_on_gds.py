@@ -19,8 +19,6 @@ import os
 import importlib.util
 import inspect
 
-import qnngds
-
 
 def write_devices_from_module(module_name, src_path):
 

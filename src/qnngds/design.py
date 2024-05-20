@@ -700,33 +700,31 @@ class Design:
             fill_pad_layer=self.fill_pad_layer,
         )
 
-    def snspd_cell(
+    def snspds_cell(
         self,
-        snspd_width: float = 0.2,
-        snspd_pitch: float = 0.6,
+        snspds_width_pitch: List[Tuple[float, float]] = [(0.2, 0.6)],
         snspd_size: Tuple[Union[int, float], Union[int, float]] = (100, 100),
         snspd_num_squares: Optional[int] = None,
         text: Union[None, str] = dflt.text,
     ) -> Device:
-        """Creates a cell that contains a vertical superconducting nanowire
-        single-photon detector (SNSPD).
+        """Creates a cell that contains vertical superconducting nanowire
+        single-photon detectors (SNSPD).
 
         Parameters:
-            snspd_width (float): Width of the nanowire.
-            snspd_pitch (float): Pitch of the nanowire.
-            snspd_size (tuple of int or float): Size of the detector in squares (width, height).
-            snspd_num_squares (Optional[int]): Number of squares in the detector.
-            text (string, optional): If None, the text is f"w={snspd_width}".
+
+            snspds_width_pitch (list of tuple of float): list of (width, pitch) of the nanowires.
+            snspd_size (tuple of int or float): Size of the detectors in squares (width, height).
+            snspd_num_squares (Optional[int]): Number of squares in the detectors.
+            text (string, optional): If None, the text is f"w={snspds_width}".
 
         Returns:
-            Device: A cell (of size n*m unit die_cells) containing the SNSPD.
+            Device: A cell (of size n*m unit die_cells) containing the SNSPDs.
         """
 
-        return cell.snspd(
+        return cell.snspds(
             die_w=self.die_w,
             pad_size=self.pad_size,
-            snspd_width=snspd_width,
-            snspd_pitch=snspd_pitch,
+            snspds_width_pitch=snspds_width_pitch,
             snspd_size=snspd_size,
             snspd_num_squares=snspd_num_squares,
             overlap_w=self.ebeam_overlap,

@@ -45,6 +45,62 @@ def basic(
         wire_pitch = 2 * wire_width
 
     SNSPD = pg.snspd(
+        wire_width=wire_width,
+        wire_pitch=wire_pitch,
+        size=size,
+        num_squares=num_squares,
+        turn_ratio=turn_ratio,
+        terminals_same_side=terminals_same_side,
+        layer=layer,
+    )
+    ports = SNSPD.ports
+    SNSPD = pg.union(SNSPD, layer=layer)
+    SNSPD.ports = ports
+    SNSPD.name = f"SNSPD.BASIC(w={wire_width}, pitch={wire_pitch})"
+    return SNSPD
+
+
+import qnngds._default_param as dflt
+
+
+def basic(
+    wire_width: float = 0.2,
+    wire_pitch: float = 0.6,
+    size: Tuple[Union[int, float], Union[int, float]] = (6, 10),
+    num_squares: Optional[int] = None,
+    turn_ratio: Union[int, float] = 4,
+    terminals_same_side: bool = False,
+    layer: int = dflt.layers["device"],
+) -> Device:
+    """Creates an optimally-rounded SNSPD.
+
+    Takes Phidl's snspd, perform a union and rename it.
+
+    Parameters:
+        wire_width (float): Width of the nanowire.
+        wire_pitch (float): Pitch of the nanowire.
+        size (tuple of int or float): Size of the detector in squares (width, height).
+        num_squares (Optional[int]): Number of squares in the detector.
+        turn_ratio (int or float): Specifies how much of the SNSPD width is
+            dedicated to the 180 degree turn. A turn_ratio of 10 will result in 20%
+            of the width being comprised of the turn.
+        terminals_same_side (bool): If True, both ports will be located on the
+            same side of the SNSPD.
+        layer (int): Layer for the device to be created on.
+
+    Returns:
+        Device: A Device containing an optimally-rounded SNSPD, as provided by
+        Phidl but renamed and unified.
+    """
+    # check parameters constrains
+    if wire_pitch <= wire_width:
+        print(
+            "Warning, wire_pitch cannot be smaller than wire_pitch. "
+            "Choosing wire_pitch = 2*wire_width."
+        )
+        wire_pitch = 2 * wire_width
+
+    SNSPD = pg.snspd(
         wire_width,
         wire_pitch,
         size,
@@ -103,7 +159,7 @@ def vertical(
     s1 = D << S
 
     HP = pg.optimal_hairpin(
-        width=wire_width, pitch=wire_pitch, length=size[0] / 2, layer=layer
+        width=wire_width, pitch=wire_pitch, length=S.xsize / 2, layer=layer
     )
     h1 = D << HP
     h1.connect(h1.ports[1], S.references[0].ports["E"])
