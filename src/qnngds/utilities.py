@@ -17,7 +17,7 @@ import qnngds.geometries as geometry
 import qnngds._default_param as dflt
 
 
-class Die:
+class DieSpec:
 
     def __init__(
         self,
@@ -188,7 +188,7 @@ class Die:
 
 
 def die_cell(
-    die: Die = Die(),
+    die_specs: DieSpec = DieSpec(),
     device_max_size: Tuple[Union[int, float], Union[int, float]] = (
         round(dflt.die_w / 3),
         round(dflt.die_w / 3),
@@ -201,25 +201,13 @@ def die_cell(
     device.
 
     Parameters:
-        die_size (tuple of int or float): Overall size of the cell (width, height).
         device_max_size (tuple of int or float): Max dimensions of the device
             inside the cell (width, height).
-        pad_size (tuple of int or float): Dimensions of the cell's pads (width, height).
-        contact_w (int or float): Width of the ports and route to be connected
-            to a device.
-        contact_l (int or float): Extra length of the routes above the ports to
-            assure alignment with the device (useful for ebeam lithography).
         ports (dict): The ports of the device, format must be {'N':m, 'E':n, 'W':p, 'S':q}.
         ports_gnd (list of string): The ports connected to ground.
-        isolation (int or float): The width of the pads outline.
         text (string): The text to be displayed on the cell.
-        text_size (int or float): Size of text, corresponds to phidl geometry std.
-        layer (int or array-like[2]): The layer where to put the cell.
-        pad_layer (int or array-like[2]): The layer where to put the contact pads.
-        invert (bool): If True, the cell is inverted (useful for positive tone
-            resists exposure).
-        fill_pad_layer (bool): If True, the space reserved for pads in the
-            die_cell is filled in pad's layer.
+        text_size (int or float): If specified, overwrites the Die's
+            text_size. Size of text, corresponds to phidl geometry std.
 
     Returns:
         DIE (Device): The cell, with ports of width contact_w positioned around a device_max_size area.
@@ -228,18 +216,18 @@ def die_cell(
     def offset(overlap_port):
         port_name = overlap_port.name[0]
         if port_name == "N":
-            overlap_port.midpoint[1] += -die.contact_l
+            overlap_port.midpoint[1] += -die_specs.contact_l
         elif port_name == "S":
-            overlap_port.midpoint[1] += die.contact_l
+            overlap_port.midpoint[1] += die_specs.contact_l
         elif port_name == "W":
-            overlap_port.midpoint[0] += die.contact_l
+            overlap_port.midpoint[0] += die_specs.contact_l
         elif port_name == "E":
-            overlap_port.midpoint[0] += -die.contact_l
+            overlap_port.midpoint[0] += -die_specs.contact_l
 
     die_name = text.replace("\n", "")
     DIE = Device(f"DIE {die_name} ")
 
-    border = pg.rectangle(die.die_size)
+    border = pg.rectangle(die_specs.die_size)
     border.move(border.center, (0, 0))
 
     borderOut = Device()
@@ -248,8 +236,8 @@ def die_cell(
     padOut = Device()
 
     pad_block_size = (
-        die.die_size[0] - 2 * die.pad_size[1] - 4 * die.isolation,
-        die.die_size[1] - 2 * die.pad_size[1] - 4 * die.isolation,
+        die_specs.die_size[0] - 2 * die_specs.pad_size[1] - 4 * die_specs.isolation,
+        die_specs.die_size[1] - 2 * die_specs.pad_size[1] - 4 * die_specs.isolation,
     )
     inner_block = pg.compass_multi(device_max_size, ports)
     outer_block = pg.compass_multi(pad_block_size, ports)
@@ -261,35 +249,37 @@ def die_cell(
         port.rotate(180)
 
         # create the pad
-        pad = pg.rectangle(die.pad_size, layer={die.layer, die.pad_layer})
+        pad = pg.rectangle(
+            die_specs.pad_size, layer={die_specs.layer, die_specs.pad_layer}
+        )
         pad.add_port(
             "1",
-            midpoint=(die.pad_size[0] / 2, 0),
-            width=die.pad_size[0],
+            midpoint=(die_specs.pad_size[0] / 2, 0),
+            width=die_specs.pad_size[0],
             orientation=90,
         )
         pad_ref = CONNECT << pad
         pad_ref.connect(pad.ports["1"], port)
 
         # create the route from pad to contact
-        port.width = die.pad_size[0]
-        inner_ports[i].width = die.contact_w
-        CONNECT << pr.route_quad(port, inner_ports[i], layer=die.layer)
+        port.width = die_specs.pad_size[0]
+        inner_ports[i].width = die_specs.contact_w
+        CONNECT << pr.route_quad(port, inner_ports[i], layer=die_specs.layer)
 
         # create the route from contact to overlap
         overlap_port = CONNECT.add_port(port=inner_ports[i])
         offset(overlap_port)
         overlap_port.rotate(180)
-        CONNECT << pr.route_quad(inner_ports[i], overlap_port, layer=die.layer)
+        CONNECT << pr.route_quad(inner_ports[i], overlap_port, layer=die_specs.layer)
 
         # isolate the pads that are not grounded
         port_grounded = any(port.name[0] == P for P in ports_gnd)
         if not port_grounded:
             padOut << pg.outline(
                 CONNECT,
-                distance=die.isolation,
+                distance=die_specs.isolation,
                 join="round",
-                open_ports=2 * die.isolation,
+                open_ports=2 * die_specs.isolation,
             )
 
         # add the port to the die
@@ -305,65 +295,71 @@ def die_cell(
 
     corners_coord = [
         (
-            -die.die_size[0] / 2 + die.die_border_w / 2,
-            -die.die_size[1] / 2 + die.die_border_w / 2,
+            -die_specs.die_size[0] / 2 + die_specs.die_border_w / 2,
+            -die_specs.die_size[1] / 2 + die_specs.die_border_w / 2,
         ),
         (
-            die.die_size[0] / 2 - die.die_border_w / 2,
-            -die.die_size[1] / 2 + die.die_border_w / 2,
+            die_specs.die_size[0] / 2 - die_specs.die_border_w / 2,
+            -die_specs.die_size[1] / 2 + die_specs.die_border_w / 2,
         ),
         (
-            die.die_size[0] / 2 - die.die_border_w / 2,
-            die.die_size[1] / 2 - die.die_border_w / 2,
+            die_specs.die_size[0] / 2 - die_specs.die_border_w / 2,
+            die_specs.die_size[1] / 2 - die_specs.die_border_w / 2,
         ),
         (
-            -die.die_size[0] / 2 + die.die_border_w / 2,
-            die.die_size[1] / 2 - die.die_border_w / 2,
+            -die_specs.die_size[0] / 2 + die_specs.die_border_w / 2,
+            die_specs.die_size[1] / 2 - die_specs.die_border_w / 2,
         ),
     ]
     for corner_coord in corners_coord:
         corner = pg.rectangle(
-            (die.die_border_w - die.isolation, die.die_border_w - die.isolation)
+            (
+                die_specs.die_border_w - die_specs.isolation,
+                die_specs.die_border_w - die_specs.isolation,
+            )
         )
-        corner = pg.outline(corner, -1 * die.isolation)
+        corner = pg.outline(corner, -1 * die_specs.isolation)
         corner.move(corner.center, corner_coord)
         cornersOut << corner
 
     borderOut << cornersOut
 
     # label the cell
-    label = pg.text(text, size=die.text_size, layer=die.layer)
+    label = pg.text(text, size=die_specs.text_size, layer=die_specs.layer)
     label.move((label.xmin, label.ymin), (0, 0))
     pos = [
-        x + 2 * die.isolation + 10 for x in (-die.die_size[0] / 2, -die.die_size[1] / 2)
+        x + 2 * die_specs.isolation + 10
+        for x in (-die_specs.die_size[0] / 2, -die_specs.die_size[1] / 2)
     ]
     label.move(pos)
     DIE << label
-    labelOut = pg.outline(label, die.isolation)
+    labelOut = pg.outline(label, die_specs.isolation)
 
     borderOut << labelOut
 
-    border = pg.boolean(border, borderOut, "A-B", layer=die.layer)
+    border = pg.boolean(border, borderOut, "A-B", layer=die_specs.layer)
     DIE << border
 
-    if die.fill_pad_layer:
-        border_filled = pg.rectangle(die.die_size)
+    if die_specs.fill_pad_layer:
+        border_filled = pg.rectangle(die_specs.die_size)
         center = pg.rectangle(device_max_size)
         border_filled.move(border_filled.center, (0, 0))
         center.move(center.center, (0, 0))
         border_filled = pg.boolean(border_filled, center, "A-B")
 
-        border_filled = pg.boolean(border_filled, borderOut, "A-B", layer=die.pad_layer)
+        border_filled = pg.boolean(
+            border_filled, borderOut, "A-B", layer=die_specs.pad_layer
+        )
         DIE << border_filled
 
     DIE.flatten()
     ports = DIE.get_ports()
     DIE = pg.union(DIE, by_layer=True)
-    if die.invert:
+    if die_specs.invert:
         PADS = pg.deepcopy(DIE)
-        PADS.remove_layers([die.layer])
+        PADS.remove_layers([die_specs.layer])
         PADS.name = "pads"
-        DIE = pg.invert(DIE, border=0, layer=die.layer)
+        DIE = pg.invert(DIE, border=0, layer=die_specs.layer)
         DIE << PADS
     for port in ports:
         DIE.add_port(port)
