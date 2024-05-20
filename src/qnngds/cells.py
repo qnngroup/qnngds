@@ -569,7 +569,7 @@ def snspds(
         (0.3, 0.9),
     ],
     snspd_size: Tuple[Union[int, float], Union[int, float]] = tuple(
-        x / 3 for x in utility.calculate_available_space_for_dev()
+        round(x / 3) for x in utility.calculate_available_space_for_dev()
     ),
     snspd_num_squares: Optional[int] = None,
     overlap_w: Union[int, float] = dflt.ebeam_overlap,
@@ -586,10 +586,12 @@ def snspds(
 
     Parameters:
         die_w (int or float): Width of a unit die/cell in the design (the output
-        device will be an integer number of unit cells).
+            device will be an integer number of unit cells).
         pad_size (tuple of int or float): Dimensions of the die's pads (width,
             height).
-        snspds_width_pitch (list of tuple of float): list of (width, pitch) of the nanowires.
+        snspds_width_pitch (list of tuple of float): list of (width, pitch) of
+            the nanowires. For creating n SNSPD, the list of snspds_width_pitch
+            should have a size of n.
         snspd_size (tuple of int or float): Size of the detectors in squares (width, height).
         snspd_num_squares (Optional[int]): Number of squares in the detectors.
         overlap_w (int or float): Extra length of the routes above the die's
