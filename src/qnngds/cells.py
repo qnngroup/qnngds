@@ -17,10 +17,8 @@ import qnngds._default_param as dflt
 
 
 def alignment(
-    die_w: Union[int, float] = dflt.die_w,
+    die_parameters: utility.DieParameters = utility.DieParameters(),
     layers_to_align: List[int] = [dflt.layers["die"], dflt.layers["pad"]],
-    outline_die: Union[int, float] = dflt.die_outline,
-    die_layer: int = dflt.layers["die"],
     text: Union[None, str] = dflt.text,
 ) -> Device:
     """Creates alignment marks in an integer number of unit cells.
@@ -42,18 +40,16 @@ def alignment(
 
     ALIGN = test.alignment_mark(layers_to_align)
 
-    n = math.ceil((ALIGN.xsize) / die_w)
-    m = math.ceil((ALIGN.ysize) / die_w)
+    n = math.ceil((ALIGN.xsize) / die_parameters.unit_die_size[0])
+    m = math.ceil((ALIGN.ysize) / die_parameters.unit_die_size[1])
 
     BORDER = utility.die_cell(
-        die_size=(n * die_w, m * die_w),
+        die_parameters=die_parameters,
+        n_m_units=(n, m),
         device_max_size=(ALIGN.xsize + 20, ALIGN.ysize + 20),
         ports={},
         ports_gnd={},
-        isolation=outline_die,
         text=f"ALIGN {text}",
-        layer=die_layer,
-        invert=True,
     )
 
     DIE << BORDER.flatten()
@@ -63,13 +59,9 @@ def alignment(
 
 
 def vdp(
-    die_w: Union[int, float] = dflt.die_w,
-    pad_size: Tuple[float] = dflt.pad_size,
+    die_parameters: utility.DieParameters = utility.DieParameters(),
     layers_to_probe: List[int] = [dflt.layers["die"]],
     layers_to_outline: Union[None, List[int]] = dflt.auto_param,
-    outline: Union[int, float] = dflt.die_outline,
-    die_layer: Union[int, float] = dflt.layers["die"],
-    pad_layer: int = dflt.layers["pad"],
     text: Union[None, str] = dflt.text,
 ) -> Device:
     r"""Creates a cell containing a Van Der Pauw structure between 4 contact
@@ -92,12 +84,14 @@ def vdp(
     if text is None:
         text = f"lay={layers_to_probe}"
     if layers_to_outline is None:
-        layers_to_outline = [die_layer]  # default layer to outline if None is given
+        layers_to_outline = [
+            die_parameters.die_layer
+        ]  # default layer to outline if None is given
 
     DIE_VANDP = Device(f"CELL.VDP({text})")
 
-    device_max_w = die_w - 2 * (
-        pad_size[1] + 2 * outline
+    device_max_w = min(die_parameters.unit_die_size) - 2 * (
+        die_parameters.pad_size[1] + 2 * die_parameters.outline
     )  # width of max device size for this cell
     contact_w = device_max_w / 10  # choosing a contact width 10 times smaller
     device_w = (
@@ -107,16 +101,11 @@ def vdp(
     # Creates the DIE, it contains only the cell text and bordure
 
     DIE = utility.die_cell(
-        die_size=(die_w, die_w),
+        die_parameters=die_parameters,
         device_max_size=(device_max_w, device_max_w),
         ports={},
         ports_gnd=[],
-        isolation=outline,
         text=f"VDP \n{text}",
-        layer=die_layer,
-        pad_layer=pad_layer,
-        invert=True,
-        fill_pad_layer=False,
     )
     DIE_VANDP << DIE.flatten()
 
@@ -128,23 +117,28 @@ def vdp(
     AREA = test.vdp(device_w, contact_w)
     VDP << AREA
 
-    ## pads
-    PADS = utility.die_cell(
-        die_size=(die_w, die_w),
-        device_max_size=(device_max_w, device_max_w),
-        pad_size=pad_size,
-        contact_w=pad_size[0],
+    ## pads (creates a die and keeps the pads only)
+    pads_parameters = utility.DieParameters(
+        unit_die_size=die_parameters.unit_die_size,
+        pad_size=die_parameters.pad_size,
+        contact_w=die_parameters.pad_size[0],
         contact_l=0,
-        ports={"N": 1, "E": 1, "W": 1, "S": 1},
-        ports_gnd=["N", "E", "W", "S"],
-        isolation=outline,
-        text="PADS ONLY",
-        layer=0,
-        pad_layer=pad_layer,
+        outline=die_parameters.outline,
+        text_size=die_parameters.text_size,
+        die_layer=0,
+        pad_layer=die_parameters.pad_layer,
         invert=False,
         fill_pad_layer=False,
     )
-    PADS.remove_layers([pad_layer], invert_selection=True)
+
+    PADS = utility.die_cell(
+        die_parameters=pads_parameters,
+        device_max_size=(device_max_w, device_max_w),
+        ports={"N": 1, "E": 1, "W": 1, "S": 1},
+        ports_gnd=["N", "E", "W", "S"],
+        text="PADS ONLY",
+    )
+    PADS.remove_layers([die_parameters.pad_layer], invert_selection=True)
     VDP << PADS
 
     ## routes from pads to probing area
@@ -160,15 +154,15 @@ def vdp(
     for layer in layers_to_probe:
         TEST_LAY = pg.deepcopy(VDP)
         if layer in layers_to_outline:
-            TEST_LAY = pg.outline(TEST_LAY, outline)
+            TEST_LAY = pg.outline(TEST_LAY, die_parameters.outline)
         TEST_LAY.name = f"VDP(lay={layer})"
         DEVICE << TEST_LAY.flatten(single_layer=layer)
 
     DIE_VANDP << DEVICE
 
     # Add pads if they are not in already present
-    if pad_layer not in layers_to_probe:
-        PADS = pg.union(PADS, layer=pad_layer)
+    if die_parameters.pad_layer not in layers_to_probe:
+        PADS = pg.union(PADS, layer=die_parameters.pad_layer)
         PADS.name = "PADS"
         DIE_VANDP << PADS
 
@@ -569,7 +563,8 @@ def snspds(
         (0.3, 0.9),
     ],
     snspd_size: Tuple[Union[int, float], Union[int, float]] = tuple(
-        round(x / 3) for x in utility.calculate_available_space_for_dev()
+        round(x / 3)
+        for x in utility.DieParameters().calculate_available_space_for_dev()
     ),
     snspd_num_squares: Optional[int] = None,
     overlap_w: Union[int, float] = dflt.ebeam_overlap,
