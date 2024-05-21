@@ -170,10 +170,8 @@ def vdp(
 
 
 def etch_test(
-    die_w: Union[int, float] = dflt.die_w,
+    die_parameters: utility.DieParameters = utility.DieParameters(),
     layers_to_etch: List[List[int]] = [[dflt.layers["pad"]]],
-    outline_die: Union[int, float] = dflt.die_outline,
-    die_layer: int = dflt.layers["die"],
     text: Union[None, str] = dflt.text,
 ) -> Device:
     """Creates etch test structures in an integer number of unit cells.
@@ -202,26 +200,35 @@ def etch_test(
 
     ## Create the probing areas
 
-    margin = 0.12 * die_w
-    rect = pg.rectangle((die_w - 2 * margin, die_w - 2 * margin))
+    margin = 0.12 * min(die_parameters.unit_die_size)
+    rect = pg.rectangle(
+        (
+            die_parameters.unit_die_size[0] - 2 * margin,
+            die_parameters.unit_die_size[1] - 2 * margin,
+        )
+    )
     for i, layer_to_etch in enumerate(layers_to_etch):
         probe = Device()
-        probe.add_array(rect, 2, 1, (die_w, die_w))
+        probe.add_array(rect, 2, 1, die_parameters.unit_die_size)
         for layer in layer_to_etch:
-            TEST << pg.outline(probe, -outline_die, layer=layer).movey(i * die_w)
+            TEST << pg.outline(probe, -die_parameters.outline, layer=layer).movey(
+                i * die_parameters.unit_die_size[1]
+            )
 
     ## Create the die
 
-    n = math.ceil((TEST.xsize + 2 * dflt.die_cell_border) / die_w)
-    m = math.ceil((TEST.ysize + 2 * dflt.die_cell_border) / die_w)
+    n = math.ceil(
+        (TEST.xsize + 2 * dflt.die_cell_border) / die_parameters.unit_die_size[0]
+    )
+    m = math.ceil(
+        (TEST.ysize + 2 * dflt.die_cell_border) / die_parameters.unit_die_size[1]
+    )
     BORDER = utility.die_cell(
-        die_size=(n * die_w, m * die_w),
+        die_parameters=die_parameters,
+        n_m_units=(n, m),
         ports={},
         ports_gnd={},
         text=f"ETCH TEST {text}",
-        isolation=outline_die,
-        layer=die_layer,
-        invert=True,
     )
 
     BORDER.move(TEST.center)
