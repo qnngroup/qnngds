@@ -240,7 +240,7 @@ def etch_test(
 
 
 def resolution_test(
-    die_w: Union[int, float] = dflt.die_w,
+    die_parameters: utility.DieParameters = utility.DieParameters(),
     layer_to_resolve: int = dflt.layers["device"],
     resolutions_to_test: List[float] = [
         0.025,
@@ -253,8 +253,6 @@ def resolution_test(
         1.5,
         2.0,
     ],
-    outline: Union[int, float] = dflt.die_outline,
-    die_layer: int = dflt.layers["die"],
     text: Union[None, str] = dflt.text,
 ) -> Device:
     r"""Creates a cell containing a resolution test.
@@ -292,16 +290,14 @@ def resolution_test(
     DIE_RES_TEST << TEST_RES.move(TEST_RES.center, (0, 0))
 
     ## Create the die
-    n = math.ceil((TEST_RES.xsize) / die_w)
-    m = math.ceil((TEST_RES.ysize) / die_w)
+    n = math.ceil((TEST_RES.xsize) / die_parameters.unit_die_size[0])
+    m = math.ceil((TEST_RES.ysize) / die_parameters.unit_die_size[1])
     BORDER = utility.die_cell(
-        die_size=(n * die_w, m * die_w),
+        die_parameters=die_parameters,
+        n_m_units=(n, m),
         ports={},
         ports_gnd=[],
         text=f"RES TEST \n{text}",
-        isolation=outline,
-        layer=die_layer,
-        invert=True,
     )
 
     DIE_RES_TEST << BORDER.flatten()

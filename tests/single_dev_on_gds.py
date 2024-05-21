@@ -35,6 +35,6 @@ def test_qnngds_device(DEV: Device):
 if __name__ == "__main__":
 
     # Modify below the device to be tested, eg: DEV = qnngds.circuits.snspd_ntron()
-    DEV = qnngds.cells.etch_test()
+    DEV = qnngds.cells.resolution_test()
 
     test_qnngds_device(DEV)
