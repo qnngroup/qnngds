@@ -14,7 +14,6 @@ from phidl.device_layout import (
     Port,
 )
 import qnngds.geometries as geometry
-import qnngds._default_param as dflt
 
 
 class DieParameters:
@@ -40,21 +39,20 @@ class DieParameters:
 
     def __init__(
         self,
-        unit_die_size: Tuple[Union[int, float], Union[int, float]] = (
-            dflt.die_w,
-            dflt.die_w,
-        ),
-        pad_size: Tuple[Union[int, float], Union[int, float]] = dflt.pad_size,
-        contact_l: Union[int, float] = dflt.ebeam_overlap,
-        outline: Union[int, float] = dflt.die_outline,
-        die_layer: int = dflt.layers["die"],
-        pad_layer: int = dflt.layers["pad"],
+        unit_die_size: Tuple[Union[int, float], Union[int, float]] = (980, 980),
+        pad_size: Tuple[Union[int, float], Union[int, float]] = (150, 250),
+        contact_l: Union[int, float] = 10,
+        outline: Union[int, float] = 10,
+        die_layer: int = 2,
+        pad_layer: int = 3,
         fill_pad_layer: bool = False,
         invert: bool = True,
-        text_size: Union[int, float] = round(dflt.die_cell_border / 2),
+        text_size: Union[int, float] = 40,
     ):
 
         self.unit_die_size = unit_die_size
+        self.unit_die_w = unit_die_size[0]
+        self.unit_die_h = unit_die_size[1]
         self.pad_size = pad_size
         self.contact_l = contact_l
         self.outline = outline
@@ -64,7 +62,9 @@ class DieParameters:
         self.invert = invert
         self.text_size = text_size
 
-        self.die_border_w = dflt.die_cell_border
+        self.die_border_w = round(
+            min((pad_size[0] + outline) / 2, 0.15 * min(unit_die_size))
+        )
 
     def calculate_available_space_for_dev(
         self,
@@ -116,10 +116,7 @@ class DieParameters:
 
     def find_num_diecells_for_dev(
         self,
-        device_max_size: Tuple[Union[int, float], Union[int, float]] = (
-            dflt.die_w,
-            dflt.die_w,
-        ),
+        device_max_size: Tuple[Union[int, float], Union[int, float]],
         device_ports: Dict[str, int] = {"N": 1, "E": 1, "W": 1, "S": 1},
     ) -> Tuple[float, float]:
         """Finds the number of unit die cells that can accommodate a device.
@@ -174,7 +171,7 @@ class DieParameters:
 
     def calculate_contact_w(
         self,
-        circuit_ports: List[Port] = [Port(width=50)],
+        circuit_ports: List[Port],
     ) -> Union[int, float]:
         """Calculate the minimal width acceptable for the contact from the
         die_cell to the circuit/experiment.
@@ -199,8 +196,8 @@ def die_cell(
     n_m_units: Tuple[int, int] = (1, 1),
     contact_w: Union[int, float] = 50,
     device_max_size: Tuple[Union[int, float], Union[int, float]] = (
-        round(dflt.die_w / 3),
-        round(dflt.die_w / 3),
+        round(DieParameters().unit_die_w / 3),
+        round(DieParameters().unit_die_h / 3),
     ),
     ports: Dict[str, int] = {"N": 1, "E": 1, "W": 1, "S": 1},
     ports_gnd: List[str] = ["E", "S"],
@@ -390,7 +387,7 @@ def die_cell(
 
 
 def add_optimalstep_to_dev(
-    DEVICE: Device, ratio: Union[int, float] = 10, layer: int = dflt.layers["device"]
+    DEVICE: Device, ratio: Union[int, float] = 10, layer: int = 1
 ) -> Device:
     """Add an optimal step to the device's ports.
 
@@ -467,9 +464,9 @@ def rename_ports_to_compass(DEVICE: Device, depth: Union[int, None] = 0) -> Devi
 
 def add_hyptap_to_cell(
     die_ports: List[Port],
-    contact_l: Union[int, float] = dflt.ebeam_overlap,
+    contact_l: Union[int, float] = 10,
     contact_w: Union[int, float] = 5,
-    layer: int = dflt.layers["device"],
+    layer: int = 1,
 ) -> Tuple[Device, Device]:
     """Takes the cell and adds hyper taper at its ports.
 
@@ -507,9 +504,7 @@ def add_hyptap_to_cell(
     return HT, device_ports
 
 
-def route_to_dev(
-    ext_ports: List[Port], dev_ports: Set[Port], layer: int = dflt.layers["device"]
-) -> Device:
+def route_to_dev(ext_ports: List[Port], dev_ports: Set[Port], layer: int = 1) -> Device:
     """Creates smooth routes from external ports to the device's ports. If
     route_smooth is not working, routes quad.
 

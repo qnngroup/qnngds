@@ -13,18 +13,17 @@ import os
 
 import qnngds.cells as cell
 import qnngds.utilities as utility
-import qnngds._default_param as dflt
 
 Free = True
 Occupied = False
 
 
 def create_chip(
-    chip_w: Union[int, float] = dflt.chip_w,
-    margin: Union[int, float] = dflt.chip_margin,
-    N_dies: int = dflt.N_dies,
-    die_w: Union[None, int, float] = dflt.auto_param,
-    annotations_layer: int = dflt.layers["annotation"],
+    chip_w: Union[int, float] = 10000,
+    margin: Union[int, float] = 100,
+    N_dies: int = 11,
+    die_w: Union[None, int, float] = None,
+    annotations_layer: int = 0,
     unpack_chip_map: bool = True,
     create_devices_map_txt: Union[bool, str] = False,
 ) -> Union[
@@ -295,18 +294,18 @@ class Design:
     def __init__(
         self,
         name="new_design",
-        chip_w=dflt.chip_w,
-        chip_margin=dflt.chip_margin,
-        N_dies=dflt.auto_param,
-        unit_die_size=dflt.die_size,
-        pad_size=dflt.pad_size,
-        device_outline=dflt.device_outline,
-        die_outline=dflt.die_outline,
-        ebeam_overlap=dflt.ebeam_overlap,
-        annotation_layer=dflt.layers["annotation"],
-        device_layer=dflt.layers["device"],
-        die_layer=dflt.layers["die"],
-        pad_layer=dflt.layers["pad"],
+        chip_w=10000,
+        chip_margin=100,
+        N_dies=None,
+        unit_die_size=(980, 980),
+        pad_size=(150, 250),
+        device_outline=0.5,
+        die_outline=10,
+        ebeam_overlap=10,
+        annotation_layer=0,
+        device_layer=1,
+        die_layer=2,
+        pad_layer=3,
         fill_pad_layer=False,
     ):
         """
@@ -505,7 +504,7 @@ class Design:
             write_devices_map_txt=write_devices_map_txt,
         )
 
-    def write_gds(self, text: Union[None, str] = dflt.text) -> Union[None, str]:
+    def write_gds(self, text: Union[None, str] = None) -> Union[None, str]:
         """Write a GDS file.
 
         Args:
@@ -522,7 +521,7 @@ class Design:
     # basics:
 
     def alignment_cell(
-        self, layers_to_align: List[int], text: Union[None, str] = dflt.text
+        self, layers_to_align: List[int], text: Union[None, str] = None
     ) -> Device:
         """Creates alignment marks in an integer number of unit cells.
 
@@ -542,8 +541,8 @@ class Design:
     def vdp_cell(
         self,
         layers_to_probe: List[int],
-        layers_to_outline: Union[List[int], None] = dflt.auto_param,
-        text: Union[None, str] = dflt.text,
+        layers_to_outline: Union[List[int], None] = None,
+        text: Union[None, str] = None,
     ) -> Device:
         r"""Creates a cell containing a Van Der Pauw structure between 4 contact
         pads.
@@ -565,7 +564,7 @@ class Design:
         )
 
     def etch_test_cell(
-        self, layers_to_etch: List[List[int]], text: Union[None, str] = dflt.text
+        self, layers_to_etch: List[List[int]], text: Union[None, str] = None
     ) -> Device:
         """Creates etch test structures in an integer number of unit cells.
 
@@ -601,7 +600,7 @@ class Design:
             1.5,
             2,
         ],
-        text: Union[None, str] = dflt.text,
+        text: Union[None, str] = None,
     ) -> Device:
         r"""Creates a cell containing a resolution test.
 
@@ -626,7 +625,7 @@ class Design:
     def nanowires_cell(
         self,
         channels_sources_w: List[Tuple[float, float]],
-        text: Union[None, str] = dflt.text,
+        text: Union[None, str] = None,
     ) -> Device:
         """Creates a cell containing several nanowires of given channel and
         source.
@@ -654,11 +653,11 @@ class Design:
         self,
         choke_w: float,
         channel_w: float,
-        gate_w: Union[float, None] = dflt.auto_param,
-        source_w: Union[float, None] = dflt.auto_param,
-        drain_w: Union[float, None] = dflt.auto_param,
-        choke_shift: Union[float, None] = dflt.auto_param,
-        text: Union[str, None] = dflt.text,
+        gate_w: Union[float, None] = None,
+        source_w: Union[float, None] = None,
+        drain_w: Union[float, None] = None,
+        choke_shift: Union[float, None] = None,
+        text: Union[str, None] = None,
     ) -> Device:
         r"""Creates a standardized cell specifically for a single ntron.
 
@@ -698,7 +697,7 @@ class Design:
         snspds_width_pitch: List[Tuple[float, float]] = [(0.2, 0.6)],
         snspd_size: Tuple[Union[int, float], Union[int, float]] = (100, 100),
         snspd_num_squares: Optional[int] = None,
-        text: Union[None, str] = dflt.text,
+        text: Union[None, str] = None,
     ) -> Device:
         """Creates a cell that contains vertical superconducting nanowire
         single-photon detectors (SNSPD).
@@ -727,8 +726,8 @@ class Design:
     def snspd_ntron_cell(
         self,
         w_choke: float,
-        w_snspd: Union[float, None] = dflt.auto_param,
-        text: Union[str, None] = dflt.text,
+        w_snspd: Union[float, None] = None,
+        text: Union[str, None] = None,
     ) -> Device:
         """Creates a cell that contains an SNSPD coupled to an NTRON. The
         device's parameters are sized according to the SNSPD's width and the

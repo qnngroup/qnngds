@@ -11,15 +11,14 @@ import qnngds.tests as test
 import qnngds.devices as device
 import qnngds.circuits as circuit
 import qnngds.utilities as utility
-import qnngds._default_param as dflt
 
 # basics
 
 
 def alignment(
     die_parameters: utility.DieParameters = utility.DieParameters(),
-    layers_to_align: List[int] = [dflt.layers["die"], dflt.layers["pad"]],
-    text: Union[None, str] = dflt.text,
+    layers_to_align: List[int] = [2, 3],
+    text: Union[None, str] = None,
 ) -> Device:
     """Creates alignment marks in an integer number of unit cells.
 
@@ -58,9 +57,9 @@ def alignment(
 
 def vdp(
     die_parameters: utility.DieParameters = utility.DieParameters(),
-    layers_to_probe: List[int] = [dflt.layers["die"]],
-    layers_to_outline: Union[None, List[int]] = dflt.auto_param,
-    text: Union[None, str] = dflt.text,
+    layers_to_probe: List[int] = [2],
+    layers_to_outline: Union[None, List[int]] = None,
+    text: Union[None, str] = None,
 ) -> Device:
     r"""Creates a cell containing a Van Der Pauw structure between 4 contact
     pads.
@@ -165,8 +164,8 @@ def vdp(
 
 def etch_test(
     die_parameters: utility.DieParameters = utility.DieParameters(),
-    layers_to_etch: List[List[int]] = [[dflt.layers["pad"]]],
-    text: Union[None, str] = dflt.text,
+    layers_to_etch: List[List[int]] = [[3]],
+    text: Union[None, str] = None,
 ) -> Device:
     """Creates etch test structures in an integer number of unit cells.
 
@@ -210,10 +209,12 @@ def etch_test(
     ## Create the die
 
     n = math.ceil(
-        (TEST.xsize + 2 * dflt.die_cell_border) / die_parameters.unit_die_size[0]
+        (TEST.xsize + 2 * die_parameters.die_cell_border)
+        / die_parameters.unit_die_size[0]
     )
     m = math.ceil(
-        (TEST.ysize + 2 * dflt.die_cell_border) / die_parameters.unit_die_size[1]
+        (TEST.ysize + 2 * die_parameters.die_cell_border)
+        / die_parameters.unit_die_size[1]
     )
     BORDER = utility.die_cell(
         die_parameters=die_parameters,
@@ -233,7 +234,7 @@ def etch_test(
 
 def resolution_test(
     die_parameters: utility.DieParameters = utility.DieParameters(),
-    layer_to_resolve: int = dflt.layers["device"],
+    layer_to_resolve: int = 1,
     resolutions_to_test: List[float] = [
         0.025,
         0.05,
@@ -245,7 +246,7 @@ def resolution_test(
         1.5,
         2.0,
     ],
-    text: Union[None, str] = dflt.text,
+    text: Union[None, str] = None,
 ) -> Device:
     r"""Creates a cell containing a resolution test.
 
@@ -300,9 +301,9 @@ def resolution_test(
 def nanowires(
     die_parameters: utility.DieParameters = utility.DieParameters(),
     channels_sources_w: List[Tuple[float, float]] = [(0.1, 1), (0.5, 3), (1, 10)],
-    outline_dev: Union[int, float] = dflt.device_outline,
-    device_layer: int = dflt.layers["device"],
-    text: Union[None, str] = dflt.text,
+    outline_dev: Union[int, float] = 0.5,
+    device_layer: int = 1,
+    text: Union[None, str] = None,
 ) -> Device:
     """Creates a cell that contains several nanowires of given channel and
     source.
@@ -404,13 +405,13 @@ def ntron(
     die_parameters: utility.DieParameters = utility.DieParameters(),
     choke_w: Union[int, float] = 0.1,
     channel_w: Union[int, float] = 0.5,
-    gate_w: Union[None, int, float] = dflt.auto_param,
-    source_w: Union[None, int, float] = dflt.auto_param,
-    drain_w: Union[None, int, float] = dflt.auto_param,
-    choke_shift: Union[None, int, float] = dflt.auto_param,
-    outline_dev: Union[None, int, float] = dflt.device_outline,
-    device_layer: int = dflt.layers["device"],
-    text: Union[None, str] = dflt.text,
+    gate_w: Union[None, int, float] = None,
+    source_w: Union[None, int, float] = None,
+    drain_w: Union[None, int, float] = None,
+    choke_shift: Union[None, int, float] = None,
+    outline_dev: Union[None, int, float] = 0.5,
+    device_layer: int = 1,
+    text: Union[None, str] = None,
 ) -> Device:
     r"""Creates a standardized cell specifically for a single ntron.
 
@@ -519,9 +520,9 @@ def snspds(
         for x in utility.DieParameters().calculate_available_space_for_dev()
     ),
     snspd_num_squares: Optional[int] = None,
-    outline_dev: Union[int, float] = dflt.device_outline,
-    device_layer: int = dflt.layers["device"],
-    text: Union[None, str] = dflt.text,
+    outline_dev: Union[int, float] = 0.5,
+    device_layer: int = 1,
+    text: Union[None, str] = None,
 ) -> Device:
     """Creates a cell that contains vertical superconducting nanowire single-
     photon detectors (SNSPD).
@@ -620,10 +621,10 @@ def snspds(
 def snspd_ntron(
     die_parameters: utility.DieParameters = utility.DieParameters(),
     w_choke: Union[int, float] = 0.1,
-    w_snspd: Union[int, float] = dflt.auto_param,
-    outline_dev: Union[int, float] = dflt.device_outline,
-    device_layer: int = dflt.layers["device"],
-    text: Union[None, str] = dflt.text,
+    w_snspd: Union[int, float] = None,
+    outline_dev: Union[int, float] = 0.5,
+    device_layer: int = 1,
+    text: Union[None, str] = None,
 ) -> Device:
     """Creates a cell that contains an SNSPD coupled to an NTRON. The device's
     parameters are sized according to the SNSPD's width and the NTRON's choke.
