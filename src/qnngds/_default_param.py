@@ -5,6 +5,7 @@ chip_w = 10000
 chip_margin = 100
 N_dies = 11
 die_w = 980
+die_size = (die_w, die_w)
 pad_size = (150, 250)
 device_outline = 0.5
 die_outline = 10

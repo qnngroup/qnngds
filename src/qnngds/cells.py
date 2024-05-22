@@ -123,11 +123,11 @@ def vdp(
         pad_size=die_parameters.pad_size,
         contact_l=0,
         outline=die_parameters.outline,
-        text_size=die_parameters.text_size,
         die_layer=0,
         pad_layer=die_parameters.pad_layer,
         invert=False,
         fill_pad_layer=False,
+        text_size=die_parameters.text_size,
     )
 
     PADS = utility.die_cell(

@@ -12,6 +12,7 @@ from typing import Tuple, List, Union, Optional
 import os
 
 import qnngds.cells as cell
+import qnngds.utilities as utility
 import qnngds._default_param as dflt
 
 Free = True
@@ -297,7 +298,7 @@ class Design:
         chip_w=dflt.chip_w,
         chip_margin=dflt.chip_margin,
         N_dies=dflt.auto_param,
-        die_w=dflt.die_w,
+        unit_die_size=dflt.die_size,
         pad_size=dflt.pad_size,
         device_outline=dflt.device_outline,
         die_outline=dflt.die_outline,
@@ -335,7 +336,9 @@ class Design:
         self.chip_w = chip_w
         self.chip_margin = chip_margin
         self.N_dies = N_dies
-        self.die_w = die_w
+        self.die_size = unit_die_size
+        self.die_w = unit_die_size[0]
+        self.die_h = unit_die_size[1]
 
         self.pad_size = pad_size
         self.device_outline = device_outline
@@ -350,6 +353,18 @@ class Design:
         }
 
         self.fill_pad_layer = fill_pad_layer
+
+        self.die_parameters = utility.DieParameters(
+            unit_die_size,
+            pad_size,
+            ebeam_overlap,
+            die_outline,
+            die_layer,
+            pad_layer,
+            fill_pad_layer,
+        )
+
+        # self.dies_parameters = utility.DieParameters()
 
     # help building a design
 
@@ -519,10 +534,8 @@ class Design:
             Device: A device that centers the alignment marks in an n*m unit cell.
         """
         return cell.alignment(
-            die_w=self.die_w,
+            die_parameters=self.die_parameters,
             layers_to_align=layers_to_align,
-            outline_die=self.die_outline,
-            die_layer=self.layers["die"],
             text=text,
         )
 
@@ -545,13 +558,9 @@ class Design:
         """
 
         return cell.vdp(
-            die_w=self.die_w,
-            pad_size=self.pad_size,
+            die_parameters=self.die_parameters,
             layers_to_probe=layers_to_probe,
             layers_to_outline=layers_to_outline,
-            outline=self.die_outline,
-            die_layer=self.layers["die"],
-            pad_layer=self.layers["pad"],
             text=text,
         )
 
@@ -573,10 +582,8 @@ class Design:
         """
 
         return cell.etch_test(
-            die_w=self.die_w,
+            die_parameters=self.die_parameters,
             layers_to_etch=layers_to_etch,
-            outline_die=self.die_outline,
-            die_layer=self.layers["die"],
             text=text,
         )
 
@@ -608,11 +615,9 @@ class Design:
         """
 
         return cell.resolution_test(
-            die_w=self.die_w,
+            die_parameters=self.die_parameters,
             layer_to_resolve=layer_to_resolve,
             resolutions_to_test=resolutions_to_test,
-            outline=self.die_outline,
-            die_layer=self.layers["die"],
             text=text,
         )
 
@@ -638,17 +643,11 @@ class Design:
         """
 
         return cell.nanowires(
-            die_w=self.die_w,
-            pad_size=self.pad_size,
+            die_parameters=self.die_parameters,
             channels_sources_w=channels_sources_w,
-            overlap_w=self.ebeam_overlap,
-            outline_die=self.die_outline,
             outline_dev=self.device_outline,
             device_layer=self.layers["device"],
-            die_layer=self.layers["die"],
-            pad_layer=self.layers["pad"],
             text=text,
-            fill_pad_layer=self.fill_pad_layer,
         )
 
     def ntron_cell(
@@ -682,22 +681,16 @@ class Design:
         """
 
         return cell.ntron(
-            die_w=self.die_w,
-            pad_size=self.pad_size,
+            die_parameters=self.die_parameters,
             choke_w=choke_w,
             channel_w=channel_w,
             gate_w=gate_w,
             source_w=source_w,
             drain_w=drain_w,
             choke_shift=choke_shift,
-            overlap_w=self.ebeam_overlap,
-            outline_die=self.die_outline,
             outline_dev=self.device_outline,
             device_layer=self.layers["device"],
-            die_layer=self.layers["die"],
-            pad_layer=self.layers["pad"],
             text=text,
-            fill_pad_layer=self.fill_pad_layer,
         )
 
     def snspds_cell(
@@ -722,19 +715,13 @@ class Design:
         """
 
         return cell.snspds(
-            die_w=self.die_w,
-            pad_size=self.pad_size,
+            die_parameters=self.die_parameters,
             snspds_width_pitch=snspds_width_pitch,
             snspd_size=snspd_size,
             snspd_num_squares=snspd_num_squares,
-            overlap_w=self.ebeam_overlap,
-            outline_die=self.die_outline,
             outline_dev=self.device_outline,
             device_layer=self.layers["device"],
-            die_layer=self.layers["die"],
-            pad_layer=self.layers["pad"],
             text=text,
-            fill_pad_layer=self.fill_pad_layer,
         )
 
     def snspd_ntron_cell(
@@ -757,16 +744,10 @@ class Design:
         """
 
         return cell.snspd_ntron(
-            die_w=self.die_w,
-            pad_size=self.pad_size,
+            die_parameters=self.die_parameters,
             w_choke=w_choke,
             w_snspd=w_snspd,
-            overlap_w=self.ebeam_overlap,
-            outline_die=self.die_outline,
             outline_dev=self.device_outline,
             device_layer=self.layers["device"],
-            die_layer=self.layers["die"],
-            pad_layer=self.layers["pad"],
             text=text,
-            fill_pad_layer=self.fill_pad_layer,
         )

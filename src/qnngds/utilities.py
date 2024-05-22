@@ -28,22 +28,23 @@ class DieParameters:
         pad_size: Tuple[Union[int, float], Union[int, float]] = dflt.pad_size,
         contact_l: Union[int, float] = dflt.ebeam_overlap,
         outline: Union[int, float] = dflt.die_outline,
-        text_size: Union[int, float] = dflt.die_cell_border / 2,
         die_layer: int = dflt.layers["die"],
         pad_layer: int = dflt.layers["pad"],
-        invert: bool = True,
         fill_pad_layer: bool = False,
+        invert: bool = True,
+        text_size: Union[int, float] = round(dflt.die_cell_border / 2),
     ):
 
         self.unit_die_size = unit_die_size
         self.pad_size = pad_size
         self.contact_l = contact_l
         self.outline = outline
-        self.text_size = text_size
         self.die_layer = die_layer
         self.pad_layer = pad_layer
-        self.invert = invert
         self.fill_pad_layer = fill_pad_layer
+        self.invert = invert
+        self.text_size = text_size
+
         self.die_border_w = dflt.die_cell_border
 
     def calculate_available_space_for_dev(
