@@ -26,7 +26,6 @@ class DieParameters:
             dflt.die_w,
         ),
         pad_size: Tuple[Union[int, float], Union[int, float]] = dflt.pad_size,
-        contact_w: Union[int, float] = 50,
         contact_l: Union[int, float] = dflt.ebeam_overlap,
         outline: Union[int, float] = dflt.die_outline,
         text_size: Union[int, float] = dflt.die_cell_border / 2,
@@ -38,7 +37,6 @@ class DieParameters:
 
         self.unit_die_size = unit_die_size
         self.pad_size = pad_size
-        self.contact_w = contact_w
         self.contact_l = contact_l
         self.outline = outline
         self.text_size = text_size
@@ -131,16 +129,13 @@ class DieParameters:
 
         n = 1
         dev_x_bigger = True
+        available_space_for_dev = self.calculate_available_space_for_dev(
+            compass_ports,
+        )
 
         while dev_x_bigger:
-            available_space_for_dev = self.calculate_available_space_for_dev(
-                (n * self.unit_die_size[0], self.unit_die_size[1]),
-                self.pad_size,
-                self.contact_l,
-                self.outline,
-                compass_ports,
-            )
-            if max_x > available_space_for_dev[0]:
+
+            if max_x > n * available_space_for_dev[0]:
                 n += 1
             else:
                 break
@@ -149,15 +144,8 @@ class DieParameters:
         dev_y_bigger = True
 
         while dev_y_bigger:
-            available_space_for_dev = self.calculate_available_space_for_dev(
-                (n * self.unit_die_size[0], m * self.unit_die_size[1]),
-                self.pad_size,
-                self.contact_l,
-                self.outline,
-                compass_ports,
-            )
 
-            if max_y > available_space_for_dev[1]:
+            if max_y > m * available_space_for_dev[1]:
                 m += 1
             else:
                 break
@@ -189,6 +177,7 @@ class DieParameters:
 def die_cell(
     die_parameters: DieParameters = DieParameters(),
     n_m_units: Tuple[int, int] = (1, 1),
+    contact_w: Union[int, float] = 50,
     device_max_size: Tuple[Union[int, float], Union[int, float]] = (
         round(dflt.die_w / 3),
         round(dflt.die_w / 3),
@@ -268,7 +257,7 @@ def die_cell(
 
         # create the route from pad to contact
         port.width = die_parameters.pad_size[0]
-        inner_ports[i].width = die_parameters.contact_w
+        inner_ports[i].width = contact_w
         CONNECT << pr.route_quad(port, inner_ports[i], layer=die_parameters.die_layer)
 
         # create the route from contact to overlap
