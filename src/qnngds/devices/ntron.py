@@ -4,7 +4,6 @@ from phidl import Device
 
 import phidl.geometry as pg
 from typing import Tuple, Optional
-import qnngds._default_param as dflt
 
 
 def smooth(
@@ -14,7 +13,7 @@ def smooth(
     source_w: float = 0.3,
     drain_w: float = 0.3,
     choke_shift: float = -0.3,
-    layer: int = dflt.layers["device"],
+    layer: int = 1,
 ) -> Device:
     """Creates a ntron device.
 
@@ -68,7 +67,7 @@ def sharp(
     channel_w: float = 0.1,
     source_w: float = 0.3,
     drain_w: float = 0.3,
-    layer: int = dflt.layers["device"],
+    layer: int = 1,
 ) -> Device:
     """Creates a sharp ntron device.
 

@@ -4,7 +4,6 @@ from phidl import Device
 
 import phidl.geometry as pg
 from typing import Tuple, Optional, Union
-import qnngds._default_param as dflt
 
 
 def basic(
@@ -14,7 +13,7 @@ def basic(
     num_squares: Optional[int] = None,
     turn_ratio: Union[int, float] = 4,
     terminals_same_side: bool = False,
-    layer: int = dflt.layers["device"],
+    layer: int = 1,
 ) -> Device:
     """Creates an optimally-rounded SNSPD.
 
@@ -60,9 +59,6 @@ def basic(
     return SNSPD
 
 
-import qnngds._default_param as dflt
-
-
 def basic(
     wire_width: float = 0.2,
     wire_pitch: float = 0.6,
@@ -70,7 +66,7 @@ def basic(
     num_squares: Optional[int] = None,
     turn_ratio: Union[int, float] = 4,
     terminals_same_side: bool = False,
-    layer: int = dflt.layers["device"],
+    layer: int = 1,
 ) -> Device:
     """Creates an optimally-rounded SNSPD.
 
@@ -122,7 +118,7 @@ def vertical(
     size: Tuple[Union[int, float], Union[int, float]] = (6, 10),
     num_squares: Optional[int] = None,
     extend: Optional[float] = None,
-    layer: int = dflt.layers["device"],
+    layer: int = 1,
 ) -> Device:
     """Creates an optimally-rounded SNSPD, with terminals in its center instead
     of the side.

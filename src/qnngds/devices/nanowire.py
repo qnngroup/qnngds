@@ -4,13 +4,12 @@ from phidl import Device
 
 import phidl.geometry as pg
 from typing import Tuple, Optional
-import qnngds._default_param as dflt
 
 
 def spot(
     channel_w: float = 0.1,
     source_w: float = 0.3,
-    layer: int = dflt.layers["device"],
+    layer: int = 1,
     num_pts: int = 100,
 ) -> Device:
     """Creates a single wire, made of two optimal steps from channel_w to

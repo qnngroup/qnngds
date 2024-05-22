@@ -209,12 +209,10 @@ def etch_test(
     ## Create the die
 
     n = math.ceil(
-        (TEST.xsize + 2 * die_parameters.die_cell_border)
-        / die_parameters.unit_die_size[0]
+        (TEST.xsize + 2 * die_parameters.die_border_w) / die_parameters.unit_die_size[0]
     )
     m = math.ceil(
-        (TEST.ysize + 2 * die_parameters.die_cell_border)
-        / die_parameters.unit_die_size[1]
+        (TEST.ysize + 2 * die_parameters.die_border_w) / die_parameters.unit_die_size[1]
     )
     BORDER = utility.die_cell(
         die_parameters=die_parameters,
