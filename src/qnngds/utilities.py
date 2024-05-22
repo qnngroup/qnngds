@@ -18,6 +18,25 @@ import qnngds._default_param as dflt
 
 
 class DieParameters:
+    """A class regrouping every parameter proper to a die_cell.
+
+    This class does not include anything linked to the device/circuit/experiment to
+    be placed in the cells.
+
+    Parameters:
+        unit_die_size (tuple of (int or float, int or float)): Dimensions of a unit die/cell (width, height).
+        pad_size (tuple of int or float): Dimensions of the die's pads (width, height).
+        contact_l (int or float): Extra length of the routes above the die's
+            ports to assure alignment with the device (useful for ebeam
+            lithography).
+        outline (int or float): The width of the pads' outline.
+        die_layer (int): The layer where the die is placed.
+        pad_layer (int): The layer where the pads are placed.
+        fill_pad_layer (bool): If True, the cells are filled with ground in
+            pad's layer.
+        invert (bool): If True, inverts the die's layer for positive lithography.
+        text_size (int or float): The size of the text in the cells.
+    """
 
     def __init__(
         self,
@@ -161,7 +180,7 @@ class DieParameters:
         die_cell to the circuit/experiment.
 
         The conditions are that the contact width should be bigger than (1) the
-        biggest port of the circuit, (2) the contact_l (to avoid a short).
+        biggest port of the circuit, (2) the contact_l (to avoid a short/open circuit).
 
         Parameters:
             circuit_ports (list of Port): The ports of the circuit to be placed in the
@@ -192,8 +211,8 @@ def die_cell(
     device.
 
     Parameters:
-        die_parameters
-        n_m_units
+        die_parameters (DieParameters): the die's parameters.
+        n_m_units (tuple of int): number of unit dies that compose the cell in width and height.
         device_max_size (tuple of int or float): Max dimensions of the device
             inside the cell (width, height).
         ports (dict): The ports of the device, format must be {'N':m, 'E':n, 'W':p, 'S':q}.
@@ -456,11 +475,13 @@ def add_hyptap_to_cell(
 
     Parameters:
         die_ports (list of Port): The ports of the die cell (use .get_ports()).
-        contact_l (int or float): The overlap width in µm (accounts for
-            misalignment between 1st and 2nd ebeam exposures).
+        contact_l (int or float): The overlap width (accounts for
+            misalignment between 1st and 2nd ebeam exposures). Will also
+            correspond to the hyper taper's length.
         contact_w (int or float): The width of the contact with the device's
-            route in µm (width of hyper taper's end).
-        layer (int or array-like[2]): The layer on which to place the device.
+            route (width of hyper taper's end).
+        layer (int or array-like[2]): The layer on which to place the tapers
+            (usually the same as the circuit's layer).
 
     Returns:
         Tuple[Device, Device]: a tuple containing:

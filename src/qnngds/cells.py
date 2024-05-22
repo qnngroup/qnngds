@@ -24,10 +24,8 @@ def alignment(
     """Creates alignment marks in an integer number of unit cells.
 
     Parameters:
-        die_w (int or float): Width of a unit die/cell in the design (the output device will be an integer number of unit cells).
+        die_parameters (DieParameters): the die's parameters.
         layers_to_align (list of int): Layers to align.
-        outline_die (int or float): The width of the die's outline.
-        die_layer (int): The layer where the die is placed.
         text (str, optional): If None, the text is f"lay={layers_to_align}".
 
     Returns:
@@ -68,13 +66,9 @@ def vdp(
     pads.
 
     Parameters:
-        die_w (int or float): Width of a unit die/cell in the design (the output device will be an integer number of unit cells).
-        pad_size (tuple of int or float): Dimensions of the die's pads (width, height).
+        die_parameters (DieParameters): the die's parameters.
         layers_to_probe (list of int): The layers on which to place the VDP structure.
         layers_to_outline (list of int): Among the VDP layers, the ones for which structure must not be filled but outlined.
-        outline (int or float): The width of the VDP and die's outline.
-        die_layer (int or tuple of int): The layer where the die is placed.
-        pad_layer (int or tuple of int): The layer where the pads are placed.
         text (str, optional): If None, the text is f"lay={layers_to_probe}".
     Returns:
         DIE_VANDP (Device): The created device.
@@ -181,11 +175,9 @@ def etch_test(
     is complete.
 
     Parameters:
-        die_w (int or float): Width of a unit die/cell in the design (the output device will be an integer number of unit cells).
+        die_parameters (DieParameters): the die's parameters.
         layers_to_etch (list of list of int): Each element of the list corresponds to one test point, to put on the list of layers specified.
                                                Example: [[1, 2], [1], [2]]
-        outline_die (int or float): The width of the die's outline.
-        die_layer (int): The layer where the die is placed.
         text (str, optional): If None, the text is f"lay={layers_to_etch}".
 
     Returns:
@@ -258,11 +250,9 @@ def resolution_test(
     r"""Creates a cell containing a resolution test.
 
     Parameters:
-        die_w (int or float): Width of a unit die/cell in the design (the output device will be an integer number of unit cells).
+        die_parameters (DieParameters): the die's parameters.
         layer_to_resolve (int): The layer to put the resolution test on.
         resolutions_to_test (list of float): The resolutions to test in µm.
-        outline (int or float): The width of the VDP and die's outline.
-        die_layer (int or tuple of int): The layer where the die is placed.
         text (str, optional): If None, the text is f"lay={layer_to_resolve}".
 
     Returns:
@@ -318,23 +308,12 @@ def nanowires(
     source.
 
     Parameters:
-        die_w (int or float): Width of a unit die/cell in the design (the output
-            device will be an integer number of unit cells).
-        pad_size (tuple of int or float): Dimensions of the die's pads (width,
-            height).
+        die_parameters (DieParameters): the die's parameters.
         channels_sources_w (list of tuple of float): The list of (channel_w,
             source_w) of the nanowires to create.
-        die_parameters.contact_l (int or float): Extra length of the routes above the die's
-            ports to assure alignment with the device (useful for ebeam
-            lithography).
-        outline_die (int or float): The width of the pads outline.
         outline_dev (int or float): The width of the device's outline.
         device_layer (int or tuple of int): The layer where the device is placed.
-        die_layer (int or tuple of int): The layer where the die is placed.
-        pad_layer (int or tuple of int): The layer where the pads are placed.
         text (str, optional): If None, the text is f"w={channels_w}".
-        fill_pad_layer (bool): If True, the space reserved for pads in the
-            die_cell in filled in pad's layer.
 
     Returns:
         Device: A device (of size n*m unit cells) containing the nanowires, the
@@ -440,26 +419,16 @@ def ntron(
     choke_shift = -3 * channel_w
 
     Parameters:
-        die_w (int or float): Width of a unit die/cell in the design (the output
-            device will be an integer number of unit cells).
-        pad_size (tuple of int or float): Dimensions of the die's pads (width, height).
+        die_parameters (DieParameters): the die's parameters.
         choke_w (int or float): The width of the ntron's choke in µm.
         channel_w (int or float): The width of the ntron's channel in µm.
         gate_w (int or float, optional): If None, gate width is 3 times the channel width.
         source_w (int or float, optional): If None, source width is 3 times the channel width.
         drain_w (int or float, optional): If None, drain width is 3 times the channel width.
         choke_shift (int or float, optional): If None, choke shift is -3 times the channel width.
-        die_parameters.contact_l (int or float): Extra length of the routes above the die's
-            ports to assure alignment with the device (useful for ebeam
-            lithography).
-        outline_die (int or float): The width of the pads outline.
         outline_dev (int or float): The width of the device's outline.
         device_layer (int or array-like[2]): The layer where the device is placed.
-        die_layer (int or array-like[2]): The layer where the die is placed.
-        pad_layer (int or array-like[2]): The layer where the pads are placed.
         text (string, optional): If None, the text is f"chk: {choke_w} \\nchnl: {channel_w}".
-        fill_pad_layer (bool): If True, the space reserved for pads in the
-            die_cell in filled in pad's layer.
 
     Returns:
         Device: A device containing the ntron, the border of the die (created with die_cell function),
@@ -558,26 +527,15 @@ def snspds(
     photon detectors (SNSPD).
 
     Parameters:
-        die_w (int or float): Width of a unit die/cell in the design (the output
-            device will be an integer number of unit cells).
-        pad_size (tuple of int or float): Dimensions of the die's pads (width,
-            height).
+        die_parameters (DieParameters): the die's parameters.
         snspds_width_pitch (list of tuple of float): list of (width, pitch) of
             the nanowires. For creating n SNSPD, the list of snspds_width_pitch
             should have a size of n.
         snspd_size (tuple of int or float): Size of the detectors in squares (width, height).
         snspd_num_squares (Optional[int]): Number of squares in the detectors.
-        die_parameters.contact_l (int or float): Extra length of the routes above the die's
-            ports to assure alignment with the device (useful for ebeam
-            lithography).
-        outline_die (int or float): The width of the pads outline.
         outline_dev (int or float): The width of the device's outline.
         device_layer (int or array-like[2]): The layer where the device is placed.
-        die_layer (int or array-like[2]): The layer where the die is placed.
-        pad_layer (int or array-like[2]): The layer where the pads are placed.
         text (string, optional): If None, the text is f"w={snspds_width}".
-        fill_pad_layer (bool): If True, the space reserved for pads in the
-            die_cell in filled in pad's layer.
 
     Returns:
         Device: A cell (of size n*m unit die_cells) containing the SNSPDs.
@@ -671,20 +629,12 @@ def snspd_ntron(
     parameters are sized according to the SNSPD's width and the NTRON's choke.
 
     Parameters:
-        die_w (int or float): Width of a unit die/cell in the design (the output device will be an integer number of unit cells).
-        pad_size (tuple of int or float): Dimensions of the die's pads (width, height).
+        die_parameters (DieParameters): the die's parameters.
         w_choke (int or float): The width of the NTRON choke in µm.
         w_snspd (int or float, optional): The width of the SNSPD nanowire in µm (if None, scaled to 5 * w_choke).
-        die_parameters.contact_l (int or float): Extra length of the routes above the die's ports to assure alignment with the device
-                                             (useful for ebeam lithography).
-        outline_die (int or float): The width of the pads outline.
         outline_dev (int or float): The width of the device's outline.
         device_layer (int or array-like[2]): The layer where the device is placed.
-        die_layer (int or array-like[2]): The layer where the die is placed.
-        pad_layer (int or array-like[2]): The layer where the pads are placed.
         text (string, optional): If None, the text is f"w={w_snspd}, {w_choke}".
-        fill_pad_layer (bool): If True, the space reserved for pads in the
-            die_cell in filled in pad's layer.
 
     Returns:
         Device: A cell containing a die in die_layer, pads in pad layer,
