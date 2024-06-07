@@ -1,6 +1,6 @@
 from . import devices, circuits, cells, design, geometries, tests, utilities
 
-
+__version__ = "2.5.4"
 def help():
     """Provides links to documentation."""
 
