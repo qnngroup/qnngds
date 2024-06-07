@@ -90,7 +90,7 @@ def ntron_single(
         if round(s.ports[2].midpoint[0], 6) == round(
             t.ports[1].midpoint[0], 6
         ) or round(s.ports[2].midpoint[1], 6) == round(t.ports[1].midpoint[1], 6):
-            r = D << pr.route_basic(port1=s.ports[2], port2=t.ports[1])
+            r = D << pr.route_sharp(port1=s.ports[2], port2=t.ports[1])
         else:
             r = D << pr.route_manhattan(port1=s.ports[2], port2=t.ports[1], radius=10)
         new_port_list.append(t.ports[2])
@@ -522,7 +522,7 @@ def ntron_10g(
         if round(port_list[i].midpoint[0], 6) == round(
             t.ports[1].midpoint[0], 6
         ) or round(port_list[i].midpoint[1], 6) == round(t.ports[1].midpoint[1], 6):
-            r = pr.route_basic(port1=port_list[i], port2=t.ports[1])
+            r = pr.route_sharp(port1=port_list[i], port2=t.ports[1])
             D << pg.outline(r, distance=outline_dis, open_ports=True)
         else:
             r = pr.route_manhattan(port1=port_list[i], port2=t.ports[1], radius=10)
@@ -602,7 +602,7 @@ def ntron_10g_ind(
         if round(port_list[i].midpoint[0], 6) == round(
             t.ports[1].midpoint[0], 6
         ) or round(port_list[i].midpoint[1], 6) == round(t.ports[1].midpoint[1], 6):
-            r = pr.route_basic(port1=port_list[i], port2=t.ports[1])
+            r = pr.route_sharp(port1=port_list[i], port2=t.ports[1])
             D << pg.outline(r, distance=outline_dis, open_ports=True)
         else:
             r = pr.route_manhattan(port1=port_list[i], port2=t.ports[1], radius=10)
@@ -718,7 +718,7 @@ def ntron_snspd(
         ht = E << qg.hyper_taper(10, 100, routing, layer=0)
         ht.connect(ht.ports[2], pads.ports[i])
         port_list.append(ht.ports[2])
-        E << pr.route_basic(ht.ports[1], D.ports[i + 1])
+        E << pr.route_sharp(ht.ports[1], D.ports[i + 1])
 
     port_list.extend([ht1.ports[2], ht2.ports[2]])
     F = pg.copy_layer(E, layer=0)
@@ -822,7 +822,7 @@ def ntron_andor(choke_w=0.02, channel_w=0.12, inductor_width=0.3, layer=1):
         port_taper = D << qg.hyper_taper(10, 150, routing)
         port_taper.connect(port_taper.ports[2], p.ports[i])
         port_list.append(port_taper.ports[2])
-        D << pr.route_basic(port_taper.ports[1], D.ports[n])
+        D << pr.route_sharp(port_taper.ports[1], D.ports[n])
     port_list.append(D.ports[3])
     port_list.append(D.ports[4])
 
@@ -1531,7 +1531,7 @@ def single_bit_array(N, M, spacing=(40, 30), device_layer=1, heater_layer=2):
     sub_port_list = np.reshape(sub_port_list, (N, 4))
     port_list = []
     for i in range(1, N):
-        con = Dsub << pr.route_basic(
+        con = Dsub << pr.route_sharp(
             sub_port_list[i - 1][0], sub_port_list[i][1], layer=device_layer
         )
         # port_list.extend(Dsub.get_ports())
@@ -1557,7 +1557,7 @@ def single_bit_array(N, M, spacing=(40, 30), device_layer=1, heater_layer=2):
             heaterR.append(p)
 
     for i in range(0, N * (M - 1)):
-        D << pr.route_basic(heaterR[i], heaterL[i + N], layer=heater_layer)
+        D << pr.route_sharp(heaterR[i], heaterL[i + N], layer=heater_layer)
 
     D.flatten()
 
@@ -1613,7 +1613,7 @@ def memory_array(N, M, spacing=(8, 5), layer1=1, layer2=2):
     sub_port_list = np.reshape(sub_port_list, (N, 4))
     port_list = []
     for i in range(1, N):
-        con = Dsub << pr.route_basic(
+        con = Dsub << pr.route_sharp(
             sub_port_list[i - 1][0], sub_port_list[i][1], layer=layer1
         )
         # port_list.extend(Dsub.get_ports())
@@ -1639,7 +1639,7 @@ def memory_array(N, M, spacing=(8, 5), layer1=1, layer2=2):
             heaterR.append(p)
 
     for i in range(0, N * (M - 1)):
-        D << pr.route_basic(heaterR[i], heaterL[i + N], layer=layer2)
+        D << pr.route_sharp(heaterR[i], heaterL[i + N], layer=layer2)
 
     D.flatten()
 
