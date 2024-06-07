@@ -1,0 +1,13 @@
+name: qnngds
+channels:
+  - conda-forge
+dependencies:
+  - python=3.8
+  - numpy
+  - gdspy
+  - pip:
+    - qnnpy
+    - qnngds
+    - phidl
+    - pre-commit
+    - ruff
