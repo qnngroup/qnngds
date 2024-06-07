@@ -176,13 +176,13 @@ def nw_same_side(wire_width=0.2, wire_pitch=0.6, size=(22, 11), layer=1):
     EXTEND1 = wire.add_ref(extend)
     EXTEND1.rotate(-90).move(EXTEND1.ports[1], destination=NW.ports[2]).movex(-5)
 
-    bump = pr.route_basic(
-        NW.ports[1], EXTEND.ports[1], path_type="sine", width_type="sine"
+    bump = pr.route_smooth(
+        NW.ports[1], EXTEND.ports[1], path_type="sine"
     )
     wire.add_ref(bump)
 
-    bump = pr.route_basic(
-        NW.ports[2], EXTEND1.ports[1], path_type="sine", width_type="sine"
+    bump = pr.route_smooth(
+        NW.ports[2], EXTEND1.ports[1], path_type="sine"
     )
     wire.add_ref(bump)
     wire.move(origin=NW.center, destination=(0, 0))
@@ -233,14 +233,14 @@ def nw_same_side_port(wire_width=0.2, wire_pitch=0.6, size=(22, 11), layer=1):
     hTAPER = hyper_taper(length=50, wide_section=45, narrow_section=5, layer=0)
     htaper = device.add_ref(hTAPER)
     htaper.rotate(90).move(origin=htaper.ports[2], destination=d.ports["21"])
-    ROUT = pr.route_basic(
+    ROUT = pr.route_smooth(
         wire.ports[1], htaper.ports[1], width_type="straight", path_type="sine"
     )
     rout = device.add_ref(ROUT)
 
     htaper1 = device.add_ref(hTAPER)
     htaper1.rotate(90).move(origin=htaper1.ports[2], destination=d.ports["22"])
-    ROUT = pr.route_basic(
+    ROUT = pr.route_smooth(
         wire.ports[2], htaper1.ports[1], width_type="straight", path_type="sine"
     )
     rout = device.add_ref(ROUT)
@@ -284,7 +284,7 @@ def nw_same_side_port_single(
     hTAPER = hyper_taper(length=50, wide_section=45, narrow_section=5, layer=0)
     htaper = device.add_ref(hTAPER)
     htaper.rotate(90).move(origin=htaper.ports[2], destination=d.ports["23"])
-    ROUT = pr.route_basic(
+    ROUT = pr.route_smooth(
         wire.ports[1], htaper.ports[1], width_type="straight", path_type="sine"
     )
     rout = device.add_ref(ROUT)
@@ -294,7 +294,7 @@ def nw_same_side_port_single(
     htaper1.rotate(90).move(
         origin=htaper1.ports[2], destination=[nwLoc[0] - 95, nwLoc[1] + 95]
     )
-    ROUT = pr.route_basic(
+    ROUT = pr.route_sharp(
         wire.ports[2], htaper1.ports[1], width_type="straight", path_type="sine"
     )
     rout = device.add_ref(ROUT)
@@ -368,7 +368,7 @@ def heat_sameSidePort(
     PADl.move(origin=PADl.ports[2], destination=portLoc2)
     padl = device.add_ref(PADl)
 
-    r1 = pr.route_basic(
+    r1 = pr.route_sharp(
         wire.ports[1],
         PADc.ports[2],
         width_type="straight",
@@ -376,7 +376,7 @@ def heat_sameSidePort(
         layer=layer,
     )
     device.add_ref(r1)
-    r2 = pr.route_basic(
+    r2 = pr.route_sharp(
         wire.ports[2],
         PADl.ports[2],
         width_type="straight",
@@ -813,7 +813,7 @@ def pads_adam(trim=[True, True, True], layer=1):
     p3 = threePad.add_ref(post)
     p3.move(origin=p3.center, destination=p1.center).movex(-90)
 
-    r1 = pr.route_basic(
+    r1 = pr.route_sharp(
         b1.ports[1],
         p1.ports[2],
         path_type="straight",
@@ -823,7 +823,7 @@ def pads_adam(trim=[True, True, True], layer=1):
         layer=layer,
     )
     threePad.add_ref(r1)
-    r2 = pr.route_basic(
+    r2 = pr.route_sharp(
         b2.ports[1],
         p2.ports[2],
         path_type="straight",
@@ -833,7 +833,7 @@ def pads_adam(trim=[True, True, True], layer=1):
         layer=layer,
     )
     threePad.add_ref(r2)
-    r3 = pr.route_basic(
+    r3 = pr.route_sharp(
         b3.ports[1],
         p3.ports[2],
         path_type="straight",
@@ -929,7 +929,7 @@ def pads_adam_fill(style="right", layer=1):
         p1 = pad_cover.add_ref(post)
         p1.move(origin=p1.center, destination=b1.center).movey(225)
 
-        r1 = pr.route_basic(
+        r1 = pr.route_sharp(
             b1.ports[1],
             p1.ports[2],
             path_type="straight",
@@ -944,7 +944,7 @@ def pads_adam_fill(style="right", layer=1):
         b1.movex(170)
         p1 = pad_cover.add_ref(post)
         p1.move(origin=p1.center, destination=b1.center).movex(90).movey(225)
-        r1 = pr.route_basic(
+        r1 = pr.route_sharp(
             b1.ports[1],
             p1.ports[2],
             path_type="straight",
@@ -961,7 +961,7 @@ def pads_adam_fill(style="right", layer=1):
         p1 = pad_cover.add_ref(post)
         p1.move(origin=p1.center, destination=b1.center).movex(-90).movey(225)
 
-        r1 = pr.route_basic(
+        r1 = pr.route_sharp(
             b1.ports[1],
             p1.ports[2],
             path_type="straight",
@@ -1062,7 +1062,7 @@ def pad_array(
             pad_etch.connect(pad_etch.ports[1], prt2)
             pad_etch.move(pad_etch.center, p2.center)
 
-        D << pr.route_basic(
+        D << pr.route_sharp(
             p1.ports[2],
             p2.ports[1],
             path_type="straight",
@@ -2375,8 +2375,8 @@ def memory_loop(loop_size=(1, 2), lw=0.2, rw=0.4, port=1, vert=1.5, layer=1):
         name="top", midpoint=(-(loop_size[0] + lw + rw) / 2, vert / 2), orientation=-90
     )
 
-    prout = pr.route_basic(
-        topL.ports[2], fake_port, path_type="sine", width_type="sine"
+    prout = pr.route_sharp(
+        topL.ports[2], fake_port, path_type="sine"
     )
     conn1 = D << prout
     conn2 = D << prout
@@ -2569,12 +2569,12 @@ def memory1(
 
 #     fake_port = D.add_port(name='top', midpoint=(-(loop_size[0]+lw+rw)/2+port_shift, vert/2), orientation=-90)
 
-#     prout = pr.route_basic(topL.ports[2], fake_port, path_type='sine', width_type='sine')
+#     prout = pr.route_sharp(topL.ports[2], fake_port, path_type='sine', width_type='sine')
 #     conn1 = D<<prout
 #     conn2 = D<<prout
 #     conn2.connect(conn2.ports[1], bottomL.ports[2])
 
-#     rec = pr.route_basic(conn1.ports[1], conn2.ports[1])
+#     rec = pr.route_sharp(conn1.ports[1], conn2.ports[1])
 #     fill = D<<rec
 
 #     D = pg.union(D)
@@ -2666,7 +2666,7 @@ def memory_filled(loop_size=(2, 2), lw=0.2, rw=0.4):
 #         new_port.orientation = port_list[i-1].orientation+180
 #         print(port_list[i-1].orientation)
 #         print(new_port.orientation)
-#         D<<pr.route_basic(port_list[i-1], new_port, path_type='straight')
+#         D<<pr.route_sharp(port_list[i-1], new_port, path_type='straight')
 
 #     return D, port_list
 
@@ -2698,7 +2698,7 @@ def tesla_valve(width=0.2, pitch=0.6, length=4, angle=15, num=5):
         width=width,
         orientation=0,
     )
-    d << pr.route_basic(d.ports[1], d.ports[2], path_type="straight")
+    d << pr.route_sharp(d.ports[1], d.ports[2], path_type="straight")
 
     dd = pg.union(d, precision=1e-8)
     dd.add_port(name=1, port=d.ports[1])
@@ -3145,10 +3145,10 @@ def memory_v3(
     leftc.connect(leftc.ports[1], D.ports[2])
     leftc.move(leftc.center, (leftc.ports[1].midpoint[0], rightc.center[1]))
 
-    leftconnect = pr.route_basic(D.ports[2], leftc.ports[1], width_type="sine")
+    leftconnect = pr.route_sharp(D.ports[2], leftc.ports[1])
     leftstub = D << leftconnect
 
-    rightconnect = pr.route_basic(D.ports[3], rightc.ports[1], width_type="sine")
+    rightconnect = pr.route_sharp(D.ports[3], rightc.ports[1])
     rightstub = D << rightconnect
 
     D = pg.union(D)
@@ -3252,7 +3252,7 @@ def memory_v4(
         width=left_width,
     )  ################
 
-    LR = D << pr.route_basic(TLEFT.ports[1], D.ports["l"], width_type="sine")
+    LR = D << pr.route_smooth(TLEFT.ports[1], D.ports["l"])
 
     left_ext = pg.straight(size=(left_width, 0.5))  ##############
     LEFTEXT = D << left_ext
@@ -3264,8 +3264,7 @@ def memory_v4(
         orientation=90,
         width=right_width,
     )  ################
-    RR = D << pr.route_basic(AR.ports[2], D.ports["r"], width_type="sine")
-
+    RR = D << pr.route_smooth(AR.ports[2], D.ports["r"])
     E = pg.union(D)
 
     E.mirror(LEFTEXT.ports[1].midpoint, D.ports["r"].midpoint)
@@ -3457,7 +3456,7 @@ def memory_heater(
     )
     rights2.connect(rights2.ports[1], heatr2.ports[1])
 
-    leftcon = pr.route_basic(lefts1.ports[2], rights1.ports[2], width_type="sine")
+    leftcon = pr.route_smooth(lefts1.ports[2], rights1.ports[2])
     D << leftcon
 
     rightstep = pg.optimal_step(
@@ -3487,7 +3486,7 @@ def memory_heater(
     ro = D << rightout
     ro.move(ro.ports[1], (heater_out_dist, 0))
 
-    routout = pr.route_basic(hstraight.ports[2], ro.ports[1])
+    routout = pr.route_smooth(hstraight.ports[2], ro.ports[1])
     D << routout
     port_list = [lefts2.ports[2], ro.ports[2]]
     D = pg.union(D)
