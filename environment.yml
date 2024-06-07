@@ -10,3 +10,4 @@ dependencies:
     - phidl
     - pre-commit
     - ruff
+    - mariadb

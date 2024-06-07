@@ -3,7 +3,6 @@ connected to pads for wirebonding."""
 
 from phidl import Device
 import phidl.geometry as pg
-import phidl.routing as pr
 from typing import Tuple, List, Union, Optional
 import math
 

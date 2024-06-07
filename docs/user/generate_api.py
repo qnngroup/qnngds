@@ -32,12 +32,12 @@ def automodule(module, image_folder):
             and not f.startswith("_")
         ]
     )
-    content += f"    :members:\n"
+    content += "    :members:\n"
     content += (
         f"    :exclude-members: {', '.join(os.path.splitext(i)[0] for i in images)}\n"
     )
-    content += f"    :undoc-members:\n"
-    content += f"    :show-inheritance:\n\n"
+    content += "    :undoc-members:\n"
+    content += "    :show-inheritance:\n\n"
 
     for image in images:
         figurename, ext = os.path.splitext(image)

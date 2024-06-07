@@ -10,17 +10,11 @@ import numpy as np
 from phidl import Device
 import phidl.geometry as pg
 import phidl.routing as pr
-from phidl import quickplot as qp
 
 # import colang as mc
-import string
-from datetime import datetime
-import os
 import sys
-from time import sleep
-from phidl.device_layout import _parse_layer, DeviceReference
+from phidl.device_layout import _parse_layer
 import math
-from argparse import Namespace
 
 sys.path.append(r"Q:\qnngds")
 import qnngds.utilities as qu
