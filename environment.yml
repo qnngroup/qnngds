@@ -7,7 +7,6 @@ dependencies:
   - gdspy
   - pip:
     - qnnpy
-    - qnngds
     - phidl
     - pre-commit
     - ruff
