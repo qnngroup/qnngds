@@ -4,7 +4,6 @@ from phidl import Device
 
 import phidl.geometry as pg
 from typing import Tuple, Optional
-import qnngds._default_param as dflt
 
 
 def meander(
@@ -13,7 +12,7 @@ def meander(
     squares: float = 100,
     max_length: float = 20,
     aspect_ratio: float = 1,
-    layer: int = dflt.layers["device"],
+    layer: int = 1,
 ) -> Device:
     """Create resistor meander with specified number of squares.
 
@@ -120,8 +119,8 @@ def meander_sc_contacts(
     contact_height: float = 2,
     outline_sc: float = 1,
     width_routing: float = 1,
-    layer_res: int = dflt.layers["pad"],
-    layer_sc: int = dflt.layers["device"],
+    layer_res: int = 3,
+    layer_sc: int = 1,
 ) -> Device:
     """Create resistor meander with superconducting contacts.
 
