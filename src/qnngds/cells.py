@@ -145,11 +145,11 @@ def vdp(
     DEVICE = Device(f"VDP(lay={layers_to_probe})")
 
     for layer in layers_to_probe:
-        TEST_LAY = pg.deepcopy(VDP)
+        TEST_LAYER = pg.deepcopy(VDP)
         if layer in layers_to_outline:
-            TEST_LAY = pg.outline(TEST_LAY, die_parameters.outline)
-        TEST_LAY.name = f"VDP(lay={layer})"
-        DEVICE << TEST_LAY.flatten(single_layer=layer)
+            TEST_LAYER = pg.outline(TEST_LAYER, die_parameters.outline)
+        TEST_LAYER.name = f"VDP(lay={layer})"
+        DEVICE << TEST_LAYER.flatten(single_layer=layer)
 
     DIE_VANDP << DEVICE
 
