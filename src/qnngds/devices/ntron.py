@@ -65,8 +65,11 @@ def sharp(
     choke_l: float = 0.5,
     gate_w: float = 0.2,
     channel_w: float = 0.1,
+    channel_l: float = 0.1,
     source_w: float = 0.3,
+    source_l: float = 1.5,
     drain_w: float = 0.3,
+    drain_l: float = 1.5,
     layer: int = 1,
 ) -> Device:
     """Creates a sharp ntron device.
@@ -76,8 +79,11 @@ def sharp(
         choke_l (float): Length of the choke region.
         gate_w (float): Width of the gate region.
         channel_w (float): Width of the channel region.
+        channel_l (float): Length of channel region.
         source_w (float): Width of the source region.
+        source_l (float): Length of the source region.
         drain_w (float): Width of the drain region.
+        drain_l (float): Length of the drain region.
         layer (int): Layer for the device to be created on.
 
     Returns:
@@ -89,15 +95,15 @@ def sharp(
     choke = pg.taper(choke_l, gate_w, choke_w)
     k = D << choke
 
-    channel = pg.compass(size=(channel_w, choke_w / 10))
+    channel = pg.compass(size=(channel_w, channel_l))
     c = D << channel
     c.connect(channel.ports["W"], choke.ports[2])
 
-    drain = pg.taper(channel_w * 6, drain_w, channel_w)
+    drain = pg.taper(drain_l, drain_w, channel_w)
     d = D << drain
     d.connect(drain.ports[2], c.ports["N"])
 
-    source = pg.taper(channel_w * 6, channel_w, source_w)
+    source = pg.taper(source_l, channel_w, source_w)
     s = D << source
     s.connect(source.ports[1], c.ports["S"])
 
