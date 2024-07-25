@@ -81,7 +81,9 @@ def sharp(
         channel_w (float): Width of the channel region.
         channel_l (float): Length of channel region.
         source_w (float): Width of the source region.
+        source_l (float): Length of the source region.
         drain_w (float): Width of the drain region.
+        drain_l (float): Length of the drain region.
         layer (int): Layer for the device to be created on.
 
     Returns:
