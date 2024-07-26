@@ -49,7 +49,7 @@ def smooth(
 
     k.movey(choke_shift)
 
-    D = pg.union(D)
+    D = pg.union(D, precision=1e-6)
     D.flatten(single_layer=layer)
     D.add_port(name=3, port=k.ports[1])
     D.add_port(name=1, port=d.ports[1])
@@ -107,7 +107,7 @@ def sharp(
     s = D << source
     s.connect(source.ports[1], c.ports["S"])
 
-    D = pg.union(D)
+    D = pg.union(D, precision=1e-6)
     D.flatten(single_layer=layer)
     D.add_port(name="g", port=k.ports[1])
     D.add_port(name="d", port=d.ports[1])
