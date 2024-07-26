@@ -1,6 +1,7 @@
 """Nanocryotron `[1] <https://doi.org/10.1021/nl502629x>`_ variants."""
 
 from phidl import Device
+from phidl import Port
 
 import phidl.geometry as pg
 from typing import Tuple, Optional
@@ -49,11 +50,21 @@ def smooth(
 
     k.movey(choke_shift)
 
-    D = pg.union(D, precision=1e-6)
+    precision = 1e-6
+    D = pg.union(D, precision=precision)
     D.flatten(single_layer=layer)
-    D.add_port(name=3, port=k.ports[1])
-    D.add_port(name=1, port=d.ports[1])
-    D.add_port(name=2, port=s.ports[2])
+    # move ports towards device center by 2*precision
+    names = ("g", "d", "s")
+    for i, p in enumerate((k.ports[1], d.ports[1], s.ports[2])):
+        dn = p.normal[1] - p.normal[0]
+        D.add_port(
+            name=names[i],
+            port=Port(
+                midpoint=p.center - 2 * dn * precision,
+                width=p.width,
+                orientation=p.orientation,
+            ),
+        )
     D.name = f"NTRON.SMOOTH(choke_w={choke_w}, channel_w={channel_w})"
     D.info = locals()
 
@@ -107,11 +118,21 @@ def sharp(
     s = D << source
     s.connect(source.ports[1], c.ports["S"])
 
-    D = pg.union(D, precision=1e-6)
+    precision = 1e-6
+    D = pg.union(D, precision=precision)
     D.flatten(single_layer=layer)
-    D.add_port(name="g", port=k.ports[1])
-    D.add_port(name="d", port=d.ports[1])
-    D.add_port(name="s", port=s.ports[2])
+    # move ports towards device center by 2*precision
+    names = ("g", "d", "s")
+    for i, p in enumerate((k.ports[1], d.ports[1], s.ports[2])):
+        dn = p.normal[1] - p.normal[0]
+        D.add_port(
+            name=names[i],
+            port=Port(
+                midpoint=p.center - dn * precision,
+                width=p.width,
+                orientation=p.orientation,
+            ),
+        )
     D.name = f"NTRON.SHARP(choke_w={choke_w}, channel_w={channel_w})"
     D.info = locals()
     return D
