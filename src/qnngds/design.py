@@ -21,8 +21,8 @@ Occupied = False
 def create_chip(
     chip_w: Union[int, float] = 10000,
     margin: Union[int, float] = 100,
-    N_dies: int = 11,
-    die_w: Union[None, int, float] = None,
+    N_dies: int = None,
+    die_w: Union[None, int, float] = 980,
     annotations_layer: int = 0,
     unpack_chip_map: bool = True,
     create_devices_map_txt: Union[bool, str] = False,
@@ -68,12 +68,12 @@ def create_chip(
     )
     useful_area.move((margin, margin))
 
-    if die_w is not None:
-        N_dies = int(useful_w / die_w)
-        return_N_or_w = N_dies
-    else:
+    if N_dies is not None:
         die_w = useful_w / N_dies
         return_N_or_w = die_w
+    else:
+        N_dies = int(useful_w / die_w)
+        return_N_or_w = N_dies
     CELL = pg.rectangle([die_w, die_w], layer=annotations_layer)
     array = CHIP.add_array(CELL, columns=N_dies, rows=N_dies, spacing=(die_w, die_w))
     array.move((0, 0), (margin, margin))
@@ -353,18 +353,6 @@ class Design:
 
         self.fill_pad_layer = fill_pad_layer
 
-        self.die_parameters = utility.DieParameters(
-            unit_die_size,
-            pad_size,
-            ebeam_overlap,
-            die_outline,
-            die_layer,
-            pad_layer,
-            fill_pad_layer,
-        )
-
-        # self.dies_parameters = utility.DieParameters()
-
     # help building a design
 
     def create_chip(self, create_devices_map_txt: Union[bool, str] = True) -> Device:
@@ -411,11 +399,20 @@ class Design:
                 create_devices_map_txt=create_devices_map_txt,
             )
 
-        if self.die_w is not None:
-            self.N_dies = N_or_w
-        else:
+        if self.N_dies is not None:
             self.die_w = N_or_w
+        else:
+            self.N_dies = N_or_w
 
+        self.die_parameters = utility.DieParameters(
+            (self.die_w, self.die_w),
+            self.pad_size,
+            self.ebeam_overlap,
+            self.die_outline,
+            self.layers["die"],
+            self.layers["pad"],
+            self.fill_pad_layer,
+        )
         return self.CHIP
 
     def place_on_chip(
