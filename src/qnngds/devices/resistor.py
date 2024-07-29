@@ -1,5 +1,7 @@
 """Layouts for resistors and resistors with superconducting contacts."""
 
+import numpy as np
+
 from phidl import Device
 
 import phidl.geometry as pg
@@ -10,20 +12,19 @@ def meander(
     width: float = 2,
     pitch: float = 4,
     squares: float = 100,
-    max_length: float = 20,
-    aspect_ratio: float = 1,
+    max_length: Optional[float] = 20,
     layer: int = 1,
 ) -> Device:
     """Create resistor meander with specified number of squares.
 
-    If squares*width > max_length, meander the resistor, otherwise just return a straight line
+    If squares*width > max_length or max_length is None, meander the resistor,
+    otherwise just return a straight line.
 
     Args:
-        width (float): width in microns
+        width (float): wire width in microns
         pitch (float): desired pitch of meander in microns
-        squares (float): desired number of squares
+        squares (float or None): desired number of squares
         max_length (float): desired length of device
-        aspect_ratio (float): desired w/h ratio of meander
         layer (int): GDS layer
 
     Returns:
@@ -33,7 +34,7 @@ def meander(
 
     meander_spacing = (pitch - width) / width
 
-    if width * squares < max_length:
+    if max_length is None or width * squares < max_length:
         # just make a straight
         return pg.straight(size=(width, width * squares), layer=layer)
 
@@ -75,20 +76,28 @@ def meander(
         S.add_port(name=2, midpoint=(0, 2 * width), width=width, orientation=90)
         return S
 
-    # solve system for hp_length, n_turn given squares, pitch, aspect_ratio, width:
-    # squares = 2 * (2 * hp_length/width + 0.5) * n_turn
-    # width_meander = 2 * hp_length
-    # height_meander = 2 * pitch * n_turn
-    # width_meander/height_meander = aspect_ratio
-    #
-    # double number of hairpins
-    squares -= 2  # account for extra squares from stubs
-    n_turn = int(
-        2
-        * ((16 * aspect_ratio * squares * pitch * width + width**2) ** 0.5 - width)
-        / (8 * aspect_ratio * pitch)
-    )
-    hp_length = (squares / n_turn - 0.5) * width / 2
+    # solve system for hairpin length (hp_length), number of (double) turns (n_turn),
+    # meander width (width_m) given:
+    #   - meander height (height),
+    #   - number of squares (squares),
+    #   - meander pitch (pitch),
+    #   - wire width (width)
+    n_turn = int(np.ceil((max_length - 3 * width) / pitch))
+    # calculate the hairpin length
+    # correction of 1.09 is the total number of squares contributed by the two
+    # corners of the hairpin
+    # ================+
+    #                 |
+    # ================+
+    # = : squares / n_turn squares
+    # | : (pitch - width) / width squares
+    # + : 1.09 squares
+    # squares - 3.09 for corners connecting meander to contacts
+    # these contributions lead to the following equation for the toal number of squares
+    # n_turn * (2*hp_length/width + 1.09 + (pitch - width) / width) = squares - 3.09
+    hp_length = (
+        (squares - 3.09) / n_turn - 1.09 - (pitch - width) / width
+    ) * width / 2 + width
     hp = hairpin(hp_length)
     hp_prev = None
     for i in range(n_turn):
@@ -113,28 +122,24 @@ def meander(
 def meander_sc_contacts(
     width: float = 1,
     squares: float = 60,
-    max_length: float = 10,
-    meander_pitch: float = 2,
-    contact_width: float = 8,
-    contact_height: float = 2,
+    max_length: Optional[float] = 10,
+    meander_pitch: Optional[float] = 2,
+    contact_size: Tuple[float, float] = (8, 3),
     outline_sc: float = 1,
-    width_routing: float = 1,
     layer_res: int = 3,
     layer_sc: int = 1,
 ) -> Device:
     """Create resistor meander with superconducting contacts.
 
-    If squares*width > max_length, meander the resistor.
+    If squares*width > max_length or if max_length is None, meander the resistor.
 
     Args:
         width (float): width of resistor
         squares (float): desired number of squares
-        max_length (float): desired length of device
-        meander_pitch (float): desired pitch of meander in microns
-        contact_width (float): width of resistor<->superconductor contact
-        contact_height (float): height of resistor<->superconductor contact
+        max_length (float or None): maximum desired length of device
+        meander_pitch (float or None): desired pitch of meander in microns
+        contact_size (tuple[float, float]): (width, height) of resistor<->superconductor contact
         outline_sc (float): superconductor extra width on each side of contact
-        width_routing (float): width of routing connections on superconducting layer
         layer_res (int): GDS layer for resistor
         layer_sc (int): GDS layer for superconductor
 
@@ -146,22 +151,22 @@ def meander_sc_contacts(
     )
     CONTACTS = Device("CONTACTS")
 
-    aspect_ratio = (contact_width + 2 * outline_sc) / max_length * 1.5
+    if meander_pitch is None:
+        meander_pitch = np.inf
+
     res = MEAN_SC_CONT << meander(
         layer=layer_res,
         width=width,
         pitch=max(meander_pitch, width + 1),
         squares=squares,
         max_length=max_length,
-        aspect_ratio=aspect_ratio,
     )
     stub = pg.straight(size=(width, outline_sc), layer=layer_res)
-    contact = pg.straight(size=(contact_width, contact_height), layer=layer_res)
+    contact = pg.straight(size=contact_size, layer=layer_res)
     contact_sc = pg.straight(
-        size=(contact_width + 2 * outline_sc, contact_height + 2 * outline_sc),
+        size=(contact_size[0] + 2 * outline_sc, contact_size[1] + 2 * outline_sc),
         layer=layer_sc,
     )
-    rout = pg.straight(size=(width_routing, 2 * width_routing), layer=layer_sc)
     ports = []
     for p, port in res.ports.items():
         s = CONTACTS << stub
@@ -170,9 +175,7 @@ def meander_sc_contacts(
         c.connect(c.ports[1], s.ports[2])
         c_sc = CONTACTS << contact_sc
         c_sc.center = c.center
-        r = CONTACTS << rout
-        r.connect(r.ports[1], c_sc.ports[2 - (p % 2)])
-        ports.append(r.ports[2])
+        ports.append(c_sc.ports[2 - (p % 2)])
 
     CONTACTS = pg.union(CONTACTS, by_layer=True)
     CONTACTS.name = "CONTACTS"
