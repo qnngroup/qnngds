@@ -28,11 +28,8 @@ Setup
 2. Install the package
 ----------------------
 
-The qnngds package needs ``gdspy`` to be installed first. To do so, you can follow
-instruction `here <https://pypi.org/project/gdspy/>`_.
-
-* For **windows**, what works
-  best is to `install a pre-built wheel <https://github.com/heitzmann/gdspy/releases>`_ 
+* On **windows** systems, the qnngds package needs ``gdspy`` to be installed first. To do so, you can follow instruction `here <https://pypi.org/project/gdspy/>`_.
+  First, `install a pre-built wheel <https://github.com/heitzmann/gdspy/releases>`_ 
   and run :
 
   .. code-block:: bash
@@ -44,22 +41,18 @@ instruction `here <https://pypi.org/project/gdspy/>`_.
     * `cpXX` is the version of python that it is built for.
     * `winxx_amdXX` should be selected based on your system type.
 
-* On **Linux**, just install with pip :
-
-  .. code-block:: bash
-
-    pip install gdspy
+* On **Linux**, ``gdspy`` can be installed with ``pip``, so no action is needed.
 
 Once ``gdspy`` is installed in your virtual environment, you can install ``qnngds``
 package (that you intend to modify) in editable mode. This allows to test the
-changes made to the package without having to reinstall it every time.
+changes made to the package without having to reinstall it every time:
 
 .. code-block:: bash
 
     pip install -e /path/to/qnngds
 
 .. note::
-    If any, make sure to delete the ``.pdm-build`` folder before trying to run the 
+    If any issues come up, delete the ``.pdm-build`` folder before trying to run the 
     previous steps.
 
 3. Start coding
@@ -86,8 +79,9 @@ changes made to the package without having to reinstall it every time.
     git checkout -b your-branch-name
 
 .. warning::
-  Be careful, if you are a contributor, make sure your branch does **not** start 
-  with ``dev-``, this prefix is reserved for developers.
+  Be careful, if you are contributing to ``src`` (e.g. creating a new device or cell),
+  make sure your branch does **not** start with ``dev-``; this prefix is reserved for
+  updates to the documentation or packaging.
 
 You can now modify the package as wanted. 
 
