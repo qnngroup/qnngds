@@ -218,7 +218,7 @@ Utilities
 
 .. automodule:: qnngds.utilities
     :members:
-    :exclude-members: die_cell
+    :exclude-members: die_cell, pad_with_offset
     :undoc-members:
     :show-inheritance:
 
@@ -226,4 +226,9 @@ Utilities
 
         .. image:: images/utilities/die_cell.png
             :alt: die_cell.png
+
+    .. autofunction:: pad_with_offset
+
+        .. image:: images/utilities/pad_with_offset.png
+            :alt: pad_with_offset.png
 
