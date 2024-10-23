@@ -303,7 +303,6 @@ def nanowires(
     device_layer: int = 1,
     text: Union[None, str] = None,
     lengths: List[float] = None,
-    tolerance: float = 5,
 ) -> Device:
     """Creates a cell that contains several nanowires of given channel and
     source.
