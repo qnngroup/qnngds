@@ -208,7 +208,7 @@ def snspd_ntron(
         route.connect(route.ports["S"], NTRON.ports["d"])
         CROSSC.connect(CROSSC.ports["S"], route.ports["N"])
         # port 2 connected to gnd
-        route = ROUTES << pg.optimal_step(NTRON.ports[2].width, w_pad, symmetric=True)
+        route = ROUTES << pg.optimal_step(NTRON.ports["s"].width, w_pad, symmetric=True)
         route.connect(route.ports[1], NTRON.ports["s"])
         SNSPD_NTRON.add_port(port=route.ports[2], name="S2")
 
