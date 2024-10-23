@@ -6,23 +6,33 @@ Setup
 1. Setup your workspace
 -----------------------
 
+In order to contribute to ``qnngds``, you will need to clone the repository.
+It is **strongly** recommended to set up a virtual environment or conda environment so that you can continue to use a stable version of ``qnngds`` for designing layouts.
+
 * Open a terminal where you want the ``qnngds`` folder to be. Clone the
   repository:
 
   .. code-block:: bash
 
-      git clone https://github.com/qnngroup/qnngds.git
+      git clone git@github.com/qnngroup/qnngds.git
 
 * Create a new virtual environment:
 
     * Open a terminal in the directory you want to put your virtual environment.
 
-    * Execute:
+    * Create a ``venv`` with python (by default uses the system python version):
 
       .. code-block:: bash
 
           python -m venv/your-env-name
           .\.venv\your-env-name\Scripts\Activate
+
+    * Alternatively, create a conda environment (useful if you want to include other non-python packages):
+
+      .. code-block:: bash
+
+          conda create -n qnngds-dev python=3.x
+          conda activate qnngds-dev
 
 
 2. Install the package
@@ -45,7 +55,8 @@ Setup
 
 Once ``gdspy`` is installed in your virtual environment, you can install ``qnngds``
 package (that you intend to modify) in editable mode. This allows to test the
-changes made to the package without having to reinstall it every time:
+changes made to the package without having to reinstall it every time.
+Be sure to specify the same path as you downloaded the repository to in Step 1.
 
 .. code-block:: bash
 
