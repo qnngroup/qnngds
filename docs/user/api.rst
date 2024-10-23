@@ -101,7 +101,7 @@ nanowire
 
 .. automodule:: qnngds.devices.nanowire
     :members:
-    :exclude-members: spot
+    :exclude-members: spot, variable_length
     :undoc-members:
     :show-inheritance:
 
@@ -109,6 +109,11 @@ nanowire
 
         .. image:: images/devices/nanowire/spot.png
             :alt: spot.png
+
+    .. autofunction:: variable_length
+
+        .. image:: images/devices/nanowire/variable_length.png
+            :alt: variable_length.png
 
 ntron
 ~~~~~

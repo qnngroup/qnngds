@@ -27,6 +27,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
+personal/
 build/
 develop-eggs/
 dist/

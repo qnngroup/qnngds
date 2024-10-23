@@ -302,6 +302,7 @@ def nanowires(
     outline_dev: Union[int, float] = 0.5,
     device_layer: int = 1,
     text: Union[None, str] = None,
+    lengths: List[float] = None,
 ) -> Device:
     """Creates a cell that contains several nanowires of given channel and
     source.
@@ -313,6 +314,7 @@ def nanowires(
         outline_dev (int or float): The width of the device's outline.
         device_layer (int or tuple of int): The layer where the device is placed.
         text (str, optional): If None, the text is f"w={channels_w}".
+        lengths: if None, use nanowire.spot; if populated, created nanowires of given lengths
 
     Returns:
         Device: A device (of size n*m unit cells) containing the nanowires, the
@@ -334,9 +336,14 @@ def nanowires(
     NANOWIRES = Device(f"NWIRES({cell_text})")
     nanowires_ref = []
     for i, channel_source_w in enumerate(channels_sources_w):
-        nanowire_ref = NANOWIRES << device.nanowire.spot(
-            channel_source_w[0], channel_source_w[1]
-        )
+        if lengths is None:
+            nanowire_ref = NANOWIRES << device.nanowire.spot(
+                channel_source_w[0], channel_source_w[1]
+            )
+        # else:
+        #    nanowire_ref = NANOWIRES << device.nanowire.variable_length(
+        #        channel_source_w[0], channel_source_w[1], lengths[i]
+        #    )
         nanowires_ref.append(nanowire_ref)
     DEVICE << NANOWIRES
 
