@@ -1,0 +1,3 @@
+gdspy
+phidl
+pre-commit
