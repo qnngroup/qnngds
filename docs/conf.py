@@ -1,10 +1,9 @@
 import os
 import sys
 from multiproject.utils import get_project
-import qnngds
-
 
 sys.path.insert(0, os.path.abspath(os.path.join("..", "src")))
+import qnngds
 
 extensions = [
     "multiproject",
