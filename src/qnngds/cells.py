@@ -315,7 +315,6 @@ def nanowires(
         device_layer (int or tuple of int): The layer where the device is placed.
         text (str, optional): If None, the text is f"w={channels_w}".
         lengths (list of int or float): if None, use nanowire.spot; if populated, create nanowires of given lengths
-        tolerance (int or float): offset between gold pads and e-beam gaps to accommodate alignment error
 
     Returns:
         Device: A device (of size n*m unit cells) containing the nanowires, the
@@ -426,7 +425,6 @@ def nanowires_4pt(
         device_layer (int or tuple of int): The layer where the device is placed.
         text (str, optional): If None, the text is f"w={channels_w}".
         lengths (list of int or float): if None, use nanowire.spot; if populated, create nanowires of given lengths
-        tolerance (int or float): offset between gold pads and e-beam gaps to accommodate alignment error
 
     Returns:
         Device: A device (of size n*m unit cells) containing the nanowires, the
