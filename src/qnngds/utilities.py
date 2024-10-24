@@ -25,6 +25,7 @@ class DieParameters:
     Parameters:
         unit_die_size (tuple of (int or float, int or float)): Dimensions of a unit die/cell (width, height).
         pad_size (tuple of int or float): Dimensions of the die's pads (width, height).
+        pad_tolerance (int or float): Amount to shrink gold pads vs e-beam gaps for alignment error tolerance.
         contact_l (int or float): Extra length of the routes above the die's
             ports to assure alignment with the device (useful for ebeam
             lithography).
@@ -41,6 +42,7 @@ class DieParameters:
         self,
         unit_die_size: Tuple[Union[int, float], Union[int, float]] = (980, 980),
         pad_size: Tuple[Union[int, float], Union[int, float]] = (150, 250),
+        pad_tolerance: float = 5,
         contact_l: Union[int, float] = 10,
         outline: Union[int, float] = 10,
         die_layer: int = 2,
@@ -54,6 +56,7 @@ class DieParameters:
         self.unit_die_w = unit_die_size[0]
         self.unit_die_h = unit_die_size[1]
         self.pad_size = pad_size
+        self.pad_tolerance = pad_tolerance
         self.contact_l = contact_l
         self.outline = outline
         self.die_layer = die_layer
@@ -257,12 +260,8 @@ def die_cell(
 
         CONNECT = Device()
         port.rotate(180)
-
         # create the pad
-        pad = pg.rectangle(
-            die_parameters.pad_size,
-            layer={die_parameters.die_layer, die_parameters.pad_layer},
-        )
+        pad = pad_with_offset(die_parameters)
         pad.add_port(
             "1",
             midpoint=(die_parameters.pad_size[0] / 2, 0),
@@ -281,6 +280,7 @@ def die_cell(
         overlap_port = CONNECT.add_port(port=inner_ports[i])
         offset(overlap_port)
         overlap_port.rotate(180)
+
         CONNECT << pr.route_quad(
             inner_ports[i], overlap_port, layer=die_parameters.die_layer
         )
@@ -384,6 +384,23 @@ def die_cell(
 
     DIE.name = f"DIE {die_name}"
     return DIE
+
+
+def pad_with_offset(die_parameters: DieParameters = DieParameters()):
+    DEVICE = Device()
+    outer_pad = pg.rectangle(
+        die_parameters.pad_size,
+        layer=die_parameters.die_layer,
+    )
+    inner_pad = pg.rectangle(
+        [dim - die_parameters.pad_tolerance for dim in die_parameters.pad_size],
+        layer=die_parameters.pad_layer,
+    )
+    inner_pad.center = outer_pad.center
+
+    DEVICE << outer_pad
+    DEVICE << inner_pad
+    return DEVICE
 
 
 def add_optimalstep_to_dev(

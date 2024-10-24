@@ -471,7 +471,7 @@ def nanowires_4pt(
     dev_contact_w = NANOWIRES.xsize
     routes_margin = 4 * die_contact_w
     dev_max_size = (
-        2 * num_nw * die_parameters.pad_size[0],
+        2 * num_nw * (die_parameters.pad_size[0]),
         NANOWIRES.ysize + routes_margin,
     )
 
