@@ -307,6 +307,7 @@ class Design:
         die_layer=2,
         pad_layer=3,
         fill_pad_layer=False,
+        pad_tolerance=5,
     ):
         """
         Args:
@@ -328,6 +329,7 @@ class Design:
             pad_layer (int or array-like[2]): The layer where the pads are placed.
             fill_pad_layer (bool): If True, the space reserved for pads in the
                 die_cell in filled in pad's layer.
+            pad_tolerance: Shrink pads by this amount to account for alignment error in MLA
         """
 
         self.name = name
@@ -343,6 +345,7 @@ class Design:
         self.device_outline = device_outline
         self.die_outline = die_outline
         self.ebeam_overlap = ebeam_overlap
+        self.pad_tolerance = pad_tolerance
 
         self.layers = {
             "annotation": annotation_layer,
@@ -405,13 +408,14 @@ class Design:
             self.N_dies = N_or_w
 
         self.die_parameters = utility.DieParameters(
-            (self.die_w, self.die_w),
-            self.pad_size,
-            self.ebeam_overlap,
-            self.die_outline,
-            self.layers["die"],
-            self.layers["pad"],
-            self.fill_pad_layer,
+            unit_die_size=(self.die_w, self.die_w),
+            pad_size=self.pad_size,
+            pad_tolerance=self.pad_tolerance,
+            contact_l=self.ebeam_overlap,
+            outline=self.die_outline,
+            die_layer=self.layers["die"],
+            pad_layer=self.layers["pad"],
+            fill_pad_layer=self.fill_pad_layer,
         )
         return self.CHIP
 
