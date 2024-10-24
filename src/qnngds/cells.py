@@ -302,6 +302,7 @@ def nanowires(
     outline_dev: Union[int, float] = 0.5,
     device_layer: int = 1,
     text: Union[None, str] = None,
+    lengths: List[float] = None,
 ) -> Device:
     """Creates a cell that contains several nanowires of given channel and
     source.
@@ -313,6 +314,8 @@ def nanowires(
         outline_dev (int or float): The width of the device's outline.
         device_layer (int or tuple of int): The layer where the device is placed.
         text (str, optional): If None, the text is f"w={channels_w}".
+        lengths (list of int or float): if None, use nanowire.spot; if populated, create nanowires of given lengths
+        tolerance (int or float): offset between gold pads and e-beam gaps to accommodate alignment error
 
     Returns:
         Device: A device (of size n*m unit cells) containing the nanowires, the
@@ -334,9 +337,14 @@ def nanowires(
     NANOWIRES = Device(f"NWIRES({cell_text})")
     nanowires_ref = []
     for i, channel_source_w in enumerate(channels_sources_w):
-        nanowire_ref = NANOWIRES << device.nanowire.spot(
-            channel_source_w[0], channel_source_w[1]
-        )
+        if lengths is None:
+            nanowire_ref = NANOWIRES << device.nanowire.spot(
+                channel_source_w[0], channel_source_w[1]
+            )
+        else:
+            nanowire_ref = NANOWIRES << device.nanowire.variable_length(
+                channel_source_w[0], channel_source_w[1], lengths[i]
+            )
         nanowires_ref.append(nanowire_ref)
     DEVICE << NANOWIRES
 
@@ -373,6 +381,128 @@ def nanowires(
         nanowire_ref.movex(BORDER.ports[f"N{i+1}"].x)
         NANOWIRES.add_port(port=nanowire_ref.ports[1], name=f"N{i+1}")
         NANOWIRES.add_port(port=nanowire_ref.ports[2], name=f"S{i+1}")
+
+    ## Route the nanowires and the die
+
+    # hyper tapers
+    HT, dev_ports = utility.add_hyptap_to_cell(
+        BORDER.get_ports(), die_parameters.contact_l, dev_contact_w
+    )
+    DEVICE.ports = dev_ports.ports
+    DEVICE << HT
+
+    # routes from nanowires to hyper tapers
+    ROUTES = utility.route_to_dev(HT.get_ports(), NANOWIRES.ports)
+    DEVICE << ROUTES
+
+    DEVICE.ports = dev_ports.ports
+    DEVICE = pg.outline(
+        DEVICE, outline_dev, open_ports=2 * outline_dev, layer=device_layer
+    )
+    DEVICE.name = f"NWIRES({cell_text})"
+
+    NANOWIRES_DIE << DEVICE
+    NANOWIRES_DIE << BORDER
+
+    return NANOWIRES_DIE
+
+
+def nanowires_4pt(
+    die_parameters: utility.DieParameters = utility.DieParameters(),
+    channels_sources_w: List[Tuple[float, float]] = [(0.1, 1), (0.5, 3), (1, 10)],
+    outline_dev: Union[int, float] = 0.5,
+    device_layer: int = 1,
+    text: Union[None, str] = None,
+    lengths: List[float] = None,
+) -> Device:
+    """Creates a cell that contains several nanowires of given channel and
+    source, with 4-pt probe connections.
+
+    Parameters:
+        die_parameters (DieParameters): the die's parameters.
+        channels_sources_w (list of tuple of float): The list of (channel_w,
+            source_w) of the nanowires to create.
+        outline_dev (int or float): The width of the device's outline.
+        device_layer (int or tuple of int): The layer where the device is placed.
+        text (str, optional): If None, the text is f"w={channels_w}".
+        lengths (list of int or float): if None, use nanowire.spot; if populated, create nanowires of given lengths
+        tolerance (int or float): offset between gold pads and e-beam gaps to accommodate alignment error
+
+    Returns:
+        Device: A device (of size n*m unit cells) containing the nanowires, the
+        border of the die (created with die_cell function), and the connections
+        between the nanowires and pads.
+    """
+
+    if text is None:
+        channels_w = [item[0] for item in channels_sources_w]
+        text = f"w={channels_w}"
+    cell_text = text.replace(" \n", ", ")
+
+    NANOWIRES_DIE = Device(f"CELL.NWIRES({cell_text})")
+
+    DEVICE = Device(f"NWIRES({cell_text})")
+
+    ## Create the NANOWIRES
+
+    NANOWIRES = Device(f"NWIRES({cell_text})")
+    nanowires_ref = []
+    for i, channel_source_w in enumerate(channels_sources_w):
+        if lengths is None:
+            nanowire_ref = NANOWIRES << device.nanowire.spot(
+                channel_source_w[0], channel_source_w[1]
+            )
+        else:
+            nanowire_ref = NANOWIRES << device.nanowire.variable_length(
+                channel_source_w[0], channel_source_w[1], lengths[i]
+            )
+        nanowires_ref.append(nanowire_ref)
+    DEVICE << NANOWIRES
+
+    ## Create the DIE
+
+    # die parameters, checkup conditions
+    num_nw = len(channels_sources_w)
+    n = math.ceil(
+        (2 * (num_nw + 1) * die_parameters.pad_size[0])
+        / die_parameters.unit_die_size[0]
+    )
+    die_contact_w = NANOWIRES.xsize + die_parameters.contact_l
+    dev_contact_w = NANOWIRES.xsize
+    routes_margin = 4 * die_contact_w
+    dev_max_size = (
+        2 * num_nw * die_parameters.pad_size[0],
+        NANOWIRES.ysize + routes_margin,
+    )
+
+    # die, with calculated parameters
+    BORDER = utility.die_cell(
+        die_parameters=die_parameters,
+        n_m_units=(n, 1),
+        contact_w=die_contact_w,
+        device_max_size=dev_max_size,
+        ports={"N": num_nw * 2, "S": num_nw * 2},
+        ports_gnd=[None],
+        text=f"NWIRES\n{text}",
+    )
+
+    ## Place the nanowires
+
+    for i, nanowire_ref in enumerate(nanowires_ref):
+        x_offset = BORDER.ports[f"N{i+1}"].x + die_parameters.pad_size[0] * i
+        nanowire_ref.movex(x_offset)
+        NANOWIRES.add_port(port=nanowire_ref.ports[1], name=f"N{2*i+1}")
+        NANOWIRES.add_port(port=nanowire_ref.ports[2], name=f"S{2*i+1}")
+        NANOWIRES.add_port(
+            midpoint=(nanowire_ref.xmin + outline_dev, nanowire_ref.ymax),
+            orientation=90,
+            name=f"N{2*i+2}",
+        )
+        NANOWIRES.add_port(
+            midpoint=(nanowire_ref.xmin + outline_dev, nanowire_ref.ymin),
+            orientation=-90,
+            name=f"S{2*i+2}",
+        )
 
     ## Route the nanowires and the die
 
