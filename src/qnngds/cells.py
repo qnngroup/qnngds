@@ -464,21 +464,21 @@ def nanowires_4pt(
     # die parameters, checkup conditions
     num_nw = len(channels_sources_w)
     n = math.ceil(
-        (2 * (num_nw + 1) * die_parameters.pad_size[0])
+        (2 * (num_nw + 2) * (die_parameters.pad_size[0]+2*die_parameters.outline))
         / die_parameters.unit_die_size[0]
     )
     die_contact_w = NANOWIRES.xsize + die_parameters.contact_l
     dev_contact_w = NANOWIRES.xsize
     routes_margin = 4 * die_contact_w
     dev_max_size = (
-        2 * num_nw * (die_parameters.pad_size[0]),
+        2 * num_nw * (die_parameters.pad_size[0])*1.5,
         NANOWIRES.ysize + routes_margin,
     )
 
     # die, with calculated parameters
     BORDER = utility.die_cell(
         die_parameters=die_parameters,
-        n_m_units=(n, 1),
+        n_m_units=(n+1, 1),
         contact_w=die_contact_w,
         device_max_size=dev_max_size,
         ports={"N": num_nw * 2, "S": num_nw * 2},
@@ -489,17 +489,20 @@ def nanowires_4pt(
     ## Place the nanowires
 
     for i, nanowire_ref in enumerate(nanowires_ref):
-        x_offset = BORDER.ports[f"N{i+1}"].x + die_parameters.pad_size[0] * i
+        nanowire_w = channels_sources_w[i][0]
+        x_offset = BORDER.ports[f"N{i+1}"].x + die_parameters.pad_size[0] * i*1.5
         nanowire_ref.movex(x_offset)
         NANOWIRES.add_port(port=nanowire_ref.ports[1], name=f"N{2*i+1}")
         NANOWIRES.add_port(port=nanowire_ref.ports[2], name=f"S{2*i+1}")
         NANOWIRES.add_port(
-            midpoint=(nanowire_ref.xmin + outline_dev, nanowire_ref.ymax),
+            midpoint=(nanowire_ref.xmin + nanowire_w/2, nanowire_ref.ymax),
+            width=nanowire_w/2,
             orientation=90,
             name=f"N{2*i+2}",
         )
         NANOWIRES.add_port(
-            midpoint=(nanowire_ref.xmin + outline_dev, nanowire_ref.ymin),
+            midpoint=(nanowire_ref.xmin + nanowire_w/2, nanowire_ref.ymin),
+            width=nanowire_w/2,
             orientation=-90,
             name=f"S{2*i+2}",
         )
@@ -671,8 +674,8 @@ def snspds(
     """
     if text is None:
         snspds_width = [item[0] for item in snspds_width_pitch]
-        text = f"w={snspds_width}"
-    cell_text = text.replace(" \n", ", ")
+        text = "w="+'\n'.join([f"{wi:.1f}" for wi in snspds_width])
+    cell_text = text#.replace(" \n", ", ")
 
     SNSPD_CELL = Device(f"CELL.SNSPD({cell_text})")
     DEVICE = Device(f"SNSPD({cell_text})")

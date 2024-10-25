@@ -7,6 +7,7 @@ design.
 """
 
 from phidl import Device
+from phidl.device_layout import DeviceReference
 import phidl.geometry as pg
 from typing import Tuple, List, Union, Optional
 import os
@@ -118,7 +119,8 @@ def create_chip(
 
 
 def place_on_chip(
-    cell: Device,
+    ref: DeviceReference,
+    name: str,
     coordinates: Tuple[int, int],
     chip_map: List[List[bool]],
     die_w: Union[int, float],
@@ -148,11 +150,12 @@ def place_on_chip(
     """
 
     # update the chip's availabilities
-    n_cell = round(cell.xsize / die_w)
-    m_cell = round(cell.ysize / die_w)
+    n_cell = round(ref.xsize / die_w)
+    m_cell = round(ref.ysize / die_w)
+    print(name)
     for n in range(n_cell):
         for m in range(m_cell):
-            cell_name = cell.name.replace("\n", "")
+            cell_name = name
             try:
                 if chip_map[coordinates[1] + m][coordinates[0] + n] == Occupied:
                     print(
@@ -173,7 +176,7 @@ def place_on_chip(
         -n_cell * 0.5 * die_w,
         -m_cell * 0.5 * die_w,
     )
-    cell.move(cell_bottom_left, ((coordinates[0]) * die_w, (coordinates[1]) * die_w))
+    ref.move(cell_bottom_left, ((coordinates[0]) * die_w, (coordinates[1]) * die_w))
 
     # write the cell's place on the devices map text file
     if devices_map_txt is not None:
@@ -420,7 +423,10 @@ class Design:
         return self.CHIP
 
     def place_on_chip(
-        self, cell: Device, coordinates: Tuple[int, int], add_to_chip: bool = True
+        self, cell: Device, 
+        coordinates: Tuple[int, int] = (0, 0),
+        add_to_chip: bool = True,
+        copy_coordinates: List[Tuple[int, int]] = None, 
     ) -> bool:
         """Moves the chip to the coordinates specified. Update the chip map
         with Occupied states where the device has been placed.
@@ -429,8 +435,11 @@ class Design:
 
         Parameters:
             cell (Device): Device to be moved.
-            coordinates (tuple of int): (i, j) indices of the chip grid, where to place the cell.
-                Note that the indices start at 0.
+            coordinates (tuple of int) or List of: (i, j) indices of the chip grid, where to place the cell.
+                Note that the indices start at 0. Use to make one copy.
+            copy_coordinates: List of coordinates. Provide multiple coordinates to place multiple
+                copies of the same device.
+            add_to_chip (bool):
 
         Returns:
             bool: False, if the Device falls out of the chip map, prints an error message and does not place the device. True, otherwise.
@@ -446,16 +455,30 @@ class Design:
             >>> demo_project.place_on_chip(cell=align_left,  coordinates=(0, 5))
             >>> demo_project.place_on_chip(cell=align_right, coordinates=(10, 5))
         """
-
-        if add_to_chip:
-            self.CHIP << cell
-        return place_on_chip(
-            cell=cell,
-            coordinates=coordinates,
-            chip_map=self.chip_map,
-            die_w=self.die_w,
-            devices_map_txt=self.devices_map_txt,
-        )
+        success = []
+        if copy_coordinates is None:
+            ref = self.CHIP << cell 
+            return place_on_chip(
+                ref = ref,
+                name = cell.name.replace("\n", ""),
+                coordinates=coordinates,
+                chip_map=self.chip_map,
+                die_w=self.die_w,
+                devices_map_txt=self.devices_map_txt,
+            )
+        else:
+            for i in range(len(copy_coordinates)):
+                if add_to_chip:
+                    ref = self.CHIP << cell
+                success.append(place_on_chip(
+                    ref = ref,
+                    name = cell.name.replace("\n", ""),
+                    coordinates=(copy_coordinates[i][0], copy_coordinates[i][1]),
+                    chip_map=self.chip_map,
+                    die_w=self.die_w,
+                    devices_map_txt=self.devices_map_txt,
+                ))
+            return success
 
     def place_remaining_devices(
         self,
