@@ -295,6 +295,111 @@ def resolution_test(
 
 ## devices:
 
+def planar_htron(
+        die_parameters: utility.DieParameters = utility.DieParameters(),
+        wire_width: Union[int, float] = 0.2,
+        gate_width: Union[int, float] = 0.05,
+        channel_width: Union[int, float] = 0.05,
+        gap: Union[int, float] = 0.02,
+        gate_length: Union[int, float] = 0.01,
+        channel_length: Union[int, float] = 0.01,
+        device_layer: int = 1,
+        outline_dev: Union[int, float] = 1,
+        text: Union[None, str] = None
+) -> Device:
+    """Creates a cell containing a planar hTron
+
+    Parameters
+    -----------------
+    wire_width : int or float
+        Width of routing wires in microns
+    gate_width : int or float
+        Width of superconducting gate in microns
+    channel_width : int or float
+        Width of superconducting channel in microns
+    gap : int or float
+        Spacing between gate and channel in microns
+    gate_length : int or float
+        Length of superconducting gate in microns
+    channel_length : int or float
+        Length of superconducting channel in microns
+    outline : int or float
+        Width of positive tone outline in microns
+
+    Returns
+    -------------
+    HTRON : Device
+        A Device containing a single hTron
+
+    """
+    if text is None:
+        text = f"w={wire_width}"
+    cell_text = text.replace(" \n", ", ")
+
+    HTRON_DIE = Device(f"CELL.HTRON({cell_text})")
+    DEVICE = Device(f"HTRON({cell_text})")
+    HTRON = device.htron.planar_hTron(
+        wire_width=wire_width,
+        gate_width=gate_width,
+        channel_width=channel_width,
+        gap=gap,
+        gate_length=gate_length,
+        channel_length=channel_length,
+        layer=device_layer
+    )
+
+    href = DEVICE << HTRON
+
+    die_contact_w = HTRON.xsize + die_parameters.contact_l
+    dev_contact_w = HTRON.xsize
+    routes_margin = 4 * die_contact_w
+    dev_max_size = (
+        2 * die_parameters.pad_size[0],
+        HTRON.ysize + routes_margin,
+    )
+
+    # die, with calculated parameters
+    BORDER = utility.die_cell(
+        die_parameters=die_parameters,
+        n_m_units=(1, 1),
+        contact_w=die_contact_w,
+        device_max_size=dev_max_size,
+        ports={"N": 2, "S": 2},
+        ports_gnd=[],
+        text=f"HTRON\n{cell_text}",
+    )
+
+    HTRON.add_port(port=href.ports[0], name=f"S{2}")
+    HTRON.add_port(port=href.ports[1], name=f"N{2}")
+    HTRON.add_port(port=href.ports[2], name=f"S{1}")
+    HTRON.add_port(port=href.ports[3], name=f"N{1}")
+
+    ## Route the nanowires and the die
+
+    # hyper tapers
+    HT, dev_ports = utility.add_hyptap_to_cell(
+        BORDER.get_ports(), die_parameters.contact_l, dev_contact_w
+    )
+    DEVICE.ports = dev_ports.ports
+    DEVICE << HT
+
+    # routes from nanowires to hyper tapers
+    ROUTES = utility.route_to_dev(HT.get_ports(), HTRON.ports)
+    DEVICE << ROUTES
+
+    DEVICE.ports = dev_ports.ports
+    DEVICE = pg.outline(
+        DEVICE, outline_dev, open_ports=2 * outline_dev, layer=device_layer
+    )
+    DEVICE.name = f"NWIRES({cell_text})"
+
+    HTRON_DIE << DEVICE
+    HTRON_DIE << BORDER
+
+    from phidl import quickplot as qp
+    qp(HTRON_DIE)
+
+    return HTRON_DIE
 
 def nanowires(
     die_parameters: utility.DieParameters = utility.DieParameters(),
