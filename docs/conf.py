@@ -1,8 +1,10 @@
 import os
 import sys
 from multiproject.utils import get_project
+from importlib.metadata import version
 
 sys.path.insert(0, os.path.abspath(os.path.join("..", "src")))
+import qnngds
 
 extensions = [
     "multiproject",
@@ -63,7 +65,7 @@ elif current_project == "dev":
 
 master_doc = "index"
 copyright = "QNN group"
-version = "0.1.0"
+version = version("qnngds")
 release = version
 
 intersphinx_mapping = {
