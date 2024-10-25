@@ -152,7 +152,6 @@ def place_on_chip(
     # update the chip's availabilities
     n_cell = round(ref.xsize / die_w)
     m_cell = round(ref.ysize / die_w)
-    print(name)
     for n in range(n_cell):
         for m in range(m_cell):
             cell_name = name
