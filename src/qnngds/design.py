@@ -437,8 +437,6 @@ class Design:
             cell (Device): Device to be moved.
             coordinates (tuple of int) or List of: (i, j) indices of the chip grid, where to place the cell.
                 Note that the indices start at 0. Use to make one copy.
-            copy_coordinates: List of coordinates. Provide multiple coordinates to place multiple
-                copies of the same device.
             add_to_chip (bool):
 
         Returns:
