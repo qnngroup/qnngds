@@ -11,6 +11,8 @@ from phidl.device_layout import DeviceReference
 import phidl.geometry as pg
 from typing import Tuple, List, Union, Optional
 import os
+import numpy as np
+from numpy.typing import ArrayLike
 
 import qnngds.cells as cell
 import qnngds.utilities as utility
@@ -119,7 +121,7 @@ def create_chip(
 
 
 def place_on_chip(
-    ref: DeviceReference,
+    ref: Union[Device, DeviceReference],
     name: str,
     coordinates: Tuple[int, int],
     chip_map: List[List[bool]],
@@ -424,9 +426,8 @@ class Design:
 
     def place_on_chip(
         self, cell: Device, 
-        coordinates: Tuple[int, int] = (0, 0),
+        coordinates: ArrayLike = (0, 0),
         add_to_chip: bool = True,
-        copy_coordinates: List[Tuple[int, int]] = None, 
     ) -> bool:
         """Moves the chip to the coordinates specified. Update the chip map
         with Occupied states where the device has been placed.
@@ -456,7 +457,8 @@ class Design:
             >>> demo_project.place_on_chip(cell=align_right, coordinates=(10, 5))
         """
         success = []
-        if copy_coordinates is None:
+        coordinates = np.array(coordinates)
+        if coordinates.shape == (2,):
             ref = self.CHIP << cell 
             return place_on_chip(
                 ref = ref,
@@ -467,13 +469,13 @@ class Design:
                 devices_map_txt=self.devices_map_txt,
             )
         else:
-            for i in range(len(copy_coordinates)):
+            for i in range(len(coordinates)):
                 if add_to_chip:
                     ref = self.CHIP << cell
                 success.append(place_on_chip(
                     ref = ref,
                     name = cell.name.replace("\n", ""),
-                    coordinates=(copy_coordinates[i][0], copy_coordinates[i][1]),
+                    coordinates=(coordinates[i][0], coordinates[i][1]),
                     chip_map=self.chip_map,
                     die_w=self.die_w,
                     devices_map_txt=self.devices_map_txt,
