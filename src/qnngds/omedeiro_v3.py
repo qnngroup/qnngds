@@ -11,14 +11,7 @@ import phidl.geometry as pg
 import phidl.routing as pr
 
 # import colang as mc
-import sys
 import phidl.path as pp
-
-
-
-
-sys.path.append(r"Q:\qnnpy")
-sys.path.append(r"Q:\qnngds")
 import qnngds.geometry as qg
 
 
