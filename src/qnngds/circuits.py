@@ -202,14 +202,14 @@ def snspd_ntron(
         # port 3 connected to crossB east
         route = ROUTES << pg.compass((w_pad / 2, w_inductor))
         route.connect(route.ports["W"], CROSSB.ports["E"])
-        NTRON.connect(NTRON.ports[3], route.ports["E"])
+        NTRON.connect(NTRON.ports["g"], route.ports["E"])
         # port 1 connected to crossC south
         route = ROUTES << pg.compass((w_inductor, w_pad / 2))
-        route.connect(route.ports["S"], NTRON.ports[1])
+        route.connect(route.ports["S"], NTRON.ports["d"])
         CROSSC.connect(CROSSC.ports["S"], route.ports["N"])
         # port 2 connected to gnd
-        route = ROUTES << pg.optimal_step(NTRON.ports[2].width, w_pad, symmetric=True)
-        route.connect(route.ports[1], NTRON.ports[2])
+        route = ROUTES << pg.optimal_step(NTRON.ports["s"].width, w_pad, symmetric=True)
+        route.connect(route.ports[1], NTRON.ports["s"])
         SNSPD_NTRON.add_port(port=route.ports[2], name="S2")
 
     def create_inductor3():

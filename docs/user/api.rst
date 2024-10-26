@@ -7,7 +7,7 @@ Cells
 
 .. automodule:: qnngds.cells
     :members:
-    :exclude-members: alignment, etch_test, nanowires, ntron, resolution_test, snspd_ntron, snspds, vdp
+    :exclude-members: alignment, etch_test, nanowires, nanowires_4pt, ntron, resolution_test, snspd_ntron, snspds, vdp
     :undoc-members:
     :show-inheritance:
 
@@ -25,6 +25,11 @@ Cells
 
         .. image:: images/cells/nanowires.png
             :alt: nanowires.png
+
+    .. autofunction:: nanowires_4pt
+
+        .. image:: images/cells/nanowires_4pt.png
+            :alt: nanowires_4pt.png
 
     .. autofunction:: ntron
 
@@ -101,7 +106,7 @@ nanowire
 
 .. automodule:: qnngds.devices.nanowire
     :members:
-    :exclude-members: spot
+    :exclude-members: spot, variable_length
     :undoc-members:
     :show-inheritance:
 
@@ -109,6 +114,11 @@ nanowire
 
         .. image:: images/devices/nanowire/spot.png
             :alt: spot.png
+
+    .. autofunction:: variable_length
+
+        .. image:: images/devices/nanowire/variable_length.png
+            :alt: variable_length.png
 
 ntron
 ~~~~~
@@ -213,7 +223,7 @@ Utilities
 
 .. automodule:: qnngds.utilities
     :members:
-    :exclude-members: die_cell
+    :exclude-members: die_cell, pad_with_offset
     :undoc-members:
     :show-inheritance:
 
@@ -221,4 +231,9 @@ Utilities
 
         .. image:: images/utilities/die_cell.png
             :alt: die_cell.png
+
+    .. autofunction:: pad_with_offset
+
+        .. image:: images/utilities/pad_with_offset.png
+            :alt: pad_with_offset.png
 

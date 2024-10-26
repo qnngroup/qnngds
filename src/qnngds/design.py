@@ -7,23 +7,26 @@ design.
 """
 
 from phidl import Device
+from phidl.device_layout import DeviceReference
 import phidl.geometry as pg
 from typing import Tuple, List, Union, Optional
 import os
+import numpy as np
+from numpy.typing import ArrayLike
 
 import qnngds.cells as cell
-import qnngds._default_param as dflt
+import qnngds.utilities as utility
 
 Free = True
 Occupied = False
 
 
 def create_chip(
-    chip_w: Union[int, float] = dflt.chip_w,
-    margin: Union[int, float] = dflt.chip_margin,
-    N_dies: int = dflt.N_dies,
-    die_w: Union[None, int, float] = dflt.auto_param,
-    annotations_layer: int = dflt.layers["annotation"],
+    chip_w: Union[int, float] = 10000,
+    margin: Union[int, float] = 100,
+    N_dies: int = None,
+    die_w: Union[None, int, float] = 980,
+    annotations_layer: int = 0,
     unpack_chip_map: bool = True,
     create_devices_map_txt: Union[bool, str] = False,
 ) -> Union[
@@ -68,12 +71,12 @@ def create_chip(
     )
     useful_area.move((margin, margin))
 
-    if die_w is not None:
-        N_dies = int(useful_w / die_w)
-        return_N_or_w = N_dies
-    else:
+    if N_dies is not None:
         die_w = useful_w / N_dies
         return_N_or_w = die_w
+    else:
+        N_dies = int(useful_w / die_w)
+        return_N_or_w = N_dies
     CELL = pg.rectangle([die_w, die_w], layer=annotations_layer)
     array = CHIP.add_array(CELL, columns=N_dies, rows=N_dies, spacing=(die_w, die_w))
     array.move((0, 0), (margin, margin))
@@ -118,7 +121,8 @@ def create_chip(
 
 
 def place_on_chip(
-    cell: Device,
+    ref: Union[Device, DeviceReference],
+    name: str,
     coordinates: Tuple[int, int],
     chip_map: List[List[bool]],
     die_w: Union[int, float],
@@ -148,11 +152,11 @@ def place_on_chip(
     """
 
     # update the chip's availabilities
-    n_cell = round(cell.xsize / die_w)
-    m_cell = round(cell.ysize / die_w)
+    n_cell = round(ref.xsize / die_w)
+    m_cell = round(ref.ysize / die_w)
     for n in range(n_cell):
         for m in range(m_cell):
-            cell_name = cell.name.replace("\n", "")
+            cell_name = name
             try:
                 if chip_map[coordinates[1] + m][coordinates[0] + n] == Occupied:
                     print(
@@ -173,7 +177,7 @@ def place_on_chip(
         -n_cell * 0.5 * die_w,
         -m_cell * 0.5 * die_w,
     )
-    cell.move(cell_bottom_left, ((coordinates[0]) * die_w, (coordinates[1]) * die_w))
+    ref.move(cell_bottom_left, ((coordinates[0]) * die_w, (coordinates[1]) * die_w))
 
     # write the cell's place on the devices map text file
     if devices_map_txt is not None:
@@ -294,19 +298,20 @@ class Design:
     def __init__(
         self,
         name="new_design",
-        chip_w=dflt.chip_w,
-        chip_margin=dflt.chip_margin,
-        N_dies=dflt.auto_param,
-        die_w=dflt.die_w,
-        pad_size=dflt.pad_size,
-        device_outline=dflt.device_outline,
-        die_outline=dflt.die_outline,
-        ebeam_overlap=dflt.ebeam_overlap,
-        annotation_layer=dflt.layers["annotation"],
-        device_layer=dflt.layers["device"],
-        die_layer=dflt.layers["die"],
-        pad_layer=dflt.layers["pad"],
+        chip_w=10000,
+        chip_margin=100,
+        N_dies=None,
+        unit_die_size=(980, 980),
+        pad_size=(150, 250),
+        device_outline=0.5,
+        die_outline=10,
+        ebeam_overlap=10,
+        annotation_layer=0,
+        device_layer=1,
+        die_layer=2,
+        pad_layer=3,
         fill_pad_layer=False,
+        pad_tolerance=5,
     ):
         """
         Args:
@@ -328,6 +333,7 @@ class Design:
             pad_layer (int or array-like[2]): The layer where the pads are placed.
             fill_pad_layer (bool): If True, the space reserved for pads in the
                 die_cell in filled in pad's layer.
+            pad_tolerance: Shrink pads by this amount to account for alignment error in MLA
         """
 
         self.name = name
@@ -335,12 +341,15 @@ class Design:
         self.chip_w = chip_w
         self.chip_margin = chip_margin
         self.N_dies = N_dies
-        self.die_w = die_w
+        self.die_size = unit_die_size
+        self.die_w = unit_die_size[0]
+        self.die_h = unit_die_size[1]
 
         self.pad_size = pad_size
         self.device_outline = device_outline
         self.die_outline = die_outline
         self.ebeam_overlap = ebeam_overlap
+        self.pad_tolerance = pad_tolerance
 
         self.layers = {
             "annotation": annotation_layer,
@@ -397,15 +406,27 @@ class Design:
                 create_devices_map_txt=create_devices_map_txt,
             )
 
-        if self.die_w is not None:
-            self.N_dies = N_or_w
-        else:
+        if self.N_dies is not None:
             self.die_w = N_or_w
+        else:
+            self.N_dies = N_or_w
 
+        self.die_parameters = utility.DieParameters(
+            unit_die_size=(self.die_w, self.die_w),
+            pad_size=self.pad_size,
+            pad_tolerance=self.pad_tolerance,
+            contact_l=self.ebeam_overlap,
+            outline=self.die_outline,
+            die_layer=self.layers["die"],
+            pad_layer=self.layers["pad"],
+            fill_pad_layer=self.fill_pad_layer,
+        )
         return self.CHIP
 
     def place_on_chip(
-        self, cell: Device, coordinates: Tuple[int, int], add_to_chip: bool = True
+        self, cell: Device, 
+        coordinates: ArrayLike = (0, 0),
+        add_to_chip: bool = True,
     ) -> bool:
         """Moves the chip to the coordinates specified. Update the chip map
         with Occupied states where the device has been placed.
@@ -414,8 +435,9 @@ class Design:
 
         Parameters:
             cell (Device): Device to be moved.
-            coordinates (tuple of int): (i, j) indices of the chip grid, where to place the cell.
-                Note that the indices start at 0.
+            coordinates (tuple of int) or List of: (i, j) indices of the chip grid, where to place the cell.
+                Note that the indices start at 0. Use to make one copy.
+            add_to_chip (bool):
 
         Returns:
             bool: False, if the Device falls out of the chip map, prints an error message and does not place the device. True, otherwise.
@@ -431,16 +453,31 @@ class Design:
             >>> demo_project.place_on_chip(cell=align_left,  coordinates=(0, 5))
             >>> demo_project.place_on_chip(cell=align_right, coordinates=(10, 5))
         """
-
-        if add_to_chip:
-            self.CHIP << cell
-        return place_on_chip(
-            cell=cell,
-            coordinates=coordinates,
-            chip_map=self.chip_map,
-            die_w=self.die_w,
-            devices_map_txt=self.devices_map_txt,
-        )
+        success = []
+        coordinates = np.array(coordinates)
+        if coordinates.shape == (2,):
+            ref = self.CHIP << cell 
+            return place_on_chip(
+                ref = ref,
+                name = cell.name.replace("\n", ""),
+                coordinates=coordinates,
+                chip_map=self.chip_map,
+                die_w=self.die_w,
+                devices_map_txt=self.devices_map_txt,
+            )
+        else:
+            for i in range(len(coordinates)):
+                if add_to_chip:
+                    ref = self.CHIP << cell
+                success.append(place_on_chip(
+                    ref = ref,
+                    name = cell.name.replace("\n", ""),
+                    coordinates=(coordinates[i][0], coordinates[i][1]),
+                    chip_map=self.chip_map,
+                    die_w=self.die_w,
+                    devices_map_txt=self.devices_map_txt,
+                ))
+            return success
 
     def place_remaining_devices(
         self,
@@ -490,7 +527,7 @@ class Design:
             write_devices_map_txt=write_devices_map_txt,
         )
 
-    def write_gds(self, text: Union[None, str] = dflt.text) -> Union[None, str]:
+    def write_gds(self, text: Union[None, str] = None) -> Union[None, str]:
         """Write a GDS file.
 
         Args:
@@ -507,7 +544,7 @@ class Design:
     # basics:
 
     def alignment_cell(
-        self, layers_to_align: List[int], text: Union[None, str] = dflt.text
+        self, layers_to_align: List[int], text: Union[None, str] = None
     ) -> Device:
         """Creates alignment marks in an integer number of unit cells.
 
@@ -519,18 +556,16 @@ class Design:
             Device: A device that centers the alignment marks in an n*m unit cell.
         """
         return cell.alignment(
-            die_w=self.die_w,
+            die_parameters=self.die_parameters,
             layers_to_align=layers_to_align,
-            outline_die=self.die_outline,
-            die_layer=self.layers["die"],
             text=text,
         )
 
     def vdp_cell(
         self,
         layers_to_probe: List[int],
-        layers_to_outline: Union[List[int], None] = dflt.auto_param,
-        text: Union[None, str] = dflt.text,
+        layers_to_outline: Union[List[int], None] = None,
+        text: Union[None, str] = None,
     ) -> Device:
         r"""Creates a cell containing a Van Der Pauw structure between 4 contact
         pads.
@@ -545,18 +580,14 @@ class Design:
         """
 
         return cell.vdp(
-            die_w=self.die_w,
-            pad_size=self.pad_size,
+            die_parameters=self.die_parameters,
             layers_to_probe=layers_to_probe,
             layers_to_outline=layers_to_outline,
-            outline=self.die_outline,
-            die_layer=self.layers["die"],
-            pad_layer=self.layers["pad"],
             text=text,
         )
 
     def etch_test_cell(
-        self, layers_to_etch: List[List[int]], text: Union[None, str] = dflt.text
+        self, layers_to_etch: List[List[int]], text: Union[None, str] = None
     ) -> Device:
         """Creates etch test structures in an integer number of unit cells.
 
@@ -573,10 +604,8 @@ class Design:
         """
 
         return cell.etch_test(
-            die_w=self.die_w,
+            die_parameters=self.die_parameters,
             layers_to_etch=layers_to_etch,
-            outline_die=self.die_outline,
-            die_layer=self.layers["die"],
             text=text,
         )
 
@@ -594,7 +623,7 @@ class Design:
             1.5,
             2,
         ],
-        text: Union[None, str] = dflt.text,
+        text: Union[None, str] = None,
     ) -> Device:
         r"""Creates a cell containing a resolution test.
 
@@ -608,11 +637,9 @@ class Design:
         """
 
         return cell.resolution_test(
-            die_w=self.die_w,
+            die_parameters=self.die_parameters,
             layer_to_resolve=layer_to_resolve,
             resolutions_to_test=resolutions_to_test,
-            outline=self.die_outline,
-            die_layer=self.layers["die"],
             text=text,
         )
 
@@ -621,7 +648,7 @@ class Design:
     def nanowires_cell(
         self,
         channels_sources_w: List[Tuple[float, float]],
-        text: Union[None, str] = dflt.text,
+        text: Union[None, str] = None,
     ) -> Device:
         """Creates a cell containing several nanowires of given channel and
         source.
@@ -638,28 +665,22 @@ class Design:
         """
 
         return cell.nanowires(
-            die_w=self.die_w,
-            pad_size=self.pad_size,
+            die_parameters=self.die_parameters,
             channels_sources_w=channels_sources_w,
-            overlap_w=self.ebeam_overlap,
-            outline_die=self.die_outline,
             outline_dev=self.device_outline,
             device_layer=self.layers["device"],
-            die_layer=self.layers["die"],
-            pad_layer=self.layers["pad"],
             text=text,
-            fill_pad_layer=self.fill_pad_layer,
         )
 
     def ntron_cell(
         self,
         choke_w: float,
         channel_w: float,
-        gate_w: Union[float, None] = dflt.auto_param,
-        source_w: Union[float, None] = dflt.auto_param,
-        drain_w: Union[float, None] = dflt.auto_param,
-        choke_shift: Union[float, None] = dflt.auto_param,
-        text: Union[str, None] = dflt.text,
+        gate_w: Union[float, None] = None,
+        source_w: Union[float, None] = None,
+        drain_w: Union[float, None] = None,
+        choke_shift: Union[float, None] = None,
+        text: Union[str, None] = None,
     ) -> Device:
         r"""Creates a standardized cell specifically for a single ntron.
 
@@ -682,22 +703,16 @@ class Design:
         """
 
         return cell.ntron(
-            die_w=self.die_w,
-            pad_size=self.pad_size,
+            die_parameters=self.die_parameters,
             choke_w=choke_w,
             channel_w=channel_w,
             gate_w=gate_w,
             source_w=source_w,
             drain_w=drain_w,
             choke_shift=choke_shift,
-            overlap_w=self.ebeam_overlap,
-            outline_die=self.die_outline,
             outline_dev=self.device_outline,
             device_layer=self.layers["device"],
-            die_layer=self.layers["die"],
-            pad_layer=self.layers["pad"],
             text=text,
-            fill_pad_layer=self.fill_pad_layer,
         )
 
     def snspds_cell(
@@ -705,7 +720,7 @@ class Design:
         snspds_width_pitch: List[Tuple[float, float]] = [(0.2, 0.6)],
         snspd_size: Tuple[Union[int, float], Union[int, float]] = (100, 100),
         snspd_num_squares: Optional[int] = None,
-        text: Union[None, str] = dflt.text,
+        text: Union[None, str] = None,
     ) -> Device:
         """Creates a cell that contains vertical superconducting nanowire
         single-photon detectors (SNSPD).
@@ -722,26 +737,20 @@ class Design:
         """
 
         return cell.snspds(
-            die_w=self.die_w,
-            pad_size=self.pad_size,
+            die_parameters=self.die_parameters,
             snspds_width_pitch=snspds_width_pitch,
             snspd_size=snspd_size,
             snspd_num_squares=snspd_num_squares,
-            overlap_w=self.ebeam_overlap,
-            outline_die=self.die_outline,
             outline_dev=self.device_outline,
             device_layer=self.layers["device"],
-            die_layer=self.layers["die"],
-            pad_layer=self.layers["pad"],
             text=text,
-            fill_pad_layer=self.fill_pad_layer,
         )
 
     def snspd_ntron_cell(
         self,
         w_choke: float,
-        w_snspd: Union[float, None] = dflt.auto_param,
-        text: Union[str, None] = dflt.text,
+        w_snspd: Union[float, None] = None,
+        text: Union[str, None] = None,
     ) -> Device:
         """Creates a cell that contains an SNSPD coupled to an NTRON. The
         device's parameters are sized according to the SNSPD's width and the
@@ -757,16 +766,10 @@ class Design:
         """
 
         return cell.snspd_ntron(
-            die_w=self.die_w,
-            pad_size=self.pad_size,
+            die_parameters=self.die_parameters,
             w_choke=w_choke,
             w_snspd=w_snspd,
-            overlap_w=self.ebeam_overlap,
-            outline_die=self.die_outline,
             outline_dev=self.device_outline,
             device_layer=self.layers["device"],
-            die_layer=self.layers["die"],
-            pad_layer=self.layers["pad"],
             text=text,
-            fill_pad_layer=self.fill_pad_layer,
         )
