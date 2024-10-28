@@ -6,7 +6,7 @@ build-backend = "pdm.backend"
 name = "qnngds"
 
 
-version = "3.4.0"
+version = "3.4.1"
 
 authors = [
   { name="A. Jacquillat", email="audrey01@mit.edu" },
@@ -19,7 +19,7 @@ maintainers = [
 ]
 description = "The QNN library for creating gds files"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 license = {file = "LICENSE.txt"}
 keywords = ["phidl", "nanowire_electronics", "nanofabrication", "gds"]
 classifiers = [
