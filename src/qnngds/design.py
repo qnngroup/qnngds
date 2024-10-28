@@ -673,6 +673,29 @@ class Design:
             device_layer=self.layers["device"],
             text=text,
         )
+    
+    def htron_cell(
+            self,
+            wire_width: Union[int, float] = 0.2,
+            gate_width: Union[int, float] = 0.05,
+            channel_width: Union[int, float] = 0.05,
+            gap: Union[int, float] = 0.02,
+            gate_length: Union[int, float] = 0.01,
+            channel_length: Union[int, float] = 0.01,
+            text: Union[None, str] = None
+    ):
+        return cell.planar_htron(
+            die_parameters=self.die_parameters,
+            wire_width=wire_width,
+            gate_width=gate_width,
+            channel_width=channel_width,
+            gap=gap,
+            gate_length=gate_length,
+            channel_length=channel_length,
+            device_layer=self.layers["device"],
+            outline_dev=self.device_outline,
+            text=text
+        )
 
     def ntron_cell(
         self,

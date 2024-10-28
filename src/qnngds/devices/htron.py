@@ -19,7 +19,7 @@ import phidl.geometry as pg
 from qnngds.geometries import angled_taper
 from typing import Tuple, List, Union, Optional
 
-def planar_hTron(wire_width: Union[int, float]= 0.2,
+def planar_hTron(wire_width: Union[int, float]= 0.3,
                  gate_width: Union[int, float] = 0.1,
                  channel_width: Union[int, float] = 0.2,
                  gap: Union[int, float] = 0.02,
@@ -59,7 +59,7 @@ def planar_hTron(wire_width: Union[int, float]= 0.2,
     for direction,width,length in ((1,channel_width, channel_length), (-1,gate_width, gate_length)):
         W = Device('wire')
         constr = W << pg.straight(size=(width, np.max(length - 4*width,0)), layer=layer)
-        constr.move(-constr.center)
+        constr.center = [0,0]
         constr.move([direction*(gap/2+width/2),0])
         taper = angled_taper(wire_width, width, 45, layer=layer)
         if direction < 0:
@@ -79,4 +79,5 @@ def planar_hTron(wire_width: Union[int, float]= 0.2,
 
     HTRON.center = [0,0]
     HTRON.name = f"HTRON.planar(w={wire_width:.2f})"
+    HTRON.simplify(1e-3)
     return HTRON

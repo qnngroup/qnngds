@@ -7,7 +7,7 @@ Cells
 
 .. automodule:: qnngds.cells
     :members:
-    :exclude-members: alignment, etch_test, nanowires, nanowires_4pt, ntron, resolution_test, snspd_ntron, snspds, vdp
+    :exclude-members: alignment, etch_test, nanowires, nanowires_4pt, ntron, planar_htron, resolution_test, snspd_ntron, snspds, vdp
     :undoc-members:
     :show-inheritance:
 
@@ -35,6 +35,11 @@ Cells
 
         .. image:: images/cells/ntron.png
             :alt: ntron.png
+
+    .. autofunction:: planar_htron
+
+        .. image:: images/cells/planar_htron.png
+            :alt: planar_htron.png
 
     .. autofunction:: resolution_test
 
@@ -97,9 +102,19 @@ htron
 
 .. automodule:: qnngds.devices.htron
     :members:
-    :exclude-members: 
+    :exclude-members: angled_taper, planar_hTron
     :undoc-members:
     :show-inheritance:
+
+    .. autofunction:: angled_taper
+
+        .. image:: images/devices/htron/angled_taper.png
+            :alt: angled_taper.png
+
+    .. autofunction:: planar_hTron
+
+        .. image:: images/devices/htron/planar_hTron.png
+            :alt: planar_hTron.png
 
 nanowire
 ~~~~~~~~
@@ -183,9 +198,14 @@ Geometries
 
 .. automodule:: qnngds.geometries
     :members:
-    :exclude-members: hyper_taper
+    :exclude-members: angled_taper, hyper_taper
     :undoc-members:
     :show-inheritance:
+
+    .. autofunction:: angled_taper
+
+        .. image:: images/geometries/angled_taper.png
+            :alt: angled_taper.png
 
     .. autofunction:: hyper_taper
 
