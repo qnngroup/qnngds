@@ -312,6 +312,8 @@ class Design:
         pad_layer=3,
         fill_pad_layer=False,
         pad_tolerance=5,
+        xspace = 0,
+        yspace = 100,
     ):
         """
         Args:
@@ -350,6 +352,8 @@ class Design:
         self.die_outline = die_outline
         self.ebeam_overlap = ebeam_overlap
         self.pad_tolerance = pad_tolerance
+        self.xspace = xspace
+        self.yspace = yspace
 
         self.layers = {
             "annotation": annotation_layer,
@@ -415,6 +419,8 @@ class Design:
             unit_die_size=(self.die_w, self.die_w),
             pad_size=self.pad_size,
             pad_tolerance=self.pad_tolerance,
+            xspace = self.xspace,
+            yspace = self.yspace,
             contact_l=self.ebeam_overlap,
             outline=self.die_outline,
             die_layer=self.layers["die"],
@@ -545,6 +551,21 @@ class Design:
 
     # basics:
 
+    def simplify(self, tolerance: Union[float, int] = 1e-2) -> Device:
+        '''
+        From PHIDL:
+        Simplifies every polygon in the Device, without changing the shape by more than tolerance 
+        from the original. Uses the Ramer-Douglas-Peucker algorithm.
+
+        Parameters:
+            tolerance (float or int): Minimum size of detail simplified down to
+        
+        Returns:
+            simplified Device (self.CHIP)
+        '''
+        self.CHIP = self.CHIP.simplify(tolerance)
+        return self.CHIP
+    
     def alignment_cell(
         self, layers_to_align: List[int], text: Union[None, str] = None
     ) -> Device:
@@ -674,24 +695,24 @@ class Design:
             text=text,
         )
     
-    def htron_cell(
+    def htrons_cell(
             self,
-            wire_width: Union[int, float] = 0.2,
-            gate_width: Union[int, float] = 0.05,
-            channel_width: Union[int, float] = 0.05,
-            gap: Union[int, float] = 0.02,
-            gate_length: Union[int, float] = 0.01,
-            channel_length: Union[int, float] = 0.01,
+            wire_width: Union[int, float] = [0.2, 0.3, 0.4],
+            gate_width: Union[int, float] = [0.05, 0.1, 0.2],
+            channel_width: Union[int, float] = [0.05, 0.2, 0.3],
+            gap: Union[int, float] = [0.02, 0.03, 0.04],
+            gate_length: Union[int, float] = [0.01, 0.02, 0.03],
+            channel_length: Union[int, float] = [0.01, 0.03, 0.04],
             text: Union[None, str] = None
     ):
-        return cell.planar_htron(
+        return cell.planar_htrons(
             die_parameters=self.die_parameters,
-            wire_width=wire_width,
-            gate_width=gate_width,
-            channel_width=channel_width,
-            gap=gap,
-            gate_length=gate_length,
-            channel_length=channel_length,
+            wire_widths=wire_width,
+            gate_widths=gate_width,
+            channel_widths=channel_width,
+            gaps=gap,
+            gate_lengths=gate_length,
+            channel_lengths=channel_length,
             device_layer=self.layers["device"],
             outline_dev=self.device_outline,
             text=text

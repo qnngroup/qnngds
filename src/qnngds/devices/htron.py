@@ -16,6 +16,7 @@ Created on Wed Mar 04 14:33:29 2024
 import numpy as np
 from phidl import Device
 import phidl.geometry as pg
+from qnngds.utilities import PadPlacement, QnnDevice
 from qnngds.geometries import angled_taper
 from typing import Tuple, List, Union, Optional
 
@@ -26,7 +27,7 @@ def planar_hTron(wire_width: Union[int, float]= 0.3,
                  gate_length : Union[int, float]= 0.01,
                  channel_length: Union[int, float] = 0.01,
                  layer: int = 1
-                 ):
+                 ) -> QnnDevice:
     """Create a planar hTron
 
     Parameters
@@ -55,6 +56,18 @@ def planar_hTron(wire_width: Union[int, float]= 0.3,
 
     HTRON = Device('hTron')
 
+    htron_padplace = PadPlacement(
+        cell_scaling_factor_x= 1,
+        num_pads_n=2,
+        num_pads_s=2,
+        port_map_x={
+            0:("S", 2),
+            1:("N", 2),
+            2:("S", 1),
+            3:("N", 1)
+        }
+    )
+
     ports = []
     for direction,width,length in ((1,channel_width, channel_length), (-1,gate_width, gate_length)):
         W = Device('wire')
@@ -80,4 +93,4 @@ def planar_hTron(wire_width: Union[int, float]= 0.3,
     HTRON.center = [0,0]
     HTRON.name = f"HTRON.planar(w={wire_width:.2f})"
     HTRON.simplify(1e-3)
-    return HTRON
+    return QnnDevice(HTRON, htron_padplace)

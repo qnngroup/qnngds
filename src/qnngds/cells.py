@@ -6,9 +6,11 @@ import phidl.geometry as pg
 import phidl.routing as pr
 from typing import Tuple, List, Union, Optional
 import math
+import numpy as np
+from numpy.typing import ArrayLike
 
 import qnngds.tests as test
-import qnngds.devices as device
+import qnngds.devices as devices
 import qnngds.circuits as circuit
 import qnngds.utilities as utility
 
@@ -121,6 +123,7 @@ def vdp(
         invert=False,
         fill_pad_layer=False,
         text_size=die_parameters.text_size,
+        pad_tolerance=0
     )
 
     PADS = utility.die_cell(
@@ -295,179 +298,88 @@ def resolution_test(
 
 ## devices:
 
-def planar_htron(
+def device_cell(
+        device: ArrayLike = devices.nanowire.spot(),
         die_parameters: utility.DieParameters = utility.DieParameters(),
-        wire_width: Union[int, float] = 0.2,
-        gate_width: Union[int, float] = 0.05,
-        channel_width: Union[int, float] = 0.05,
-        gap: Union[int, float] = 0.02,
-        gate_length: Union[int, float] = 0.01,
-        channel_length: Union[int, float] = 0.01,
         device_layer: int = 1,
         outline_dev: Union[int, float] = 1,
         text: Union[None, str] = None
 ) -> Device:
-    """Creates a cell containing a planar hTron
+    """
+    Creates a cell containing Device[s]
 
     Parameters
-    -----------------
-    wire_width : int or float
-        Width of routing wires in microns
-    gate_width : int or float
-        Width of superconducting gate in microns
-    channel_width : int or float
-        Width of superconducting channel in microns
-    gap : int or float
-        Spacing between gate and channel in microns
-    gate_length : int or float
-        Length of superconducting gate in microns
-    channel_length : int or float
-        Length of superconducting channel in microns
-    outline : int or float
-        Width of positive tone outline in microns
+    --------------------
+    device: ArrayLike of Devices
+        Device[s] to place in cell
+    die_paramaters: DieParameters
+        design-wide specifications
+    device_layer: int
+        layer on which to place Device[s]
+    outline_dev: int or float
+        width of outline for CPW-type architecture
+    text: str or None
+        label text for cell
 
-    Returns
-    -------------
-    HTRON : Device
-        A Device containing a single hTron
-
-    """
-    if text is None:
-        text = f"w={wire_width}"
-    cell_text = text.replace(" \n", ", ")
-
-    HTRON_DIE = Device(f"CELL.HTRON({cell_text})")
-    DEVICE = Device(f"HTRON({cell_text})")
-    HTRON = device.htron.planar_hTron(
-        wire_width=wire_width,
-        gate_width=gate_width,
-        channel_width=channel_width,
-        gap=gap,
-        gate_length=gate_length,
-        channel_length=channel_length,
-        layer=device_layer
-    )
-
-    href = DEVICE << HTRON
-
-    die_contact_w = HTRON.xsize + die_parameters.contact_l
-    dev_contact_w = HTRON.xsize
-    routes_margin = 4 * die_contact_w
-    dev_max_size = (
-        2 * die_parameters.pad_size[0],
-        HTRON.ysize + routes_margin,
-    )
-
-    # die, with calculated parameters
-    BORDER = utility.die_cell(
-        die_parameters=die_parameters,
-        n_m_units=(1, 1),
-        contact_w=die_contact_w,
-        device_max_size=dev_max_size,
-        ports={"N": 2, "S": 2},
-        ports_gnd=[],
-        text=f"HTRON\n{cell_text}",
-    )
-
-    HTRON.add_port(port=href.ports[0], name=f"S{2}")
-    HTRON.add_port(port=href.ports[1], name=f"N{2}")
-    HTRON.add_port(port=href.ports[2], name=f"S{1}")
-    HTRON.add_port(port=href.ports[3], name=f"N{1}")
-
-    ## Route the nanowires and the die
-
-    # hyper tapers
-    HT, dev_ports = utility.add_hyptap_to_cell(
-        BORDER.get_ports(), die_parameters.contact_l, dev_contact_w
-    )
-    DEVICE.ports = dev_ports.ports
-    DEVICE << HT
-
-    # routes from nanowires to hyper tapers
-    ROUTES = utility.route_to_dev(HT.get_ports(), HTRON.ports)
-    DEVICE << ROUTES
-
-    DEVICE.ports = dev_ports.ports
-    DEVICE = pg.outline(
-        DEVICE, outline_dev, open_ports=2 * outline_dev, layer=device_layer
-    )
-    DEVICE.name = f"NWIRES({cell_text})"
-
-    HTRON_DIE << DEVICE
-    HTRON_DIE << BORDER
-
-    from phidl import quickplot as qp
-    qp(HTRON_DIE)
-
-    return HTRON_DIE
-
-def nanowires(
-    die_parameters: utility.DieParameters = utility.DieParameters(),
-    channels_sources_w: List[Tuple[float, float]] = [(0.1, 1), (0.5, 3), (1, 10)],
-    outline_dev: Union[int, float] = 0.5,
-    device_layer: int = 1,
-    text: Union[None, str] = None,
-    lengths: List[float] = None,
-) -> Device:
-    """Creates a cell that contains several nanowires of given channel and
-    source.
-
-    Parameters:
-        die_parameters (DieParameters): the die's parameters.
-        channels_sources_w (list of tuple of float): The list of (channel_w,
-            source_w) of the nanowires to create.
-        outline_dev (int or float): The width of the device's outline.
-        device_layer (int or tuple of int): The layer where the device is placed.
-        text (str, optional): If None, the text is f"w={channels_w}".
-        lengths (list of int or float): if None, use nanowire.spot; if populated, create nanowires of given lengths
-        tolerance (int or float): offset between gold pads and e-beam gaps to accommodate alignment error
-
-    Returns:
-        Device: A device (of size n*m unit cells) containing the nanowires, the
-        border of the die (created with die_cell function), and the connections
-        between the nanowires and pads.
+    Returns 
+    ----------------
+    Cell: a Device containing the input devices, pads, and routing
     """
 
+    device_array = np.array(device)
+    if device_array.shape == ():
+        device = np.array([device])
+    else:
+        device = np.array(device) 
+
+    cell_scaling_factor_x = device[0].pads.cell_scaling_factor_x 
+    cell_scaling_factor_y = device[0].pads.cell_scaling_factor_y
+    num_pads_n = device[0].pads.num_pads_n
+    num_pads_s = device[0].pads.num_pads_s
+    num_pads_e = device[0].pads.num_pads_e
+    num_pads_w = device[0].pads.num_pads_w
+    ports_gnd = device[0].pads.ports_gnd
+    port_map_x = device[0].pads.port_map_x
+    port_map_y = device[0].pads.port_map_y
+
+    max_x_num = max(num_pads_n, num_pads_s)
+    max_y_num = max(num_pads_e, num_pads_w)
+
     if text is None:
-        channels_w = [item[0] for item in channels_sources_w]
-        text = f"w={channels_w}"
+        text = f"{device[0].device.name}"
     cell_text = text.replace(" \n", ", ")
 
-    NANOWIRES_DIE = Device(f"CELL.NWIRES({cell_text})")
+    DIE = Device(f"CELL.{cell_text}")
+    FULL_DEVICES = Device(f"{cell_text}")
 
-    DEVICE = Device(f"NWIRES({cell_text})")
-
-    ## Create the NANOWIRES
-
-    NANOWIRES = Device(f"NWIRES({cell_text})")
-    nanowires_ref = []
-    for i, channel_source_w in enumerate(channels_sources_w):
-        if lengths is None:
-            nanowire_ref = NANOWIRES << device.nanowire.spot(
-                channel_source_w[0], channel_source_w[1]
-            )
-        else:
-            nanowire_ref = NANOWIRES << device.nanowire.variable_length(
-                channel_source_w[0], channel_source_w[1], lengths[i]
-            )
-        nanowires_ref.append(nanowire_ref)
-    DEVICE << NANOWIRES
+    USER_DEVICES = Device(f"{cell_text}")
+    refs = []
+    for dev in device:
+        ref = USER_DEVICES << dev.device
+        refs.append(ref)
+    
+    FULL_DEVICES << USER_DEVICES
 
     ## Create the DIE
 
     # die parameters, checkup conditions
-    num_nw = len(channels_sources_w)
+    num_dev = len(device)
     n = math.ceil(
-        (2 * (num_nw + 1) * die_parameters.pad_size[0])
+        (2*max_x_num*(num_dev+1) * die_parameters.pad_size[0]*cell_scaling_factor_x)
         / die_parameters.unit_die_size[0]
     )
-    die_contact_w = NANOWIRES.xsize + die_parameters.contact_l
-    dev_contact_w = NANOWIRES.xsize
+
+    die_contact_w = USER_DEVICES.xsize + die_parameters.contact_l
+    dev_contact_w = USER_DEVICES.xsize
     routes_margin = 4 * die_contact_w
     dev_max_size = (
-        2 * num_nw * die_parameters.pad_size[0],
-        NANOWIRES.ysize + routes_margin,
+        max_x_num * num_dev * die_parameters.pad_size[0],
+        USER_DEVICES.ysize + routes_margin,
     )
+
+    ports = {"N": num_pads_n*num_dev, "S": num_pads_s*num_dev, 
+               "E": num_pads_e*num_dev, "W": num_pads_w*num_dev}
+    ports = {key:val for key, val in ports.items() if val != 0}
 
     # die, with calculated parameters
     BORDER = utility.die_cell(
@@ -475,17 +387,18 @@ def nanowires(
         n_m_units=(n, 1),
         contact_w=die_contact_w,
         device_max_size=dev_max_size,
-        ports={"N": num_nw, "S": num_nw},
-        ports_gnd=["S"],
-        text=f"NWIRES\n{text}",
+        ports=ports,
+        ports_gnd=ports_gnd,
+        text=f"{cell_text}",
     )
 
-    ## Place the nanowires
-
-    for i, nanowire_ref in enumerate(nanowires_ref):
-        nanowire_ref.movex(BORDER.ports[f"N{i+1}"].x)
-        NANOWIRES.add_port(port=nanowire_ref.ports[1], name=f"N{i+1}")
-        NANOWIRES.add_port(port=nanowire_ref.ports[2], name=f"S{i+1}")
+    for i, ref in enumerate(refs):
+        x_offset = BORDER.ports[f"N{i+1}"].x 
+        if max_x_num > 1:
+            x_offset += die_parameters.pad_size[0]*i*cell_scaling_factor_x
+        ref.movex(x_offset)
+        for dev_port, pad_port in port_map_x.items():
+            USER_DEVICES.add_port(port=ref.ports[dev_port], name=f"{pad_port[0]}{max_x_num*i+pad_port[1]}")
 
     ## Route the nanowires and the die
 
@@ -493,24 +406,23 @@ def nanowires(
     HT, dev_ports = utility.add_hyptap_to_cell(
         BORDER.get_ports(), die_parameters.contact_l, dev_contact_w
     )
-    DEVICE.ports = dev_ports.ports
-    DEVICE << HT
+    FULL_DEVICES.ports = dev_ports.ports
+    FULL_DEVICES << HT
 
     # routes from nanowires to hyper tapers
-    ROUTES = utility.route_to_dev(HT.get_ports(), NANOWIRES.ports)
-    DEVICE << ROUTES
+    ROUTES = utility.route_to_dev(HT.get_ports(), USER_DEVICES.ports)
+    FULL_DEVICES << ROUTES
 
-    DEVICE.ports = dev_ports.ports
-    DEVICE = pg.outline(
-        DEVICE, outline_dev, open_ports=2 * outline_dev, layer=device_layer
+    FULL_DEVICES.ports = dev_ports.ports
+    FULL_DEVICES = pg.outline(
+        FULL_DEVICES, outline_dev, open_ports=2 * outline_dev, layer=device_layer
     )
-    DEVICE.name = f"NWIRES({cell_text})"
+    FULL_DEVICES.name = f"{cell_text}"
 
-    NANOWIRES_DIE << DEVICE
-    NANOWIRES_DIE << BORDER
+    DIE << FULL_DEVICES
+    DIE << BORDER
 
-    return NANOWIRES_DIE
-
+    return DIE
 
 def nanowires_4pt(
     die_parameters: utility.DieParameters = utility.DieParameters(),
@@ -554,11 +466,11 @@ def nanowires_4pt(
     nanowires_ref = []
     for i, channel_source_w in enumerate(channels_sources_w):
         if lengths is None:
-            nanowire_ref = NANOWIRES << device.nanowire.spot(
+            nanowire_ref = NANOWIRES << devices.nanowire.spot(
                 channel_source_w[0], channel_source_w[1]
             )
         else:
-            nanowire_ref = NANOWIRES << device.nanowire.variable_length(
+            nanowire_ref = NANOWIRES << devices.nanowire.variable_length(
                 channel_source_w[0], channel_source_w[1], lengths[i]
             )
         nanowires_ref.append(nanowire_ref)
@@ -686,7 +598,7 @@ def ntron(
     if choke_shift is None:
         choke_shift = -3 * channel_w
 
-    NTRON = device.ntron.smooth(
+    NTRON = devices.ntron.smooth(
         choke_w, gate_w, channel_w, source_w, drain_w, choke_shift, device_layer
     )
     NTRON = utility.rename_ports_to_compass(NTRON)
@@ -788,7 +700,7 @@ def snspds(
     # create SNSPD, make its ports compass, add safe optimal step
     snspds_ref = []
     for i, snspd_width_pitch in enumerate(snspds_width_pitch):
-        SNSPD = device.snspd.vertical(
+        SNSPD = devices.snspd.vertical(
             wire_width=snspd_width_pitch[0],
             wire_pitch=snspd_width_pitch[1],
             size=snspd_size,

@@ -15,7 +15,6 @@ from phidl.device_layout import (
 )
 import qnngds.geometries as geometry
 
-
 class DieParameters:
     """A class regrouping every parameter proper to a die_cell.
 
@@ -26,6 +25,8 @@ class DieParameters:
         unit_die_size (tuple of (int or float, int or float)): Dimensions of a unit die/cell (width, height).
         pad_size (tuple of int or float): Dimensions of the die's pads (width, height).
         pad_tolerance (int or float): Amount to shrink gold pads vs e-beam gaps for alignment error tolerance.
+        xspace (int or float): Extra space to add in x-direction between pad and edge of die
+        yspace (int or float): Extra space to add in y-direction between pad adn edge of die
         contact_l (int or float): Extra length of the routes above the die's
             ports to assure alignment with the device (useful for ebeam
             lithography).
@@ -43,6 +44,8 @@ class DieParameters:
         unit_die_size: Tuple[Union[int, float], Union[int, float]] = (980, 980),
         pad_size: Tuple[Union[int, float], Union[int, float]] = (150, 250),
         pad_tolerance: float = 5,
+        xspace: Union[int, float] = 0,
+        yspace: Union[int, float] = 100,
         contact_l: Union[int, float] = 10,
         outline: Union[int, float] = 10,
         die_layer: int = 2,
@@ -57,6 +60,8 @@ class DieParameters:
         self.unit_die_h = unit_die_size[1]
         self.pad_size = pad_size
         self.pad_tolerance = pad_tolerance
+        self.xspace = xspace
+        self.yspace = yspace
         self.contact_l = contact_l
         self.outline = outline
         self.die_layer = die_layer
@@ -193,6 +198,34 @@ class DieParameters:
         max_circuit_port_width = max([port.width for port in circuit_ports])
         return max(max_circuit_port_width, self.contact_l)
 
+class PadPlacement:
+    def __init__(self, 
+                 cell_scaling_factor_x: Union[int, float] = 1,
+                 cell_scaling_factor_y: Union[int, float] = 1,
+                 num_pads_n: int = 1,
+                 num_pads_s: int = 1,
+                 num_pads_e: int = 0,
+                 num_pads_w: int = 0,
+                 ports_gnd: List[Union[str, None]] = [None],
+                 port_map_x: Dict[int, Tuple[str, int]] = {1:("N",1), 2:("S",1)},
+                 port_map_y: Dict[int, Tuple[str, int]] = {}):
+
+        self.cell_scaling_factor_x = cell_scaling_factor_x
+        self.cell_scaling_factor_y = cell_scaling_factor_y
+        self.num_pads_n = num_pads_n
+        self.num_pads_s = num_pads_s
+        self.num_pads_e = num_pads_e
+        self.num_pads_w = num_pads_w
+        self.ports_gnd = ports_gnd
+        self.port_map_x = port_map_x
+        self.port_map_y = port_map_y
+
+class QnnDevice:
+    def __init__(self,
+                 device: Device,
+                 pads: PadPlacement):
+        self.device = device 
+        self.pads = pads
 
 def die_cell(
     die_parameters: DieParameters = DieParameters(),
@@ -249,8 +282,8 @@ def die_cell(
     padOut = Device()
 
     pad_block_size = (
-        die_size[0] - 2 * die_parameters.pad_size[1] - 4 * die_parameters.outline,
-        die_size[1] - 2 * die_parameters.pad_size[1] - 4 * die_parameters.outline,
+        die_size[0] - 2 * die_parameters.pad_size[1] - 4 * die_parameters.outline - die_parameters.xspace,
+        die_size[1] - 2 * die_parameters.pad_size[1] - 4 * die_parameters.outline - die_parameters.yspace,
     )
     inner_block = pg.compass_multi(device_max_size, ports)
     outer_block = pg.compass_multi(pad_block_size, ports)
