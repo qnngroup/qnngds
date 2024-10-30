@@ -668,53 +668,26 @@ class Design:
 
     # devices:
 
-    def nanowires_cell(
-        self,
-        channels_sources_w: List[Tuple[float, float]],
-        text: Union[None, str] = None,
+    def device_cell(
+            self,
+            device: ArrayLike,
+            text: Union[None, str] = None
     ) -> Device:
-        """Creates a cell containing several nanowires of given channel and
-        source.
+        """
+        Creates a cell containing the input Device(s)
 
         Parameters:
-            channels_sources_w (List[Tuple[float, float]]): The list of
-                (channel_w, source_w) of the nanowires to create.
-            text (str, optional): If None, the text is f"w={channels_w}".
-
+            device (ArrayLike[Device]): Device/list of Devices to create
+            text (str, optional): If None, uses Device names
         Returns:
-            Device: A device containing the nanowires, the border of the die
-            (created with die_cell function), and the connections between the
-            nanowires and pads.
+            Device: A device containing the input Device(s), the border of
+            the die (created with die_cell function), and connections between
+            the Device(s) and pads
         """
-
-        return cell.nanowires(
+        return cell.device_cell(
+            device=device,
             die_parameters=self.die_parameters,
-            channels_sources_w=channels_sources_w,
-            outline_dev=self.device_outline,
-            device_layer=self.layers["device"],
-            text=text,
-        )
-    
-    def htrons_cell(
-            self,
-            wire_width: Union[int, float] = [0.2, 0.3, 0.4],
-            gate_width: Union[int, float] = [0.05, 0.1, 0.2],
-            channel_width: Union[int, float] = [0.05, 0.2, 0.3],
-            gap: Union[int, float] = [0.02, 0.03, 0.04],
-            gate_length: Union[int, float] = [0.01, 0.02, 0.03],
-            channel_length: Union[int, float] = [0.01, 0.03, 0.04],
-            text: Union[None, str] = None
-    ):
-        return cell.planar_htrons(
-            die_parameters=self.die_parameters,
-            wire_widths=wire_width,
-            gate_widths=gate_width,
-            channel_widths=channel_width,
-            gaps=gap,
-            gate_lengths=gate_length,
-            channel_lengths=channel_length,
-            device_layer=self.layers["device"],
-            outline_dev=self.device_outline,
+            device_layer=self.layers['device'],
             text=text
         )
 

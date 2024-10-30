@@ -49,8 +49,8 @@ def planar_hTron(wire_width: Union[int, float]= 0.3,
 
     Returns
     -------------
-    HTRON : Device
-        A Device containing a single hTron
+    HTRON : QnnDevice
+        A QnnDevice containing a single hTron
 
     """
 

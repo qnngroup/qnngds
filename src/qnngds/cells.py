@@ -365,7 +365,7 @@ def device_cell(
     # die parameters, checkup conditions
     num_dev = len(device)
     n = math.ceil(
-        (2*max_x_num*(num_dev+1) * die_parameters.pad_size[0]*cell_scaling_factor_x)
+        (2*max_x_num*(num_dev+1) * die_parameters.pad_size[0])
         / die_parameters.unit_die_size[0]
     )
 
@@ -373,7 +373,7 @@ def device_cell(
     dev_contact_w = USER_DEVICES.xsize
     routes_margin = 4 * die_contact_w
     dev_max_size = (
-        max_x_num * num_dev * die_parameters.pad_size[0],
+        max_x_num * num_dev * die_parameters.pad_size[0]*cell_scaling_factor_x,
         USER_DEVICES.ysize + routes_margin,
     )
 
