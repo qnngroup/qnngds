@@ -29,7 +29,8 @@ def spot(
 
     nw_padplace = PadPlacement()
 
-    NANOWIRE = Device()
+    NANOWIRE = QnnDevice()
+    NANOWIRE.set_pads(nw_padplace)
     wire = pg.optimal_step(channel_w, source_w, symmetric=True, num_pts=num_pts)
     source = NANOWIRE << wire
     gnd = NANOWIRE << wire
@@ -42,7 +43,7 @@ def spot(
     NANOWIRE.move(NANOWIRE.center, (0, 0))
     NANOWIRE.name = f"NANOWIRE.SPOT(w={channel_w})"
 
-    return QnnDevice(NANOWIRE, nw_padplace)
+    return NANOWIRE
 
 
 def variable_length(
@@ -77,7 +78,8 @@ def variable_length(
         }
     )
 
-    NANOWIRE = Device()
+    NANOWIRE = QnnDevice()
+    NANOWIRE.set_pads(nw_padplace)
     wire = pg.optimal_step(channel_w, source_w, symmetric=True, num_pts=num_pts)
     line = pg.rectangle((constr_length, channel_w), layer=layer)
     line.center = [0, 0]
@@ -109,4 +111,4 @@ def variable_length(
     NANOWIRE.move(NANOWIRE.center, (0, 0))
     NANOWIRE.name = f"NANOWIRE.VAR(w={channel_w} l={constr_length})"
 
-    return QnnDevice(NANOWIRE, nw_padplace)
+    return NANOWIRE

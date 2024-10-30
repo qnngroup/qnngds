@@ -346,7 +346,7 @@ def device_cell(
     max_y_num = max(num_pads_e, num_pads_w)
 
     if text is None:
-        text = f"{device[0].device.name}"
+        text = f"{device[0].name}"
     cell_text = text.replace(" \n", ", ")
 
     DIE = Device(f"CELL.{cell_text}")
@@ -355,7 +355,7 @@ def device_cell(
     USER_DEVICES = Device(f"{cell_text}")
     refs = []
     for dev in device:
-        ref = USER_DEVICES << dev.device
+        ref = USER_DEVICES << dev
         refs.append(ref)
     
     FULL_DEVICES << USER_DEVICES

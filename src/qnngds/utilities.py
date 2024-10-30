@@ -220,11 +220,8 @@ class PadPlacement:
         self.port_map_x = port_map_x
         self.port_map_y = port_map_y
 
-class QnnDevice:
-    def __init__(self,
-                 device: Device,
-                 pads: PadPlacement):
-        self.device = device 
+class QnnDevice(Device):
+    def set_pads(self, pads: PadPlacement = PadPlacement()):
         self.pads = pads
 
 def die_cell(

@@ -56,18 +56,6 @@ def planar_hTron(wire_width: Union[int, float]= 0.3,
 
     HTRON = Device('hTron')
 
-    htron_padplace = PadPlacement(
-        cell_scaling_factor_x= 1,
-        num_pads_n=2,
-        num_pads_s=2,
-        port_map_x={
-            0:("S", 2),
-            1:("N", 2),
-            2:("S", 1),
-            3:("N", 1)
-        }
-    )
-
     ports = []
     for direction,width,length in ((1,channel_width, channel_length), (-1,gate_width, gate_length)):
         W = Device('wire')
@@ -87,10 +75,24 @@ def planar_hTron(wire_width: Union[int, float]= 0.3,
         HTRON << W
 
     HTRON = pg.union(HTRON)
-    for p, port in enumerate(ports):
-        HTRON.add_port(name=p, port=port)
 
-    HTRON.center = [0,0]
-    HTRON.name = f"HTRON.planar(w={wire_width:.2f})"
-    HTRON.simplify(1e-3)
-    return QnnDevice(HTRON, htron_padplace)
+    final_HTRON = QnnDevice('hTron')
+    final_HTRON.set_pads(PadPlacement(
+        cell_scaling_factor_x= 1,
+        num_pads_n=2,
+        num_pads_s=2,
+        port_map_x={
+            0:("S", 2),
+            1:("N", 2),
+            2:("S", 1),
+            3:("N", 1)
+        }
+    ))
+    final_HTRON << HTRON
+    for p, port in enumerate(ports):
+        final_HTRON.add_port(name=p, port=port)
+
+    final_HTRON.center = [0,0]
+    final_HTRON.name = f"HTRON.planar(w={wire_width:.2f})"
+    final_HTRON.simplify(1e-3)
+    return final_HTRON
