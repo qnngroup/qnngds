@@ -198,6 +198,53 @@ class DieParameters:
         max_circuit_port_width = max([port.width for port in circuit_ports])
         return max(max_circuit_port_width, self.contact_l)
 
+class ConnectionToPCB():
+    def __init__(self, 
+                 pad_pitch, 
+                 pad_width, 
+                 pad_length, 
+                 contact_w = None):
+        self.pad_pitch = pad_pitch
+        self.pad_width = pad_width
+        self.pad_length = pad_length
+        if contact_w == None:
+            self.contact_w = pad_pitch/3
+        else:
+            self.contact_w = contact_w
+
+class MultiProbeTip(ConnectionToPCB):
+    def __init__(self,  
+                 pad_pitch: Union[int, float] = 100,
+                 pad_width = None,
+                 pad_length = 200,
+                 contact_w = None,
+                 num_tips: int = 6,):
+        self.num_tips = num_tips
+        self.pad_pitch = pad_pitch
+        self.pad_length = pad_length
+        if contact_w == None:
+            self.contact_w = pad_pitch/3
+        else:
+            self.contact_w = contact_w 
+        if pad_width == None:
+            self.pad_width = pad_pitch*3/4
+        else:
+            self.pad_width = pad_width
+
+class WireBond(ConnectionToPCB):
+    def __init__(self,
+                 pad_pitch: Union[int, float] = 200,
+                 pad_width: Union[int, float] = 100,
+                 pad_length: Union[int, float] = 200,
+                 contact_w = None):
+        self.pad_pitch = pad_pitch 
+        self.pad_width = pad_width
+        self.pad_length = pad_length
+        if contact_w == None:
+            self.contact_w = pad_width/3
+        else:
+            self.contact_w = contact_w
+
 class PadPlacement:
     def __init__(self, 
                  cell_scaling_factor_x: Union[int, float] = 1,
@@ -206,9 +253,11 @@ class PadPlacement:
                  num_pads_s: int = 1,
                  num_pads_e: int = 0,
                  num_pads_w: int = 0,
+                 contact_w: Union[float, int, None] = None,
                  ports_gnd: List[Union[str, None]] = [None],
                  port_map_x: Dict[int, Tuple[str, int]] = {1:("N",1), 2:("S",1)},
-                 port_map_y: Dict[int, Tuple[str, int]] = {}):
+                 port_map_y: Dict[int, Tuple[str, int]] = {},
+                 probe_tip: Union[None, MultiProbeTip] = WireBond()):
 
         self.cell_scaling_factor_x = cell_scaling_factor_x
         self.cell_scaling_factor_y = cell_scaling_factor_y
@@ -219,6 +268,12 @@ class PadPlacement:
         self.ports_gnd = ports_gnd
         self.port_map_x = port_map_x
         self.port_map_y = port_map_y
+        self.probe_tip = probe_tip
+
+        if contact_w == None:
+            self.contact_w = probe_tip.contact_w 
+        else:
+            self.contact_w = contact_w
 
 class QnnDevice(Device):
     def set_pads(self, pads: PadPlacement = PadPlacement()):
@@ -236,6 +291,8 @@ def die_cell(
     ports_gnd: List[str] = ["E", "S"],
     text: str = "",
     text_size: Union[None, int, float] = None,
+    probe_tip: Union[None, MultiProbeTip] = WireBond(),
+    num_devices = 1
 ) -> Device:
     """Creates a die cell with dicing marks, text, and pads to connect to a
     device.
@@ -254,7 +311,7 @@ def die_cell(
     Returns:
         DIE (Device): The cell, with ports of width contact_w positioned around a device_max_size area.
     """
-
+    contact_w = probe_tip.contact_w
     def offset(overlap_port):
         port_name = overlap_port.name[0]
         if port_name == "N":
@@ -279,30 +336,50 @@ def die_cell(
     padOut = Device()
 
     pad_block_size = (
-        die_size[0] - 2 * die_parameters.pad_size[1] - 4 * die_parameters.outline - die_parameters.xspace,
-        die_size[1] - 2 * die_parameters.pad_size[1] - 4 * die_parameters.outline - die_parameters.yspace,
+        die_size[0] - 2 * probe_tip.pad_length - 4 * die_parameters.outline - die_parameters.xspace,
+        die_size[1] - 2 * probe_tip.pad_length - 4 * die_parameters.outline - die_parameters.yspace,
     )
-    inner_block = pg.compass_multi(device_max_size, ports)
-    outer_block = pg.compass_multi(pad_block_size, ports)
-    inner_ports = list(inner_block.ports.values())
+    # standard pad definition for wirebonding
+    if type(probe_tip) == WireBond:
+        inner_block = pg.compass_multi(device_max_size, ports)
+        outer_block = pg.compass_multi(pad_block_size, ports)
 
+    # pad definition for specific probe tip
+    elif type(probe_tip) == MultiProbeTip:
+        unit_size = probe_tip.num_tips*probe_tip.pad_pitch
+        inner_block = pg.compass_multi((unit_size*num_devices, device_max_size[1]), ports)
+        outer_block = Device()
+        if 'N' in ports:
+            side = 'N'
+        elif 'E' in ports:
+            side = 'E'
+        ports_per_dev = int(ports[side]/num_devices)
+        block_i = pg.compass_multi((unit_size, pad_block_size[1]/2), {side:probe_tip.num_tips})
+        for i in range(num_devices):
+            ref = outer_block << block_i
+            ref.center = [-unit_size*num_devices/2 + (i+1/2)*unit_size, 0]
+            for j in range(ports_per_dev):
+                port = list(ref.ports.values())[j]
+                outer_block.add_port(f"{side}{i*ports_per_dev+j+1}", port=port)
+    
+    inner_ports = list(inner_block.ports.values())
     for i, port in enumerate(list(outer_block.ports.values())):
 
         CONNECT = Device()
         port.rotate(180)
         # create the pad
-        pad = pad_with_offset(die_parameters)
+        pad = pad_with_offset(die_parameters, probe_tip)
         pad.add_port(
             "1",
-            midpoint=(die_parameters.pad_size[0] / 2, 0),
-            width=die_parameters.pad_size[0],
+            midpoint=(probe_tip.pad_width / 2, 0),
+            width=probe_tip.pad_width,
             orientation=90,
         )
         pad_ref = CONNECT << pad
         pad_ref.connect(pad.ports["1"], port)
 
         # create the route from pad to contact
-        port.width = die_parameters.pad_size[0]
+        port.width = probe_tip.pad_width
         inner_ports[i].width = contact_w
         CONNECT << pr.route_quad(port, inner_ports[i], layer=die_parameters.die_layer)
 
@@ -416,14 +493,18 @@ def die_cell(
     return DIE
 
 
-def pad_with_offset(die_parameters: DieParameters = DieParameters()):
+def pad_with_offset(die_parameters: DieParameters = DieParameters(), probe_tip = None):
     DEVICE = Device()
+    if probe_tip == None:
+        pad_size = die_parameters.pad_size
+    else:
+        pad_size = (probe_tip.pad_width, probe_tip.pad_length)
     outer_pad = pg.rectangle(
-        die_parameters.pad_size,
+        pad_size,
         layer=die_parameters.die_layer,
     )
     inner_pad = pg.rectangle(
-        [dim - die_parameters.pad_tolerance for dim in die_parameters.pad_size],
+        [dim - die_parameters.pad_tolerance for dim in pad_size],
         layer=die_parameters.pad_layer,
     )
     inner_pad.center = outer_pad.center

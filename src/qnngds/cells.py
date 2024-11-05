@@ -342,7 +342,7 @@ def device_cell(
     port_map_x = device[0].pads.port_map_x
     port_map_y = device[0].pads.port_map_y
 
-    max_x_num = max(num_pads_n, num_pads_s)
+    max_x_num = max(num_pads_n, num_pads_s, num_pads_e)
     max_y_num = max(num_pads_e, num_pads_w)
 
     if text is None:
@@ -368,8 +368,12 @@ def device_cell(
         (2*max_x_num*(num_dev+1) * die_parameters.pad_size[0])
         / die_parameters.unit_die_size[0]
     )
-
-    die_contact_w = USER_DEVICES.xsize + die_parameters.contact_l
+    
+    default_contact_w = USER_DEVICES.xsize + die_parameters.contact_l
+    if default_contact_w < die_parameters.pad_size[0]:
+        die_contact_w = default_contact_w
+    else:
+        die_contact_w = die_parameters.pad_size[0]
     dev_contact_w = USER_DEVICES.xsize
     routes_margin = 4 * die_contact_w
     dev_max_size = (
@@ -390,21 +394,32 @@ def device_cell(
         ports=ports,
         ports_gnd=ports_gnd,
         text=f"{cell_text}",
+        probe_tip=device[0].pads.probe_tip,
+        num_devices= len(device)
     )
 
+    if 'N' in ports:
+        side = 'N'
+    elif 'E' in ports:
+        side = 'E'
+
     for i, ref in enumerate(refs):
-        x_offset = BORDER.ports[f"N{i+1}"].x 
+        x_offset = BORDER.ports[f"{side}{i*max_x_num+1}"].x 
         if max_x_num > 1:
-            x_offset += die_parameters.pad_size[0]*i*cell_scaling_factor_x
+            x_offset = (x_offset + BORDER.ports[f"{side}{i*max_x_num+max_x_num}"].x)/2
+        if side == 'E':
+            x_offset -= device[0].pads.probe_tip.pad_length
         ref.movex(x_offset)
         for dev_port, pad_port in port_map_x.items():
+            print(f"{pad_port[0]}{max_x_num*i+pad_port[1]}")
             USER_DEVICES.add_port(port=ref.ports[dev_port], name=f"{pad_port[0]}{max_x_num*i+pad_port[1]}")
 
     ## Route the nanowires and the die
 
     # hyper tapers
+    taper_contact = min(dev_contact_w, device[0].pads.contact_w/2)
     HT, dev_ports = utility.add_hyptap_to_cell(
-        BORDER.get_ports(), die_parameters.contact_l, dev_contact_w
+        BORDER.get_ports(), die_parameters.contact_l, taper_contact
     )
     FULL_DEVICES.ports = dev_ports.ports
     FULL_DEVICES << HT
