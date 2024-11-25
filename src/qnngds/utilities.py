@@ -257,7 +257,8 @@ class PadPlacement:
                  ports_gnd: List[Union[str, None]] = [None],
                  port_map_x: Dict[int, Tuple[str, int]] = {1:("N",1), 2:("S",1)},
                  port_map_y: Dict[int, Tuple[str, int]] = {},
-                 probe_tip: Union[None, MultiProbeTip] = WireBond()):
+                 probe_tip: Union[None, MultiProbeTip] = WireBond(),
+                 tight_y_spacing: bool = False):
 
         self.cell_scaling_factor_x = cell_scaling_factor_x
         self.cell_scaling_factor_y = cell_scaling_factor_y
@@ -269,6 +270,7 @@ class PadPlacement:
         self.port_map_x = port_map_x
         self.port_map_y = port_map_y
         self.probe_tip = probe_tip
+        self.tight_y_spacing = tight_y_spacing
 
         if contact_w == None:
             self.contact_w = probe_tip.contact_w 
@@ -361,7 +363,8 @@ def die_cell(
             for j in range(ports_per_dev):
                 port = list(ref.ports.values())[j]
                 outer_block.add_port(f"{side}{i*ports_per_dev+j+1}", port=port)
-    
+        device_max_size = inner_block.size
+
     inner_ports = list(inner_block.ports.values())
     for i, port in enumerate(list(outer_block.ports.values())):
 
@@ -475,6 +478,7 @@ def die_cell(
         border_filled = pg.boolean(
             border_filled, borderOut, "A-B", layer=die_parameters.pad_layer
         )
+        border_filled = pg.offset(border_filled, -die_parameters.pad_tolerance, layer=die_parameters.pad_layer)
         DIE << border_filled
 
     DIE.flatten()

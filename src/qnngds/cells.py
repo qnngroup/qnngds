@@ -376,9 +376,17 @@ def device_cell(
         die_contact_w = die_parameters.pad_size[0]
     dev_contact_w = USER_DEVICES.xsize
     routes_margin = 4 * die_contact_w
+
+    device_max_x = max_x_num * num_dev * max(die_parameters.pad_size[0]*cell_scaling_factor_x, USER_DEVICES.xsize+2*die_parameters.outline)
+    
+    if device[0].pads.tight_y_spacing == True:
+        device_max_y = USER_DEVICES.ysize+2*die_parameters.contact_l
+    else:
+        device_max_y = USER_DEVICES.ysize+routes_margin
+
     dev_max_size = (
-        max_x_num * num_dev * die_parameters.pad_size[0]*cell_scaling_factor_x,
-        USER_DEVICES.ysize + routes_margin,
+        device_max_x,
+        device_max_y,
     )
 
     ports = {"N": num_pads_n*num_dev, "S": num_pads_s*num_dev, 
@@ -410,8 +418,10 @@ def device_cell(
         if side == 'E':
             x_offset -= device[0].pads.probe_tip.pad_length
         ref.movex(x_offset)
+        print(port_map_x.items())
         for dev_port, pad_port in port_map_x.items():
-            print(f"{pad_port[0]}{max_x_num*i+pad_port[1]}")
+            #print(dev_port)
+            #print(f"{pad_port[0]}{max_x_num*i+pad_port[1]}")
             USER_DEVICES.add_port(port=ref.ports[dev_port], name=f"{pad_port[0]}{max_x_num*i+pad_port[1]}")
 
     ## Route the nanowires and the die
@@ -438,131 +448,6 @@ def device_cell(
     DIE << BORDER
 
     return DIE
-
-def nanowires_4pt(
-    die_parameters: utility.DieParameters = utility.DieParameters(),
-    channels_sources_w: List[Tuple[float, float]] = [(0.1, 1), (0.5, 3), (1, 10)],
-    outline_dev: Union[int, float] = 0.5,
-    device_layer: int = 1,
-    text: Union[None, str] = None,
-    lengths: List[float] = None,
-) -> Device:
-    """Creates a cell that contains several nanowires of given channel and
-    source, with 4-pt probe connections.
-
-    Parameters:
-        die_parameters (DieParameters): the die's parameters.
-        channels_sources_w (list of tuple of float): The list of (channel_w,
-            source_w) of the nanowires to create.
-        outline_dev (int or float): The width of the device's outline.
-        device_layer (int or tuple of int): The layer where the device is placed.
-        text (str, optional): If None, the text is f"w={channels_w}".
-        lengths (list of int or float): if None, use nanowire.spot; if populated, create nanowires of given lengths
-        tolerance (int or float): offset between gold pads and e-beam gaps to accommodate alignment error
-
-    Returns:
-        Device: A device (of size n*m unit cells) containing the nanowires, the
-        border of the die (created with die_cell function), and the connections
-        between the nanowires and pads.
-    """
-
-    if text is None:
-        channels_w = [item[0] for item in channels_sources_w]
-        text = f"w={channels_w}"
-    cell_text = text.replace(" \n", ", ")
-
-    NANOWIRES_DIE = Device(f"CELL.NWIRES({cell_text})")
-
-    DEVICE = Device(f"NWIRES({cell_text})")
-
-    ## Create the NANOWIRES
-
-    NANOWIRES = Device(f"NWIRES({cell_text})")
-    nanowires_ref = []
-    for i, channel_source_w in enumerate(channels_sources_w):
-        if lengths is None:
-            nanowire_ref = NANOWIRES << devices.nanowire.spot(
-                channel_source_w[0], channel_source_w[1]
-            )
-        else:
-            nanowire_ref = NANOWIRES << devices.nanowire.variable_length(
-                channel_source_w[0], channel_source_w[1], lengths[i]
-            )
-        nanowires_ref.append(nanowire_ref)
-    DEVICE << NANOWIRES
-
-    ## Create the DIE
-
-    # die parameters, checkup conditions
-    num_nw = len(channels_sources_w)
-    n = math.ceil(
-        (2 * (num_nw + 2) * (die_parameters.pad_size[0]+2*die_parameters.outline))
-        / die_parameters.unit_die_size[0]
-    )
-    die_contact_w = NANOWIRES.xsize + die_parameters.contact_l
-    dev_contact_w = NANOWIRES.xsize
-    routes_margin = 4 * die_contact_w
-    dev_max_size = (
-        2 * num_nw * (die_parameters.pad_size[0])*1.5,
-        NANOWIRES.ysize + routes_margin,
-    )
-
-    # die, with calculated parameters
-    BORDER = utility.die_cell(
-        die_parameters=die_parameters,
-        n_m_units=(n+1, 1),
-        contact_w=die_contact_w,
-        device_max_size=dev_max_size,
-        ports={"N": num_nw * 2, "S": num_nw * 2},
-        ports_gnd=[None],
-        text=f"NWIRES\n{text}",
-    )
-
-    ## Place the nanowires
-
-    for i, nanowire_ref in enumerate(nanowires_ref):
-        nanowire_w = channels_sources_w[i][0]
-        x_offset = BORDER.ports[f"N{i+1}"].x + die_parameters.pad_size[0] * i*1.5
-        nanowire_ref.movex(x_offset)
-        NANOWIRES.add_port(port=nanowire_ref.ports[1], name=f"N{2*i+1}")
-        NANOWIRES.add_port(port=nanowire_ref.ports[2], name=f"S{2*i+1}")
-        NANOWIRES.add_port(
-            midpoint=(nanowire_ref.xmin + nanowire_w/2, nanowire_ref.ymax),
-            width=nanowire_w/2,
-            orientation=90,
-            name=f"N{2*i+2}",
-        )
-        NANOWIRES.add_port(
-            midpoint=(nanowire_ref.xmin + nanowire_w/2, nanowire_ref.ymin),
-            width=nanowire_w/2,
-            orientation=-90,
-            name=f"S{2*i+2}",
-        )
-
-    ## Route the nanowires and the die
-
-    # hyper tapers
-    HT, dev_ports = utility.add_hyptap_to_cell(
-        BORDER.get_ports(), die_parameters.contact_l, dev_contact_w
-    )
-    DEVICE.ports = dev_ports.ports
-    DEVICE << HT
-
-    # routes from nanowires to hyper tapers
-    ROUTES = utility.route_to_dev(HT.get_ports(), NANOWIRES.ports)
-    DEVICE << ROUTES
-
-    DEVICE.ports = dev_ports.ports
-    DEVICE = pg.outline(
-        DEVICE, outline_dev, open_ports=2 * outline_dev, layer=device_layer
-    )
-    DEVICE.name = f"NWIRES({cell_text})"
-
-    NANOWIRES_DIE << DEVICE
-    NANOWIRES_DIE << BORDER
-
-    return NANOWIRES_DIE
-
 
 def ntron(
     die_parameters: utility.DieParameters = utility.DieParameters(),
@@ -669,117 +554,6 @@ def ntron(
     DIE_NTRON << BORDER
 
     return DIE_NTRON
-
-
-def snspds(
-    die_parameters: utility.DieParameters = utility.DieParameters(),
-    snspds_width_pitch: List[Tuple[float, float]] = [
-        (0.1, 0.3),
-        (0.2, 0.6),
-        (0.3, 0.9),
-    ],
-    snspd_size: Tuple[Union[int, float], Union[int, float]] = tuple(
-        round(x / 3)
-        for x in utility.DieParameters().calculate_available_space_for_dev()
-    ),
-    snspd_num_squares: Optional[int] = None,
-    outline_dev: Union[int, float] = 0.5,
-    device_layer: int = 1,
-    text: Union[None, str] = None,
-) -> Device:
-    """Creates a cell that contains vertical superconducting nanowire single-
-    photon detectors (SNSPD).
-
-    Parameters:
-        die_parameters (DieParameters): the die's parameters.
-        snspds_width_pitch (list of tuple of float): list of (width, pitch) of
-            the nanowires. For creating n SNSPD, the list of snspds_width_pitch
-            should have a size of n.
-        snspd_size (tuple of int or float): Size of the detectors in squares (width, height).
-        snspd_num_squares (Optional[int]): Number of squares in the detectors.
-        outline_dev (int or float): The width of the device's outline.
-        device_layer (int or array-like[2]): The layer where the device is placed.
-        text (string, optional): If None, the text is f"w={snspds_width}".
-
-    Returns:
-        Device: A cell (of size n*m unit die_cells) containing the SNSPDs.
-    """
-    if text is None:
-        snspds_width = [item[0] for item in snspds_width_pitch]
-        text = "w="+'\n'.join([f"{wi:.1f}" for wi in snspds_width])
-    cell_text = text#.replace(" \n", ", ")
-
-    SNSPD_CELL = Device(f"CELL.SNSPD({cell_text})")
-    DEVICE = Device(f"SNSPD({cell_text})")
-
-    # create SNSPD, make its ports compass, add safe optimal step
-    snspds_ref = []
-    for i, snspd_width_pitch in enumerate(snspds_width_pitch):
-        SNSPD = devices.snspd.vertical(
-            wire_width=snspd_width_pitch[0],
-            wire_pitch=snspd_width_pitch[1],
-            size=snspd_size,
-            num_squares=snspd_num_squares,
-            layer=device_layer,
-        )
-        SNSPD = utility.rename_ports_to_compass(SNSPD)
-        SNSPD = utility.add_optimalstep_to_dev(SNSPD, ratio=10)
-        snspd_ref = DEVICE << SNSPD
-        snspds_ref.append(snspd_ref)
-
-    # create die
-    num_snspds = len(snspds_width_pitch)
-    die_contact_w = die_parameters.calculate_contact_w(
-        circuit_ports=DEVICE.get_ports(depth=1)
-    )
-    device_max_y = DEVICE.ysize + 2 * die_parameters.contact_l
-    device_max_x = num_snspds * max(
-        die_parameters.pad_size[0] * 1.5, DEVICE.xsize + 2 * die_parameters.outline
-    )
-    device_max_size = (device_max_x, device_max_y)
-
-    n, m = die_parameters.find_num_diecells_for_dev(
-        device_max_size,
-        {"N": num_snspds, "S": num_snspds},
-    )
-
-    BORDER = utility.die_cell(
-        die_parameters=die_parameters,
-        n_m_units=(n, m),
-        contact_w=die_contact_w,
-        device_max_size=device_max_size,
-        ports={"N": num_snspds, "S": num_snspds},
-        ports_gnd=["S"],
-        text=f"SNSPD \n{text}",
-    )
-
-    # align SNSPDs to the die's ports
-    for i, ref in enumerate(snspds_ref):
-        ref.movex(0, BORDER.ports[f"N{i+1}"].x)
-    DEVICE = utility.rename_ports_to_compass(DEVICE, depth=1)
-    snspds_ports = DEVICE.ports
-
-    # add hyper tapers at die pads
-    dev_contact_w = max([port.width for port in DEVICE.get_ports()])
-    HT, dev_ports = utility.add_hyptap_to_cell(
-        BORDER.get_ports(), die_parameters.contact_l, dev_contact_w, device_layer
-    )
-    DEVICE.ports = dev_ports.ports
-    DEVICE << HT
-
-    # link hyper tapers to the device
-    ROUTES = utility.route_to_dev(HT.get_ports(), snspds_ports)
-    DEVICE << ROUTES
-
-    DEVICE = pg.outline(
-        DEVICE, outline_dev, open_ports=2 * outline_dev, layer=device_layer
-    )
-    DEVICE.name = f"SNSPD({cell_text})"
-
-    SNSPD_CELL << DEVICE
-    SNSPD_CELL << BORDER
-    return SNSPD_CELL
-
 
 def snspd_ntron(
     die_parameters: utility.DieParameters = utility.DieParameters(),
