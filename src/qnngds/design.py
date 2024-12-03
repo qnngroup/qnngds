@@ -314,6 +314,7 @@ class Design:
         pad_tolerance=5,
         xspace = 0,
         yspace = 100,
+        positive_tone = True,
     ):
         """
         Args:
@@ -336,6 +337,7 @@ class Design:
             fill_pad_layer (bool): If True, the space reserved for pads in the
                 die_cell in filled in pad's layer.
             pad_tolerance: Shrink pads by this amount to account for alignment error in MLA
+            positive_tone (bool): whether to invert/outline devices for positive tone litho
         """
 
         self.name = name
@@ -729,37 +731,6 @@ class Design:
             source_w=source_w,
             drain_w=drain_w,
             choke_shift=choke_shift,
-            outline_dev=self.device_outline,
-            device_layer=self.layers["device"],
-            text=text,
-        )
-
-    def snspds_cell(
-        self,
-        snspds_width_pitch: List[Tuple[float, float]] = [(0.2, 0.6)],
-        snspd_size: Tuple[Union[int, float], Union[int, float]] = (100, 100),
-        snspd_num_squares: Optional[int] = None,
-        text: Union[None, str] = None,
-    ) -> Device:
-        """Creates a cell that contains vertical superconducting nanowire
-        single-photon detectors (SNSPD).
-
-        Parameters:
-
-            snspds_width_pitch (list of tuple of float): list of (width, pitch) of the nanowires.
-            snspd_size (tuple of int or float): Size of the detectors in squares (width, height).
-            snspd_num_squares (Optional[int]): Number of squares in the detectors.
-            text (string, optional): If None, the text is f"w={snspds_width}".
-
-        Returns:
-            Device: A cell (of size n*m unit die_cells) containing the SNSPDs.
-        """
-
-        return cell.snspds(
-            die_parameters=self.die_parameters,
-            snspds_width_pitch=snspds_width_pitch,
-            snspd_size=snspd_size,
-            snspd_num_squares=snspd_num_squares,
             outline_dev=self.device_outline,
             device_layer=self.layers["device"],
             text=text,

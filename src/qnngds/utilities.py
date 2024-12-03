@@ -35,7 +35,7 @@ class DieParameters:
         pad_layer (int): The layer where the pads are placed.
         fill_pad_layer (bool): If True, the cells are filled with ground in
             pad's layer.
-        invert (bool): If True, inverts the die's layer for positive lithography.
+        positive_tone (bool): If True, inverts the die's layer for positive lithography.
         text_size (int or float): The size of the text in the cells.
     """
 
@@ -51,7 +51,7 @@ class DieParameters:
         die_layer: int = 2,
         pad_layer: int = 3,
         fill_pad_layer: bool = False,
-        invert: bool = True,
+        positive_tone: bool = True,
         text_size: Union[int, float] = 40,
     ):
 
@@ -67,7 +67,7 @@ class DieParameters:
         self.die_layer = die_layer
         self.pad_layer = pad_layer
         self.fill_pad_layer = fill_pad_layer
-        self.invert = invert
+        self.invert = positive_tone
         self.text_size = text_size
 
         self.die_border_w = round(
@@ -484,7 +484,7 @@ def die_cell(
     DIE.flatten()
     ports = DIE.get_ports()
     DIE = pg.union(DIE, by_layer=True)
-    if die_parameters.invert:
+    if die_parameters.positive_tone:
         PADS = pg.deepcopy(DIE)
         PADS.remove_layers([die_parameters.die_layer])
         PADS.name = "pads"
