@@ -120,7 +120,7 @@ def vdp(
         outline=die_parameters.outline,
         die_layer=0,
         pad_layer=die_parameters.pad_layer,
-        invert=False,
+        positive_tone=die_parameters.positive_tone,
         fill_pad_layer=False,
         text_size=die_parameters.text_size,
         pad_tolerance=0
@@ -303,7 +303,8 @@ def device_cell(
         die_parameters: utility.DieParameters = utility.DieParameters(),
         device_layer: int = 1,
         outline_dev: Union[int, float] = 1,
-        text: Union[None, str] = None
+        text: Union[None, str] = None,
+        device_y = 0
 ) -> Device:
     """
     Creates a cell containing Device[s]
@@ -403,7 +404,8 @@ def device_cell(
         ports_gnd=ports_gnd,
         text=f"{cell_text}",
         probe_tip=device[0].pads.probe_tip,
-        num_devices= len(device)
+        num_devices= len(device),
+        device_y=device_y
     )
 
     if 'N' in ports:
@@ -429,7 +431,7 @@ def device_cell(
     # hyper tapers
     taper_contact = min(dev_contact_w, device[0].pads.contact_w/2)
     HT, dev_ports = utility.add_hyptap_to_cell(
-        BORDER.get_ports(), die_parameters.contact_l, taper_contact
+        BORDER.get_ports(), die_parameters.contact_l, taper_contact, positive_tone=die_parameters.positive_tone
     )
     FULL_DEVICES.ports = dev_ports.ports
     FULL_DEVICES << HT
@@ -439,9 +441,10 @@ def device_cell(
     FULL_DEVICES << ROUTES
 
     FULL_DEVICES.ports = dev_ports.ports
-    FULL_DEVICES = pg.outline(
-        FULL_DEVICES, outline_dev, open_ports=2 * outline_dev, layer=device_layer
-    )
+    if die_parameters.positive_tone:
+        FULL_DEVICES = pg.outline(
+            FULL_DEVICES, outline_dev, open_ports=2 * outline_dev, layer=device_layer
+        )
     FULL_DEVICES.name = f"{cell_text}"
 
     DIE << FULL_DEVICES

@@ -67,7 +67,7 @@ class DieParameters:
         self.die_layer = die_layer
         self.pad_layer = pad_layer
         self.fill_pad_layer = fill_pad_layer
-        self.invert = positive_tone
+        self.positive_tone = positive_tone
         self.text_size = text_size
 
         self.die_border_w = round(
@@ -294,7 +294,8 @@ def die_cell(
     text: str = "",
     text_size: Union[None, int, float] = None,
     probe_tip: Union[None, MultiProbeTip] = WireBond(),
-    num_devices = 1
+    num_devices = 1,
+    device_y = 0
 ) -> Device:
     """Creates a die cell with dicing marks, text, and pads to connect to a
     device.
@@ -339,7 +340,7 @@ def die_cell(
 
     pad_block_size = (
         die_size[0] - 2 * probe_tip.pad_length - 4 * die_parameters.outline - die_parameters.xspace,
-        die_size[1] - 2 * probe_tip.pad_length - 4 * die_parameters.outline - die_parameters.yspace,
+        die_size[1] - 2 * probe_tip.pad_length - 4 * die_parameters.outline - die_parameters.yspace - device_y,
     )
     # standard pad definition for wirebonding
     if type(probe_tip) == WireBond:
@@ -366,6 +367,7 @@ def die_cell(
         device_max_size = inner_block.size
 
     inner_ports = list(inner_block.ports.values())
+    Connects = Device()
     for i, port in enumerate(list(outer_block.ports.values())):
 
         CONNECT = Device()
@@ -404,6 +406,7 @@ def die_cell(
                 join="round",
                 open_ports=2 * die_parameters.outline,
             )
+            Connects << CONNECT
 
         # add the port to the die
         DIE.add_port(port=inner_ports[i].rotate(180))
@@ -484,16 +487,17 @@ def die_cell(
     DIE.flatten()
     ports = DIE.get_ports()
     DIE = pg.union(DIE, by_layer=True)
-    if die_parameters.positive_tone:
-        PADS = pg.deepcopy(DIE)
-        PADS.remove_layers([die_parameters.die_layer])
-        PADS.name = "pads"
-        DIE = pg.invert(DIE, border=0, layer=die_parameters.die_layer)
-        DIE << PADS
+
+    PADS = pg.deepcopy(DIE)
+    PADS.remove_layers([die_parameters.die_layer])
+    PADS.name = "pads"
+    DIE = pg.invert(DIE, border=0, layer=die_parameters.die_layer)
+    DIE << PADS
     for port in ports:
         DIE.add_port(port)
 
     DIE.name = f"DIE {die_name}"
+    DIE << pg.copy_layer(Connects, layer=die_parameters.die_layer, new_layer=3)
     return DIE
 
 
@@ -599,6 +603,7 @@ def add_hyptap_to_cell(
     contact_l: Union[int, float] = 10,
     contact_w: Union[int, float] = 5,
     layer: int = 1,
+    positive_tone = True,
 ) -> Tuple[Device, Device]:
     """Takes the cell and adds hyper taper at its ports.
 
@@ -626,7 +631,10 @@ def add_hyptap_to_cell(
     device_ports = Device()
 
     for port in die_ports:
-        ht_w = port.width + 2 * contact_l
+        if positive_tone:
+            ht_w = port.width + 2 * contact_l
+        else:
+            ht_w = port.width
         ht = HT << geometry.hyper_taper(contact_l, ht_w, contact_w)
         ht.connect(ht.ports[2], port)
         HT.add_port(port=ht.ports[1], name=port.name)

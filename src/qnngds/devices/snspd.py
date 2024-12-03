@@ -68,6 +68,7 @@ def vertical(
     num_squares: Optional[int] = None,
     extend: Optional[float] = None,
     layer: int = 1,
+    positive_tone=True,
 ) -> Device:
     """Creates an optimally-rounded SNSPD, with terminals in its center instead
     of the side.
@@ -79,6 +80,7 @@ def vertical(
         num_squares (Optional[int]): Number of squares in the detector.
         extend (Optional[bool]): Whether or not to extend the ports.
         layer (int): Layer for the device to be created on.
+        positive_tone (bool): if not positive tone, all ports have full pads
 
     Returns:
         Device: The vertical SNSPD device.
@@ -144,6 +146,10 @@ def vertical(
     D = utility.add_optimalstep_to_dev(D, ratio=10)
 
     final_SNSPD = QnnDevice('snspd')
+    if positive_tone:
+        ports_gnd = ["S"]
+    else:
+        ports_gnd = []
     final_SNSPD.set_pads(PadPlacement(
         cell_scaling_factor_x=2,
         num_pads_n=1,
@@ -152,7 +158,7 @@ def vertical(
             0:("N", 1),
             1:("S", 1)
         },
-        ports_gnd=["S"],
+        ports_gnd=ports_gnd,
         tight_y_spacing=True
     ))
     final_SNSPD << D
@@ -161,7 +167,7 @@ def vertical(
     
     final_SNSPD.info = S.info
     final_SNSPD.move(final_SNSPD.center, (0, 0))
-    final_SNSPD.name = f"SNSPD.VERTICAL(w={wire_width}, pitch={wire_pitch})"
+    final_SNSPD.name = f"SNSPD.VERTICAL(w={wire_width:0.1}, pitch={wire_pitch:0.1})"
 
     final_SNSPD.simplify(1e-3)
 

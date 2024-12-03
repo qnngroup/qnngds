@@ -365,6 +365,7 @@ class Design:
         }
 
         self.fill_pad_layer = fill_pad_layer
+        self.positive_tone = positive_tone
 
     # help building a design
 
@@ -428,6 +429,7 @@ class Design:
             die_layer=self.layers["die"],
             pad_layer=self.layers["pad"],
             fill_pad_layer=self.fill_pad_layer,
+            positive_tone=self.positive_tone
         )
         return self.CHIP
 
@@ -673,7 +675,8 @@ class Design:
     def device_cell(
             self,
             device: ArrayLike,
-            text: Union[None, str] = None
+            text: Union[None, str] = None,
+            device_y = 0
     ) -> Device:
         """
         Creates a cell containing the input Device(s)
@@ -690,7 +693,8 @@ class Design:
             device=device,
             die_parameters=self.die_parameters,
             device_layer=self.layers['device'],
-            text=text
+            text=text,
+            device_y=device_y
         )
 
     def ntron_cell(

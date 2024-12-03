@@ -74,7 +74,7 @@ def planar_hTron(wire_width: Union[int, float]= 0.3,
         ports.append(taper_upper.ports[2])
         HTRON << W
 
-    HTRON = pg.union(HTRON)
+    HTRON = pg.union(HTRON, layer=layer)
 
     final_HTRON = QnnDevice('hTron')
     final_HTRON.set_pads(PadPlacement(

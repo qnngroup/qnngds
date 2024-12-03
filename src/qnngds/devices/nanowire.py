@@ -67,8 +67,8 @@ def variable_length(
     Returns:
         Device: A device containing 2 optimal steps to/from a narrow wire.
     """
-    NANOWIRE = QnnDevice()
-    wire = pg.optimal_step(channel_w, source_w, symmetric=True, num_pts=num_pts)
+    NANOWIRE = Device('nanowire')
+    wire = pg.optimal_step(channel_w, source_w, symmetric=True, num_pts=num_pts, layer=layer)
     line = pg.rectangle((constr_length, channel_w), layer=layer)
     line.center = [0, 0]
     line.add_port(
@@ -136,7 +136,7 @@ def variable_length(
 
     elif four_point_probe and rotation == 0:
 
-        turn = pg.optimal_90deg(source_w)
+        turn = pg.optimal_90deg(source_w, layer=layer)
         source_turn = NANOWIRE << turn
         source_turn.connect(source_turn.ports[1], source.ports[2])
         source_turn.mirror((0,0),(1,0))
@@ -170,12 +170,18 @@ def variable_length(
         NANOWIRE.add_port(name=1, port=source.ports[2])
         NANOWIRE.add_port(name=2, port=gnd.ports[2])
 
-    NANOWIRE.set_pads(nw_padplace)
-    NANOWIRE.move(NANOWIRE.center, (0, 0))
-    NANOWIRE.name = f"NANOWIRE.VAR(w={channel_w:.2f} l={constr_length:.1f})"
+    ports = NANOWIRE.ports
+    NANOWIRE = pg.union(NANOWIRE, layer=layer)
+    final_nw = QnnDevice('nanowire')
+    final_nw << NANOWIRE
+    for p, port in ports.items():
+        final_nw.add_port(name=p, port=port)
+    final_nw.set_pads(nw_padplace)
+    final_nw.move(NANOWIRE.center, (0, 0))
+    final_nw.name = f"NANOWIRE.VAR(w={channel_w:.2f} l={constr_length:.1f})"
     #NANOWIRE.simplify(1e-3)
 
-    return NANOWIRE
+    return final_nw
 
 def add_voltage_probe(device, channel_w):
     device.add_port(name=3, 
