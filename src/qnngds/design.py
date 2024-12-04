@@ -697,49 +697,6 @@ class Design:
             device_y=device_y
         )
 
-    def ntron_cell(
-        self,
-        choke_w: float,
-        channel_w: float,
-        gate_w: Union[float, None] = None,
-        source_w: Union[float, None] = None,
-        drain_w: Union[float, None] = None,
-        choke_shift: Union[float, None] = None,
-        text: Union[str, None] = None,
-    ) -> Device:
-        r"""Creates a standardized cell specifically for a single ntron.
-
-        Unless specified, scales the ntron parameters as:
-        gate_w = drain_w = source_w = 3*channel_w
-        choke_shift = -3*channel_w
-
-        Parameters:
-            choke_w (int or float): The width of the ntron's choke in µm.
-            channel_w (int or float): The width of the ntron's channel in µm.
-            gate_w (int or float, optional): If None, gate width is 3 times the channel width.
-            source_w (int or float, optional): If None, source width is 3 times the channel width.
-            drain_w (int or float, optional): If None, drain width is 3 times the channel width.
-            choke_shift (int or float, optional): If None, choke shift is -3 times the channel width.
-            text (str, optional): If None, the text is f"chk: {choke_w} \\nchnl: {channel_w}".
-
-        Returns:
-            Device: A device containing the ntron, the border of the die (created with die_cell function),
-            and the connections between the ports.
-        """
-
-        return experiment.ntron(
-            die_parameters=self.die_parameters,
-            choke_w=choke_w,
-            channel_w=channel_w,
-            gate_w=gate_w,
-            source_w=source_w,
-            drain_w=drain_w,
-            choke_shift=choke_shift,
-            outline_dev=self.device_outline,
-            device_layer=self.layers["device"],
-            text=text,
-        )
-
     def snspd_ntron_cell(
         self,
         w_choke: float,

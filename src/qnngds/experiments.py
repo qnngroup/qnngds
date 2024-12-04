@@ -422,9 +422,10 @@ def experiment(
         ref.movex(x_offset)
         print(port_map_x.items())
         for dev_port, pad_port in port_map_x.items():
-            #print(dev_port)
             #print(f"{pad_port[0]}{max_x_num*i+pad_port[1]}")
             USER_DEVICES.add_port(port=ref.ports[dev_port], name=f"{pad_port[0]}{max_x_num*i+pad_port[1]}")
+        for dev_port, pad_port in port_map_y.items():
+            USER_DEVICES.add_port(port=ref.ports[dev_port], name=f"{pad_port[0]}{max_y_num*i+pad_port[1]}")
 
     ## Route the nanowires and the die
 
@@ -451,112 +452,6 @@ def experiment(
     DIE << BORDER
 
     return DIE
-
-def ntron(
-    die_parameters: utility.DieParameters = utility.DieParameters(),
-    choke_w: Union[int, float] = 0.1,
-    channel_w: Union[int, float] = 0.5,
-    gate_w: Union[None, int, float] = None,
-    source_w: Union[None, int, float] = None,
-    drain_w: Union[None, int, float] = None,
-    choke_shift: Union[None, int, float] = None,
-    outline_dev: Union[None, int, float] = 0.5,
-    device_layer: int = 1,
-    text: Union[None, str] = None,
-) -> Device:
-    r"""Creates a standardized cell specifically for a single ntron.
-
-    Unless specified, scales the ntron parameters as:
-    gate_w = drain_w = source_w = 3 * channel_w
-    choke_shift = -3 * channel_w
-
-    Parameters:
-        die_parameters (DieParameters): the die's parameters.
-        choke_w (int or float): The width of the ntron's choke in µm.
-        channel_w (int or float): The width of the ntron's channel in µm.
-        gate_w (int or float, optional): If None, gate width is 3 times the channel width.
-        source_w (int or float, optional): If None, source width is 3 times the channel width.
-        drain_w (int or float, optional): If None, drain width is 3 times the channel width.
-        choke_shift (int or float, optional): If None, choke shift is -3 times the channel width.
-        outline_dev (int or float): The width of the device's outline.
-        device_layer (int or array-like[2]): The layer where the device is placed.
-        text (string, optional): If None, the text is f"chk: {choke_w} \\nchnl: {channel_w}".
-
-    Returns:
-        Device: A device containing the ntron, the border of the die (created with die_cell function),
-        and the connections between the ports.
-    """
-
-    ## Create the NTRON
-
-    # sizes the ntron parameters that were not given
-    if source_w is None and drain_w is None:
-        drain_w = source_w = 3 * channel_w
-    elif source_w is None:
-        source_w = drain_w
-    else:
-        drain_w = source_w
-    if gate_w is None:
-        gate_w = source_w
-    if choke_shift is None:
-        choke_shift = -3 * channel_w
-
-    NTRON = devices.ntron.smooth(
-        choke_w, gate_w, channel_w, source_w, drain_w, choke_shift, device_layer
-    )
-    NTRON = utility.rename_ports_to_compass(NTRON)
-    if text is None:
-        text = f"chk: {choke_w} \nchnl: {channel_w}"
-    cell_text = text.replace(" \n", ", ")
-    DIE_NTRON = Device(f"CELL.NTRON({cell_text})")
-
-    DEVICE = Device(f"NTRON({cell_text})")
-    DEVICE << NTRON
-
-    ## Create the DIE
-
-    # die parameters, checkup conditions
-    die_contact_w = NTRON.ports["N1"].width + die_parameters.contact_l
-    routes_margin = 2 * die_contact_w
-    dev_min_w = (
-        die_contact_w + 3 * die_parameters.outline
-    )  # condition imposed by the die parameters (contacts width)
-    device_max_w = max(2 * routes_margin + max(NTRON.size), dev_min_w)
-
-    # the die with calculated parameters
-    BORDER = utility.die_cell(
-        die_parameters=die_parameters,
-        contact_w=die_contact_w,
-        device_max_size=(device_max_w, device_max_w),
-        ports={"N": 1, "W": 1, "S": 1},
-        ports_gnd=["S"],
-        text=f"NTRON \n{text}",
-    )
-
-    # place the ntron
-    NTRON.movex(NTRON.ports["N1"].midpoint[0], BORDER.ports["N1"].midpoint[0])
-
-    # Route DIE and NTRON
-
-    # hyper tapers
-    dev_contact_w = NTRON.ports["N1"].width
-    HT, device_ports = utility.add_hyptap_to_cell(
-        BORDER.get_ports(), die_parameters.contact_l, dev_contact_w, device_layer
-    )
-    DEVICE << HT
-    DEVICE.ports = device_ports.ports
-    # routes
-    ROUTES = utility.route_to_dev(HT.get_ports(), NTRON.ports, device_layer)
-    DEVICE << ROUTES
-
-    DEVICE = pg.outline(DEVICE, outline_dev, precision=0.000001, open_ports=outline_dev)
-    DEVICE = pg.union(DEVICE, layer=device_layer)
-    DEVICE.name = f"NTRON({cell_text})"
-
-    DIE_NTRON << DEVICE
-    DIE_NTRON << BORDER
-
-    return DIE_NTRON
 
 def snspd_ntron(
     die_parameters: utility.DieParameters = utility.DieParameters(),

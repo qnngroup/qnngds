@@ -660,6 +660,7 @@ def route_to_dev(ext_ports: List[Port], dev_ports: Set[Port], layer: int = 1) ->
     ROUTES = Device("ROUTES ")
 
     for port in ext_ports:
+        print(dev_ports)
         dev_port = dev_ports[port.name]
         try:
             radius = port.width
