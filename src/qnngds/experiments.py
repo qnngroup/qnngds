@@ -298,7 +298,7 @@ def resolution_test(
 
 ## devices:
 
-def device_cell(
+def experiment(
         device: ArrayLike = devices.nanowire.spot(),
         die_parameters: utility.DieParameters = utility.DieParameters(),
         device_layer: int = 1,

@@ -39,7 +39,7 @@ def spot(
     NANOWIRE.set_pads(nw_padplace)
     NANOWIRE.rotate(-90)
     NANOWIRE.move(NANOWIRE.center, (0, 0))
-    NANOWIRE.name = f"NANOWIRE.SPOT(w={channel_w})"
+    NANOWIRE.name = f"NANOWIRE.SPOT(w={channel_w:0.1f})"
 
     return NANOWIRE
 
