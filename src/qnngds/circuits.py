@@ -7,6 +7,7 @@ from typing import Tuple, Union
 import math
 
 import qnngds.devices as device
+from qnngds.utilities import PadPlacement, QnnDevice
 
 
 def snspd_ntron(
@@ -132,7 +133,7 @@ def snspd_ntron(
         # port 1 connected to gnd
         route = ROUTES << pg.optimal_step(SNSPD.ports[1].width, w_pad, symmetric=True)
         route.connect(route.ports[1], SNSPD.ports[1])
-        SNSPD_NTRON.add_port(port=route.ports[2], name="S1")
+        SNSPD_NTRON.add_port(port=route.ports[2], name=4) # S1
         # port 2 connected to crossA south
         route_step = ROUTES << pg.optimal_step(
             SNSPD.ports[2].width, CROSSA.ports["S"].width, symmetric=True
@@ -162,7 +163,7 @@ def snspd_ntron(
             INDUCTOR1.ports[2].width, w_pad, symmetric=True
         )
         route.connect(route.ports[1], INDUCTOR1.ports[2])
-        SNSPD_NTRON.add_port(port=route.ports[2], name="N1")
+        SNSPD_NTRON.add_port(port=route.ports[2], name=0) # N1
 
     def create_inductor2():
         ## INDUCTOR2
@@ -202,15 +203,15 @@ def snspd_ntron(
         # port 3 connected to crossB east
         route = ROUTES << pg.compass((w_pad / 2, w_inductor))
         route.connect(route.ports["W"], CROSSB.ports["E"])
-        NTRON.connect(NTRON.ports["g"], route.ports["E"])
+        NTRON.connect(NTRON.ports[0], route.ports["E"])
         # port 1 connected to crossC south
         route = ROUTES << pg.compass((w_inductor, w_pad / 2))
-        route.connect(route.ports["S"], NTRON.ports["d"])
+        route.connect(route.ports["S"], NTRON.ports[1])
         CROSSC.connect(CROSSC.ports["S"], route.ports["N"])
         # port 2 connected to gnd
-        route = ROUTES << pg.optimal_step(NTRON.ports["s"].width, w_pad, symmetric=True)
-        route.connect(route.ports[1], NTRON.ports["s"])
-        SNSPD_NTRON.add_port(port=route.ports[2], name="S2")
+        route = ROUTES << pg.optimal_step(NTRON.ports[2].width, w_pad, symmetric=True)
+        route.connect(route.ports[1], NTRON.ports[2])
+        SNSPD_NTRON.add_port(port=route.ports[2], name=5) #S2
 
     def create_inductor3():
         ## INDUCTOR3
@@ -232,7 +233,7 @@ def snspd_ntron(
             INDUCTOR3.ports[2].width, w_pad, symmetric=True
         )
         route.connect(route.ports[1], INDUCTOR3.ports[2])
-        SNSPD_NTRON.add_port(port=route.ports[2], name="N3")
+        SNSPD_NTRON.add_port(port=route.ports[2], name=2) #N3
 
     def create_probing_routes():
         ## SNSPD PROBING PAD
@@ -240,21 +241,21 @@ def snspd_ntron(
         step.connect(step.ports[1], CROSSA.ports["W"])
         route = ROUTES << pg.compass((abs(SNSPD_NTRON.xmin - step.xmin), w_pad))
         route.connect(route.ports["E"], step.ports[2])
-        SNSPD_NTRON.add_port(port=route.ports["W"], name="W1")
+        SNSPD_NTRON.add_port(port=route.ports["W"], name=6) #W1
 
         ## NTRON IN PROBING PAD
         step = ROUTES << pg.optimal_step(w_inductor, w_pad, symmetric=True)
         step.connect(step.ports[1], CROSSB.ports["N"])
         route = ROUTES << pg.compass((w_pad, abs(SNSPD_NTRON.ymax - step.ymax)))
         route.connect(route.ports["S"], step.ports[2])
-        SNSPD_NTRON.add_port(port=route.ports["N"], name="N2")
+        SNSPD_NTRON.add_port(port=route.ports["N"], name=1) #N2
 
         ## NTRON OUT PROBING PAD
         step = ROUTES << pg.optimal_step(w_inductor, w_pad, symmetric=True)
         step.connect(step.ports[1], CROSSC.ports["E"])
         route = ROUTES << pg.compass((abs(SNSPD_NTRON.xmax - step.xmax), w_pad))
         route.connect(route.ports["W"], step.ports[2])
-        SNSPD_NTRON.add_port(port=route.ports["E"], name="E1")
+        SNSPD_NTRON.add_port(port=route.ports["E"], name=3) #E1
 
     SNSPD_NTRON = Device(f"SNSPD NTRON {w_snspd} {w_choke} ")
     ROUTES = Device("ROUTES")
@@ -280,6 +281,29 @@ def snspd_ntron(
     # for port in ports:
     #     SNSPD_NTRON.add_port(port)
 
-    SNSPD_NTRON.move(SNSPD_NTRON.center, (0, 0))
-    SNSPD_NTRON.name = f"SNSPD NTRON {w_snspd} {w_choke} "
-    return SNSPD_NTRON
+    final_circuit = QnnDevice('SNSPD_nTron')
+    final_circuit.set_pads(PadPlacement(
+        num_pads_n=3,
+        num_pads_e=1,
+        num_pads_w=1,
+        num_pads_s=2,
+        port_map_x={
+            0:("N", 1),
+            1:("N", 2),
+            2:("N", 3),
+            4:("S", 1),
+            5:("S", 2)
+        },
+        port_map_y={
+            3:("E", 1),
+            6:("W", 1)
+        }
+    ))
+
+    final_circuit << SNSPD_NTRON
+    for p, port in SNSPD_NTRON.ports.items():
+        final_circuit.add_port(name=p, port=port)
+
+    final_circuit.move(SNSPD_NTRON.center, (0, 0))
+    final_circuit.name = f"SNSPD NTRON {w_snspd} {w_choke} "
+    return final_circuit

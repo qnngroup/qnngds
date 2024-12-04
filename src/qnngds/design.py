@@ -696,31 +696,3 @@ class Design:
             text=text,
             device_y=device_y
         )
-
-    def snspd_ntron_cell(
-        self,
-        w_choke: float,
-        w_snspd: Union[float, None] = None,
-        text: Union[str, None] = None,
-    ) -> Device:
-        """Creates a cell that contains an SNSPD coupled to an NTRON. The
-        device's parameters are sized according to the SNSPD's width and the
-        NTRON's choke.
-
-        Parameters:
-            w_choke (int or float): The width of the NTRON choke in µm.
-            w_snspd (int or float, optional): The width of the SNSPD nanowire in µm. If None, scaled to 5*w_choke.
-            text (string, optional): If None, the text is f"w={w_snspd}, {w_choke}".
-
-        Returns:
-            Device: A cell containing a die in die_layer, pads in pad layer, and an SNSPD-NTRON properly routed in the device layer.
-        """
-
-        return experiment.snspd_ntron(
-            die_parameters=self.die_parameters,
-            w_choke=w_choke,
-            w_snspd=w_snspd,
-            outline_dev=self.device_outline,
-            device_layer=self.layers["device"],
-            text=text,
-        )

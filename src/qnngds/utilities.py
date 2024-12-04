@@ -497,7 +497,7 @@ def die_cell(
         DIE.add_port(port)
 
     DIE.name = f"DIE {die_name}"
-    DIE << pg.copy_layer(Connects, layer=die_parameters.die_layer, new_layer=3)
+    #DIE << pg.copy_layer(Connects, layer=die_parameters.die_layer, new_layer=3)
     return DIE
 
 

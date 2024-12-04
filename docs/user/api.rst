@@ -1,71 +1,6 @@
 API
 ===
 
-.. _Cells:
-Cells
------
-
-.. automodule:: qnngds.cells
-    :members:
-    :exclude-members: alignment, device_cell, etch_test, nanowires, nanowires_4pt, ntron, planar_htron, resolution_test, snspd_ntron, snspds, vdp
-    :undoc-members:
-    :show-inheritance:
-
-    .. autofunction:: alignment
-
-        .. image:: images/cells/alignment.png
-            :alt: alignment.png
-
-    .. autofunction:: device_cell
-
-        .. image:: images/cells/device_cell.png
-            :alt: device_cell.png
-
-    .. autofunction:: etch_test
-
-        .. image:: images/cells/etch_test.png
-            :alt: etch_test.png
-
-    .. autofunction:: nanowires
-
-        .. image:: images/cells/nanowires.png
-            :alt: nanowires.png
-
-    .. autofunction:: nanowires_4pt
-
-        .. image:: images/cells/nanowires_4pt.png
-            :alt: nanowires_4pt.png
-
-    .. autofunction:: ntron
-
-        .. image:: images/cells/ntron.png
-            :alt: ntron.png
-
-    .. autofunction:: planar_htron
-
-        .. image:: images/cells/planar_htron.png
-            :alt: planar_htron.png
-
-    .. autofunction:: resolution_test
-
-        .. image:: images/cells/resolution_test.png
-            :alt: resolution_test.png
-
-    .. autofunction:: snspd_ntron
-
-        .. image:: images/cells/snspd_ntron.png
-            :alt: snspd_ntron.png
-
-    .. autofunction:: snspds
-
-        .. image:: images/cells/snspds.png
-            :alt: snspds.png
-
-    .. autofunction:: vdp
-
-        .. image:: images/cells/vdp.png
-            :alt: vdp.png
-
 .. _Circuits:
 Circuits
 --------
@@ -87,7 +22,7 @@ Design
 
 .. automodule:: qnngds.design
     :members:
-    :exclude-members: create_chip
+    :exclude-members: create_chip, create_sample
     :undoc-members:
     :show-inheritance:
 
@@ -95,6 +30,11 @@ Design
 
         .. image:: images/design/create_chip.png
             :alt: create_chip.png
+
+    .. autofunction:: create_sample
+
+        .. image:: images/design/create_sample.png
+            :alt: create_sample.png
 
 .. _Devices:
 Devices
@@ -196,6 +136,41 @@ snspd
 
         .. image:: images/devices/snspd/vertical.png
             :alt: vertical.png
+
+.. _Experiments:
+Experiments
+-----------
+
+.. automodule:: qnngds.experiments
+    :members:
+    :exclude-members: alignment, etch_test, experiment, resolution_test, vdp
+    :undoc-members:
+    :show-inheritance:
+
+    .. autofunction:: alignment
+
+        .. image:: images/experiments/alignment.png
+            :alt: alignment.png
+
+    .. autofunction:: etch_test
+
+        .. image:: images/experiments/etch_test.png
+            :alt: etch_test.png
+
+    .. autofunction:: experiment
+
+        .. image:: images/experiments/experiment.png
+            :alt: experiment.png
+
+    .. autofunction:: resolution_test
+
+        .. image:: images/experiments/resolution_test.png
+            :alt: resolution_test.png
+
+    .. autofunction:: vdp
+
+        .. image:: images/experiments/vdp.png
+            :alt: vdp.png
 
 .. _Geometries:
 Geometries
