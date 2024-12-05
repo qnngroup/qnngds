@@ -22,14 +22,9 @@ Design
 
 .. automodule:: qnngds.design
     :members:
-    :exclude-members: create_chip, create_sample
+    :exclude-members: create_sample
     :undoc-members:
     :show-inheritance:
-
-    .. autofunction:: create_chip
-
-        .. image:: images/design/create_chip.png
-            :alt: create_chip.png
 
     .. autofunction:: create_sample
 

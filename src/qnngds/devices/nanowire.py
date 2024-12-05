@@ -3,7 +3,7 @@
 from phidl import Device
 
 import phidl.geometry as pg
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Union
 
 from qnngds.utilities import PadPlacement, QnnDevice, WireBond, MultiProbeTip
 
@@ -102,37 +102,8 @@ def variable_length(
         probe_tip=WireBond()
         
         )
-
-        '''turn = pg.optimal_90deg(source_w)
-        source_turn = NANOWIRE << turn
-        source_turn.connect(source_turn.ports[1], source.ports[2])
-        source_turn.mirror((0,0),(1,0))
-        flip_source = NANOWIRE << turn 
-        flip_source.connect(flip_source.ports[2], source_turn.ports[2])
-        flip_source.rotate(180, center=flip_source.center+(-flip_source.xsize/2+source_w/2, -flip_source.ysize/2))
-        gnd_turn = NANOWIRE << turn 
-        gnd_turn.connect(gnd_turn.ports[1], gnd.ports[2]) 
-        flip_gnd = NANOWIRE << turn 
-        flip_gnd.connect(flip_gnd.ports[2], gnd_turn.ports[2])
-        flip_gnd.mirror((gnd_turn.xmin, gnd_turn.ymax), (gnd_turn.xmax, gnd_turn.ymax))
-
-        nw_padplace = PadPlacement(
-            cell_scaling_factor_x=1,
-            num_pads_n=0,
-            num_pads_s=0,
-            num_pads_e=4,
-            port_map_x={
-                1:("E", 3),
-                2:("E", 2),
-                3:("E", 4),
-                4:("E", 1)
-            },
-            probe_tip=MultiProbeTip()
-        )'''
         NANOWIRE.add_port(name=1, port=source.ports[2])
         NANOWIRE.add_port(name=2, port=gnd.ports[2])
-        #NANOWIRE.add_port(name=3, port=flip_source.ports[1])
-        #NANOWIRE.add_port(name=4, port=flip_gnd.ports[1])
 
     elif four_point_probe and rotation == 0:
 
@@ -183,7 +154,12 @@ def variable_length(
 
     return final_nw
 
-def add_voltage_probe(device, channel_w):
+def add_voltage_probe(device: Device, channel_w: Union[int, float]):
+    """
+    Creates the ports necessary for four-point probing of nanowire
+    device (PHIDL Device): device to which to add ports
+    channel_w (int or float): width of channel to probe
+    """
     device.add_port(name=3, 
                     midpoint = (device.center[0], device.ymax),
                     width = channel_w*3,

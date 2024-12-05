@@ -199,6 +199,14 @@ class DieParameters:
         return max(max_circuit_port_width, self.contact_l)
 
 class ConnectionToPCB():
+    """
+    A super-class for different pad archetypes to generate.
+
+    pad_pitch (int, float): separation between centers of pads
+    pad_width (int, float): width of each pad
+    pad_length (int, float): length of each pad
+    contact_w (int, float): width of gold contact to pad
+    """
     def __init__(self, 
                  pad_pitch, 
                  pad_width, 
@@ -213,6 +221,14 @@ class ConnectionToPCB():
             self.contact_w = contact_w
 
 class MultiProbeTip(ConnectionToPCB):
+    """
+    A class for specifying parameters for pads compatible with
+    a multiprobe tip. Default parameters match the one currently
+    available in the probe station.
+
+    Inherits ConnectionToPCB. Adds:
+    num_tips (int): number of tips on the probe
+    """
     def __init__(self,  
                  pad_pitch: Union[int, float] = 100,
                  pad_width = None,
@@ -232,6 +248,13 @@ class MultiProbeTip(ConnectionToPCB):
             self.pad_width = pad_width
 
 class WireBond(ConnectionToPCB):
+    """
+    A class for specifying parameters for pads compatible with
+    wirebonding. Default parameters should be big enough to be
+    comfortable.
+
+    Inherits ConnectionToPCB.
+    """
     def __init__(self,
                  pad_pitch: Union[int, float] = 200,
                  pad_width: Union[int, float] = 100,
@@ -246,6 +269,20 @@ class WireBond(ConnectionToPCB):
             self.contact_w = contact_w
 
 class PadPlacement:
+    """
+    A class for specifying how pads are placed around a
+    given device. Assumes device ports are named like (0, 1, 2...)
+
+    cell_scaling_factor_x (int, float): specify extra x-spacing between N-S pads
+    cell_scaling_factor_y (int, float): specify extra y-spacing between E-W pads
+    num_pads_n/s/e/w (int): number of pads in N/S/E/W
+    contact_w (int or float): override ConnectionToPCB contact_w
+    ports_gnd (list of str, optional): specify a side where all ports join common ground
+    port_map_x (dict of int:(str, int)): maps numbered port names to N1, N2...Nx and S1, S2...Sy pads for routing
+    port_map_y (dict of int:(str, int)): maps numbered port names to E1, E2...Ex and W1, W2...Wy pads for routing
+    probe_tip (ConnectionToPCB inheritor): specifies what kind of probe connection to satisfy
+    tight_y_spacing (bool): whether to pack devices closer to pads during routing (useful for MultiProbeTip)
+    """
     def __init__(self, 
                  cell_scaling_factor_x: Union[int, float] = 1,
                  cell_scaling_factor_y: Union[int, float] = 1,
@@ -257,7 +294,7 @@ class PadPlacement:
                  ports_gnd: List[Union[str, None]] = [None],
                  port_map_x: Dict[int, Tuple[str, int]] = {1:("N",1), 2:("S",1)},
                  port_map_y: Dict[int, Tuple[str, int]] = {},
-                 probe_tip: Union[None, MultiProbeTip] = WireBond(),
+                 probe_tip: Union[None, MultiProbeTip, WireBond] = WireBond(),
                  tight_y_spacing: bool = False):
 
         self.cell_scaling_factor_x = cell_scaling_factor_x
@@ -278,7 +315,13 @@ class PadPlacement:
             self.contact_w = contact_w
 
 class QnnDevice(Device):
+    """
+    Extends PHIDL Device to allow for adding a PadPlacement object
+    """
     def set_pads(self, pads: PadPlacement = PadPlacement()):
+        """
+        pads (PadPlacement): specifies how device ports should route to pads
+        """
         self.pads = pads
 
 def die_cell(
@@ -502,6 +545,13 @@ def die_cell(
 
 
 def pad_with_offset(die_parameters: DieParameters = DieParameters(), probe_tip = None):
+    """
+    Creates a pad with a gold contact that is smaller than the superconducting layer
+    by some amount specified in die_parameters to account for MLA offset
+
+    die_parameters (DieParameters): for specifying pad shape
+    probe_tip (ConnectToPCB inheritor, optional): can override pad shape 
+    """
     DEVICE = Device()
     if probe_tip == None:
         pad_size = die_parameters.pad_size

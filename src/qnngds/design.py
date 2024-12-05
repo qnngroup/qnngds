@@ -679,7 +679,7 @@ class Design:
             device_y = 0
     ) -> Device:
         """
-        Creates a cell containing the input Device(s)
+        Creates an experiment containing the input Device(s)
 
         Parameters:
             device (ArrayLike[Device]): Device/list of Devices to create

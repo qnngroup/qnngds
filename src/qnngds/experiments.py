@@ -63,7 +63,7 @@ def vdp(
     layers_to_outline: Union[None, List[int]] = None,
     text: Union[None, str] = None,
 ) -> Device:
-    r"""Creates a cell containing a Van Der Pauw structure between 4 contact
+    r"""Creates an experiment containing a Van Der Pauw structure between 4 contact
     pads.
 
     Parameters:
@@ -249,7 +249,7 @@ def resolution_test(
     ],
     text: Union[None, str] = None,
 ) -> Device:
-    r"""Creates a cell containing a resolution test.
+    r"""Creates an experiment containing a resolution test.
 
     Parameters:
         die_parameters (DieParameters): the die's parameters.
@@ -307,7 +307,7 @@ def experiment(
         device_y = 0
 ) -> Device:
     """
-    Creates a cell containing Device[s]
+    Creates an experiment containing Device[s]
 
     Parameters
     --------------------
