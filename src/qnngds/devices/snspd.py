@@ -4,12 +4,14 @@ from phidl import Device
 
 import phidl.geometry as pg
 from typing import Tuple, Optional, Union
+from qnngds.utilities import PadPlacement, QnnDevice
+import qnngds.utilities as utility
 
 
 def basic(
     wire_width: float = 0.2,
     wire_pitch: float = 0.6,
-    size: Tuple[Optional[Union[int, float]], Optional[Union[int, float]]] = (6, 10),
+    size: Tuple[Optional[Union[int, float]], Optional[Union[int, float]]] = (50, 100),
     num_squares: Optional[int] = None,
     turn_ratio: Union[int, float] = 4,
     terminals_same_side: bool = False,
@@ -62,10 +64,11 @@ def basic(
 def vertical(
     wire_width: float = 0.2,
     wire_pitch: float = 0.6,
-    size: Tuple[Union[int, float], Union[int, float]] = (6, 10),
+    size: Tuple[Union[int, float], Union[int, float]] = (60, 100),
     num_squares: Optional[int] = None,
     extend: Optional[float] = None,
     layer: int = 1,
+    positive_tone=True,
 ) -> Device:
     """Creates an optimally-rounded SNSPD, with terminals in its center instead
     of the side.
@@ -77,6 +80,7 @@ def vertical(
         num_squares (Optional[int]): Number of squares in the detector.
         extend (Optional[bool]): Whether or not to extend the ports.
         layer (int): Layer for the device to be created on.
+        positive_tone (bool): if not positive tone, all ports have full pads
 
     Returns:
         Device: The vertical SNSPD device.
@@ -138,6 +142,33 @@ def vertical(
         D.add_port(name=2, port=t2.ports[2])
 
     D.info = S.info
-    D.move(D.center, (0, 0))
-    D.name = f"SNSPD.VERTICAL(w={wire_width}, pitch={wire_pitch})"
-    return D
+    D = utility.rename_ports_to_compass(D)
+    D = utility.add_optimalstep_to_dev(D, ratio=10)
+
+    final_SNSPD = QnnDevice('snspd')
+    if positive_tone:
+        ports_gnd = ["S"]
+    else:
+        ports_gnd = []
+    final_SNSPD.set_pads(PadPlacement(
+        cell_scaling_factor_x=2,
+        num_pads_n=1,
+        num_pads_s=1,
+        port_map_x={
+            0:("N", 1),
+            1:("S", 1)
+        },
+        ports_gnd=ports_gnd,
+        tight_y_spacing=True
+    ))
+    final_SNSPD << D
+    for p, port in enumerate(D.ports):
+        final_SNSPD.add_port(name=p, port=D.ports[port])
+    
+    final_SNSPD.info = S.info
+    final_SNSPD.move(final_SNSPD.center, (0, 0))
+    final_SNSPD.name = f"SNSPD.VERTICAL(w={wire_width:0.1}, pitch={wire_pitch:0.1})"
+
+    final_SNSPD.simplify(1e-3)
+
+    return final_SNSPD

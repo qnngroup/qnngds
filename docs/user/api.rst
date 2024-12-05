@@ -1,61 +1,6 @@
 API
 ===
 
-.. _Cells:
-Cells
------
-
-.. automodule:: qnngds.cells
-    :members:
-    :exclude-members: alignment, etch_test, nanowires, nanowires_4pt, ntron, resolution_test, snspd_ntron, snspds, vdp
-    :undoc-members:
-    :show-inheritance:
-
-    .. autofunction:: alignment
-
-        .. image:: images/cells/alignment.png
-            :alt: alignment.png
-
-    .. autofunction:: etch_test
-
-        .. image:: images/cells/etch_test.png
-            :alt: etch_test.png
-
-    .. autofunction:: nanowires
-
-        .. image:: images/cells/nanowires.png
-            :alt: nanowires.png
-
-    .. autofunction:: nanowires_4pt
-
-        .. image:: images/cells/nanowires_4pt.png
-            :alt: nanowires_4pt.png
-
-    .. autofunction:: ntron
-
-        .. image:: images/cells/ntron.png
-            :alt: ntron.png
-
-    .. autofunction:: resolution_test
-
-        .. image:: images/cells/resolution_test.png
-            :alt: resolution_test.png
-
-    .. autofunction:: snspd_ntron
-
-        .. image:: images/cells/snspd_ntron.png
-            :alt: snspd_ntron.png
-
-    .. autofunction:: snspds
-
-        .. image:: images/cells/snspds.png
-            :alt: snspds.png
-
-    .. autofunction:: vdp
-
-        .. image:: images/cells/vdp.png
-            :alt: vdp.png
-
 .. _Circuits:
 Circuits
 --------
@@ -77,14 +22,14 @@ Design
 
 .. automodule:: qnngds.design
     :members:
-    :exclude-members: create_chip
+    :exclude-members: create_sample
     :undoc-members:
     :show-inheritance:
 
-    .. autofunction:: create_chip
+    .. autofunction:: create_sample
 
-        .. image:: images/design/create_chip.png
-            :alt: create_chip.png
+        .. image:: images/design/create_sample.png
+            :alt: create_sample.png
 
 .. _Devices:
 Devices
@@ -97,9 +42,19 @@ htron
 
 .. automodule:: qnngds.devices.htron
     :members:
-    :exclude-members: 
+    :exclude-members: angled_taper, planar_hTron
     :undoc-members:
     :show-inheritance:
+
+    .. autofunction:: angled_taper
+
+        .. image:: images/devices/htron/angled_taper.png
+            :alt: angled_taper.png
+
+    .. autofunction:: planar_hTron
+
+        .. image:: images/devices/htron/planar_hTron.png
+            :alt: planar_hTron.png
 
 nanowire
 ~~~~~~~~
@@ -177,15 +132,55 @@ snspd
         .. image:: images/devices/snspd/vertical.png
             :alt: vertical.png
 
+.. _Experiments:
+Experiments
+-----------
+
+.. automodule:: qnngds.experiments
+    :members:
+    :exclude-members: alignment, etch_test, experiment, resolution_test, vdp
+    :undoc-members:
+    :show-inheritance:
+
+    .. autofunction:: alignment
+
+        .. image:: images/experiments/alignment.png
+            :alt: alignment.png
+
+    .. autofunction:: etch_test
+
+        .. image:: images/experiments/etch_test.png
+            :alt: etch_test.png
+
+    .. autofunction:: experiment
+
+        .. image:: images/experiments/experiment.png
+            :alt: experiment.png
+
+    .. autofunction:: resolution_test
+
+        .. image:: images/experiments/resolution_test.png
+            :alt: resolution_test.png
+
+    .. autofunction:: vdp
+
+        .. image:: images/experiments/vdp.png
+            :alt: vdp.png
+
 .. _Geometries:
 Geometries
 ----------
 
 .. automodule:: qnngds.geometries
     :members:
-    :exclude-members: hyper_taper
+    :exclude-members: angled_taper, hyper_taper
     :undoc-members:
     :show-inheritance:
+
+    .. autofunction:: angled_taper
+
+        .. image:: images/geometries/angled_taper.png
+            :alt: angled_taper.png
 
     .. autofunction:: hyper_taper
 

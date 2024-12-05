@@ -4,6 +4,7 @@ from phidl import Device
 from phidl import Port
 
 import phidl.geometry as pg
+from qnngds.utilities import PadPlacement, QnnDevice
 from typing import Tuple, Optional
 
 
@@ -54,7 +55,7 @@ def smooth(
     D = pg.union(D, precision=precision)
     D.flatten(single_layer=layer)
     # move ports towards device center by 2*precision
-    names = ("g", "d", "s")
+    names = (0, 1, 2) # formerly g, d, s
     for i, p in enumerate((k.ports[1], d.ports[1], s.ports[2])):
         dn = p.normal[1] - p.normal[0]
         D.add_port(
@@ -65,10 +66,32 @@ def smooth(
                 orientation=p.orientation,
             ),
         )
-    D.name = f"NTRON.SMOOTH(choke_w={choke_w}, channel_w={channel_w})"
-    D.info = locals()
 
-    return D
+    final_ntron = QnnDevice('nTron')
+    final_ntron.set_pads(PadPlacement(
+        cell_scaling_factor_x=1,
+        num_pads_n=1,
+        num_pads_s=1,
+        num_pads_w=1,
+        port_map_x={
+            2:("S", 1),
+            1:("N", 1)
+        },
+        port_map_y={
+            0:("W", 1)
+        },
+        ports_gnd=["S"]
+    ))
+
+    final_ntron << D 
+    for p, port in D.ports.items():
+        final_ntron.add_port(name=p, port=port)
+    
+    
+    final_ntron.name = f"NTRON.SMOOTH(choke_w={choke_w:0.2f}, channel_w={channel_w:0.2f})"
+    final_ntron.info = locals()
+
+    return final_ntron
 
 
 def sharp(
@@ -122,7 +145,7 @@ def sharp(
     D = pg.union(D, precision=precision)
     D.flatten(single_layer=layer)
     # move ports towards device center by 2*precision
-    names = ("g", "d", "s")
+    names = (0,1,2) # formerly g, d, s
     for i, p in enumerate((k.ports[1], d.ports[1], s.ports[2])):
         dn = p.normal[1] - p.normal[0]
         D.add_port(
@@ -133,6 +156,27 @@ def sharp(
                 orientation=p.orientation,
             ),
         )
-    D.name = f"NTRON.SHARP(choke_w={choke_w}, channel_w={channel_w})"
-    D.info = locals()
-    return D
+
+    final_ntron = QnnDevice('nTron')
+    final_ntron.set_pads(PadPlacement(
+        cell_scaling_factor_x=1,
+        num_pads_n=1,
+        num_pads_s=1,
+        num_pads_w=1,
+        port_map_x={
+            2:("S", 1),
+            1:("N", 1)
+        },
+        port_map_y={
+            0:("W", 1)
+        },
+        ports_gnd=["S"]
+    ))
+
+    final_ntron << D 
+    for p, port in D.ports.items():
+        final_ntron.add_port(name=p, port=port)
+
+    final_ntron.name = f"NTRON.SHARP(choke_w={choke_w:0.2f}, channel_w={channel_w:0.2f})"
+    final_ntron.info = locals()
+    return final_ntron

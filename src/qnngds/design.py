@@ -14,20 +14,20 @@ import os
 import numpy as np
 from numpy.typing import ArrayLike
 
-import qnngds.cells as cell
+import qnngds.experiments as experiment
 import qnngds.utilities as utility
 
 Free = True
 Occupied = False
 
 
-def create_chip(
-    chip_w: Union[int, float] = 10000,
+def create_sample(
+    sample_w: Union[int, float] = 10000,
     margin: Union[int, float] = 100,
     N_dies: int = None,
     die_w: Union[None, int, float] = 980,
     annotations_layer: int = 0,
-    unpack_chip_map: bool = True,
+    unpack_sample_map: bool = True,
     create_devices_map_txt: Union[bool, str] = False,
 ) -> Union[
     Tuple[Device, Union[int, float], List[List[bool]], str],
@@ -35,37 +35,37 @@ def create_chip(
     Tuple[Device, Union[int, float], List[List[bool]]],
     Tuple[Device, Union[int, float]],
 ]:
-    """Creates a chip map in the annotations layer.
+    """Creates a sample map in the annotations layer.
 
-    If unpack_chip_map is set to True, creates a map (2D array) to monitor the
-    states of each cell of the chip. The user should input N_dies xor die_w.
+    If unpack_sample_map is set to True, creates a map (2D array) to monitor the
+    states of each cell of the sample. The user should input N_dies xor die_w.
 
     Parameters:
-        chip_w (int or float): The overall width (in um) of the chip.
-        margin (int or float): The width (in um) of the outline of the chip where no device should be placed.
+        sample_w (int or float): The overall width (in um) of the sample.
+        margin (int or float): The width (in um) of the outline of the sample where no device should be placed.
         N_dies (int): Number of dies/units to be placed by row and column.
         die_w (None, int, or float): If specified, the width of each die/unit to be placed by row and column.
         annotations_layer (int or array-like[2]): The layer where to put the device.
-        unpack_chip_map (bool): If True, the function returns a map (2D array) of states to be filled later (e.g., with place_on_chip()).
+        unpack_sample_map (bool): If True, the function returns a map (2D array) of states to be filled later (e.g., with place_on_sample()).
         create_devices_map_txt (bool or string): If True or string, the function creates a txt file that will map the devices.
 
     Returns:
         Tuple[Device, float, List[List[bool]], str]: A tuple containing from 2 to 4 elements, depending on what needs to be extracted (parameters dependent):
 
-        - **CHIP** (*Device*): The chip map.
+        - **sample** (*Device*): The sample map.
         - **die_w** (*float*): The width of each die. (returned if die_w was None)
         - **N_dies** (*float*): The number of dies/units on each row and column. (returned if die_w was not None)
-        - **chip_map** (*array-like[N_dies][N_dies] of bool*): A 2D array filled with "Free" (=True) states. (returned if unpack_chip_map is True)
+        - **sample_map** (*array-like[N_dies][N_dies] of bool*): A 2D array filled with "Free" (=True) states. (returned if unpack_sample_map is True)
         - **file_name** (*str*): The name of the created devices map text file. (returned if create_devices_map_txt is not False)
     """
 
-    CHIP = Device("CHIP ")
-    CHIP.add_polygon(
-        [(0, 0), (chip_w, 0), (chip_w, chip_w), (0, chip_w)], layer=annotations_layer
+    sample = Device("sample ")
+    sample.add_polygon(
+        [(0, 0), (sample_w, 0), (sample_w, sample_w), (0, sample_w)], layer=annotations_layer
     )
 
-    useful_w = chip_w - margin * 2
-    useful_area = CHIP.add_polygon(
+    useful_w = sample_w - margin * 2
+    useful_area = sample.add_polygon(
         [(0, 0), (useful_w, 0), (useful_w, useful_w), (0, useful_w)],
         layer=annotations_layer,
     )
@@ -78,11 +78,11 @@ def create_chip(
         N_dies = int(useful_w / die_w)
         return_N_or_w = N_dies
     CELL = pg.rectangle([die_w, die_w], layer=annotations_layer)
-    array = CHIP.add_array(CELL, columns=N_dies, rows=N_dies, spacing=(die_w, die_w))
+    array = sample.add_array(CELL, columns=N_dies, rows=N_dies, spacing=(die_w, die_w))
     array.move((0, 0), (margin, margin))
 
-    CHIP.flatten()
-    CHIP.move((margin, margin), (0, 0))
+    sample.flatten()
+    sample.move((margin, margin), (0, 0))
 
     if create_devices_map_txt:
         ## create a devices map ...
@@ -103,72 +103,72 @@ def create_chip(
                 file_name = file_to_find
                 break
         with open(f"{file_name}.txt", "a") as file:
-            file.write("Devices placed on the chip: \n\n")
+            file.write("Devices placed on the sample: \n\n")
             file.write("(row, col) : device.name\n\n")
 
         ## ... and return the devices map filename in the outputs
-        if unpack_chip_map:
-            chip_map = [[Free for _ in range(N_dies)] for _ in range(N_dies)]
-            return CHIP, return_N_or_w, chip_map, file_name
+        if unpack_sample_map:
+            sample_map = [[Free for _ in range(N_dies)] for _ in range(N_dies)]
+            return sample, return_N_or_w, sample_map, file_name
         else:
-            return CHIP, return_N_or_w, file_name
+            return sample, return_N_or_w, file_name
     else:
-        if unpack_chip_map:
-            chip_map = [[Free for _ in range(N_dies)] for _ in range(N_dies)]
-            return CHIP, return_N_or_w, chip_map
+        if unpack_sample_map:
+            sample_map = [[Free for _ in range(N_dies)] for _ in range(N_dies)]
+            return sample, return_N_or_w, sample_map
         else:
-            return CHIP, return_N_or_w
+            return sample, return_N_or_w
 
 
-def place_on_chip(
+def place_on_sample(
     ref: Union[Device, DeviceReference],
     name: str,
     coordinates: Tuple[int, int],
-    chip_map: List[List[bool]],
+    sample_map: List[List[bool]],
     die_w: Union[int, float],
     devices_map_txt: Union[None, str] = None,
 ) -> bool:
-    """Moves the chip to the coordinates specified.
+    """Moves the sample to the coordinates specified.
 
-    Update the chip map with Occupied states where the device has been placed.
+    Update the sample map with Occupied states where the device has been placed.
 
     NB: The cell is aligned from its bottom left corner to the coordinates.
 
     Parameters:
         cell (Device): Device to be moved.
-        coordinates (tuple of int): (i, j) indices of the chip grid, where to place the cell.
+        coordinates (tuple of int): (i, j) indices of the sample grid, where to place the cell.
             Note that the indices start at 0.
-        chip_map (2D array): The 2D array mapping the free cells in the chip map.
-        die_w (int or float): The width of a die/unit in the chip map.
+        sample_map (2D array): The 2D array mapping the free cells in the sample map.
+        die_w (int or float): The width of a die/unit in the sample map.
         devices_map_txt (str or None): Name of the devices map text file to write placement information.
             If None, no file will be written.
 
     Returns:
-        bool: False, if the Device falls out of the chip map, prints an error
+        bool: False, if the Device falls out of the sample map, prints an error
         message and does not place the device. True, otherwise.
 
     Raises:
         Warning: Prints a warning if the Device is overlapping with already occupied coordinates.
     """
 
-    # update the chip's availabilities
+    # update the sample's availabilities
     n_cell = round(ref.xsize / die_w)
     m_cell = round(ref.ysize / die_w)
     for n in range(n_cell):
         for m in range(m_cell):
             cell_name = name
             try:
-                if chip_map[coordinates[1] + m][coordinates[0] + n] == Occupied:
+                if sample_map[coordinates[1] + m][coordinates[0] + n] == Occupied:
                     print(
                         f"Warning, placing Device {cell_name} "
                         + f"in an occupied state ({coordinates[1]+m}, {coordinates[0]+n})"
                     )
                 else:
-                    chip_map[coordinates[1] + m][coordinates[0] + n] = Occupied
+                    sample_map[coordinates[1] + m][coordinates[0] + n] = Occupied
             except IndexError:
                 print(
                     f"Error, Device {cell_name} "
-                    + f"falls out of the chip map ({coordinates[1]+m}, {coordinates[0]+n})"
+                    + f"falls out of the sample map ({coordinates[1]+m}, {coordinates[0]+n})"
                 )
                 return False
 
@@ -193,23 +193,23 @@ def place_on_chip(
 
 def place_remaining_devices(
     devices_to_place: List[Device],
-    chip_map: List[List[bool]],
+    sample_map: List[List[bool]],
     die_w: Union[int, float],
     write_devices_map_txt: Union[bool, str] = False,
 ) -> Optional[None]:
-    """Go through the chip map and place the devices given, where the chip map
+    """Go through the sample map and place the devices given, where the sample map
     is Free.
 
     Parameters:
         devices_to_place (list of Device objects): The devices to be placed.
-        chip_map (2D array): The 2D array mapping the free cells in the chip map.
-        die_w (int or float): The width of a die/unit in the chip map.
+        sample_map (2D array): The 2D array mapping the free cells in the sample map.
+        die_w (int or float): The width of a die/unit in the sample map.
         write_devices_map_txt (bool or str): If True, write a .txt file mapping the devices that were placed.
             If str, specifies the filename of the .txt file.
 
     Note:
         The list of devices is not re-ordered to fit as many of them as possible.
-        Some edges of the chip may remain empty because the list contained 2-units long devices (for e.g.).
+        Some edges of the sample may remain empty because the list contained 2-units long devices (for e.g.).
     """
 
     # name and create the file if no file was given
@@ -217,7 +217,7 @@ def place_remaining_devices(
 
         file_name = "remaining_cells_map"
         with open(f"{file_name}.txt", "a") as file:
-            file.write("Remaining devices placed on the chip:\n\n")
+            file.write("Remaining devices placed on the sample:\n\n")
             file.write("(row, col) : device.name\n\n")
     # use the file's name is a file was given
     elif write_devices_map_txt:
@@ -226,17 +226,17 @@ def place_remaining_devices(
     else:
         file_name = None
 
-    for row_i, row in enumerate(chip_map):
+    for row_i, row in enumerate(sample_map):
         for col_i, status in enumerate(row):
             if status == Free and devices_to_place:
-                if place_on_chip(
-                    devices_to_place[0], (col_i, row_i), chip_map, die_w, file_name
+                if place_on_sample(
+                    devices_to_place[0], (col_i, row_i), sample_map, die_w, file_name
                 ):
                     devices_to_place.pop(0)
 
     if devices_to_place:
         print(
-            "Some devices are still to be placed, " + "no place remaining on the chip."
+            "Some devices are still to be placed, " + "no place remaining on the sample."
         )
 
 
@@ -255,8 +255,8 @@ class Design:
 
     Args:
         name (str): The name of the design.
-        chip_w (int or float): The overall width of the chip.
-        chip_margin (int or float): The width of the outline of the chip where
+        sample_w (int or float): The overall width of the sample.
+        sample_margin (int or float): The width of the outline of the sample where
             no device should be placed.
         N_dies (int): Number of dies/units to be placed by row and column.
         die_w (int or float, optional): Width of a unit die/cell in the design
@@ -278,28 +278,28 @@ class Design:
         Here is an example of how to create the class.
 
         >>> # Choose some design parameters, let the others to default
-        >>> chip_w = 10000
+        >>> sample_w = 10000
         >>> N_dies = 11
         >>> device_outline = 0.3
         >>> die_outline = 10
 
-        >>> # Create the design and initialize the chip
+        >>> # Create the design and initialize the sample
         >>> demo_project = Design(name="demo design",
-        >>>                       chip_w=chip_w,
+        >>>                       sample_w=sample_w,
         >>>                       N_dies=N_dies,
         >>>                       device_outline=device_outline,
         >>>                       die_outline=die_outline)
-        >>> demo_project.create_chip()
+        >>> demo_project.create_sample()
 
-        >>> # Quickplot the chip skeletton!
-        >>> qp(demo_project.CHIP)
+        >>> # Quickplot the sample skeletton!
+        >>> qp(demo_project.sample)
     """
 
     def __init__(
         self,
         name="new_design",
-        chip_w=10000,
-        chip_margin=100,
+        sample_w=10000,
+        sample_margin=100,
         N_dies=None,
         unit_die_size=(980, 980),
         pad_size=(150, 250),
@@ -312,12 +312,15 @@ class Design:
         pad_layer=3,
         fill_pad_layer=False,
         pad_tolerance=5,
+        xspace = 0,
+        yspace = 100,
+        positive_tone = True,
     ):
         """
         Args:
             name (str): The name of the design.
-            chip_w (int or float): The overall width of the chip.
-            chip_margin (int or float): The width of the outline of the chip where no device should be placed.
+            sample_w (int or float): The overall width of the sample.
+            sample_margin (int or float): The width of the outline of the sample where no device should be placed.
             N_dies (int): Number of dies/units to be placed by row and column.
             die_w (int or float, optional): Width of a unit die/cell in the
                 design (the output device will be an integer number of unit cells).
@@ -334,12 +337,13 @@ class Design:
             fill_pad_layer (bool): If True, the space reserved for pads in the
                 die_cell in filled in pad's layer.
             pad_tolerance: Shrink pads by this amount to account for alignment error in MLA
+            positive_tone (bool): whether to invert/outline devices for positive tone litho
         """
 
         self.name = name
 
-        self.chip_w = chip_w
-        self.chip_margin = chip_margin
+        self.sample_w = sample_w
+        self.sample_margin = sample_margin
         self.N_dies = N_dies
         self.die_size = unit_die_size
         self.die_w = unit_die_size[0]
@@ -350,6 +354,8 @@ class Design:
         self.die_outline = die_outline
         self.ebeam_overlap = ebeam_overlap
         self.pad_tolerance = pad_tolerance
+        self.xspace = xspace
+        self.yspace = yspace
 
         self.layers = {
             "annotation": annotation_layer,
@@ -359,50 +365,51 @@ class Design:
         }
 
         self.fill_pad_layer = fill_pad_layer
+        self.positive_tone = positive_tone
 
     # help building a design
 
-    def create_chip(self, create_devices_map_txt: Union[bool, str] = True) -> Device:
-        """Creates the chip, with unit cells.
+    def create_sample(self, create_devices_map_txt: Union[bool, str] = True) -> Device:
+        """Creates the sample, with unit cells.
 
-        The CHIP created will be the foundation of the design, the Device to add
-        all references to. The function creates a chip_map (2D array) to help placing
-        the cells on the chip (aligned with the unit cells). The function also generates
+        The sample created will be the foundation of the design, the Device to add
+        all references to. The function creates a sample_map (2D array) to help placing
+        the cells on the sample (aligned with the unit cells). The function also generates
         a txt file if create_devices_map_txt is True to follow the devices placements
-        on the chip.
+        on the sample.
 
         Parameters:
             create_devices_map_txt (bool or str): If True, generates a text file
-                to follow the devices placements on the chip. If string, the text file
+                to follow the devices placements on the sample. If string, the text file
                 is named after the string.
 
         Returns:
-            CHIP (Device): The chip map, in the annotations layer
+            sample (Device): The sample map, in the annotations layer
         """
         if create_devices_map_txt:
             if create_devices_map_txt == True:
                 create_devices_map_txt = f"{self.name} devices map"
             else:
                 create_devices_map_txt = f"{create_devices_map_txt}"
-            self.CHIP, N_or_w, self.chip_map, self.devices_map_txt = create_chip(
-                chip_w=self.chip_w,
-                margin=self.chip_margin,
+            self.sample, N_or_w, self.sample_map, self.devices_map_txt = create_sample(
+                sample_w=self.sample_w,
+                margin=self.sample_margin,
                 N_dies=self.N_dies,
                 die_w=self.die_w,
                 annotations_layer=self.layers["annotation"],
-                unpack_chip_map=True,
+                unpack_sample_map=True,
                 create_devices_map_txt=create_devices_map_txt,
             )
         else:
             self.devices_map_txt = None
             create_devices_map_txt = False
-            self.CHIP, N_or_w, self.chip_map = create_chip(
-                chip_w=self.chip_w,
-                margin=self.chip_margin,
+            self.sample, N_or_w, self.sample_map = create_sample(
+                sample_w=self.sample_w,
+                margin=self.sample_margin,
                 N_dies=self.N_dies,
                 die_w=self.die_w,
                 annotations_layer=self.layers["annotation"],
-                unpack_chip_map=True,
+                unpack_sample_map=True,
                 create_devices_map_txt=create_devices_map_txt,
             )
 
@@ -415,65 +422,70 @@ class Design:
             unit_die_size=(self.die_w, self.die_w),
             pad_size=self.pad_size,
             pad_tolerance=self.pad_tolerance,
+            xspace = self.xspace,
+            yspace = self.yspace,
             contact_l=self.ebeam_overlap,
             outline=self.die_outline,
             die_layer=self.layers["die"],
             pad_layer=self.layers["pad"],
             fill_pad_layer=self.fill_pad_layer,
+            positive_tone=self.positive_tone
         )
-        return self.CHIP
+        return self.sample
 
-    def place_on_chip(
+    def place_on_sample(
         self, cell: Device, 
         coordinates: ArrayLike = (0, 0),
-        add_to_chip: bool = True,
+        add_to_sample: bool = True,
     ) -> bool:
-        """Moves the chip to the coordinates specified. Update the chip map
+        """Moves the sample to the coordinates specified. Update the sample map
         with Occupied states where the device has been placed.
 
         NB: the cell is aligned from its bottom left corner to the coordinates.
 
         Parameters:
             cell (Device): Device to be moved.
-            coordinates (tuple of int) or List of: (i, j) indices of the chip grid, where to place the cell.
+            coordinates (tuple of int) or List of: (i, j) indices of the sample grid, where to place the cell.
                 Note that the indices start at 0. Use to make one copy.
-            add_to_chip (bool):
+            copy_coordinates: List of coordinates. Provide multiple coordinates to place multiple
+                copies of the same device.
+            add_to_sample (bool):
 
         Returns:
-            bool: False, if the Device falls out of the chip map, prints an error message and does not place the device. True, otherwise.
+            bool: False, if the Device falls out of the sample map, prints an error message and does not place the device. True, otherwise.
 
         Raises:
             Warning: Prints a warning if the Device is overlapping with already occupied coordinates.
 
         Examples:
-            Here is an example of placing alignment cells on two given positions of the chip.
+            Here is an example of placing alignment cells on two given positions of the sample.
 
             >>> align_left  = demo_project.create_alignment_cell(layers_to_align=[2, 3])
             >>> align_right = demo_project.create_alignment_cell(layers_to_align=[2, 3])
-            >>> demo_project.place_on_chip(cell=align_left,  coordinates=(0, 5))
-            >>> demo_project.place_on_chip(cell=align_right, coordinates=(10, 5))
+            >>> demo_project.place_on_sample(cell=align_left,  coordinates=(0, 5))
+            >>> demo_project.place_on_sample(cell=align_right, coordinates=(10, 5))
         """
         success = []
         coordinates = np.array(coordinates)
         if coordinates.shape == (2,):
-            ref = self.CHIP << cell 
-            return place_on_chip(
+            ref = self.sample << cell 
+            return place_on_sample(
                 ref = ref,
                 name = cell.name.replace("\n", ""),
                 coordinates=coordinates,
-                chip_map=self.chip_map,
+                sample_map=self.sample_map,
                 die_w=self.die_w,
                 devices_map_txt=self.devices_map_txt,
             )
         else:
             for i in range(len(coordinates)):
-                if add_to_chip:
-                    ref = self.CHIP << cell
-                success.append(place_on_chip(
+                if add_to_sample:
+                    ref = self.sample << cell
+                success.append(place_on_sample(
                     ref = ref,
                     name = cell.name.replace("\n", ""),
                     coordinates=(coordinates[i][0], coordinates[i][1]),
-                    chip_map=self.chip_map,
+                    sample_map=self.sample_map,
                     die_w=self.die_w,
                     devices_map_txt=self.devices_map_txt,
                 ))
@@ -482,27 +494,27 @@ class Design:
     def place_remaining_devices(
         self,
         devices_to_place: List[Device],
-        add_to_chip: bool = True,
+        add_to_sample: bool = True,
         write_remaining_devices_map_txt: Union[bool, str] = False,
     ) -> Optional[None]:
-        """Go through the chip map and place the devices given, where the chip
+        """Go through the sample map and place the devices given, where the sample
         map is Free.
 
         Parameters:
             devices_to_place (list of Device objects): The devices to be placed.
-            add_to_chip (bool): Add the devices provided to the Design's CHIP.
+            add_to_sample (bool): Add the devices provided to the Design's sample.
             write_remaining_devices_map_txt (bool or string): If True, write a .txt
                 file mapping the devices that were placed. If string, the filename is
                 the given string, except if a file has already been created.
 
         Note:
             The list of devices is not re-ordered to fit as many of them as possible.
-            Some edges of the chip may remain empty because the list contained 2-units long devices (for e.g.).
+            Some edges of the sample may remain empty because the list contained 2-units long devices (for e.g.).
 
         Examples:
             Here is a typical example of why this function is useful and how to
             use it. If design is a Design class initalized, and the
-            create_chip() function has previously been executed.
+            create_sample() function has previously been executed.
 
             >>> channels_w = [0.5, 0.75, 1, 1.25, 1.5]
             >>> ntrons_to_place = []
@@ -512,17 +524,17 @@ class Design:
             >>> design.place_remaining_cells(ntrons_to_place)
         """
         if self.devices_map_txt is not None:
-            # the decision taken when creating the chip overwrites this one
+            # the decision taken when creating the sample overwrites this one
             write_devices_map_txt = self.devices_map_txt
         else:
             # a devices map can still be created, as decided when calling this function
             write_devices_map_txt = write_remaining_devices_map_txt
 
-        if add_to_chip:
-            self.CHIP << devices_to_place
+        if add_to_sample:
+            self.sample << devices_to_place
         place_remaining_devices(
             devices_to_place=devices_to_place,
-            chip_map=self.chip_map,
+            sample_map=self.sample_map,
             die_w=self.die_w,
             write_devices_map_txt=write_devices_map_txt,
         )
@@ -539,10 +551,25 @@ class Design:
         """
         if text is None:
             text = self.name
-        return self.CHIP.write_gds(filename=f"{text}.gds", max_cellname_length=32000)
+        return self.sample.write_gds(filename=f"{text}.gds", max_cellname_length=32000)
 
     # basics:
 
+    def simplify(self, tolerance: Union[float, int] = 1e-2) -> Device:
+        '''
+        From PHIDL:
+        Simplifies every polygon in the Device, without changing the shape by more than tolerance 
+        from the original. Uses the Ramer-Douglas-Peucker algorithm.
+
+        Parameters:
+            tolerance (float or int): Minimum size of detail simplified down to
+        
+        Returns:
+            simplified Device (self.sample)
+        '''
+        self.sample = self.sample.simplify(tolerance)
+        return self.sample
+    
     def alignment_cell(
         self, layers_to_align: List[int], text: Union[None, str] = None
     ) -> Device:
@@ -555,7 +582,7 @@ class Design:
         Returns:
             Device: A device that centers the alignment marks in an n*m unit cell.
         """
-        return cell.alignment(
+        return experiment.alignment(
             die_parameters=self.die_parameters,
             layers_to_align=layers_to_align,
             text=text,
@@ -579,7 +606,7 @@ class Design:
             Device: The created device.
         """
 
-        return cell.vdp(
+        return experiment.vdp(
             die_parameters=self.die_parameters,
             layers_to_probe=layers_to_probe,
             layers_to_outline=layers_to_outline,
@@ -603,7 +630,7 @@ class Design:
             Device: A device (with size n*m of unit cells) with etch tests in its center.
         """
 
-        return cell.etch_test(
+        return experiment.etch_test(
             die_parameters=self.die_parameters,
             layers_to_etch=layers_to_etch,
             text=text,
@@ -636,7 +663,7 @@ class Design:
             Device: The created device.
         """
 
-        return cell.resolution_test(
+        return experiment.resolution_test(
             die_parameters=self.die_parameters,
             layer_to_resolve=layer_to_resolve,
             resolutions_to_test=resolutions_to_test,
@@ -645,131 +672,27 @@ class Design:
 
     # devices:
 
-    def nanowires_cell(
-        self,
-        channels_sources_w: List[Tuple[float, float]],
-        text: Union[None, str] = None,
+    def experiment(
+            self,
+            device: ArrayLike,
+            text: Union[None, str] = None,
+            device_y = 0
     ) -> Device:
-        """Creates a cell containing several nanowires of given channel and
-        source.
+        """
+        Creates an experiment containing the input Device(s)
 
         Parameters:
-            channels_sources_w (List[Tuple[float, float]]): The list of
-                (channel_w, source_w) of the nanowires to create.
-            text (str, optional): If None, the text is f"w={channels_w}".
-
+            device (ArrayLike[Device]): Device/list of Devices to create
+            text (str, optional): If None, uses Device names
         Returns:
-            Device: A device containing the nanowires, the border of the die
-            (created with die_cell function), and the connections between the
-            nanowires and pads.
+            Device: A device containing the input Device(s), the border of
+            the die (created with die_cell function), and connections between
+            the Device(s) and pads
         """
-
-        return cell.nanowires(
+        return experiment.experiment(
+            device=device,
             die_parameters=self.die_parameters,
-            channels_sources_w=channels_sources_w,
-            outline_dev=self.device_outline,
-            device_layer=self.layers["device"],
+            device_layer=self.layers['device'],
             text=text,
-        )
-
-    def ntron_cell(
-        self,
-        choke_w: float,
-        channel_w: float,
-        gate_w: Union[float, None] = None,
-        source_w: Union[float, None] = None,
-        drain_w: Union[float, None] = None,
-        choke_shift: Union[float, None] = None,
-        text: Union[str, None] = None,
-    ) -> Device:
-        r"""Creates a standardized cell specifically for a single ntron.
-
-        Unless specified, scales the ntron parameters as:
-        gate_w = drain_w = source_w = 3*channel_w
-        choke_shift = -3*channel_w
-
-        Parameters:
-            choke_w (int or float): The width of the ntron's choke in µm.
-            channel_w (int or float): The width of the ntron's channel in µm.
-            gate_w (int or float, optional): If None, gate width is 3 times the channel width.
-            source_w (int or float, optional): If None, source width is 3 times the channel width.
-            drain_w (int or float, optional): If None, drain width is 3 times the channel width.
-            choke_shift (int or float, optional): If None, choke shift is -3 times the channel width.
-            text (str, optional): If None, the text is f"chk: {choke_w} \\nchnl: {channel_w}".
-
-        Returns:
-            Device: A device containing the ntron, the border of the die (created with die_cell function),
-            and the connections between the ports.
-        """
-
-        return cell.ntron(
-            die_parameters=self.die_parameters,
-            choke_w=choke_w,
-            channel_w=channel_w,
-            gate_w=gate_w,
-            source_w=source_w,
-            drain_w=drain_w,
-            choke_shift=choke_shift,
-            outline_dev=self.device_outline,
-            device_layer=self.layers["device"],
-            text=text,
-        )
-
-    def snspds_cell(
-        self,
-        snspds_width_pitch: List[Tuple[float, float]] = [(0.2, 0.6)],
-        snspd_size: Tuple[Union[int, float], Union[int, float]] = (100, 100),
-        snspd_num_squares: Optional[int] = None,
-        text: Union[None, str] = None,
-    ) -> Device:
-        """Creates a cell that contains vertical superconducting nanowire
-        single-photon detectors (SNSPD).
-
-        Parameters:
-
-            snspds_width_pitch (list of tuple of float): list of (width, pitch) of the nanowires.
-            snspd_size (tuple of int or float): Size of the detectors in squares (width, height).
-            snspd_num_squares (Optional[int]): Number of squares in the detectors.
-            text (string, optional): If None, the text is f"w={snspds_width}".
-
-        Returns:
-            Device: A cell (of size n*m unit die_cells) containing the SNSPDs.
-        """
-
-        return cell.snspds(
-            die_parameters=self.die_parameters,
-            snspds_width_pitch=snspds_width_pitch,
-            snspd_size=snspd_size,
-            snspd_num_squares=snspd_num_squares,
-            outline_dev=self.device_outline,
-            device_layer=self.layers["device"],
-            text=text,
-        )
-
-    def snspd_ntron_cell(
-        self,
-        w_choke: float,
-        w_snspd: Union[float, None] = None,
-        text: Union[str, None] = None,
-    ) -> Device:
-        """Creates a cell that contains an SNSPD coupled to an NTRON. The
-        device's parameters are sized according to the SNSPD's width and the
-        NTRON's choke.
-
-        Parameters:
-            w_choke (int or float): The width of the NTRON choke in µm.
-            w_snspd (int or float, optional): The width of the SNSPD nanowire in µm. If None, scaled to 5*w_choke.
-            text (string, optional): If None, the text is f"w={w_snspd}, {w_choke}".
-
-        Returns:
-            Device: A cell containing a die in die_layer, pads in pad layer, and an SNSPD-NTRON properly routed in the device layer.
-        """
-
-        return cell.snspd_ntron(
-            die_parameters=self.die_parameters,
-            w_choke=w_choke,
-            w_snspd=w_snspd,
-            outline_dev=self.device_outline,
-            device_layer=self.layers["device"],
-            text=text,
+            device_y=device_y
         )
