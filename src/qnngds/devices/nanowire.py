@@ -26,22 +26,28 @@ def spot(
     Returns:
         Device: A device containing 2 optimal steps joined at their channel_w end.
     """
-    NANOWIRE = QnnDevice()
-    wire = pg.optimal_step(channel_w, source_w, symmetric=True, num_pts=num_pts)
+    NANOWIRE = Device('nanowire')
+    wire = pg.optimal_step(channel_w, source_w, symmetric=True, num_pts=num_pts, layer=layer)
     source = NANOWIRE << wire
     gnd = NANOWIRE << wire
     source.connect(source.ports[1], gnd.ports[1])
 
-    #NANOWIRE = pg.union(NANOWIRE, layer=layer)
+    NANOWIRE = pg.union(NANOWIRE, layer=layer)
     NANOWIRE.add_port(name=1, port=source.ports[2])
     NANOWIRE.add_port(name=2, port=gnd.ports[2])
-    nw_padplace = PadPlacement()
-    NANOWIRE.set_pads(nw_padplace)
-    NANOWIRE.rotate(-90)
-    NANOWIRE.move(NANOWIRE.center, (0, 0))
-    NANOWIRE.name = f"NANOWIRE.SPOT(w={channel_w:0.1f})"
 
-    return NANOWIRE
+    final_NANOWIRE = QnnDevice('nanowire')
+    final_NANOWIRE << NANOWIRE
+    for p, port in NANOWIRE.ports.items():
+        final_NANOWIRE.add_port(name=p, port=port)
+
+    nw_padplace = PadPlacement()
+    final_NANOWIRE.set_pads(nw_padplace)
+    final_NANOWIRE.rotate(-90)
+    final_NANOWIRE.move(NANOWIRE.center, (0, 0))
+    final_NANOWIRE.name = f"NANOWIRE.SPOT(w={channel_w:0.1f})"
+
+    return final_NANOWIRE
 
 
 def variable_length(
