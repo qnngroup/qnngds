@@ -13,22 +13,24 @@ Created on Wed Mar 04 14:33:29 2024
 
 """
 
+import gdsfactory as gf
 import numpy as np
-from phidl import Device
-import phidl.geometry as pg
-from qnngds.utilities import PadPlacement, QnnDevice
+
 from qnngds.geometries import angled_taper
 from typing import Tuple, List, Union, Optional
 
-def planar_hTron(wire_width: Union[int, float]= 0.3,
-                 gate_width: Union[int, float] = 0.1,
-                 channel_width: Union[int, float] = 0.2,
-                 gap: Union[int, float] = 0.02,
-                 gate_length : Union[int, float]= 0.01,
-                 channel_length: Union[int, float] = 0.01,
-                 layer: int = 1
-                 ) -> QnnDevice:
-    """Create a planar hTron
+
+@gf.cell
+def planar_hTron(
+    wire_width: Union[int, float] = 0.3,
+    gate_width: Union[int, float] = 0.1,
+    channel_width: Union[int, float] = 0.2,
+    gap: Union[int, float] = 0.02,
+    gate_length: Union[int, float] = 0.01,
+    channel_length: Union[int, float] = 0.01,
+    layer: int = 1,
+) -> gf.Component:
+    """Create a planar hTron.
 
     Parameters
     -----------------
@@ -49,50 +51,34 @@ def planar_hTron(wire_width: Union[int, float]= 0.3,
 
     Returns
     -------------
-    HTRON : QnnDevice
-        A QnnDevice containing a single hTron
-
+    HTRON : gf.Component
+        A gdsfactory Component containing a single hTron
     """
 
-    HTRON = Device('hTron')
+    HTRON = gf.Component()
 
     ports = []
-    for direction,width,length in ((1,channel_width, channel_length), (-1,gate_width, gate_length)):
-        W = Device('wire')
-        constr = W << pg.straight(size=(width, np.max(length - 4*width,0)), layer=layer)
-        constr.center = [0,0]
-        constr.move([direction*(gap/2+width/2),0])
+    for direction, width, length in (
+        (1, channel_width, channel_length),
+        (-1, gate_width, gate_length),
+    ):
+        compass_size = (width, np.max((length - 4 * width, 0.1)))
+        constr = HTRON << gf.components.compass(
+            size=compass_size, layer=layer, port_type="electrical"
+        )
+        constr.center = [0, 0]
+        constr.move([direction * (gap / 2 + width / 2), 0])
         taper = angled_taper(wire_width, width, 45, layer=layer)
+        taper_lower = HTRON << taper
+        taper_upper = HTRON << taper
         if direction < 0:
-            taper.mirror()
-        taper_lower = W << taper
-        taper_lower.connect(taper_lower.ports[1], constr.ports[2])
-        taper_upper = W << taper
-        taper_upper.mirror()
-        taper_upper.connect(taper_upper.ports[1], constr.ports[1])
-        ports.append(taper_lower.ports[2])
-        ports.append(taper_upper.ports[2])
-        HTRON << W
-
-    HTRON = pg.union(HTRON, layer=layer)
-
-    final_HTRON = QnnDevice('hTron')
-    final_HTRON.set_pads(PadPlacement(
-        cell_scaling_factor_x= 1,
-        num_pads_n=2,
-        num_pads_s=2,
-        port_map_x={
-            0:("S", 2),
-            1:("N", 2),
-            2:("S", 1),
-            3:("N", 1)
-        }
-    ))
-    final_HTRON << HTRON
+            taper_upper.mirror()
+        else:
+            taper_lower.mirror()
+        taper_lower.connect(port=taper_lower.ports["e1"], other=constr.ports["e2"])
+        taper_upper.connect(port=taper_upper.ports["e1"], other=constr.ports["e4"])
+        ports.append(taper_lower.ports["e2"])
+        ports.append(taper_upper.ports["e2"])
     for p, port in enumerate(ports):
-        final_HTRON.add_port(name=p, port=port)
-
-    final_HTRON.center = [0,0]
-    final_HTRON.name = f"HTRON.planar(w={wire_width:.2f})"
-    final_HTRON.simplify(1e-3)
-    return final_HTRON
+        HTRON.add_port(name=f"e{p}", port=port)
+    return HTRON
