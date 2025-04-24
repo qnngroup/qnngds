@@ -1,18 +1,5 @@
 """Heater cryotron devices `[1] <https://doi.org/10.1038/s41928-019-0300-8>`_, `[2] <https://doi.org/10.1103/PhysRevApplied.14.054011>`_."""
 
-from phidl import Device
-
-import phidl.geometry as pg
-from typing import Tuple, Optional
-
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Mar 04 14:33:29 2024
-
-@author: reedf
-
-"""
-
 import gdsfactory as gf
 import numpy as np
 
@@ -33,26 +20,16 @@ def planar_hTron(
     """Create a planar hTron.
 
     Parameters
-    -----------------
-    wire_width : int or float
-        Width of routing wires in microns
-    gate_width : int or float
-        Width of superconducting gate in microns
-    channel_width : int or float
-        Width of superconducting channel in microns
-    gap : int or float
-        Spacing between gate and channel in microns
-    gate_length : int or float
-        Length of superconducting gate in microns
-    channel_length : int or float
-        Length of superconducting channel in microns
-    layer: int
-        Layer to draw device on
+        wire_width (int or float): Width of routing wires in microns
+        gate_width (int or float): Width of superconducting gate in microns
+        channel_width (int or float): Width of superconducting channel in microns
+        gap (int or float): Spacing between gate and channel in microns
+        gate_length (int or float): Length of superconducting gate in microns
+        channel_length (int or float): Length of superconducting channel in microns
+        layer (int or tuple): GDS layer, either as tuple (layer, type) or int layer (assumed type is 0)
 
     Returns
-    -------------
-    HTRON : gf.Component
-        A gdsfactory Component containing a single hTron
+        gf.Component: a single planar hTron
     """
 
     HTRON = gf.Component()

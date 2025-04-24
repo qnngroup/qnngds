@@ -123,7 +123,7 @@ def vdp(
         positive_tone=die_parameters.positive_tone,
         fill_pad_layer=False,
         text_size=die_parameters.text_size,
-        pad_tolerance=0
+        pad_tolerance=0,
     )
 
     PADS = utility.die_cell(
@@ -298,13 +298,14 @@ def resolution_test(
 
 ## devices:
 
+
 def experiment(
-        device: ArrayLike = devices.nanowire.spot(),
-        die_parameters: utility.DieParameters = utility.DieParameters(),
-        device_layer: int = 1,
-        outline_dev: Union[int, float] = 1,
-        text: Union[None, str] = None,
-        device_y = 0
+    device: ArrayLike = devices.nanowire.variable_length,
+    die_parameters: utility.DieParameters = utility.DieParameters(),
+    device_layer: int = 1,
+    outline_dev: Union[int, float] = 1,
+    text: Union[None, str] = None,
+    device_y=0,
 ) -> Device:
     """
     Creates an experiment containing Device[s]
@@ -322,7 +323,7 @@ def experiment(
     text: str or None
         label text for cell
 
-    Returns 
+    Returns
     ----------------
     Cell: a Device containing the input devices, pads, and routing
     """
@@ -331,9 +332,9 @@ def experiment(
     if device_array.shape == ():
         device = np.array([device])
     else:
-        device = np.array(device) 
+        device = np.array(device)
 
-    cell_scaling_factor_x = device[0].pads.cell_scaling_factor_x 
+    cell_scaling_factor_x = device[0].pads.cell_scaling_factor_x
     cell_scaling_factor_y = device[0].pads.cell_scaling_factor_y
     num_pads_n = device[0].pads.num_pads_n
     num_pads_s = device[0].pads.num_pads_s
@@ -358,7 +359,7 @@ def experiment(
     for dev in device:
         ref = USER_DEVICES << dev
         refs.append(ref)
-    
+
     FULL_DEVICES << USER_DEVICES
 
     ## Create the DIE
@@ -366,10 +367,10 @@ def experiment(
     # die parameters, checkup conditions
     num_dev = len(device)
     n = math.ceil(
-        (2*max_x_num*(num_dev+1) * die_parameters.pad_size[0])
+        (2 * max_x_num * (num_dev + 1) * die_parameters.pad_size[0])
         / die_parameters.unit_die_size[0]
     )
-    
+
     default_contact_w = USER_DEVICES.xsize + die_parameters.contact_l
     if default_contact_w < die_parameters.pad_size[0]:
         die_contact_w = default_contact_w
@@ -378,21 +379,32 @@ def experiment(
     dev_contact_w = USER_DEVICES.xsize
     routes_margin = 4 * die_contact_w
 
-    device_max_x = max_x_num * num_dev * max(die_parameters.pad_size[0]*cell_scaling_factor_x, USER_DEVICES.xsize+2*die_parameters.outline)
-    
+    device_max_x = (
+        max_x_num
+        * num_dev
+        * max(
+            die_parameters.pad_size[0] * cell_scaling_factor_x,
+            USER_DEVICES.xsize + 2 * die_parameters.outline,
+        )
+    )
+
     if device[0].pads.tight_y_spacing == True:
-        device_max_y = USER_DEVICES.ysize+2*die_parameters.contact_l
+        device_max_y = USER_DEVICES.ysize + 2 * die_parameters.contact_l
     else:
-        device_max_y = USER_DEVICES.ysize+routes_margin
+        device_max_y = USER_DEVICES.ysize + routes_margin
 
     dev_max_size = (
         device_max_x,
         device_max_y,
     )
 
-    ports = {"N": num_pads_n*num_dev, "S": num_pads_s*num_dev, 
-               "E": num_pads_e*num_dev, "W": num_pads_w*num_dev}
-    ports = {key:val for key, val in ports.items() if val != 0}
+    ports = {
+        "N": num_pads_n * num_dev,
+        "S": num_pads_s * num_dev,
+        "E": num_pads_e * num_dev,
+        "W": num_pads_w * num_dev,
+    }
+    ports = {key: val for key, val in ports.items() if val != 0}
 
     # die, with calculated parameters
     BORDER = utility.die_cell(
@@ -404,35 +416,42 @@ def experiment(
         ports_gnd=ports_gnd,
         text=f"{cell_text}",
         probe_tip=device[0].pads.probe_tip,
-        num_devices= len(device),
-        device_y=device_y
+        num_devices=len(device),
+        device_y=device_y,
     )
 
-    if 'N' in ports:
-        side = 'N'
-    elif 'E' in ports:
-        side = 'E'
+    if "N" in ports:
+        side = "N"
+    elif "E" in ports:
+        side = "E"
 
     for i, ref in enumerate(refs):
-        x_offset = BORDER.ports[f"{side}{i*max_x_num+1}"].x 
+        x_offset = BORDER.ports[f"{side}{i*max_x_num+1}"].x
         if max_x_num > 1:
-            x_offset = (x_offset + BORDER.ports[f"{side}{i*max_x_num+max_x_num}"].x)/2
-        if side == 'E':
+            x_offset = (x_offset + BORDER.ports[f"{side}{i*max_x_num+max_x_num}"].x) / 2
+        if side == "E":
             x_offset -= device[0].pads.probe_tip.pad_length
         ref.movex(x_offset)
         print(port_map_x.items())
         for dev_port, pad_port in port_map_x.items():
-            #print(f"{pad_port[0]}{max_x_num*i+pad_port[1]}")
-            USER_DEVICES.add_port(port=ref.ports[dev_port], name=f"{pad_port[0]}{max_x_num*i+pad_port[1]}")
+            # print(f"{pad_port[0]}{max_x_num*i+pad_port[1]}")
+            USER_DEVICES.add_port(
+                port=ref.ports[dev_port], name=f"{pad_port[0]}{max_x_num*i+pad_port[1]}"
+            )
         for dev_port, pad_port in port_map_y.items():
-            USER_DEVICES.add_port(port=ref.ports[dev_port], name=f"{pad_port[0]}{max_y_num*i+pad_port[1]}")
+            USER_DEVICES.add_port(
+                port=ref.ports[dev_port], name=f"{pad_port[0]}{max_y_num*i+pad_port[1]}"
+            )
 
     ## Route the nanowires and the die
 
     # hyper tapers
-    taper_contact = min(dev_contact_w, device[0].pads.contact_w/2)
+    taper_contact = min(dev_contact_w, device[0].pads.contact_w / 2)
     HT, dev_ports = utility.add_hyptap_to_cell(
-        BORDER.get_ports(), die_parameters.contact_l, taper_contact, positive_tone=die_parameters.positive_tone
+        BORDER.get_ports(),
+        die_parameters.contact_l,
+        taper_contact,
+        positive_tone=die_parameters.positive_tone,
     )
     FULL_DEVICES.ports = dev_ports.ports
     FULL_DEVICES << HT

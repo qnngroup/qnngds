@@ -1,13 +1,11 @@
 """Nanocryotron `[1] <https://doi.org/10.1021/nl502629x>`_ variants."""
 
-from phidl import Device
-from phidl import Port
+import gdsfactory as gf
 
-import phidl.geometry as pg
-from qnngds.utilities import PadPlacement, QnnDevice
 from typing import Tuple, Optional
 
 
+@gf.cell
 def smooth(
     choke_w: float = 0.03,
     gate_w: float = 0.2,
@@ -16,7 +14,7 @@ def smooth(
     drain_w: float = 0.3,
     choke_shift: float = -0.3,
     layer: int = 1,
-) -> Device:
+) -> gf.Component:
     """Creates a ntron device.
 
     Args:
@@ -32,66 +30,38 @@ def smooth(
         Device: The ntron device.
     """
 
-    D = Device()
+    D = gf.Component()
 
-    choke = pg.optimal_step(gate_w, choke_w, symmetric=True, num_pts=100)
+    choke = gf.components.superconductors.optimal_step(
+        gate_w, choke_w, symmetric=True, num_pts=100, layer=layer
+    )
     k = D << choke
 
-    channel = pg.compass(size=(channel_w, choke_w))
+    channel = gf.components.compass(
+        size=(channel_w, choke_w), layer=layer, port_type="optical"
+    )
     c = D << channel
-    c.connect(channel.ports["W"], choke.ports[2])
+    c.connect(port=c.ports["o1"], other=k.ports["e2"], allow_width_mismatch=True)
 
-    drain = pg.optimal_step(drain_w, channel_w)
+    drain = gf.components.superconductors.optimal_step(
+        drain_w, channel_w, symmetric=False, num_pts=100, layer=layer
+    )
     d = D << drain
-    d.connect(drain.ports[2], c.ports["N"])
+    d.connect(port=d.ports["e2"], other=c.ports["o2"])
 
-    source = pg.optimal_step(channel_w, source_w)
+    source = gf.components.superconductors.optimal_step(
+        channel_w, source_w, symmetric=False, num_pts=100, layer=layer
+    )
     s = D << source
-    s.connect(source.ports[1], c.ports["S"])
+    s.connect(port=s.ports["e1"], other=c.ports["o4"])
 
     k.movey(choke_shift)
 
-    precision = 1e-6
-    D = pg.union(D, precision=precision)
-    D.flatten(single_layer=layer)
-    # move ports towards device center by 2*precision
-    names = (0, 1, 2) # formerly g, d, s
-    for i, p in enumerate((k.ports[1], d.ports[1], s.ports[2])):
-        dn = p.normal[1] - p.normal[0]
-        D.add_port(
-            name=names[i],
-            port=Port(
-                midpoint=p.center - 2 * dn * precision,
-                width=p.width,
-                orientation=p.orientation,
-            ),
-        )
+    D.add_port(name="g", port=k.ports["e1"], port_type="electrical")
+    D.add_port(name="s", port=s.ports["e2"], port_type="electrical")
+    D.add_port(name="d", port=d.ports["e1"], port_type="electrical")
 
-    final_ntron = QnnDevice('nTron')
-    final_ntron.set_pads(PadPlacement(
-        cell_scaling_factor_x=1,
-        num_pads_n=1,
-        num_pads_s=1,
-        num_pads_w=1,
-        port_map_x={
-            2:("S", 1),
-            1:("N", 1)
-        },
-        port_map_y={
-            0:("W", 1)
-        },
-        ports_gnd=["S"]
-    ))
-
-    final_ntron << D 
-    for p, port in D.ports.items():
-        final_ntron.add_port(name=p, port=port)
-    
-    
-    final_ntron.name = f"NTRON.SMOOTH(choke_w={choke_w:0.2f}, channel_w={channel_w:0.2f})"
-    final_ntron.info = locals()
-
-    return final_ntron
+    return D
 
 
 def sharp(
@@ -105,7 +75,7 @@ def sharp(
     drain_w: float = 0.3,
     drain_l: float = 1.5,
     layer: int = 1,
-) -> Device:
+) -> gf.Component:
     """Creates a sharp ntron device.
 
     Args:
@@ -124,59 +94,26 @@ def sharp(
         Device: The sharp ntron device.
     """
 
-    D = Device()
+    D = gf.Component()
 
-    choke = pg.taper(choke_l, gate_w, choke_w)
+    choke = gf.components.tapers.taper(choke_l, gate_w, choke_w, layer=layer)
     k = D << choke
 
-    channel = pg.compass(size=(channel_w, channel_l))
+    channel = gf.components.compass(
+        size=(channel_w, channel_l), layer=layer, port_type="optical"
+    )
     c = D << channel
-    c.connect(channel.ports["W"], choke.ports[2])
+    c.connect(port=c.ports["o1"], other=k.ports["o2"], allow_width_mismatch=True)
 
-    drain = pg.taper(drain_l, drain_w, channel_w)
+    drain = gf.components.tapers.taper(drain_l, channel_w, drain_w, layer=layer)
     d = D << drain
-    d.connect(drain.ports[2], c.ports["N"])
+    d.connect(port=d.ports["o1"], other=c.ports["o2"])
 
-    source = pg.taper(source_l, channel_w, source_w)
+    source = gf.components.tapers.taper(source_l, channel_w, source_w, layer=layer)
     s = D << source
-    s.connect(source.ports[1], c.ports["S"])
+    s.connect(port=s.ports["o1"], other=c.ports["o4"])
 
-    precision = 1e-6
-    D = pg.union(D, precision=precision)
-    D.flatten(single_layer=layer)
-    # move ports towards device center by 2*precision
-    names = (0,1,2) # formerly g, d, s
-    for i, p in enumerate((k.ports[1], d.ports[1], s.ports[2])):
-        dn = p.normal[1] - p.normal[0]
-        D.add_port(
-            name=names[i],
-            port=Port(
-                midpoint=p.center - dn * precision,
-                width=p.width,
-                orientation=p.orientation,
-            ),
-        )
-
-    final_ntron = QnnDevice('nTron')
-    final_ntron.set_pads(PadPlacement(
-        cell_scaling_factor_x=1,
-        num_pads_n=1,
-        num_pads_s=1,
-        num_pads_w=1,
-        port_map_x={
-            2:("S", 1),
-            1:("N", 1)
-        },
-        port_map_y={
-            0:("W", 1)
-        },
-        ports_gnd=["S"]
-    ))
-
-    final_ntron << D 
-    for p, port in D.ports.items():
-        final_ntron.add_port(name=p, port=port)
-
-    final_ntron.name = f"NTRON.SHARP(choke_w={choke_w:0.2f}, channel_w={channel_w:0.2f})"
-    final_ntron.info = locals()
-    return final_ntron
+    D.add_port(name="g", port=k.ports["o1"], port_type="electrical")
+    D.add_port(name="s", port=s.ports["o2"], port_type="electrical")
+    D.add_port(name="d", port=d.ports["o2"], port_type="electrical")
+    return D

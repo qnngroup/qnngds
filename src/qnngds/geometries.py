@@ -11,20 +11,13 @@ def hyper_taper(length=10, wide_section=50, narrow_section=5, layer=1) -> gf.Com
     """Hyperbolic taper (solid). Designed by colang.
 
     Parameters
-    -----------------
-    length: int or float
-        Length of taper
-    wide_section: int or float
-        Width of wide end of taper
-    narrow_section: int or float
-        Width of narrow end of taper
-    layer: int or tuple
-        GDS layer, either as tuple (layer, type) or int layer (assumed type is 0)
+        length (int or float): Length of taper
+        wide_section (int or float): Width of wide end of taper
+        narrow_section (int or float): Width of narrow end of taper
+        layer (int or tuple): GDS layer, either as tuple (layer, type) or int layer (assumed type is 0)
 
     Returns
-    -------------
-    D : gf.Component
-        A gdsfactory Component containing a single taper
+        gf.Component: a single taper
     """
     HT = gf.Component()
 
@@ -60,20 +53,14 @@ def angled_taper(
     """Create an angled taper with euler curves.
 
     Parameters
-    -----------------
-    wire_width : int or float
-        Width of wide end of taper
-    constr_width: int or float
-        Width of narrow end of taper
-    angle: int or float
-        Angle between taper ends in degrees
-    layer: int or tuple
-        GDS layer, either as tuple (layer, type) or int layer (assumed type is 0)
+        wire_width (int or float): Width of wide end of taper
+        constr_width (int or float): Width of narrow end of taper
+        angle (int or float): Angle between taper ends in degrees
+        layer (int or tuple): GDS layer, either as tuple (layer, type) or int layer (assumed type is 0)
 
     Returns
     -------------
-    D : gf.Component
-        A gdsfactory Component containing a single taper
+    gf.Component: a single taper
     """
 
     D = gf.Component()
