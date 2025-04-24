@@ -2,8 +2,6 @@
 
 import gdsfactory as gf
 
-from typing import Tuple, Optional
-
 
 @gf.cell
 def smooth(
@@ -27,7 +25,7 @@ def smooth(
         layer (int): Layer for the device to be created on.
 
     Returns:
-        Device: The ntron device.
+        gf.Component: The ntron device.
     """
 
     D = gf.Component()
