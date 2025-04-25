@@ -2,6 +2,8 @@
 
 import gdsfactory as gf
 
+import qnngds.utilities as qu
+
 
 @gf.cell
 def smooth(
@@ -55,11 +57,15 @@ def smooth(
 
     k.movey(choke_shift)
 
-    D.add_port(name="g", port=k.ports["e1"], port_type="electrical")
-    D.add_port(name="s", port=s.ports["e2"], port_type="electrical")
-    D.add_port(name="d", port=d.ports["e1"], port_type="electrical")
+    Du = gf.Component()
+    Du << qu.union(D)
+    Du.flatten()
 
-    return D
+    Du.add_port(name="g", port=k.ports["e1"], port_type="electrical")
+    Du.add_port(name="s", port=s.ports["e2"], port_type="electrical")
+    Du.add_port(name="d", port=d.ports["e1"], port_type="electrical")
+
+    return Du
 
 
 def sharp(
@@ -111,7 +117,12 @@ def sharp(
     s = D << source
     s.connect(port=s.ports["o1"], other=c.ports["o4"])
 
-    D.add_port(name="g", port=k.ports["o1"], port_type="electrical")
-    D.add_port(name="s", port=s.ports["o2"], port_type="electrical")
-    D.add_port(name="d", port=d.ports["o2"], port_type="electrical")
-    return D
+    Du = gf.Component()
+    Du << qu.union(D)
+    Du.flatten()
+
+    Du.add_port(name="g", port=k.ports["o1"], port_type="electrical")
+    Du.add_port(name="s", port=s.ports["o2"], port_type="electrical")
+    Du.add_port(name="d", port=d.ports["o2"], port_type="electrical")
+
+    return Du

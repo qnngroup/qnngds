@@ -6,21 +6,56 @@ device and its die are linked thanks to functions present in this module.
 """
 
 import gdsfactory as gf
+import kfactory as kf
 from phidl import Device, Port
 import phidl.geometry as pg
 import phidl.routing as pr
-from typing import Tuple, List, Union, Dict, Set
+from typing import Tuple, List, Union, Dict, Set, Literal
 import qnngds.geometries as geometry
 
+from gdsfactory.typings import (
+    ComponentSpecsOrComponents,
+    Spacing,
+)
 
-@gf.cell
+
 def union(component: gf.Component) -> gf.Component:
-    component = gf.Component()
+    comp_union = gf.Component()
     for layer in component.layers:
         temp = gf.Component()
         temp.add_polygon(component.get_region(layer), layer=layer)
-        component << gf.boolean(temp, temp, operation="or", layer=layer)
-    return component
+        comp_union << gf.boolean(temp, temp, operation="or", layer=layer)
+    return comp_union
+
+
+def flex_grid(
+    components: ComponentSpecsOrComponents = (gf.components.shapes.rectangle),
+    spacing: Spacing | float = (5.0, 5.0),
+    shape: tuple[int, int] | None = None,
+    align_x: Literal["origin", "xmin", "xmax", "center"] = "center",
+    align_y: Literal["origin", "ymin", "ymax", "center"] = "center",
+    rotation: int = 0,
+    mirror: bool = False,
+) -> gf.Component:
+    """Implement gdsfactory grid using kfactory's flex_grid method"""
+    c = gf.Component()
+    instances = kf.flexgrid(
+        c,
+        kcells=[gf.get_component(component) for component in components],
+        shape=shape,
+        spacing=(
+            (float(spacing[0]), float(spacing[1]))
+            if isinstance(spacing, tuple | list)
+            else float(spacing)
+        ),
+        align_x=align_x,
+        align_y=align_y,
+        rotation=rotation,
+        mirror=mirror,
+    )
+    for i, instance in enumerate(instances):
+        c.add_ports(instance.ports, prefix=f"{i}_")
+    return c
 
 
 class DieParameters:
