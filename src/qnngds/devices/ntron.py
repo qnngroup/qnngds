@@ -11,7 +11,7 @@ def smooth(
     source_w: float = 0.3,
     drain_w: float = 0.3,
     choke_shift: float = -0.3,
-    layer: int = 1,
+    layer: tuple = (1, 0),
 ) -> gf.Component:
     """Creates a ntron device.
 
@@ -22,7 +22,7 @@ def smooth(
         source_w (float): Width of the source region.
         drain_w (float): Width of the drain region.
         choke_shift (float): Shift of the choke region.
-        layer (int): Layer for the device to be created on.
+        layer (tuple): GDS layer tuple (layer, type)
 
     Returns:
         gf.Component: The ntron device.
@@ -72,7 +72,7 @@ def sharp(
     source_l: float = 1.5,
     drain_w: float = 0.3,
     drain_l: float = 1.5,
-    layer: int = 1,
+    layer: tuple = (1, 0),
 ) -> gf.Component:
     """Creates a sharp ntron device.
 
@@ -86,7 +86,7 @@ def sharp(
         source_l (float): Length of the source region.
         drain_w (float): Width of the drain region.
         drain_l (float): Length of the drain region.
-        layer (int): Layer for the device to be created on.
+        layer (tuple): GDS layer tuple (layer, type)
 
     Returns:
         Device: The sharp ntron device.

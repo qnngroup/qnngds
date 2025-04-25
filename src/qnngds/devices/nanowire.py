@@ -2,15 +2,13 @@
 
 import gdsfactory as gf
 
-from typing import Tuple, Optional, Union
-
 
 @gf.cell
 def variable_length(
     constr_width: float = 0.1,
     wire_width: float = 0.3,
     length: float = 1,
-    layer: int = 1,
+    layer: tuple = (1, 0),
     num_pts: int = 100,
 ) -> gf.Component:
     """Creates a single wire, made of two optimal steps from constr_width to
@@ -20,7 +18,7 @@ def variable_length(
         constr_width (int or float): The width of the channel (at the hot-spot location).
         wire_width (int or float): The width of connections to source/drain
         length (int or float): The length of the interior constriction.
-        layer (int): The layer where to put the device.
+        layer (tuple): GDS layer tuple (layer, type)
         num_pts (int): The number of points comprising the optimal_steps geometries.
 
     Returns:

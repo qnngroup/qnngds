@@ -14,7 +14,7 @@ def meander(
     pitch: float = 4,
     squares: float = 100,
     max_length: Optional[float] = 20,
-    layer: int = 1,
+    layer: tuple = (1, 0),
 ) -> gf.Component:
     """Create resistor meander with specified number of squares.
 
@@ -26,7 +26,7 @@ def meander(
         pitch (float): desired pitch of meander in microns
         squares (float or None): desired number of squares
         max_length (float): desired length of device
-        layer (int): GDS layer
+        layer (tuple): GDS layer tuple (layer, type)
 
     Returns:
         gf.Component: the resistor meander
@@ -162,8 +162,8 @@ def meander_sc_contacts(
     meander_pitch: Optional[float] = 2,
     contact_size: Tuple[float, float] = (8, 3),
     outline_sc: float = 1,
-    layer_res: int = 3,
-    layer_sc: int = 1,
+    layer_res: tuple = (3, 0),
+    layer_sc: tuple = (1, 0),
 ) -> gf.Component:
     """Create resistor meander with superconducting contacts.
 
@@ -176,8 +176,8 @@ def meander_sc_contacts(
         meander_pitch (float or None): desired pitch of meander in microns
         contact_size (tuple[float, float]): (width, height) of resistor<->superconductor contact
         outline_sc (float): superconductor extra width on each side of contact
-        layer_res (int): GDS layer for resistor
-        layer_sc (int): GDS layer for superconductor
+        layer_res (tuple): resistor GDS layer tuple (layer, type)
+        layer_sc (tuple): superconductor GDS layer tuple (layer, type)
 
     Returns:
         gf.Component: the resistor meander

@@ -3,8 +3,9 @@
 import gdsfactory as gf
 import numpy as np
 
-from qnngds.geometries import angled_taper
-from typing import Tuple, List, Union, Optional
+import qnngds.geometries as qg
+
+from typing import Union
 
 
 @gf.cell
@@ -15,7 +16,7 @@ def planar_hTron(
     gap: Union[int, float] = 0.02,
     gate_length: Union[int, float] = 0.01,
     channel_length: Union[int, float] = 0.01,
-    layer: int = 1,
+    layer: tuple = (1, 0),
 ) -> gf.Component:
     """Create a planar hTron.
 
@@ -26,7 +27,7 @@ def planar_hTron(
         gap (int or float): Spacing between gate and channel in microns
         gate_length (int or float): Length of superconducting gate in microns
         channel_length (int or float): Length of superconducting channel in microns
-        layer (int or tuple): GDS layer, either as tuple (layer, type) or int layer (assumed type is 0)
+        layer (tuple): GDS layer tuple (layer, type)
 
     Returns
         gf.Component: a single planar hTron
@@ -45,7 +46,7 @@ def planar_hTron(
         )
         constr.center = [0, 0]
         constr.move([direction * (gap / 2 + width / 2), 0])
-        taper = angled_taper(wire_width, width, 45, layer=layer)
+        taper = qg.angled_taper(wire_width, width, 45, layer=layer)
         taper_lower = HTRON << taper
         taper_upper = HTRON << taper
         if direction < 0:

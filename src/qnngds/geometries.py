@@ -3,18 +3,24 @@ geometry library."""
 
 import gdsfactory as gf
 import numpy as np
-from typing import Tuple, List, Union, Optional
+
+from typing import Union
 
 
 @gf.cell
-def hyper_taper(length=10, wide_section=50, narrow_section=5, layer=1) -> gf.Component:
+def hyper_taper(
+    length: Union[int, float] = 10,
+    wide_section: Union[int, float] = 50,
+    narrow_section: Union[int, float] = 5,
+    layer: tuple = (1, 0),
+) -> gf.Component:
     """Hyperbolic taper (solid). Designed by colang.
 
     Parameters
         length (int or float): Length of taper
         wide_section (int or float): Width of wide end of taper
         narrow_section (int or float): Width of narrow end of taper
-        layer (int or tuple): GDS layer, either as tuple (layer, type) or int layer (assumed type is 0)
+        layer (tuple): GDS layer tuple (layer, type)
 
     Returns
         gf.Component: a single taper
@@ -23,7 +29,6 @@ def hyper_taper(length=10, wide_section=50, narrow_section=5, layer=1) -> gf.Com
 
     taper_length = length
     wide = wide_section
-    zero = 0
     narrow = narrow_section
     x_list = np.arange(0, taper_length + 0.1, 0.1)
     x_list2 = np.arange(taper_length, -0.1, -0.1)
@@ -35,7 +40,7 @@ def hyper_taper(length=10, wide_section=50, narrow_section=5, layer=1) -> gf.Com
         pts.append((x, np.cosh(a * x) * narrow / 2))
     for y in x_list2:
         pts.append((y, -np.cosh(a * y) * narrow / 2))
-    hyper_taper = HT.add_polygon(pts, layer=layer)
+    HT.add_polygon(pts, layer=layer)
     HT.add_port(name="e1", center=[0, 0], width=narrow, orientation=180, layer=layer)
     HT.add_port(
         name="e2", center=[taper_length, 0], width=wide, orientation=0, layer=layer
@@ -48,7 +53,7 @@ def angled_taper(
     wire_width: Union[int, float] = 0.2,
     constr_width: Union[int, float] = 0.1,
     angle: Union[int, float] = 60,
-    layer: Union[int, tuple] = 1,
+    layer: tuple = (1, 0),
 ) -> gf.Component:
     """Create an angled taper with euler curves.
 
@@ -56,7 +61,7 @@ def angled_taper(
         wire_width (int or float): Width of wide end of taper
         constr_width (int or float): Width of narrow end of taper
         angle (int or float): Angle between taper ends in degrees
-        layer (int or tuple): GDS layer, either as tuple (layer, type) or int layer (assumed type is 0)
+        layer (tuple): GDS layer tuple (layer, type)
 
     Returns
     -------------

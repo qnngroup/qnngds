@@ -2,8 +2,10 @@
 
 import gdsfactory as gf
 import numpy as np
-from typing import Tuple, Optional, Union
+
 import qnngds.utilities as qu
+
+from typing import Tuple, Optional, Union
 
 
 @gf.cell
@@ -14,7 +16,7 @@ def basic(
     num_squares: Optional[int] = None,
     turn_ratio: Union[int, float] = 4,
     terminals_same_side: bool = False,
-    layer: int = 1,
+    layer: tuple = (1, 0),
 ) -> gf.Component:
     """Creates an optimally-rounded SNSPD.
 
@@ -30,7 +32,7 @@ def basic(
             of the width being comprised of the turn.
         terminals_same_side (bool): If True, both ports will be located on the
             same side of the SNSPD.
-        layer (int): Layer for the device to be created on.
+        layer (tuple): GDS layer tuple (layer, type)
 
     Returns:
         gf.Component: optimally-rounded SNSPD, as provided by
@@ -70,8 +72,7 @@ def vertical(
     size: Tuple[Union[int, float], Union[int, float]] = (10, 20),
     num_squares: Optional[int] = None,
     extend: Optional[float] = 1,
-    layer: int = 1,
-    positive_tone=True,
+    layer: tuple = (1, 0),
 ) -> gf.Component:
     """Creates an optimally-rounded SNSPD, with terminals in its center instead
     of the side.
@@ -82,8 +83,7 @@ def vertical(
         size (tuple of int or float): Size of the detector in squares (width, height).
         num_squares (Optional[int]): Number of squares in the detector.
         extend (Optional[bool]): Whether or not to extend the ports.
-        layer (int): Layer for the device to be created on.
-        positive_tone (bool): if not positive tone, all ports have full pads
+        layer (tuple): GDS layer tuple (layer, type)
 
     Returns:
         gf.Component: The vertical SNSPD device.
