@@ -1,6 +1,7 @@
 """Nanocryotron `[1] <https://doi.org/10.1021/nl502629x>`_ variants."""
 
 import gdsfactory as gf
+from gdsfactory.typings import ComponentSpec
 
 import qnngds.utilities as qu
 
@@ -9,7 +10,7 @@ import qnngds.utilities as qu
 def smooth(
     choke_w: float = 0.03,
     gate_w: float = 0.2,
-    channel_w: float = 0.1,
+    channel_w: float = 0.2,
     source_w: float = 0.3,
     drain_w: float = 0.3,
     choke_shift: float = -0.3,
@@ -42,6 +43,7 @@ def smooth(
     )
     c = D << channel
     c.connect(port=c.ports["o1"], other=k.ports["e2"], allow_width_mismatch=True)
+    c.move(c.center, (0, 0))
 
     drain = gf.components.superconductors.optimal_step(
         drain_w, channel_w, symmetric=False, num_pts=100, layer=layer
@@ -55,7 +57,7 @@ def smooth(
     s = D << source
     s.connect(port=s.ports["e1"], other=c.ports["o4"])
 
-    k.movey(choke_shift)
+    k.move((c.xmin - k.xmax, choke_shift))
 
     Du = gf.Component()
     Du << qu.union(D)
@@ -68,6 +70,7 @@ def smooth(
     return Du
 
 
+@gf.cell
 def sharp(
     choke_w: float = 0.03,
     choke_l: float = 0.5,
@@ -108,6 +111,7 @@ def sharp(
     )
     c = D << channel
     c.connect(port=c.ports["o1"], other=k.ports["o2"], allow_width_mismatch=True)
+    c.move(c.center, (0, 0))
 
     drain = gf.components.tapers.taper(drain_l, channel_w, drain_w, layer=layer)
     d = D << drain
@@ -126,3 +130,60 @@ def sharp(
     Du.add_port(name="d", port=d.ports["o2"], port_type="electrical")
 
     return Du
+
+
+@gf.cell
+def slotted(
+    base_spec: ComponentSpec = smooth,
+    slot_width: int | float = 0.04,
+    slot_length: int | float = 1.5,
+    slot_pitch: int | float = 0.08,
+    n_slot: int = 2,
+) -> gf.Component:
+    """Parallel-channel nanocryotron
+
+    See `[1] <https://doi.org/10.1063/5.0180709>`_
+
+    Args:
+        base_spec (ComponentSpec): callable function that generates a gf.Component for the base nTron
+        slot_width (int or float): width of each slot
+        slot_length (int or float): length of each slot
+        slot_pitch (int or float): pitch of slots
+        n_slot (int): number of slots
+
+    Returns:
+        (gf.Component): nTron with slots
+
+    """
+    D = gf.Component()
+    base = base_spec()
+
+    # use optimal hairpin as template for slot
+    hairpin = gf.components.optimal_hairpin(
+        width=slot_pitch - slot_width,
+        pitch=slot_pitch,
+        length=slot_length / 2,
+        turn_ratio=4,
+        num_pts=300,
+        layer=(1, 0),
+    )
+    slot_inv = gf.Component()
+    hp1 = slot_inv.add_ref(hairpin)
+    hp2 = slot_inv.add_ref(hairpin)
+    hp2.mirror()
+    hp2.connect(port=hp2.ports["e1"], other=hp1.ports["e1"])
+    slot_inv.rotate(90)
+    slot_inv.move(slot_inv.center, (0, 0))
+    box = gf.components.shapes.bbox(slot_inv, layer=(1, 0))
+    slot = gf.Component()
+    slot.add_ref(gf.boolean(box, slot_inv, "-", layer=(1, 0)))
+
+    # array slots
+    slots = gf.Component()
+    slots.add_ref(slot, columns=n_slot, rows=1, column_pitch=slot_pitch, row_pitch=0)
+    slots.move(slots.center, (0, 0))
+    D.add_ref(gf.boolean(base, slots, "-", layer=(1, 0)))
+
+    D.add_ports(base.ports)
+
+    return D
