@@ -1,7 +1,7 @@
 """Nanocryotron `[1] <https://doi.org/10.1021/nl502629x>`_ variants."""
 
 import gdsfactory as gf
-from gdsfactory.typings import ComponentSpec
+from gdsfactory.typings import ComponentSpec, LayerSpec
 
 import qnngds.utilities as qu
 
@@ -14,7 +14,7 @@ def smooth(
     source_w: float = 0.3,
     drain_w: float = 0.3,
     choke_shift: float = -0.3,
-    layer: tuple = (1, 0),
+    layer: LayerSpec = (1, 0),
 ) -> gf.Component:
     """Creates a ntron device.
 
@@ -25,7 +25,7 @@ def smooth(
         source_w (float): Width of the source region.
         drain_w (float): Width of the drain region.
         choke_shift (float): Shift of the choke region.
-        layer (tuple): GDS layer tuple (layer, type)
+        layer (LayerSpec): GDS layer tuple (layer, type)
 
     Returns:
         gf.Component: The ntron device.
@@ -63,9 +63,9 @@ def smooth(
     Du << qu.union(D)
     Du.flatten()
 
-    Du.add_port(name="g", port=k.ports["e1"], port_type="electrical")
-    Du.add_port(name="s", port=s.ports["e2"], port_type="electrical")
-    Du.add_port(name="d", port=d.ports["e1"], port_type="electrical")
+    Du.add_port(name="g", port=k.ports["e1"], port_type="optical")
+    Du.add_port(name="s", port=s.ports["e2"], port_type="optical")
+    Du.add_port(name="d", port=d.ports["e1"], port_type="optical")
 
     return Du
 
@@ -81,7 +81,7 @@ def sharp(
     source_l: float = 1.5,
     drain_w: float = 0.3,
     drain_l: float = 1.5,
-    layer: tuple = (1, 0),
+    layer: LayerSpec = (1, 0),
 ) -> gf.Component:
     """Creates a sharp ntron device.
 
@@ -95,7 +95,7 @@ def sharp(
         source_l (float): Length of the source region.
         drain_w (float): Width of the drain region.
         drain_l (float): Length of the drain region.
-        layer (tuple): GDS layer tuple (layer, type)
+        layer (LayerSpec): GDS layer tuple (layer, type)
 
     Returns:
         Device: The sharp ntron device.

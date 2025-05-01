@@ -1,4 +1,6 @@
-from . import circuits, geometries, utilities, devices
+from . import geometries as geometries
+from . import utilities as utilities
+from . import devices as devices
 
 
 def help():

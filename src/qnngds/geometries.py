@@ -6,6 +6,7 @@ import numpy as np
 
 import qnngds.utilities as qu
 
+from gdsfactory.typings import LayerSpec
 from typing import Union, List, Optional
 
 
@@ -14,7 +15,7 @@ def hyper_taper(
     length: Union[int, float] = 10,
     wide_section: Union[int, float] = 50,
     narrow_section: Union[int, float] = 5,
-    layer: tuple = (1, 0),
+    layer: LayerSpec = (1, 0),
 ) -> gf.Component:
     """Hyperbolic taper (solid). Designed by colang.
 
@@ -22,7 +23,7 @@ def hyper_taper(
         length (int or float): Length of taper
         wide_section (int or float): Width of wide end of taper
         narrow_section (int or float): Width of narrow end of taper
-        layer (tuple): GDS layer tuple (layer, type)
+        layer (LayerSpec): GDS layer tuple (layer, type)
 
     Returns
         gf.Component: a single taper
@@ -32,6 +33,8 @@ def hyper_taper(
     taper_length = length
     wide = wide_section
     narrow = narrow_section
+    if wide < narrow:
+        wide, narrow = narrow, wide
     x_list = np.arange(0, taper_length + 0.1, 0.1)
     x_list2 = np.arange(taper_length, -0.1, -0.1)
     pts = []
@@ -43,9 +46,21 @@ def hyper_taper(
     for y in x_list2:
         pts.append((y, -np.cosh(a * y) * narrow / 2))
     HT.add_polygon(pts, layer=layer)
-    HT.add_port(name="e1", center=[0, 0], width=narrow, orientation=180, layer=layer)
     HT.add_port(
-        name="e2", center=[taper_length, 0], width=wide, orientation=0, layer=layer
+        name="e1",
+        center=[0, 0],
+        width=narrow,
+        orientation=180,
+        layer=layer,
+        port_type="optical",
+    )
+    HT.add_port(
+        name="e2",
+        center=[taper_length, 0],
+        width=wide,
+        orientation=0,
+        layer=layer,
+        port_type="optical",
     )
     return HT
 
@@ -55,7 +70,7 @@ def angled_taper(
     wire_width: Union[int, float] = 0.2,
     constr_width: Union[int, float] = 0.1,
     angle: Union[int, float] = 60,
-    layer: tuple = (1, 0),
+    layer: LayerSpec = (1, 0),
 ) -> gf.Component:
     """Create an angled taper with euler curves.
 
@@ -63,7 +78,7 @@ def angled_taper(
         wire_width (int or float): Width of wide end of taper
         constr_width (int or float): Width of narrow end of taper
         angle (int or float): Angle between taper ends in degrees
-        layer (tuple): GDS layer tuple (layer, type)
+        layer (LayerSpec): GDS layer tuple (layer, type)
 
     Returns
         gf.Component: a single taper
@@ -294,12 +309,14 @@ def alignment_mark(
 
 
 @gf.cell
-def _create_waffle(res: Union[float, int] = 1, layer: tuple = (1, 0)) -> gf.Component:
+def _create_waffle(
+    res: Union[float, int] = 1, layer: LayerSpec = (1, 0)
+) -> gf.Component:
     """Creates waffle test structures for determining process resolution.
 
     Args:
         res (float or int): Resolution (in µm) to be tested.
-        layer (tuple): GDS layer tuple (layer, type)
+        layer (LayerSpec): GDS layer tuple (layer, type)
 
     Returns:
         gf.Component: the resolution test structure
@@ -329,12 +346,12 @@ def _create_waffle(res: Union[float, int] = 1, layer: tuple = (1, 0)) -> gf.Comp
 
 
 @gf.cell
-def _create_3L(res: Union[float, int] = 1, layer: tuple = (1, 0)) -> gf.Component:
+def _create_3L(res: Union[float, int] = 1, layer: LayerSpec = (1, 0)) -> gf.Component:
     """Creates L-shaped test structures for determining process resolution.
 
     Args:
         res (float or int): Resolution (in µm) to be tested.
-        layer (tuple): GDS layer tuple (layer, type)
+        layer (LayerSpec): GDS layer tuple (layer, type)
 
     Returns:
         gf.Component: the resolution test structure
@@ -370,14 +387,14 @@ def _create_3L(res: Union[float, int] = 1, layer: tuple = (1, 0)) -> gf.Componen
 def resolution_test(
     resolutions: List[float] = [0.8, 1, 1.2, 1.4, 1.6, 1.8, 2.0],
     outline: Optional[float] = None,
-    layer: tuple = (2, 0),
+    layer: LayerSpec = (2, 0),
 ) -> gf.Component:
     """Creates test structures for determining a process resolution.
 
     Args:
         resolutions (List[float]): List of resolutions (in µm) to be tested.
         outline (Optional[float]): If none, do not invert. If zero, invert the device, otherwise outline the device by this width.
-        layer (tuple): GDS layer tuple (layer, type)
+        layer (LayerSpec): GDS layer tuple (layer, type)
 
     Returns:
         gf.Component: the resolution test structures
@@ -417,14 +434,14 @@ def resolution_test(
 
 @gf.cell
 def vdp(
-    diagonal: float = 400, contact_width: float = 40, layer: tuple = (1, 0)
+    diagonal: float = 400, contact_width: float = 40, layer: LayerSpec = (1, 0)
 ) -> gf.Component:
     """Creates a Van der Pauw (VDP) device with specified dimensions.
 
     Args:
         diagonal (float): Length of the VDP device, overall maximum dimension, in µm.
         contact_width (float): Width of the contact points (width of the ports), in µm.
-        layer (tuple): GDS layer tuple (layer, type)
+        layer (LayerSpec): GDS layer tuple (layer, type)
 
     Returns:
         gf.Component: Van der Pauw cell

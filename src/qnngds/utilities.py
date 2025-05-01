@@ -16,6 +16,7 @@ from gdsfactory.typings import (
     ComponentSpecsOrComponents,
     CrossSectionSpec,
     Spacing,
+    Port,
     Ports,
     PortsDict,
 )
@@ -86,18 +87,18 @@ def generate_experiment(
     Returns:
         (gf.Component): experiment
     """
-    dut_i = dut() if isinstance(dut, ComponentSpec) else dut
+    dut_i = dut() if isinstance(dut, Callable) else dut
     if pad_array is not None:
-        pads_i = pad_array() if isinstance(pad_array, ComponentSpec) else pad_array
+        pads_i = pad_array() if isinstance(pad_array, Callable) else pad_array
         # check appropriate number of ports on pad_array and dut
-        if len(dut.ports) != len(pad_array.ports):
+        if len(dut_i.ports) != len(pads_i.ports):
             raise ValueError(
                 f"DUT ({len(dut.ports)} ports) and pad array ({len(pad_array.ports)} ports) should have the same number of ports."
             )
     # check that length of port groupings is correct
-    if len(dut.ports) != 0:
+    if len(dut_i.ports) != 0:
         num_assigned_ports = sum(len(group) for group in port_groupings)
-        if num_assigned_ports != len(dut.ports):
+        if num_assigned_ports != len(dut_i.ports):
             raise ValueError(
                 f"invalid number of port groupings: got {num_assigned_ports}, expected {len(dut.ports)} based on number of ports on DUT"
             )
@@ -125,19 +126,22 @@ def generate_experiment(
     pads_ref.move(pad_offset)
 
     # get sorted list of ports
-    def _get_port_direction(component: gf.Component) -> PortsDict:
+    def _get_port_direction(port: Port) -> str:
+        angle = port.orientation % 360
+        if angle <= 45 or angle >= 315:
+            return "E"
+        elif angle <= 135 and angle >= 45:
+            return "N"
+        elif angle <= 225 and angle >= 135:
+            return "W"
+        else:
+            return "S"
+
+    def _get_component_port_direction(component: gf.Component) -> PortsDict:
         ports = {x: [] for x in ["E", "N", "W", "S"]}
         # group by direction
         for p in component.ports:
-            angle = p.orientation % 360
-            if angle <= 45 or angle >= 315:
-                ports["E"].append(p)
-            elif angle <= 135 and angle >= 45:
-                ports["N"].append(p)
-            elif angle <= 225 and angle >= 135:
-                ports["W"].append(p)
-            else:
-                ports["S"].append(p)
+            ports[_get_port_direction(p)].append(p)
         return ports
 
     def _sort_ports(
@@ -165,36 +169,55 @@ def generate_experiment(
     }
 
     # sort dut cw
-    dut_ports = _sort_ports(_get_port_direction(dut), sort_cw, ("E", "N", "W", "S"))
+    dut_ports = _sort_ports(
+        _get_component_port_direction(dut_i), sort_cw, ("W", "N", "E", "S")
+    )
     # sort pads ccw
     pad_ports = _sort_ports(
-        _get_port_direction(pad_array), sort_ccw, ("W", "S", "N", "E")
+        _get_component_port_direction(pads_i), sort_ccw, ("E", "S", "W", "N")
     )
+
+    print(f"{dut_ports=}")
+    print(f"{pad_ports=}")
     # create mapping
-    dut_pad_map = {dp: pp for (dp, pp) in zip(dut_ports, pad_ports)}
+    dut_pad_map = {dp.name: pp for (dp, pp) in zip(dut_ports, pad_ports)}
 
     problem_groups = set([])
 
-    for _ in range(retries):
+    for _ in range(retries + 1):
         routes = gf.Component()
         routes.add_ref(experiment)
         # for each grouping, try route_bundle, if that fails use route_bundle_sbend
         complete = True
         for gid, group in enumerate(port_groupings):
             # get list of pad ports
-            dut_group = group
-            pad_group = [dut_pad_map[dut_pad] for dut_pad in dut_group]
+            dut_group = [dut_i.ports[p] for p in group]
+            pad_group = [dut_pad_map[p] for p in group]
             if gid not in problem_groups:
                 try:
-                    gf.routing.route_bundle(
-                        routes,
-                        dut_group,
-                        pad_group,
-                        cross_section=route_cross_section[gid],
-                        taper=route_tapers[gid],
-                        on_collision="error",
-                        router="optical",
-                    )
+                    # loop over each orientation
+                    ports = {x: [[], []] for x in ["N", "E", "S", "W"]}
+                    for d, p in zip(dut_group, pad_group):
+                        direction = _get_port_direction(d)
+                        ports[direction][0].append(d)
+                        ports[direction][1].append(p)
+                    print(ports)
+                    for direction, portmap in ports.items():
+                        if len(portmap[0]) == 0:
+                            continue
+                        gf.routing.route_bundle(
+                            routes,
+                            portmap[0],
+                            portmap[1],
+                            cross_section=route_cross_section[gid],
+                            taper=(
+                                route_tapers[gid] if route_tapers is not None else None
+                            ),
+                            route_width=None,
+                            auto_taper=True,
+                            on_collision="error",
+                            router="optical",
+                        )
                 except RuntimeError:
                     problem_groups.add(gid)
                     complete = False
