@@ -35,14 +35,17 @@ def hyper_taper(
     narrow = narrow_section
     if wide < narrow:
         wide, narrow = narrow, wide
-    x_list = np.arange(0, taper_length + 0.1, 0.1)
-    x_list2 = np.arange(taper_length, -0.1, -0.1)
+    dx = narrow_section / 1000
+    x_list = np.arange(0, taper_length, dx)
+    x_list2 = np.arange(taper_length, 0, -dx)
     pts = []
 
     a = np.arccosh(wide / narrow) / taper_length
 
     for x in x_list:
         pts.append((x, np.cosh(a * x) * narrow / 2))
+    pts.append((taper_length, wide / 2))
+    pts.append((taper_length, -wide / 2))
     for y in x_list2:
         pts.append((y, -np.cosh(a * y) * narrow / 2))
     HT.add_polygon(pts, layer=layer)

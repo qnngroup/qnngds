@@ -177,10 +177,40 @@ def generate_experiment(
         _get_component_port_direction(pads_i), sort_ccw, ("E", "S", "W", "N")
     )
 
-    print(f"{dut_ports=}")
-    print(f"{pad_ports=}")
     # create mapping
     dut_pad_map = {dp.name: pp for (dp, pp) in zip(dut_ports, pad_ports)}
+
+    # shift pad ports if it's possible to do a straight route between dut and pad without exceeding pad extent
+    for gid, group in enumerate(port_groupings):
+        for p in group:
+            dut_port = dut_i.ports[p]
+            pad_port = dut_pad_map[p]
+            if (dut_port.orientation - pad_port.orientation) % 360 == 180:
+                # ports are facing each other
+                w_route = route_cross_section[gid].width
+                w_pad = pad_port.width
+                dw = w_pad - w_route
+                dwidth = 0
+                center = (pad_port.x, pad_port.y)
+                if dut_port.orientation % 180 == 0:
+                    # route along x
+                    if pad_port.y - dw / 2 <= dut_port.y <= pad_port.y + dw / 2:
+                        # change port location on pad
+                        dwidth = -2 * abs(dut_port.y - pad_port.y)
+                        center = (pad_port.x, dut_port.y)
+                else:
+                    # route along y
+                    if pad_port.x - dw / 2 <= dut_port.x <= pad_port.x + dw / 2:
+                        dwidth = -2 * abs(dut_port.x - pad_port.x)
+                        center = (dut_port.x, pad_port.y)
+                dut_pad_map[p] = Port(
+                    name=pad_port.name,
+                    width=pad_port.width + dwidth,
+                    center=center,
+                    orientation=pad_port.orientation,
+                    layer=pad_port.layer,
+                    port_type=pad_port.port_type,
+                )
 
     problem_groups = set([])
 
@@ -213,7 +243,6 @@ def generate_experiment(
                             taper=(
                                 route_tapers[gid] if route_tapers is not None else None
                             ),
-                            route_width=None,
                             auto_taper=True,
                             on_collision="error",
                             router="optical",
@@ -223,11 +252,18 @@ def generate_experiment(
                     complete = False
                     break
             else:
+                # add autotapers and regenerate port groups
+                dut_group_new = gf.routing.auto_taper.add_auto_tapers(
+                    routes, dut_group, route_cross_section[gid]
+                )
+                pad_group_new = gf.routing.auto_taper.add_auto_tapers(
+                    routes, pad_group, route_cross_section[gid]
+                )
                 gf.routing.route_bundle_sbend(
                     routes,
-                    dut_group,
-                    pad_group,
-                    enforce_port_ordering=False,
+                    pad_group_new,
+                    dut_group_new,
+                    enforce_port_ordering=True,
                 )
         if complete:
             return routes
