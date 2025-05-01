@@ -182,7 +182,7 @@ def slotted(
     slots = gf.Component()
     slots.add_ref(slot, columns=n_slot, rows=1, column_pitch=slot_pitch, row_pitch=0)
     slots.move(slots.center, (0, 0))
-    D.add_ref(gf.boolean(base, slots, "-", layer=(1, 0)))
+    D.add_ref(gf.boolean(base, slots, "-", layer=base.layers[0]))
 
     D.add_ports(base.ports)
 

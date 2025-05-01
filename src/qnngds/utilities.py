@@ -231,7 +231,6 @@ def generate_experiment(
                         direction = _get_port_direction(d)
                         ports[direction][0].append(d)
                         ports[direction][1].append(p)
-                    print(ports)
                     for direction, portmap in ports.items():
                         if len(portmap[0]) == 0:
                             continue
