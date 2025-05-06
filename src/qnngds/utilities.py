@@ -23,12 +23,75 @@ from gdsfactory.typings import (
 
 
 def union(component: gf.Component) -> gf.Component:
+    """Merge all polygons within a Component by layer
+
+    Args:
+        component (gf.Component): component to merge
+
+    Returns:
+        gf.Component: the merged component
+    """
     comp_union = gf.Component()
     for layer in component.layers:
         temp = gf.Component()
         temp.add_polygon(component.get_region(layer), layer=layer)
         comp_union << gf.boolean(temp, temp, operation="or", layer=layer)
     return comp_union
+
+
+def outline(
+    component: gf.Component,
+    outline_layers: dict[tuple, float] = {},
+) -> gf.Component:
+    """Outline polygons within component by layer.
+
+    Args:
+        component (gf.Component): component to merge
+        outline_layers (dict[tuple, float]): map of desired outline amount per layer. If a layer is omitted, it will not be outlined
+
+    Returns:
+        gf.Component: the outlined component
+    """
+    comp_outlined = gf.Component()
+    for layer in component.layers:
+        r = component.get_region(layer=layer)
+        if layer not in outline_layers.keys():
+            comp_outlined.add_polygon(r, layer=layer)
+        else:
+            outline = outline_layers[layer] / gf.kcl.dbu
+            if outline > 0:
+                r_expanded = r.sized(outline)
+            else:
+                raise ValueError("outline must be greater than zero")
+            comp_outlined.add_polygon(r_expanded - r, layer=layer)
+    return comp_outlined
+
+
+def invert(
+    component: gf.Component,
+    ext_bbox_layers: dict[tuple, float] = {},
+) -> gf.Component:
+    """Outline polygons within component by layer.
+
+    Args:
+        component (gf.Component): component to merge
+        ext_bbox_layers (dict[tuple, float]): amount to expand bounding box for each layer. If a layer is omitted, it will not be inverted.
+
+    Returns:
+        gf.Component: the inverted component
+    """
+    comp_inverted = gf.Component()
+    for layer in component.layers:
+        r = component.get_region(layer=layer)
+        if layer not in ext_bbox_layers.keys():
+            comp_inverted.add_polygon(r, layer=layer)
+        else:
+            ext = ext_bbox_layers[layer]
+            r_expanded = gf.components.shapes.bbox(
+                component, top=ext, bottom=ext, left=ext, right=ext, layer=layer
+            ).get_region(layer=layer)
+            comp_inverted.add_polygon(r_expanded - r, layer=layer)
+    return comp_inverted
 
 
 def flex_grid(

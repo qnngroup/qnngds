@@ -414,17 +414,10 @@ def resolution_test(
     RES_TEST.move(RES_TEST.center, (0, 0))
 
     if outline is not None:
-        r = RES_TEST.get_region(layer=layer)
-        r_sized = (
-            r.sized(outline / gf.kcl.dbu)
-            if outline > 0
-            else gf.components.shapes.bbox(
-                RES_TEST, top=5, bottom=5, left=5, right=5, layer=layer
-            ).get_region(layer=layer)
-        )
-        r_outline = r_sized - r
-        RES_TEST = gf.Component()
-        RES_TEST.add_polygon(r_outline, layer=layer)
+        if outline > 0:
+            RES_TEST = qu.outline(RES_TEST, {layer: outline})
+        else:
+            RES_TEST = qu.invert(RES_TEST, {layer: 5})
 
     RES_TESTu = gf.Component()
     RES_TESTu << qu.union(RES_TEST)
