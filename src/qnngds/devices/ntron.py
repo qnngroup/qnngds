@@ -163,7 +163,7 @@ def slotted(
         width=slot_pitch - slot_width,
         pitch=slot_pitch,
         length=slot_length / 2,
-        turn_ratio=4,
+        turn_ratio=2,
         num_pts=300,
         layer=(1, 0),
     )
