@@ -278,8 +278,8 @@ def generate_experiment(
     problem_groups = set([])
 
     for _ in range(retries + 1):
-        routes = gf.Component()
-        routes.add_ref(experiment)
+        routed = gf.Component()
+        routed.add_ref(experiment)
         # for each grouping, try route_bundle, if that fails use route_bundle_sbend
         complete = True
         for gid, group in enumerate(port_groupings):
@@ -298,7 +298,7 @@ def generate_experiment(
                         if len(portmap[0]) == 0:
                             continue
                         gf.routing.route_bundle(
-                            routes,
+                            routed,
                             portmap[0],
                             portmap[1],
                             cross_section=route_cross_section[gid],
@@ -316,17 +316,17 @@ def generate_experiment(
             else:
                 # add autotapers and regenerate port groups
                 dut_group_new = gf.routing.auto_taper.add_auto_tapers(
-                    routes, dut_group, route_cross_section[gid]
+                    routed, dut_group, route_cross_section[gid]
                 )
                 pad_group_new = gf.routing.auto_taper.add_auto_tapers(
-                    routes, pad_group, route_cross_section[gid]
+                    routed, pad_group, route_cross_section[gid]
                 )
                 gf.routing.route_bundle_sbend(
-                    routes,
+                    routed,
                     pad_group_new,
                     dut_group_new,
                     enforce_port_ordering=True,
                 )
         if complete:
-            return routes
+            return routed
     raise RuntimeError(f"failed to route design after {retries} iterations")
