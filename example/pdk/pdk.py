@@ -5,34 +5,34 @@ from gdsfactory.get_factories import get_cells
 
 from pdk import components
 from pdk.cross_section import cross_sections
-from pdk.layer_map import EbeamLayerMap
+from pdk.layer_map import LAYERS
 
 layer_transitions = {
-    (EbeamLayerMap.EBEAM_FINE, EbeamLayerMap.EBEAM_COARSE): partial(
+    (LAYERS.EBEAM_FINE, LAYERS.EBEAM_COARSE): partial(
         components.ebeam_fine_to_coarse,
-        layer1=EbeamLayerMap.EBEAM_FINE,
-        layer2=EbeamLayerMap.EBEAM_COARSE,
+        layer1=LAYERS.EBEAM_FINE,
+        layer2=LAYERS.EBEAM_COARSE,
     ),
-    (EbeamLayerMap.EBEAM_COARSE, EbeamLayerMap.EBEAM_FINE): partial(
+    (LAYERS.EBEAM_COARSE, LAYERS.EBEAM_FINE): partial(
         components.ebeam_fine_to_coarse,
-        layer2=EbeamLayerMap.EBEAM_FINE,
-        layer1=EbeamLayerMap.EBEAM_COARSE,
+        layer2=LAYERS.EBEAM_FINE,
+        layer1=LAYERS.EBEAM_COARSE,
     ),
-    EbeamLayerMap.EBEAM_FINE: partial(
+    LAYERS.EBEAM_FINE: partial(
         components.hyper_taper,
-        layer1=EbeamLayerMap.EBEAM_FINE,
-        layer2=EbeamLayerMap.EBEAM_FINE,
+        layer1=LAYERS.EBEAM_FINE,
+        layer2=LAYERS.EBEAM_FINE,
     ),
-    EbeamLayerMap.EBEAM_COARSE: partial(
+    LAYERS.EBEAM_COARSE: partial(
         components.hyper_taper,
-        layer1=EbeamLayerMap.EBEAM_COARSE,
-        layer2=EbeamLayerMap.EBEAM_COARSE,
+        layer1=LAYERS.EBEAM_COARSE,
+        layer2=LAYERS.EBEAM_COARSE,
     ),
 }
 
 PDK = gf.Pdk(
     name="test_pdk",
-    layers=EbeamLayerMap,
+    layers=LAYERS,
     cross_sections=cross_sections,
     layer_transitions=layer_transitions,
     cells=get_cells(components),

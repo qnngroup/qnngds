@@ -15,10 +15,11 @@ from gdsfactory.typings import (
     ComponentSpecOrComponent,
     ComponentSpecsOrComponents,
     CrossSectionSpec,
-    Spacing,
+    Layer,
     Port,
     Ports,
     PortsDict,
+    Spacing,
 )
 
 
@@ -37,6 +38,28 @@ def union(component: gf.Component) -> gf.Component:
         temp.add_polygon(component.get_region(layer), layer=layer)
         comp_union << gf.boolean(temp, temp, operation="or", layer=layer)
     return comp_union
+
+
+def layers_equal(layer1: Layer, layer2: Layer) -> bool:
+    """Checks if two layers are equal"""
+    if layer1 == layer2:
+        return True
+    if isinstance(layer1, tuple) and isinstance(layer2, gf.LayerEnum):
+        return (layer1[0] == layer2.layer) and (layer1[1] == layer2.datatype)
+    if isinstance(layer2, tuple) and isinstance(layer1, gf.LayerEnum):
+        return (layer2[0] == layer1.layer) and (layer2[1] == layer1.datatype)
+    return False
+
+
+def get_outline_layers(layer_map: gf.LayerEnum) -> dict[tuple, float]:
+    """Get dictionary maping a layer tuple to the desired outline amount as specified by the LayerMap"""
+    # outline
+    outline_layers = {}
+    for layer in layer_map:
+        ol = layer_map.outline(layer)
+        if ol > 0:
+            outline_layers[tuple(layer)] = ol
+    return outline_layers
 
 
 def outline(
@@ -70,8 +93,10 @@ def outline(
                     port_type="optical",
                 )
             )
-            ext.connect(port=ext.ports["o3"], other=port)
-            new_ports.append(ext.ports["o1"])
+            ext.connect(port=ext.ports["o1"], other=port)
+            p = ext.ports["o3"]
+            p.name = port.name
+            new_ports.append(p)
             processed_ports.append(port)
 
     new_ports += [p for p in comp.ports if p not in processed_ports]
@@ -80,7 +105,6 @@ def outline(
         if layer not in outline_layers.keys():
             comp_outlined.add_polygon(r, layer=layer)
         else:
-            print(f"outlining layer {layer}")
             outline = outline_layers[layer] / gf.kcl.dbu
             r_expanded = r.sized(outline)
             comp_outlined.add_polygon(
@@ -209,15 +233,9 @@ def generate_experiment(
     experiment = gf.Component()
 
     # figure out which layers to outline
-    pdk_layer_map = gf.get_active_pdk().layers
-    outline_layers = {}
-    for layer in pdk_layer_map:
-        ol = pdk_layer_map.outline(layer)
-        if ol > 0:
-            outline_layers[tuple(layer)] = ol
+    outline_layers = get_outline_layers(gf.get_active_pdk().layers)
 
     # outline and add DUT
-    print(outline_layers)
     dut_ref = experiment.add_ref(outline(dut_i, outline_layers))
     dut_ref.move(dut_offset)
     if pad_array is None:
