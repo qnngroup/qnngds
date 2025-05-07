@@ -21,7 +21,7 @@ def ebeam(
             width=width, offset=0, layer=layer, hidden=True, port_names=("o1", "o2")
         )
         section = gf.CrossSection(
-            sections=(ct, cb, c0),
+            sections=(c0, ct, cb),
             radius=radius,
             radius_min=radius_min,
             **kwargs,

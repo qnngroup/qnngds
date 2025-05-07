@@ -28,6 +28,9 @@ slotted_ntron = qg.devices.ntron.slotted(
 
 pad_array = partial(pad_tri, size=(200, 200), yspace=250, layer="EBEAM_COARSE")
 
+# c = gf.get_component("straight")
+# c.show()
+
 c = qg.utilities.generate_experiment(
     dut=slotted_ntron,
     pad_array=pad_array,

@@ -74,8 +74,8 @@ def hyper_taper(
 
 @gf.cell
 def ebeam_fine_to_coarse(
-    width1: float = 5.0,
-    width2: float = 10.0,
+    width1: float = 2.0,
+    width2: float = 5.0,
     layer1: LayerSpec = (1, 0),
     layer2: LayerSpec = (2, 0),
 ) -> gf.Component:
