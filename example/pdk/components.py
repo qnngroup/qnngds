@@ -1,10 +1,7 @@
 import gdsfactory as gf
 
-from functools import partial
 from gdsfactory.typings import LayerSpec
 import qnngds as qg
-
-from pdk.cross_section import ebeam
 
 
 @gf.cell
@@ -108,8 +105,4 @@ def ebeam_fine_to_coarse(
 
 
 bend_euler = gf.components.bends.bend_euler
-bend_euler_all_angle = partial(
-    gf.components.bends.bend_euler_all_angle, cross_section=ebeam
-)
-bend_s = partial(gf.components.bends.bend_s, cross_section=ebeam)
 straight = gf.components.straight

@@ -53,17 +53,41 @@ def outline(
         gf.Component: the outlined component
     """
     comp_outlined = gf.Component()
-    for layer in component.layers:
+    # extend ports
+    comp_extended = gf.Component()
+    comp = comp_extended.add_ref(component)
+    for k, v in outline_layers.items():
+        if v <= 0:
+            raise ValueError(f"outline must be greater than zero, got {outline_layers}")
+    new_ports = []
+    processed_ports = []
+    for layer in outline_layers.keys():
+        for port in gf.port.select_ports(comp, layer):
+            ext = comp_extended.add_ref(
+                gf.components.compass(
+                    size=(outline_layers[layer], port.width),
+                    layer=port.layer,
+                    port_type="optical",
+                )
+            )
+            ext.connect(port=ext.ports["o3"], other=port)
+            new_ports.append(ext.ports["o1"])
+            processed_ports.append(port)
+
+    new_ports += [p for p in comp.ports if p not in processed_ports]
+    for layer in comp_extended.layers:
         r = component.get_region(layer=layer)
         if layer not in outline_layers.keys():
             comp_outlined.add_polygon(r, layer=layer)
         else:
+            print(f"outlining layer {layer}")
             outline = outline_layers[layer] / gf.kcl.dbu
-            if outline > 0:
-                r_expanded = r.sized(outline)
-            else:
-                raise ValueError("outline must be greater than zero")
-            comp_outlined.add_polygon(r_expanded - r, layer=layer)
+            r_expanded = r.sized(outline)
+            comp_outlined.add_polygon(
+                r_expanded - comp_extended.get_region(layer=layer), layer=layer
+            )
+    # add ports
+    comp_outlined.add_ports(new_ports)
     return comp_outlined
 
 
@@ -132,6 +156,8 @@ def generate_experiment(
     route_tapers: Sequence[ComponentSpec] | None = None,
     dut_offset: tuple[float, float] = (0, 0),
     pad_offset: tuple[float, float] = (0, 0),
+    label: ComponentSpecOrComponent = gf.components.texts.text,
+    label_offset: tuple[float, float] = (-100, -100),
     retries: int = 10,
 ) -> gf.Component:
     """Construct an experiment from a device/circuit (gf.Component).
@@ -181,12 +207,30 @@ def generate_experiment(
             raise ValueError("cannot route pad array to DUT with zero ports")
 
     experiment = gf.Component()
-    dut_ref = experiment.add_ref(dut_i)
+
+    # figure out which layers to outline
+    pdk_layer_map = gf.get_active_pdk().layers
+    outline_layers = {}
+    for layer in pdk_layer_map:
+        ol = pdk_layer_map.outline(layer)
+        if ol > 0:
+            outline_layers[tuple(layer)] = ol
+
+    # outline and add DUT
+    print(outline_layers)
+    dut_ref = experiment.add_ref(outline(dut_i, outline_layers))
     dut_ref.move(dut_offset)
     if pad_array is None:
         return experiment
-    pads_ref = experiment.add_ref(pads_i)
+
+    # outline and add pads
+    pads_ref = experiment.add_ref(outline(pads_i, outline_layers))
     pads_ref.move(pad_offset)
+
+    # add text label (don't outline)
+    label_i = label() if isinstance(label, Callable) else label
+    label_ref = experiment.add_ref(label_i)
+    label_ref.move(label_offset)
 
     # get sorted list of ports
     def _get_port_direction(port: Port) -> str:
@@ -297,18 +341,29 @@ def generate_experiment(
                     for direction, portmap in ports.items():
                         if len(portmap[0]) == 0:
                             continue
-                        gf.routing.route_bundle(
-                            routed,
-                            portmap[0],
-                            portmap[1],
-                            cross_section=route_cross_section[gid],
-                            taper=(
-                                route_tapers[gid] if route_tapers is not None else None
-                            ),
-                            auto_taper=True,
-                            on_collision="error",
-                            router="optical",
-                        )
+                        try:
+                            gf.routing.route_bundle(
+                                routed,
+                                portmap[0],
+                                portmap[1],
+                                cross_section=route_cross_section[gid],
+                                taper=(
+                                    route_tapers[gid]
+                                    if route_tapers is not None
+                                    else None
+                                ),
+                                auto_taper=True,
+                                on_collision="error",
+                                router="optical",
+                            )
+                        except ValueError as e:
+                            error_msg = f"Got error from gdsfactory: {e}\n"
+                            error_msg += "Make sure to include the necessary routing components in your"
+                            error_msg += " PDK components.py (e.g. bend_euler, bend_euler_all_angle, bend_s,"
+                            error_msg += " straight).\nSee the above error message for more details. See "
+                            error_msg += "qnngds/example/pdk/ for an example."
+                            raise ValueError(error_msg) from e
+
                 except RuntimeError:
                     problem_groups.add(gid)
                     complete = False
