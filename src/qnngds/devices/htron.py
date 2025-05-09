@@ -5,7 +5,9 @@ import numpy as np
 
 import qnngds as qg
 
-from gdsfactory.typings import LayerSpec
+import qnngds.devices.nanowire as nanowire
+
+from gdsfactory.typings import LayerSpec, ComponentSpec
 from typing import Union
 
 
@@ -28,7 +30,7 @@ def planar(
         gap (int or float): Spacing between gate and channel in microns
         gate_length (int or float): Length of superconducting gate in microns
         channel_length (int or float): Length of superconducting channel in microns
-        layer (LayerSpec): GDS layer tuple (layer, type)
+        layer (LayerSpec): GDS layer
 
     Returns
         gf.Component: a single planar hTron
@@ -59,30 +61,20 @@ def planar(
         ports.append(taper_lower.ports["e2"])
         ports.append(taper_upper.ports["e2"])
     for p, port in enumerate(ports):
-        HTRON.add_port(name=f"e{p}", port=port)
+        HTRON.add_port(name=f"e{p + 1}", port=port)
     return HTRON
 
 
 @gf.cell
 def multilayer(
-    wire_width: Union[int, float] = 0.3,
-    gate_width: Union[int, float] = 0.1,
-    channel_width: Union[int, float] = 0.2,
-    gate_length: Union[int, float] = 0.01,
-    channel_length: Union[int, float] = 0.01,
-    gate_layer: LayerSpec = (1, 0),
-    channel_layer: LayerSpec = (2, 0),
+    channel_spec: ComponentSpec = nanowire.variable_length,
+    gate_spec: ComponentSpec = nanowire.variable_length,
 ) -> gf.Component:
     """Create a multilayer hTron.
 
     Parameters
-        wire_width (int or float): Width of routing wires in microns
-        gate_width (int or float): Width of superconducting gate in microns
-        channel_width (int or float): Width of superconducting channel in microns
-        gate_length (int or float): Length of superconducting gate in microns
-        channel_length (int or float): Length of superconducting channel in microns
-        gate_layer (LayerSpec): GDS layer tuple for the gate (layer, type)
-        channel_layer (LayerSpec): GDS layer tuple for the channel (layer, type)
+        channel_spec (ComponentSpec): callable function that generates a gf.Component for the channel nanowire
+        gate_spec (ComponentSpec): callable function that generates a gf.Component for the gate nanowire
 
     Returns
         gf.Component: a single planar hTron
@@ -90,22 +82,12 @@ def multilayer(
 
     HTRON = gf.Component()
 
-    channel = HTRON << qg.devices.nanowire.variable_length(
-        constr_width=channel_width,
-        wire_width=wire_width,
-        length=channel_length,
-        layer=channel_layer,
-    )
-    gate = HTRON << qg.devices.nanowire.variable_length(
-        constr_width=gate_width,
-        wire_width=wire_width,
-        length=gate_length,
-        layer=gate_layer,
-    )
+    channel = HTRON << channel_spec()
+    gate = HTRON << gate_spec()
     gate.rotate(90)
     gate.move(gate.center, channel.center)
     for p, port in enumerate(gate.ports):
-        HTRON.add_port(name=f"g{p}", port=port)
+        HTRON.add_port(name=f"g{p + 1}", port=port)
     for p, port in enumerate(channel.ports):
-        HTRON.add_port(name=f"c{p}", port=port)
+        HTRON.add_port(name=f"c{p + 1}", port=port)
     return HTRON

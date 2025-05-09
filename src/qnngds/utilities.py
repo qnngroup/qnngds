@@ -11,13 +11,11 @@ from typing import Literal
 from collections.abc import Callable, Sequence
 
 from gdsfactory.typings import (
-    ComponentSpec,
     ComponentSpecOrComponent,
     ComponentSpecsOrComponents,
     CrossSectionSpec,
     Layer,
     Port,
-    Ports,
     PortsDict,
     Spacing,
 )
@@ -44,10 +42,16 @@ def layers_equal(layer1: Layer, layer2: Layer) -> bool:
     """Checks if two layers are equal"""
     if layer1 == layer2:
         return True
+    if isinstance(layer1, str) and isinstance(layer2, gf.LayerEnum):
+        return layer1 == str(layer2)
     if isinstance(layer1, tuple) and isinstance(layer2, gf.LayerEnum):
         return (layer1[0] == layer2.layer) and (layer1[1] == layer2.datatype)
     if isinstance(layer2, tuple) and isinstance(layer1, gf.LayerEnum):
         return (layer2[0] == layer1.layer) and (layer2[1] == layer1.datatype)
+    if type(layer1) is not type(layer2):
+        raise ValueError(
+            f"could not compare layer1 {layer1} of type {type(layer1)} with layer2 {layer2} of type {type(layer2)}"
+        )
     return False
 
 
@@ -172,30 +176,44 @@ def flex_grid(
     return c
 
 
+class RouteGroup:
+    """Stores information for routing DUTs to pads.
+
+    Stores a cross section and mapping of DUT ports to optional pad
+    ports. If a DUT port is mapped to None, then a pad port
+    will be automatically assigned in generate_experiment
+    """
+
+    def __init__(self, cross_section: CrossSectionSpec, port_mapping: dict | tuple):
+        self.cross_section = cross_section
+        if isinstance(port_mapping, dict):
+            self.port_mapping = port_mapping
+        else:
+            self.port_mapping = {p: None for p in port_mapping}
+
+
 def generate_experiment(
     dut: ComponentSpecOrComponent = gf.components.shapes.rectangle,
     pad_array: ComponentSpecOrComponent = gf.components.shapes.rectangle,
-    port_groupings: Sequence[Ports] | None = None,
-    route_cross_section: Sequence[CrossSectionSpec] | None = None,
-    route_tapers: Sequence[ComponentSpec] | None = None,
+    label: ComponentSpecOrComponent | None = gf.components.texts.text,
+    route_groups: Sequence[RouteGroup] | None = None,
     dut_offset: tuple[float, float] = (0, 0),
     pad_offset: tuple[float, float] = (0, 0),
-    label: ComponentSpecOrComponent = gf.components.texts.text,
-    label_offset: tuple[float, float] = (-100, -100),
+    label_offset: tuple[float, float] | None = (-100, -100),
     retries: int = 10,
 ) -> gf.Component:
     """Construct an experiment from a device/circuit (gf.Component).
 
-    Includes dicing marks, text, pads, and routing to connect pads to devices
+    Includes text, pads, and routing to connect pads to devices
 
     Parameters:
         dut (ComponentSpec or Component): finished device to be connected to pads
         pad_array (ComponentSpec or Component or None): pad array to connect to device
-        port_groupings (Sequence[Ports] or None): which sets of ports to route together (e.g. if they're on a different layer)
-        route_cross_section (Sequence[CrossSectionSpec] or None): mapping of port collection to a cross section
-        route_tapers (Sequence[ComponentSpec] or None): mapping of port collection to a taper
+        label (ComponentSpecOrComponent or None): text label or factory.
+        route_groups (Sequence[RouteGroup] or None): how to route DUT to pads
         dut_offset (tuple[float, float]): x,y offset for dut (mostly useful for linear pad arrays)
         pad_offset (tuple[float, float]): x,y offset for pad array (mostly useful for linear pad arrays)
+        label_offset (tuple[float, float] or None): x,y offset of label
         retries (int): how many times to try rerouting (may need to be larger for many port groupings)
     Returns:
         (gf.Component): experiment
@@ -208,25 +226,16 @@ def generate_experiment(
             raise ValueError(
                 f"DUT ({len(dut.ports)} ports) and pad array ({len(pad_array.ports)} ports) should have the same number of ports."
             )
-    # check that length of port groupings is correct
-    if len(dut_i.ports) != 0:
-        num_assigned_ports = sum(len(group) for group in port_groupings)
+    # check that number of DUT ports assigned in route_groups is correct
+    if len(dut_i.ports) != 0 and route_groups is not None:
+        num_assigned_ports = sum(
+            len(group.port_mapping.keys()) for group in route_groups
+        )
         if num_assigned_ports != len(dut_i.ports):
             raise ValueError(
                 f"invalid number of port groupings: got {num_assigned_ports}, expected {len(dut.ports)} based on number of ports on DUT"
             )
-        # check route_cross_section and route_tapers have the right length
-        if route_cross_section is not None and len(route_cross_section) != len(
-            port_groupings
-        ):
-            raise ValueError(
-                "invalid number of cross sections, must be a one-to-one mapping with port_groupings"
-            )
-        if route_tapers is not None and len(route_tapers) != len(port_groupings):
-            raise ValueError(
-                "invalid number of tapers, must be a one-to-one mapping with port_groupings"
-            )
-    else:
+    elif route_groups is not None:
         if pad_array is not None:
             raise ValueError("cannot route pad array to DUT with zero ports")
 
@@ -246,9 +255,10 @@ def generate_experiment(
     pads_ref.move(pad_offset)
 
     # add text label (don't outline)
-    label_i = label() if isinstance(label, Callable) else label
-    label_ref = experiment.add_ref(label_i)
-    label_ref.move(label_offset)
+    if label is not None:
+        label_i = label() if isinstance(label, Callable) else label
+        label_ref = experiment.add_ref(label_i)
+        label_ref.move(label_offset)
 
     # get sorted list of ports
     def _get_port_direction(port: Port) -> str:
@@ -302,17 +312,54 @@ def generate_experiment(
         _get_component_port_direction(pads_i), sort_ccw, ("E", "S", "W", "N")
     )
 
-    # create mapping
-    dut_pad_map = {dp.name: pp for (dp, pp) in zip(dut_ports, pad_ports)}
+    # create mapping from dut ports to pad ports
+    # first define route groups if it isn't initialized
+    dut_pad_map = {}
+    if route_groups is None:
+        try:
+            cross_section = gf.get_active_pdk().get_cross_section("default")
+        except ValueError as e:
+            error_msg = "'default' cross section required if route_groups is None."
+            error_msg += "Please either specify the desired cross section by defining"
+            error_msg += (
+                "route_groups, or define a 'default' cross section in the current Pdk"
+            )
+            raise ValueError(error_msg) from e
+        route_groups = (
+            RouteGroup(
+                cross_section=cross_section,
+                port_mapping=tuple(p.name for p in dut_ports),
+            ),
+        )
+    else:
+        # reserve routes for any that are defined in route_groups
+        for group in route_groups:
+            for dut_port_name, pad_port_name in group.port_mapping.items():
+                if pad_port_name is not None:
+                    pad_port_index = next(
+                        i
+                        for i in range(len(pad_ports))
+                        if pad_ports[i].name == pad_port_name
+                    )
+                    dut_port_index = next(
+                        i
+                        for i in range(len(dut_ports))
+                        if dut_ports[i].name == dut_port_name
+                    )
+                    dut_pad_map[dut_port_name] = pad_ports[pad_port_index]
+                    pad_ports.pop(pad_port_index)
+                    dut_ports.pop(dut_port_index)
+    # add remaining ports
+    dut_pad_map |= {dp.name: pp for (dp, pp) in zip(dut_ports, pad_ports)}
 
     # shift pad ports if it's possible to do a straight route between dut and pad without exceeding pad extent
-    for gid, group in enumerate(port_groupings):
-        for p in group:
-            dut_port = dut_i.ports[p]
-            pad_port = dut_pad_map[p]
+    for gid, route_group in enumerate(route_groups):
+        for dut_port_name in route_group.port_mapping:
+            dut_port = dut_i.ports[dut_port_name]
+            pad_port = dut_pad_map[dut_port_name]
             if (dut_port.orientation - pad_port.orientation) % 360 == 180:
                 # ports are facing each other
-                w_route = route_cross_section[gid].width
+                w_route = route_group.cross_section.width
                 w_pad = pad_port.width
                 dw = w_pad - w_route
                 dwidth = 0
@@ -328,7 +375,7 @@ def generate_experiment(
                     if pad_port.x - dw / 2 <= dut_port.x <= pad_port.x + dw / 2:
                         dwidth = -2 * abs(dut_port.x - pad_port.x)
                         center = (dut_port.x, pad_port.y)
-                dut_pad_map[p] = Port(
+                dut_pad_map[dut_port_name] = Port(
                     name=pad_port.name,
                     width=pad_port.width + dwidth,
                     center=center,
@@ -339,15 +386,16 @@ def generate_experiment(
 
     problem_groups = set([])
 
+    # actually do routing
     for _ in range(retries + 1):
         routed = gf.Component()
         routed.add_ref(experiment)
         # for each grouping, try route_bundle, if that fails use route_bundle_sbend
         complete = True
-        for gid, group in enumerate(port_groupings):
+        for gid, route_group in enumerate(route_groups):
             # get list of pad ports
-            dut_group = [dut_i.ports[p] for p in group]
-            pad_group = [dut_pad_map[p] for p in group]
+            dut_group = [dut_i.ports[p] for p in route_group.port_mapping]
+            pad_group = [dut_pad_map[p] for p in route_group.port_mapping]
             if gid not in problem_groups:
                 try:
                     # loop over each orientation
@@ -359,28 +407,16 @@ def generate_experiment(
                     for direction, portmap in ports.items():
                         if len(portmap[0]) == 0:
                             continue
-                        try:
-                            gf.routing.route_bundle(
-                                routed,
-                                portmap[0],
-                                portmap[1],
-                                cross_section=route_cross_section[gid],
-                                taper=(
-                                    route_tapers[gid]
-                                    if route_tapers is not None
-                                    else None
-                                ),
-                                auto_taper=True,
-                                on_collision="error",
-                                router="optical",
-                            )
-                        except ValueError as e:
-                            error_msg = f"Got error from gdsfactory: {e}\n"
-                            error_msg += "Make sure to include the necessary routing components in your"
-                            error_msg += " PDK components.py (e.g. bend_euler, bend_euler_all_angle, bend_s,"
-                            error_msg += " straight).\nSee the above error message for more details. See "
-                            error_msg += "qnngds/example/pdk/ for an example."
-                            raise ValueError(error_msg) from e
+                        gf.routing.route_bundle(
+                            routed,
+                            portmap[0],
+                            portmap[1],
+                            cross_section=route_group.cross_section,
+                            taper=None,
+                            auto_taper=True,
+                            on_collision="error",
+                            router="optical",
+                        )
 
                 except RuntimeError:
                     problem_groups.add(gid)
@@ -389,10 +425,10 @@ def generate_experiment(
             else:
                 # add autotapers and regenerate port groups
                 dut_group_new = gf.routing.auto_taper.add_auto_tapers(
-                    routed, dut_group, route_cross_section[gid]
+                    routed, dut_group, route_group.cross_section
                 )
                 pad_group_new = gf.routing.auto_taper.add_auto_tapers(
-                    routed, pad_group, route_cross_section[gid]
+                    routed, pad_group, route_group.cross_section
                 )
                 gf.routing.route_bundle_sbend(
                     routed,

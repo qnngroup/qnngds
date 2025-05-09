@@ -25,7 +25,7 @@ def smooth(
         source_w (float): Width of the source region.
         drain_w (float): Width of the drain region.
         choke_shift (float): Shift of the choke region.
-        layer (LayerSpec): GDS layer tuple (layer, type)
+        layer (LayerSpec): GDS layer
 
     Returns:
         gf.Component: The ntron device.
@@ -95,7 +95,7 @@ def sharp(
         source_l (float): Length of the source region.
         drain_w (float): Width of the drain region.
         drain_l (float): Length of the drain region.
-        layer (LayerSpec): GDS layer tuple (layer, type)
+        layer (LayerSpec): GDS layer
 
     Returns:
         Device: The sharp ntron device.
