@@ -34,7 +34,7 @@ def smooth(
     D = gf.Component()
 
     choke = gf.components.superconductors.optimal_step(
-        gate_w, choke_w, symmetric=True, num_pts=100, layer=layer
+        gate_w, choke_w, symmetric=True, num_pts=500, layer=layer
     )
     k = D << choke
 
@@ -157,6 +157,8 @@ def slotted(
     """
     D = gf.Component()
     base = base_spec()
+    if n_slot == 0:
+        return base
 
     # use optimal hairpin as template for slot
     hairpin = gf.components.optimal_hairpin(

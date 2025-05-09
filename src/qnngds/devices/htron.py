@@ -3,20 +3,21 @@
 import gdsfactory as gf
 import numpy as np
 
-import qnngds.geometries as qg
+import qnngds as qg
 
+from gdsfactory.typings import LayerSpec
 from typing import Union
 
 
 @gf.cell
-def planar_hTron(
+def planar(
     wire_width: Union[int, float] = 0.3,
     gate_width: Union[int, float] = 0.1,
     channel_width: Union[int, float] = 0.2,
     gap: Union[int, float] = 0.02,
     gate_length: Union[int, float] = 0.01,
     channel_length: Union[int, float] = 0.01,
-    layer: tuple = (1, 0),
+    layer: LayerSpec = (1, 0),
 ) -> gf.Component:
     """Create a planar hTron.
 
@@ -27,7 +28,7 @@ def planar_hTron(
         gap (int or float): Spacing between gate and channel in microns
         gate_length (int or float): Length of superconducting gate in microns
         channel_length (int or float): Length of superconducting channel in microns
-        layer (tuple): GDS layer tuple (layer, type)
+        layer (LayerSpec): GDS layer tuple (layer, type)
 
     Returns
         gf.Component: a single planar hTron
@@ -46,7 +47,7 @@ def planar_hTron(
         )
         constr.center = [0, 0]
         constr.move([direction * (gap / 2 + width / 2), 0])
-        taper = qg.angled_taper(wire_width, width, 45, layer=layer)
+        taper = qg.geometries.angled_taper(wire_width, width, 45, layer=layer)
         taper_lower = HTRON << taper
         taper_upper = HTRON << taper
         if direction < 0:
@@ -59,4 +60,52 @@ def planar_hTron(
         ports.append(taper_upper.ports["e2"])
     for p, port in enumerate(ports):
         HTRON.add_port(name=f"e{p}", port=port)
+    return HTRON
+
+
+@gf.cell
+def multilayer(
+    wire_width: Union[int, float] = 0.3,
+    gate_width: Union[int, float] = 0.1,
+    channel_width: Union[int, float] = 0.2,
+    gate_length: Union[int, float] = 0.01,
+    channel_length: Union[int, float] = 0.01,
+    gate_layer: LayerSpec = (1, 0),
+    channel_layer: LayerSpec = (2, 0),
+) -> gf.Component:
+    """Create a multilayer hTron.
+
+    Parameters
+        wire_width (int or float): Width of routing wires in microns
+        gate_width (int or float): Width of superconducting gate in microns
+        channel_width (int or float): Width of superconducting channel in microns
+        gate_length (int or float): Length of superconducting gate in microns
+        channel_length (int or float): Length of superconducting channel in microns
+        gate_layer (LayerSpec): GDS layer tuple for the gate (layer, type)
+        channel_layer (LayerSpec): GDS layer tuple for the channel (layer, type)
+
+    Returns
+        gf.Component: a single planar hTron
+    """
+
+    HTRON = gf.Component()
+
+    channel = HTRON << qg.devices.nanowire.variable_length(
+        constr_width=channel_width,
+        wire_width=wire_width,
+        length=channel_length,
+        layer=channel_layer,
+    )
+    gate = HTRON << qg.devices.nanowire.variable_length(
+        constr_width=gate_width,
+        wire_width=wire_width,
+        length=gate_length,
+        layer=gate_layer,
+    )
+    gate.rotate(90)
+    gate.move(gate.center, channel.center)
+    for p, port in enumerate(gate.ports):
+        HTRON.add_port(name=f"g{p}", port=port)
+    for p, port in enumerate(channel.ports):
+        HTRON.add_port(name=f"c{p}", port=port)
     return HTRON
