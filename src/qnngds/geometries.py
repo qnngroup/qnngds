@@ -473,7 +473,7 @@ def vdp(
             width=contact_width,
             orientation=180 - 90 * i,
             layer=layer,
-            port_type="electrical",
+            port_type="optical",
         )
 
     return VDP
