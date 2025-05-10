@@ -10,6 +10,7 @@ import kfactory as kf
 from typing import Literal
 from collections.abc import Callable, Sequence
 
+from functools import partial
 
 import numpy as np
 
@@ -445,9 +446,9 @@ def generate_experiment(
                         if len(portmap[0]) == 0:
                             continue
                         routes = gf.routing.route_bundle(
-                            routed,
-                            portmap[0],
-                            portmap[1],
+                            component=routed,
+                            ports1=portmap[0],
+                            ports2=portmap[1],
                             cross_section=route_group.cross_section,
                             taper=None,
                             auto_taper=True,
@@ -456,13 +457,9 @@ def generate_experiment(
                         )
                         # check for self-intersecting paths
                         for r, route in enumerate(routes):
-                            # ManhattanRoute
-                            # https://gdsfactory.github.io/kfactory/reference/kfactory/routing/generic/
-                            # Path
-                            # https://gdsfactory.github.io/gdsfactory/_autosummary/gdsfactory.path.Path.html
-                            # path doesn't include tapers, so add the original ports to either end of backbone
-                            # and then check for intersection.
-                            # this assumes that all auto_tapers are a straight line.
+                            # route.backbone doesn't include tapers, so add the original ports to either end of
+                            # route.backbone and then check for intersection.
+                            # this assumes that all auto_tapers are straight (e.g. no 90 deg bends)
                             points = [portmap[0][r].center]
                             points += [
                                 [point.x * gf.kcl.dbu, point.y * gf.kcl.dbu]
@@ -494,12 +491,26 @@ def generate_experiment(
                 pad_group_new = gf.routing.auto_taper.add_auto_tapers(
                     routed, pad_group, route_group.cross_section
                 )
-                gf.routing.route_bundle_sbend(
-                    routed,
-                    pad_group_new,
-                    dut_group_new,
-                    enforce_port_ordering=True,
-                )
+                try:
+                    gf.routing.route_bundle_sbend(
+                        component=routed,
+                        ports1=pad_group_new,
+                        ports2=dut_group_new,
+                        enforce_port_ordering=True,
+                        bend_s=partial(
+                            gf.components.bends.bend_s,
+                            cross_section=route_group.cross_section,
+                        ),
+                    )
+                except ValueError as e:
+                    if "radius" in str(e):
+                        error_msg = (
+                            str(e)
+                            + "\nTry increasing spacing between DUT and pads or adjust DUT placement relative to pads."
+                        )
+                        raise ValueError(error_msg) from e
+                    else:
+                        raise
             # check for intersections between paths that were routed separately
             for m in range(len(all_paths) - 1):
                 for n in range(m + 1, len(all_paths)):
