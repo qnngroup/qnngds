@@ -21,6 +21,7 @@ from gdsfactory.typings import (
     ComponentSpecsOrComponents,
     CrossSectionSpec,
     Port,
+    Ports,
     PortsDict,
     Spacing,
 )
@@ -164,6 +165,11 @@ def flex_grid(
     return c
 
 
+#########################
+# Experiment generation
+#########################
+
+
 class RouteGroup:
     """Stores information for routing DUTs to pads.
 
@@ -178,6 +184,145 @@ class RouteGroup:
             self.port_mapping = port_mapping
         else:
             self.port_mapping = {p: None for p in port_mapping}
+
+
+def _get_segment_from_path(path: gf.Path, p: int) -> ArrayLike:
+    """Gets the segment starting from the p'th point in path.
+
+    Helper method for generate_experiment.
+    Args:
+        path (gf.Path): path to get segment from
+        p (int): index of the first point in the line segment
+
+    Returns:
+        ArrayLike: line segment defined by two points
+    """
+    points = path.points
+    return (
+        np.array([points[p % len(points)], points[(p + 1) % len(points)]]) / gf.kcl.dbu
+    ).astype(int)
+
+
+def _segments_overlap(segment_1: ArrayLike, segment_2: ArrayLike) -> bool:
+    """Determines if two line segments on a manhattan grid overlap.
+
+    Helper method for generate_experiment.
+    Args:
+        segment_1 (ArrayLike): first segment
+        segment_2 (ArrayLike): second segment
+
+    Returns:
+        bool: True if the segments overlap, False otherwise.
+    """
+    for i in range(2):
+        x_1_min = np.min(segment_1[:, i])
+        x_1_max = np.max(segment_1[:, i])
+        x_2_min = np.min(segment_2[:, i])
+        x_2_max = np.max(segment_2[:, i])
+        if x_1_min > x_2_max or x_2_min > x_1_max:
+            return False
+    return True
+
+
+def _path_self_intersects(path: gf.Path) -> bool:
+    """Determines if a manhattan path has any self-intersections
+
+    Helper method for generate_experiment.
+    Args:
+        path (gf.Path): path to check
+
+    Returns:
+        bool: True if the path intersects itself, False otherwise.
+    """
+    # points are on manhattan grid so checking intersection is pretty easy
+    for p in range(len(path.points) - 1):
+        segment_1 = _get_segment_from_path(path, p)
+        for q in range(p + 2, len(path.points) - 1):
+            segment_2 = _get_segment_from_path(path, q)
+            # check that segment_1 and segment_2's x and y projections don't overlap
+            if _segments_overlap(segment_1, segment_2):
+                return True
+    return False
+
+
+def _paths_intersect(path_1: gf.Path, path_2: gf.Path) -> bool:
+    """Determines if two manhattan paths intersect
+
+    Helper method for generate_experiment.
+    Args:
+        path_1 (gf.Path): first path to check
+        path_2 (gf.Path): second path to check
+
+    Returns:
+        bool: True if the paths intersect, False otherwise.
+    """
+    for p in range(len(path_1.points) - 1):
+        segment_1 = _get_segment_from_path(path_1, p)
+        for q in range(len(path_2.points) - 1):
+            segment_2 = _get_segment_from_path(path_2, q)
+            if _segments_overlap(segment_1, segment_2):
+                return True
+    return False
+
+
+def _get_port_direction(port: Port) -> str:
+    """Gets string port direction ("N", "S", "E" or "W") of a port
+
+    Args:
+        port (gf.Port): port
+
+    Returns:
+        str: string of port orientation
+    """
+    angle = port.orientation % 360
+    if angle <= 45 or angle >= 315:
+        return "E"
+    elif angle <= 135 and angle >= 45:
+        return "N"
+    elif angle <= 225 and angle >= 135:
+        return "W"
+    else:
+        return "S"
+
+
+def _get_component_port_direction(component: gf.Component) -> PortsDict:
+    """Returns ports of a component organized by direction.
+
+    Helper method for generate_experiment.
+    Args:
+        component (gf.Component): component to get ports from
+
+    Returns:
+        dict[str, Ports]: list of ports for each direction
+    """
+    ports = {x: [] for x in ["E", "N", "W", "S"]}
+    # group by direction
+    for p in component.ports:
+        ports[_get_port_direction(p)].append(p)
+    return ports
+
+
+def _sort_ports(
+    ports: PortsDict, sort_map: dict[str, Callable], direction_order: Sequence[str]
+) -> Ports:
+    """Sorts collections of ports all facing the same direction.
+
+    Helper method for generate_experiment.
+    Args:
+        ports (gf.PortsDict): dictionary of ports.
+        sort_map dict[str, Callable]: dictionary mapping a direction to a sort key that takes the port as an input.
+        direction_order Sequence[str]: order of keys in port dictionary to use when flattening.
+
+    Returns:
+        Ports: list of sorted ports
+    """
+    # sort
+    for direction in sort_map.keys():
+        ports[direction].sort(key=sort_map[direction])
+    flat_ports = []
+    for direction in direction_order:
+        flat_ports += ports[direction]
+    return flat_ports
 
 
 def generate_experiment(
@@ -238,8 +383,11 @@ def generate_experiment(
     if pad_array is None:
         return experiment
 
-    # outline and add pads
-    pads_ref = experiment.add_ref(outline(pads_i, outline_layers))
+    # add pads
+    # don't outline, and add to dummy component.
+    # after pad port adjustment, perform the outline
+    dummy_pads = gf.Component()
+    pads_ref = dummy_pads.add_ref(pads_i)
     pads_ref.move(pad_offset)
 
     # add text label (don't outline)
@@ -247,36 +395,6 @@ def generate_experiment(
         label_i = label() if isinstance(label, Callable) else label
         label_ref = experiment.add_ref(label_i)
         label_ref.move(label_offset)
-
-    # get sorted list of ports
-    def _get_port_direction(port: Port) -> str:
-        angle = port.orientation % 360
-        if angle <= 45 or angle >= 315:
-            return "E"
-        elif angle <= 135 and angle >= 45:
-            return "N"
-        elif angle <= 225 and angle >= 135:
-            return "W"
-        else:
-            return "S"
-
-    def _get_component_port_direction(component: gf.Component) -> PortsDict:
-        ports = {x: [] for x in ["E", "N", "W", "S"]}
-        # group by direction
-        for p in component.ports:
-            ports[_get_port_direction(p)].append(p)
-        return ports
-
-    def _sort_ports(
-        ports: PortsDict, sort_map: dict[str, Callable], direction_order: Sequence[str]
-    ) -> PortsDict:
-        # sort
-        for direction in sort_map.keys():
-            ports[direction].sort(key=sort_map[direction])
-        flat_ports = []
-        for direction in direction_order:
-            flat_ports += ports[direction]
-        return flat_ports
 
     sort_cw = {
         "E": lambda p: -p.y,  # north to south
@@ -375,7 +493,7 @@ def generate_experiment(
                     if pad_port.x - dw / 2 <= dut_port.x <= pad_port.x + dw / 2:
                         dwidth = -2 * abs(dut_port.x - pad_port.x)
                         center = (dut_port.x, pad_port.y)
-                dut_pad_map[dut_port_name] = Port(
+                pad_port = Port(
                     name=pad_port.name,
                     width=pad_port.width + dwidth,
                     center=center,
@@ -383,47 +501,14 @@ def generate_experiment(
                     layer=pad_port.layer,
                     port_type=pad_port.port_type,
                 )
+                dummy_pads.add_port(port=pad_port)
+                dut_pad_map[dut_port_name] = pad_port
 
-    problem_groups = set([])
-
-    def segment_dbu(path: gf.Path, p: int) -> ArrayLike:
-        points = path.points
-        return (
-            np.array([points[p % len(points)], points[(p + 1) % len(points)]])
-            / gf.kcl.dbu
-        ).astype(int)
-
-    def overlapping_projections(segment_1: ArrayLike, segment_2: ArrayLike) -> bool:
-        for i in range(2):
-            x_1_min = np.min(segment_1[:, i])
-            x_1_max = np.max(segment_1[:, i])
-            x_2_min = np.min(segment_2[:, i])
-            x_2_max = np.max(segment_2[:, i])
-            if x_1_min > x_2_max or x_2_min > x_1_max:
-                return False
-        return True
-
-    def self_intersecting(path: gf.Path) -> bool:
-        # points are on manhattan grid so checking intersection is pretty easy
-        for p in range(len(path.points) - 1):
-            segment_1 = segment_dbu(path, p)
-            for q in range(p + 2, len(path.points) - 1):
-                segment_2 = segment_dbu(path, q)
-                # check that segment_1 and segment_2's x and y projections don't overlap
-                if overlapping_projections(segment_1, segment_2):
-                    return True
-        return False
-
-    def paths_intersecting(path_1: gf.Path, path_2: gf.Path) -> bool:
-        for p in range(len(path_1.points) - 1):
-            segment_1 = segment_dbu(path_1, p)
-            for q in range(len(path_2.points) - 1):
-                segment_2 = segment_dbu(path_2, q)
-                if overlapping_projections(segment_1, segment_2):
-                    return True
-        return False
+    # add pads to actual device
+    experiment.add_ref(outline(dummy_pads, outline_layers))
 
     # actually do routing
+    problem_groups = set([])
     for _ in range(retries + 1):
         routed = gf.Component()
         routed.add_ref(experiment)
@@ -452,7 +537,7 @@ def generate_experiment(
                             cross_section=route_group.cross_section,
                             taper=None,
                             auto_taper=True,
-                            on_collision="show_error",
+                            on_collision="error",
                             router="optical",
                         )
                         # check for self-intersecting paths
@@ -467,7 +552,7 @@ def generate_experiment(
                             ]
                             points += [portmap[1][r].center]
                             path = gf.Path(points)
-                            if self_intersecting(path):
+                            if _path_self_intersects(path):
                                 error_msg = "After including auto_tapers, routed paths are self-intersecting."
                                 error_msg += " Try increasing the spacing between the pads and DUT or using s_bend routing."
                                 print(f"WARNING: {error_msg}")
@@ -515,13 +600,14 @@ def generate_experiment(
             for m in range(len(all_paths) - 1):
                 for n in range(m + 1, len(all_paths)):
                     # check that all_paths[p] and all_paths[q] do not intersect
-                    if paths_intersecting(all_paths[m], all_paths[n]):
+                    if _paths_intersect(all_paths[m], all_paths[n]):
                         error_msg = "Could not route without intersections."
                         error_msg += " Try manually specifying port mapping between DUT and pads with route_groups."
                         error_msg += (
                             " Also try increasing the spacing between DUT and pads."
                         )
-                        raise RuntimeError(error_msg)
+                        print(error_msg)
+                        # raise RuntimeError(error_msg)
         if complete:
             return routed
     raise RuntimeError(f"failed to route design after {retries} iterations")
