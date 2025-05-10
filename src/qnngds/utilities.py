@@ -10,6 +10,11 @@ import kfactory as kf
 from typing import Literal
 from collections.abc import Callable, Sequence
 
+
+import numpy as np
+
+from numpy.typing import ArrayLike
+
 from gdsfactory.typings import (
     ComponentSpecOrComponent,
     ComponentSpecsOrComponents,
@@ -196,7 +201,7 @@ def generate_experiment(
         dut_offset (tuple[float, float]): x,y offset for dut (mostly useful for linear pad arrays)
         pad_offset (tuple[float, float]): x,y offset for pad array (mostly useful for linear pad arrays)
         label_offset (tuple[float, float] or None): x,y offset of label
-        retries (int): how many times to try rerouting (may need to be larger for many port groupings)
+        retries (int): how many times to try rerouting with s_bend (may need to be larger for many port groupings)
     Returns:
         (gf.Component): experiment
     """
@@ -287,11 +292,11 @@ def generate_experiment(
 
     # sort dut cw
     dut_ports = _sort_ports(
-        _get_component_port_direction(dut_i), sort_cw, ("W", "N", "E", "S")
+        _get_component_port_direction(dut_ref), sort_cw, ("W", "N", "E", "S")
     )
     # sort pads ccw
     pad_ports = _sort_ports(
-        _get_component_port_direction(pads_i), sort_ccw, ("E", "S", "W", "N")
+        _get_component_port_direction(pads_ref), sort_ccw, ("E", "S", "W", "N")
     )
 
     # create mapping from dut ports to pad ports
@@ -318,17 +323,29 @@ def generate_experiment(
         for group in route_groups:
             for dut_port_name, pad_port_name in group.port_mapping.items():
                 if pad_port_name is not None:
-                    pad_port_index = next(
-                        i
-                        for i in range(len(pad_ports))
-                        if pad_ports[i].name == pad_port_name
-                    )
-                    dut_port_index = next(
-                        i
-                        for i in range(len(dut_ports))
-                        if dut_ports[i].name == dut_port_name
-                    )
-                    dut_pad_map[dut_port_name] = pad_ports[pad_port_index]
+                    try:
+                        pad_port_index = next(
+                            i
+                            for i in range(len(pad_ports))
+                            if pad_ports[i].name == pad_port_name
+                        )
+                    except StopIteration as e:
+                        error_msg = (
+                            f"Port {pad_port_name} not found in pad ports {pad_ports}"
+                        )
+                        raise ValueError(error_msg) from e
+                    try:
+                        dut_port_index = next(
+                            i
+                            for i in range(len(dut_ports))
+                            if dut_ports[i].name == dut_port_name
+                        )
+                        dut_pad_map[dut_port_name] = pad_ports[pad_port_index]
+                    except StopIteration as e:
+                        error_msg = (
+                            f"Port {dut_port_name} not found in DUT ports {dut_ports}"
+                        )
+                        raise ValueError(error_msg) from e
                     pad_ports.pop(pad_port_index)
                     dut_ports.pop(dut_port_index)
     # add remaining ports
@@ -337,7 +354,7 @@ def generate_experiment(
     # shift pad ports if it's possible to do a straight route between dut and pad without exceeding pad extent
     for gid, route_group in enumerate(route_groups):
         for dut_port_name in route_group.port_mapping:
-            dut_port = dut_i.ports[dut_port_name]
+            dut_port = dut_ref.ports[dut_port_name]
             pad_port = dut_pad_map[dut_port_name]
             if (dut_port.orientation - pad_port.orientation) % 360 == 180:
                 # ports are facing each other
@@ -368,6 +385,43 @@ def generate_experiment(
 
     problem_groups = set([])
 
+    def segment_dbu(path: gf.Path, p: int) -> ArrayLike:
+        points = path.points
+        return (
+            np.array([points[p % len(points)], points[(p + 1) % len(points)]])
+            / gf.kcl.dbu
+        ).astype(int)
+
+    def overlapping_projections(segment_1: ArrayLike, segment_2: ArrayLike) -> bool:
+        for i in range(2):
+            x_1_min = np.min(segment_1[:, i])
+            x_1_max = np.max(segment_1[:, i])
+            x_2_min = np.min(segment_2[:, i])
+            x_2_max = np.max(segment_2[:, i])
+            if x_1_min > x_2_max or x_2_min > x_1_max:
+                return False
+        return True
+
+    def self_intersecting(path: gf.Path) -> bool:
+        # points are on manhattan grid so checking intersection is pretty easy
+        for p in range(len(path.points) - 1):
+            segment_1 = segment_dbu(path, p)
+            for q in range(p + 2, len(path.points) - 1):
+                segment_2 = segment_dbu(path, q)
+                # check that segment_1 and segment_2's x and y projections don't overlap
+                if overlapping_projections(segment_1, segment_2):
+                    return True
+        return False
+
+    def paths_intersecting(path_1: gf.Path, path_2: gf.Path) -> bool:
+        for p in range(len(path_1.points) - 1):
+            segment_1 = segment_dbu(path_1, p)
+            for q in range(len(path_2.points) - 1):
+                segment_2 = segment_dbu(path_2, q)
+                if overlapping_projections(segment_1, segment_2):
+                    return True
+        return False
+
     # actually do routing
     for _ in range(retries + 1):
         routed = gf.Component()
@@ -375,8 +429,9 @@ def generate_experiment(
         # for each grouping, try route_bundle, if that fails use route_bundle_sbend
         complete = True
         for gid, route_group in enumerate(route_groups):
+            all_paths = []
             # get list of pad ports
-            dut_group = [dut_i.ports[p] for p in route_group.port_mapping]
+            dut_group = [dut_ref.ports[p] for p in route_group.port_mapping]
             pad_group = [dut_pad_map[p] for p in route_group.port_mapping]
             if gid not in problem_groups:
                 try:
@@ -386,24 +441,51 @@ def generate_experiment(
                         direction = _get_port_direction(d)
                         ports[direction][0].append(d)
                         ports[direction][1].append(p)
-                    for direction, portmap in ports.items():
+                    for _, portmap in ports.items():
                         if len(portmap[0]) == 0:
                             continue
-                        gf.routing.route_bundle(
+                        routes = gf.routing.route_bundle(
                             routed,
                             portmap[0],
                             portmap[1],
                             cross_section=route_group.cross_section,
                             taper=None,
                             auto_taper=True,
-                            on_collision="error",
+                            on_collision="show_error",
                             router="optical",
                         )
+                        # check for self-intersecting paths
+                        for r, route in enumerate(routes):
+                            # ManhattanRoute
+                            # https://gdsfactory.github.io/kfactory/reference/kfactory/routing/generic/
+                            # Path
+                            # https://gdsfactory.github.io/gdsfactory/_autosummary/gdsfactory.path.Path.html
+                            # path doesn't include tapers, so add the original ports to either end of backbone
+                            # and then check for intersection.
+                            # this assumes that all auto_tapers are a straight line.
+                            points = [portmap[0][r].center]
+                            points += [
+                                [point.x * gf.kcl.dbu, point.y * gf.kcl.dbu]
+                                for point in route.backbone
+                            ]
+                            points += [portmap[1][r].center]
+                            path = gf.Path(points)
+                            if self_intersecting(path):
+                                error_msg = "After including auto_tapers, routed paths are self-intersecting."
+                                error_msg += " Try increasing the spacing between the pads and DUT or using s_bend routing."
+                                print(f"WARNING: {error_msg}")
+                                raise RuntimeError(error_msg)
+                            # add route to route list for checking intersections later
+                            all_paths.append(path)
 
                 except RuntimeError:
                     problem_groups.add(gid)
                     complete = False
                     break
+                except kf.routing.generic.PlacerError as e:
+                    error_msg = "Routing failed, try manually specifying port mapping between DUT"
+                    error_msg += " and pads with route_groups."
+                    raise RuntimeError(error_msg) from e
             else:
                 # add autotapers and regenerate port groups
                 dut_group_new = gf.routing.auto_taper.add_auto_tapers(
@@ -418,6 +500,17 @@ def generate_experiment(
                     dut_group_new,
                     enforce_port_ordering=True,
                 )
+            # check for intersections between paths that were routed separately
+            for m in range(len(all_paths) - 1):
+                for n in range(m + 1, len(all_paths)):
+                    # check that all_paths[p] and all_paths[q] do not intersect
+                    if paths_intersecting(all_paths[m], all_paths[n]):
+                        error_msg = "Could not route without intersections."
+                        error_msg += " Try manually specifying port mapping between DUT and pads with route_groups."
+                        error_msg += (
+                            " Also try increasing the spacing between DUT and pads."
+                        )
+                        raise RuntimeError(error_msg)
         if complete:
             return routed
     raise RuntimeError(f"failed to route design after {retries} iterations")
