@@ -14,7 +14,6 @@ from gdsfactory.typings import (
     ComponentSpecOrComponent,
     ComponentSpecsOrComponents,
     CrossSectionSpec,
-    Layer,
     Port,
     PortsDict,
     Spacing,
@@ -36,23 +35,6 @@ def union(component: gf.Component) -> gf.Component:
         temp.add_polygon(component.get_region(layer), layer=layer)
         comp_union << gf.boolean(temp, temp, operation="or", layer=layer)
     return comp_union
-
-
-def layers_equal(layer1: Layer, layer2: Layer) -> bool:
-    """Checks if two layers are equal"""
-    if layer1 == layer2:
-        return True
-    if isinstance(layer1, str) and isinstance(layer2, gf.LayerEnum):
-        return layer1 == str(layer2)
-    if isinstance(layer1, tuple) and isinstance(layer2, gf.LayerEnum):
-        return (layer1[0] == layer2.layer) and (layer1[1] == layer2.datatype)
-    if isinstance(layer2, tuple) and isinstance(layer1, gf.LayerEnum):
-        return (layer2[0] == layer1.layer) and (layer2[1] == layer1.datatype)
-    if type(layer1) is not type(layer2):
-        raise ValueError(
-            f"could not compare layer1 {layer1} of type {type(layer1)} with layer2 {layer2} of type {type(layer2)}"
-        )
-    return False
 
 
 def get_outline_layers(layer_map: gf.LayerEnum) -> dict[tuple, float]:
