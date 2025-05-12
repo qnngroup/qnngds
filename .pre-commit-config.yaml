@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/psf/black
-    rev: '24.3.0'  # Use the latest stable version of black
+    rev: '25.1.0'  # Use the latest stable version of black
     hooks:
       - id: black
         language_version: python3
@@ -13,10 +13,17 @@ repos:
         args: [ --fix ]
       # Run the formatter.
       - id: ruff-format
+  - repo: https://github.com/econchick/interrogate
+    rev: 1.7.0
+    hooks:
+      - id: interrogate
+        name: interrogate-docstrings
+        args: [--fail-under=100, --verbose, --exclude="docs"]
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v5.0.0
     hooks:
       - id: no-commit-to-branch
         args: ['--branch', 'master']
       - id: check-added-large-files
       - id: check-merge-conflict
+      - id: trailing-whitespace
