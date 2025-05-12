@@ -45,7 +45,14 @@ def union(component: gf.Component) -> gf.Component:
 
 
 def get_outline_layers(layer_map: gf.LayerEnum) -> dict[tuple, float]:
-    """Get dictionary maping a layer tuple to the desired outline amount as specified by the LayerMap"""
+    """Get dictionary maping a layer tuple to the desired outline amount as specified by the LayerMap
+
+    Args:
+        layer_map (gf.LayerEnum): enum layer equipped with outline method
+
+    Returns:
+        dict[tuple, float]: mapping of GDS tuple to outline distance. Layers that aren't outlined are omitted.
+    """
     # outline
     outline_layers = {}
     for layer in layer_map:
@@ -83,7 +90,7 @@ def outline(
                 gf.components.compass(
                     size=(outline_layers[layer], port.width),
                     layer=port.layer,
-                    port_type="optical",
+                    port_type=port.port_type,
                 )
             )
             ext.connect(port=ext.ports["o1"], other=port)
@@ -179,6 +186,15 @@ class RouteGroup:
     """
 
     def __init__(self, cross_section: CrossSectionSpec, port_mapping: dict | tuple):
+        """Initialize route group
+
+        Args:
+            cross_section (CrossSectionSpec): factory method for desired cross section used for routing
+            port_mapping (dict | tuple): either dictionary manually specifying mapping of DUT port names to pad port names
+                or a tuple of DUT port names that should be mapped automatically to pad ports.
+        Returns:
+            None
+        """
         self.cross_section = cross_section
         if isinstance(port_mapping, dict):
             self.port_mapping = port_mapping

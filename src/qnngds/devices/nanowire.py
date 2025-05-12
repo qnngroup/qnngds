@@ -10,8 +10,9 @@ def variable_length(
     constr_width: float = 0.1,
     wire_width: float = 0.3,
     length: float = 1,
-    layer: LayerSpec = (1, 0),
     num_pts: int = 100,
+    layer: LayerSpec = (1, 0),
+    port_type: str = "electrical",
 ) -> gf.Component:
     """Creates a single wire, made of two optimal steps from constr_width to
     wire_width with a constriction of the chosen length in the middle.
@@ -20,8 +21,9 @@ def variable_length(
         constr_width (int or float): The width of the channel (at the hot-spot location).
         wire_width (int or float): The width of connections to source/drain
         length (int or float): The length of the interior constriction.
-        layer (LayerSpec): GDS layer
         num_pts (int): The number of points comprising the optimal_steps geometries.
+        layer (LayerSpec): GDS layer
+        port_type (string): gdsfactory port type. default "electrical"
 
     Returns:
         gf.Component: 2 optimal steps to/from a narrow wire.
@@ -50,7 +52,9 @@ def variable_length(
         top.connect(
             port=top.ports["e1"], other=bot.ports["e1"], allow_type_mismatch=True
         )
-    NANOWIRE.add_port(name="e1", port=top.ports["e2"])
-    NANOWIRE.add_port(name="e2", port=bot.ports["e2"])
+    for p, port in enumerate([top.ports["e2"], bot.ports["e2"]]):
+        NANOWIRE.add_port(name=f"e{p + 1}", port=port)
+    for port in NANOWIRE.ports:
+        port.port_type = port_type
 
     return NANOWIRE

@@ -15,6 +15,7 @@ def meander(
     squares: float = 100,
     max_length: Optional[float] = 20,
     layer: tuple = (1, 0),
+    port_type: str = "electrical",
 ) -> gf.Component:
     """Create resistor meander with specified number of squares.
 
@@ -27,6 +28,7 @@ def meander(
         squares (float or None): desired number of squares
         max_length (float): desired length of device
         layer (tuple): GDS layer tuple (layer, type)
+        port_type (string): gdsfactory port type. default "electrical"
 
     Returns:
         gf.Component: the resistor meander
@@ -148,9 +150,14 @@ def meander(
     )
     Du = gf.Component()
     Du << qu.union(D)
-    Du.add_port(name="e1", port=stub_top.ports["e2"], layer=layer)
-    Du.add_port(name="e2", port=stub_bot.ports["e2"], layer=layer)
     Du.flatten()
+    for name, port in zip(("e1", "e2"), (stub_top.ports["e2"], stub_bot.ports["e2"])):
+        Du.add_port(
+            name=name,
+            port=port,
+        )
+    for port in Du.ports:
+        port.port_type = port_type
     return Du
 
 
@@ -164,6 +171,7 @@ def meander_sc_contacts(
     outline_sc: float = 1,
     layer_res: tuple = (3, 0),
     layer_sc: tuple = (1, 0),
+    port_type: str = "electrical",
 ) -> gf.Component:
     """Create resistor meander with superconducting contacts.
 
@@ -178,6 +186,7 @@ def meander_sc_contacts(
         outline_sc (float): superconductor extra width on each side of contact
         layer_res (tuple): resistor GDS layer tuple (layer, type)
         layer_sc (tuple): superconductor GDS layer tuple (layer, type)
+        port_type (string): gdsfactory port type. default "electrical"
 
     Returns:
         gf.Component: the resistor meander
@@ -218,6 +227,11 @@ def meander_sc_contacts(
     Du = gf.Component()
     Du << qu.union(D)
     Du.flatten()
-    Du.add_port(port=ports[0], name="e1", port_type="electrical")
-    Du.add_port(port=ports[1], name="e2", port_type="electrical")
+    for name, port in zip(("e1", "e2"), ports):
+        Du.add_port(
+            name=name,
+            port=port,
+        )
+    for port in Du.ports:
+        port.port_type = port_type
     return Du

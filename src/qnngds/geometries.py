@@ -16,6 +16,7 @@ def hyper_taper(
     wide_section: Union[int, float] = 50,
     narrow_section: Union[int, float] = 5,
     layer: LayerSpec = (1, 0),
+    port_type: str = "electrical",
 ) -> gf.Component:
     """Hyperbolic taper (solid). Designed by colang.
 
@@ -24,6 +25,7 @@ def hyper_taper(
         wide_section (int or float): Width of wide end of taper
         narrow_section (int or float): Width of narrow end of taper
         layer (LayerSpec): GDS layer tuple (layer, type)
+        port_type (string): gdsfactory port type. default "electrical"
 
     Returns
         gf.Component: a single taper
@@ -52,7 +54,7 @@ def hyper_taper(
         width=narrow,
         orientation=180,
         layer=layer,
-        port_type="optical",
+        port_type=port_type,
     )
     HT.add_port(
         name="e2",
@@ -60,7 +62,7 @@ def hyper_taper(
         width=wide,
         orientation=0,
         layer=layer,
-        port_type="optical",
+        port_type=port_type,
     )
     return HT
 
@@ -71,6 +73,7 @@ def angled_taper(
     constr_width: Union[int, float] = 0.1,
     angle: Union[int, float] = 60,
     layer: LayerSpec = (1, 0),
+    port_type: str = "electrical",
 ) -> gf.Component:
     """Create an angled taper with euler curves.
 
@@ -79,6 +82,7 @@ def angled_taper(
         constr_width (int or float): Width of narrow end of taper
         angle (int or float): Angle between taper ends in degrees
         layer (LayerSpec): GDS layer tuple (layer, type)
+        port_type (string): gdsfactory port type. default "electrical"
 
     Returns
         gf.Component: a single taper
@@ -132,7 +136,7 @@ def angled_taper(
         width=constr_width,
         orientation=180,
         layer=layer,
-        port_type="electrical",
+        port_type=port_type,
     )
     D.add_port(
         name="e2",
@@ -140,10 +144,57 @@ def angled_taper(
         width=wire_width,
         orientation=angle,
         layer=layer,
-        port_type="electrical",
+        port_type=port_type,
     )
 
     return D
+
+
+@gf.cell
+def optimal_step(
+    start_width: float = 10,
+    end_width: float = 22,
+    num_pts: int = 50,
+    width_tol: float = 1e-3,
+    anticrowding_factor: float = 1.2,
+    symmetric: bool = False,
+    layer: LayerSpec = (1, 0),
+    port_type: str = "electrical",
+) -> gf.Component:
+    """Returns an optimally-rounded step geometry.
+
+    Wrapper for gdsfactory.components.superconductors.optimal_step that provides a port_type
+    Args:
+        start_width (float): Width of the connector on the left end of the step.
+        end_width (float): Width of the connector on the right end of the step.
+        num_pts (int): number of points comprising the entire step geometry.
+        width_tol (float): Point at which to terminate the calculation of the optimal step
+        anticrowding_factor (float): Factor to reduce current crowding by elongating
+            the structure and reducing the curvature
+        symmetric: If True, adds a mirrored copy of the step across the x-axis to the
+            geometry and adjusts the width of the ports.
+        layer (LayerSpec): GDS layer spec, string or tuple (layer, type)
+        port_type (string): gdsfactory port type. default "electrical"
+
+    Optimal structure from https://doi.org/10.1103/PhysRevB.84.174510
+    Clem, J., & Berggren, K. (2011). Geometry-dependent critical currents in
+    superconducting nanocircuits. Physical Review B, 84(17), 1-27.
+    """
+    S = gf.Component()
+    step = gf.components.superconductors.optimal_step(
+        start_width=start_width,
+        end_width=end_width,
+        num_pts=num_pts,
+        width_tol=width_tol,
+        anticrowding_factor=anticrowding_factor,
+        symmetric=symmetric,
+        layer=layer,
+    )
+    S.add_ref(step)
+    S.add_ports(step.ports)
+    for port in S.ports:
+        port.port_type = port_type
+    return S
 
 
 @gf.cell
@@ -154,8 +205,9 @@ def _create_comb(
     layer2: tuple = (2, 0),
     text_angle: Union[int, float] = 0,
 ) -> gf.Component:
-    """Creates vernier caliper comb
+    """Creates vernier caliper comb.
 
+    Helper method for alignment_mark
     Parameters
         pitch1 (int or float): pitch of top comb
         pitch2 (int or float): pitch of bottom comb
@@ -214,6 +266,7 @@ def _create_comb(
 def _create_marker(layer1: tuple = (1, 0), layer2: tuple = (2, 0)) -> gf.Component:
     """Creates vernier caliper comb
 
+    Helper method for alignment_mark
     Parameters
         layer1 (tuple): center comb GDS layer tuple (layer, type)
         layer2 (tuple): top/bottom comb GDS layer tuple (layer, type)
@@ -314,6 +367,7 @@ def _create_waffle(
 ) -> gf.Component:
     """Creates waffle test structures for determining process resolution.
 
+    Helper method for resolution_test
     Args:
         res (float or int): Resolution (in µm) to be tested.
         layer (LayerSpec): GDS layer tuple (layer, type)
@@ -349,6 +403,7 @@ def _create_waffle(
 def _create_3L(res: Union[float, int] = 1, layer: LayerSpec = (1, 0)) -> gf.Component:
     """Creates L-shaped test structures for determining process resolution.
 
+    Helper method for resolution_test
     Args:
         res (float or int): Resolution (in µm) to be tested.
         layer (LayerSpec): GDS layer tuple (layer, type)
@@ -427,7 +482,10 @@ def resolution_test(
 
 @gf.cell
 def vdp(
-    diagonal: float = 400, contact_width: float = 40, layer: LayerSpec = (1, 0)
+    diagonal: float = 400,
+    contact_width: float = 40,
+    layer: LayerSpec = (1, 0),
+    port_type: str = "electrical",
 ) -> gf.Component:
     """Creates a Van der Pauw (VDP) device with specified dimensions.
 
@@ -435,6 +493,7 @@ def vdp(
         diagonal (float): Length of the VDP device, overall maximum dimension, in µm.
         contact_width (float): Width of the contact points (width of the ports), in µm.
         layer (LayerSpec): GDS layer tuple (layer, type)
+        port_type (string): gdsfactory port type. default "electrical"
 
     Returns:
         gf.Component: Van der Pauw cell
@@ -473,7 +532,7 @@ def vdp(
             width=contact_width,
             orientation=180 - 90 * i,
             layer=layer,
-            port_type="optical",
+            port_type=port_type,
         )
 
     return VDP

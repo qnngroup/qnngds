@@ -17,6 +17,7 @@ def basic(
     turn_ratio: Union[int, float] = 4,
     terminals_same_side: bool = False,
     layer: tuple = (1, 0),
+    port_type: str = "electrical",
 ) -> gf.Component:
     """Creates an optimally-rounded SNSPD.
 
@@ -33,6 +34,7 @@ def basic(
         terminals_same_side (bool): If True, both ports will be located on the
             same side of the SNSPD.
         layer (tuple): GDS layer tuple (layer, type)
+        port_type (string): gdsfactory port type. default "electrical"
 
     Returns:
         gf.Component: optimally-rounded SNSPD, as provided by
@@ -55,7 +57,7 @@ def basic(
         turn_ratio=turn_ratio,
         terminals_same_side=terminals_same_side,
         layer=layer,
-        port_type="electrical",
+        port_type=port_type,
     )
     ports = SNSPD.ports
     SNSPDu = gf.Component()
@@ -73,6 +75,7 @@ def vertical(
     num_squares: Optional[int] = None,
     extend: Optional[float] = 1,
     layer: tuple = (1, 0),
+    port_type: str = "electrical",
 ) -> gf.Component:
     """Creates an optimally-rounded SNSPD, with terminals in its center instead
     of the side.
@@ -84,6 +87,7 @@ def vertical(
         num_squares (Optional[int]): Number of squares in the detector.
         extend (Optional[bool]): Whether or not to extend the ports.
         layer (tuple): GDS layer tuple (layer, type)
+        port_type (string): gdsfactory port type. default "electrical"
 
     Returns:
         gf.Component: The vertical SNSPD device.
@@ -148,5 +152,10 @@ def vertical(
     Du << qu.union(D)
     Du.flatten()
     for p, port in enumerate(ports):
-        Du.add_port(name=f"e{p}", port=port, port_type="electrical")
+        Du.add_port(
+            name=f"e{p + 1}",
+            port=port,
+        )
+    for port in Du.ports:
+        port.port_type = port_type
     return Du

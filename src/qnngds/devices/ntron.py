@@ -15,6 +15,7 @@ def smooth(
     drain_w: float = 0.3,
     choke_shift: float = -0.3,
     layer: LayerSpec = (1, 0),
+    port_type: str = "electrical",
 ) -> gf.Component:
     """Creates a ntron device.
 
@@ -26,6 +27,7 @@ def smooth(
         drain_w (float): Width of the drain region.
         choke_shift (float): Shift of the choke region.
         layer (LayerSpec): GDS layer
+        port_type (string): gdsfactory port type. default "electrical"
 
     Returns:
         gf.Component: The ntron device.
@@ -63,9 +65,12 @@ def smooth(
     Du << qu.union(D)
     Du.flatten()
 
-    Du.add_port(name="g", port=k.ports["e1"], port_type="optical")
-    Du.add_port(name="s", port=s.ports["e2"], port_type="optical")
-    Du.add_port(name="d", port=d.ports["e1"], port_type="optical")
+    for name, port in zip(
+        ("g", "s", "d"), (k.ports["e1"], s.ports["e2"], d.ports["e1"])
+    ):
+        Du.add_port(name=name, port=port)
+    for port in Du.ports:
+        port.port_type = port_type
 
     return Du
 
@@ -82,6 +87,7 @@ def sharp(
     drain_w: float = 0.3,
     drain_l: float = 1.5,
     layer: LayerSpec = (1, 0),
+    port_type: str = "electrical",
 ) -> gf.Component:
     """Creates a sharp ntron device.
 
@@ -96,6 +102,7 @@ def sharp(
         drain_w (float): Width of the drain region.
         drain_l (float): Length of the drain region.
         layer (LayerSpec): GDS layer
+        port_type (string): gdsfactory port type. default "electrical"
 
     Returns:
         Device: The sharp ntron device.
@@ -125,9 +132,12 @@ def sharp(
     Du << qu.union(D)
     Du.flatten()
 
-    Du.add_port(name="g", port=k.ports["o1"], port_type="electrical")
-    Du.add_port(name="s", port=s.ports["o2"], port_type="electrical")
-    Du.add_port(name="d", port=d.ports["o2"], port_type="electrical")
+    for name, port in zip(
+        ("g", "s", "d"), (k.ports["o1"], s.ports["o2"], d.ports["o2"])
+    ):
+        Du.add_port(name=name, port=port)
+    for port in Du.ports:
+        port.port_type = port_type
 
     return Du
 

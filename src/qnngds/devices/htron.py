@@ -20,6 +20,7 @@ def planar(
     gate_length: Union[int, float] = 0.01,
     channel_length: Union[int, float] = 0.01,
     layer: LayerSpec = (1, 0),
+    port_type: str = "electrical",
 ) -> gf.Component:
     """Create a planar hTron.
 
@@ -31,6 +32,7 @@ def planar(
         gate_length (int or float): Length of superconducting gate in microns
         channel_length (int or float): Length of superconducting channel in microns
         layer (LayerSpec): GDS layer
+        port_type (string): gdsfactory port type. default "electrical"
 
     Returns
         gf.Component: a single planar hTron
@@ -62,6 +64,8 @@ def planar(
         ports.append(taper_upper.ports["e2"])
     for p, port in enumerate(ports):
         HTRON.add_port(name=f"e{p + 1}", port=port)
+    for port in HTRON.ports:
+        port.port_type = port_type
     return HTRON
 
 
