@@ -27,7 +27,7 @@ from gdsfactory.typings import (
 )
 
 
-# @gf.cell
+@gf.cell
 def union(component: gf.Component) -> gf.Component:
     """Merge all polygons within a Component by layer
 
@@ -59,14 +59,14 @@ def get_outline_layers(layer_map: gf.LayerEnum) -> dict[tuple, float]:
     for layer in layer_map:
         ol = layer_map.outline(layer)
         if ol > 0:
-            outline_layers[tuple(layer)] = ol
+            outline_layers[str(gf.get_layer(layer))] = ol
     return outline_layers
 
 
-# @gf.cell
+@gf.cell
 def outline(
     component: gf.Component,
-    outline_layers: dict[tuple, float] = {},
+    outline_layers: dict[str, float] | None = None,
 ) -> gf.Component:
     """Outline polygons within component by layer.
 
@@ -81,13 +81,15 @@ def outline(
     # extend ports
     comp_extended = gf.Component()
     comp = comp_extended.add_ref(component)
+    if outline_layers is None:
+        outline_layers = {}
     for k, v in outline_layers.items():
         if v <= 0:
             raise ValueError(f"outline must be greater than zero, got {outline_layers}")
     new_ports = []
     processed_ports = []
     for layer in outline_layers.keys():
-        for port in gf.port.select_ports(comp, layer):
+        for port in gf.port.select_ports(comp, gf.get_layer(layer)):
             ext = comp_extended.add_ref(
                 gf.components.compass(
                     size=(outline_layers[layer], port.width),
@@ -103,11 +105,15 @@ def outline(
             processed_ports.append(port)
 
     new_ports += [p for p in comp.ports if p not in processed_ports]
+    outline_layer_values = {
+        gf.get_layer(k).value: str(gf.get_layer(k)) for k in outline_layers.keys()
+    }
     for layer in comp_extended.layers:
         r = component.get_region(layer=layer)
-        if layer not in outline_layers.keys():
+        if gf.get_layer(layer) not in outline_layer_values:
             comp_outlined.add_polygon(r, layer=layer)
         else:
+            layer = outline_layer_values[gf.get_layer(layer)]
             outline_dbu = outline_layers[layer] / gf.kcl.dbu
             r_expanded = r.sized(outline_dbu)
             comp_outlined.add_polygon(
@@ -118,7 +124,7 @@ def outline(
     return comp_outlined
 
 
-# @gf.cell
+@gf.cell
 def invert(
     component: gf.Component,
     ext_bbox_layers: dict[tuple, float] = {},
@@ -525,6 +531,8 @@ def generate_experiment(
                 )
                 dummy_pads.add_port(port=pad_port)
                 dut_pad_map[dut_port_name] = pad_port
+            else:
+                dummy_pads.add_port(port=pad_port)
 
     # add pads to actual device
     experiment.add_ref(outline(dummy_pads, outline_layers))
