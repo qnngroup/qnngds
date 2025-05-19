@@ -27,6 +27,7 @@ from gdsfactory.typings import (
 )
 
 
+# @gf.cell
 def union(component: gf.Component) -> gf.Component:
     """Merge all polygons within a Component by layer
 
@@ -62,6 +63,7 @@ def get_outline_layers(layer_map: gf.LayerEnum) -> dict[tuple, float]:
     return outline_layers
 
 
+# @gf.cell
 def outline(
     component: gf.Component,
     outline_layers: dict[tuple, float] = {},
@@ -93,8 +95,9 @@ def outline(
                     port_type=port.port_type,
                 )
             )
-            ext.connect(port=ext.ports["o1"], other=port)
-            p = ext.ports["o3"]
+            prefix = "o" if port.port_type == "optical" else "e"
+            ext.connect(port=ext.ports[f"{prefix}1"], other=port)
+            p = ext.ports[f"{prefix}3"]
             p.name = port.name
             new_ports.append(p)
             processed_ports.append(port)
@@ -105,8 +108,8 @@ def outline(
         if layer not in outline_layers.keys():
             comp_outlined.add_polygon(r, layer=layer)
         else:
-            outline = outline_layers[layer] / gf.kcl.dbu
-            r_expanded = r.sized(outline)
+            outline_dbu = outline_layers[layer] / gf.kcl.dbu
+            r_expanded = r.sized(outline_dbu)
             comp_outlined.add_polygon(
                 r_expanded - comp_extended.get_region(layer=layer), layer=layer
             )
@@ -115,6 +118,7 @@ def outline(
     return comp_outlined
 
 
+# @gf.cell
 def invert(
     component: gf.Component,
     ext_bbox_layers: dict[tuple, float] = {},
@@ -142,6 +146,7 @@ def invert(
     return comp_inverted
 
 
+@gf.cell
 def flex_grid(
     components: ComponentSpecsOrComponents = (gf.components.shapes.rectangle,),
     spacing: Spacing | float = (5.0, 5.0),
@@ -341,6 +346,7 @@ def _sort_ports(
     return flat_ports
 
 
+@gf.cell
 def generate_experiment(
     dut: ComponentSpecOrComponent = gf.components.shapes.rectangle,
     pad_array: ComponentSpecOrComponent = gf.components.shapes.rectangle,
