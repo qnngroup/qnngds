@@ -18,8 +18,11 @@ used and designed in the `QNN group <https://qnn-rle.mit.edu/>`_. The package
 follows the following hierarchy for designing layouts:
 
 * Sample: toplevel of design, either a wafer or piece that contains multiple experiments.
+
     * Experiment: an individual experiment that has a specific intended use case. Includes circuit/device and pads.
+
         * Circuit: a circuit comprised of multiple devices e.g. SNSPD with nTron amplifier. Does not include pads
+
             * Device: a single device e.g. individual nTron, hTron, etc.
 
 

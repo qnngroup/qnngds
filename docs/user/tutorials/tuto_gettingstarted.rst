@@ -1,108 +1,158 @@
 Getting started
 ===============
 
-Setup your workspace
+Clone boilerplate PDK
+------------
+* Create a repository on github for your layouts using the template `qnngds-pdk <https://github.com/qnngroup/qnngds-pdk>`_.
+
+* Clone the repository to your machine. The cloned directory will contain everything related to your new design
+  (python files, gds files, notes).
+
+Setup a virtual environment and install ``qnngds``
 --------------------
-* Create a new folder that will contain everything related to your new design
-  (versions, gds files, notes).
+* Navigate to the directory you cloned the repository to.
 
 * Create a new virtual environment:
 
-    * Open a terminal in the directory you want to put your virtual environment.
+    * Using ``uv`` (recommended, `installation instructions <https://docs.astral.sh/uv/>`_):
 
-    * Execute:
+        * Open a terminal in the directory you want to put your virtual environment.
 
-      .. code-block:: bash
+        * Execute:
 
-          python -m venv .venv/your-env-name
-          .\.venv\your-env-name\Scripts\Activate
+          .. code-block:: bash
 
+              uv venv --python 3.11
 
-Install the package
--------------------
-The qnngds package needs ``gdspy`` to be installed first. To do so, you can follow
-instruction `here <https://pypi.org/project/gdspy/>`_.
+        * Follow the instructions from ``uv`` to activate the environment, as they will differ depending on the platform.
 
-* For **windows**, what works
-  best is to `install a pre-built wheel <https://github.com/heitzmann/gdspy/releases>`_ 
-  and run :
+        * Install qnngds
 
-  .. code-block:: bash
+          .. code-block:: bash
 
-    pip install path/to/gdspy-1.6.12-cp38-cp38-win_amd64.whl
+              uv pip install qnngds
 
-  Make sure you download the wheel corresponding to your device:
+    * Using ``conda`` (recommended, `miniforge installation instructions <https://github.com/conda-forge/miniforge?tab=readme-ov-file#install>`_):
 
-    * `cpXX` is the version of python that it is built for.
-    * `winxx_amdXX` should be selected based on your system type.
+        * Execute:
 
-* On **Linux**, just install with pip :
+          .. code-block:: bash
 
-  .. code-block:: bash
+              conda create -n my-project-env
+              conda activate my-project-env
+              pip install qnngds
 
-    pip install gdspy
+    * Using ``python``:
 
-Once ``gdspy`` is installed in your virtual environment, you can install ``qnngds`` by executing:
+        * Open a terminal in the directory you want to put your virtual environment.
 
-.. code-block:: bash
+        * Execute:
 
-    pip install qnngds
+          .. code-block:: bash
 
-Start coding
-------------
+              # windows
+              python -m venv .venv/your-env-name
+              .\.venv\your-env-name\Scripts\Activate
+              pip install qnngds
 
-.. note::
-    This section is not yet completed because the ``design`` module is susceptible to change (class management).
+          .. code-block:: bash
+
+              # Unix/macOS
+              python -m venv .venv/your-env-name
+              source .\.venv\your-env-name\scripts\activate
+              pip install qnngds
+
+Install klive and gdsfactory extensions for klayout
+~~~~~~~~~~~~~~~~~~~~~
+
+* Follow the instructions from the `gdsfactory docs <https://gdsfactory.github.io/klive>`_ and restart klayout.
+
 
 Start with the basics
 ~~~~~~~~~~~~~~~~~~~~~
+
+Create a file in the toplevel of the cloned repository.
 
 Import the packages.
 
 .. code-block:: python
     :linenos:
 
-    from phidl import quickplot as qp
-    from phidl import set_quickplot_options
-    import qnngds.design as qd
+    from pdk import PDK
+    from pdk.components import *
 
-    set_quickplot_options(blocking=True)
+    import qnngds as qg
+    import gdsfactory as gf
 
-Choose your design parameters, create a new design and build the chip.
+    PDK.activate()
+
+Now let's generate a few different nTron geometries and connect them up to pads.
+We'll make use of the ``pads_tri`` pad layout defined in the custom PDK.
 
 .. code-block:: python
+
     :lineno-start: 8
 
-    chip_w = 5000
-    chip_margin = 50
-    N_dies = 5
+    nTrons = []
+    for choke_w in [0.01, 0.03, 0.1]:
+        for channel_w in [0.3, 2]:
+            # create our nTrons
+            gate_w = 10 * choke_w
+            smooth_ntron = qg.devices.ntron.smooth(
+                choke_w=choke_w,
+                gate_w=gate_w,
+                channel_w=channel_w,
+                source_w=max(2, channel_w + 0.1),
+                drain_w=max(2, channel_w + 0.1),
+                choke_shift=0.0,
+                layer="EBEAM_FINE",
+            )
+            # extend the gate port with an optimal step
+            dut = gf.components.extend_ports(
+                component=smooth_ntron,
+                port_names="g",
+                extension=partial(
+                    qg.geometries.optimal_step,
+                    start_width=gate_w,
+                    end_width=5,
+                    num_pts=200,
+                    symmetric=True,
+                ),
+            )
+            # generate an experiment: a gf.Component with pads, routing between
+            # DUT and pads, and a text label
+            label = f"nTron\nwg/wc/Nc\n{choke_w}/{channel_w}/{n_branch}"
+            nTrons.append(
+                qg.utilities.generate_experiment(
+                    # extend gate port with an optimal taper
+                    dut=dut,
+                    pad_array=pads_tri,
+                    label=gf.components.texts.text(
+                        label, size=25, layer="EBEAM_COARSE", justify="right"
+                    ),
+                    route_groups=(
+                        # route g,s,d automatically to the closest pad using
+                        # the ebeam cross section
+                        qg.utilities.RouteGroup(
+                            PDK.get_cross_section("ebeam"), ("g", "s", "d")
+                        ),
+                    ),
+                    dut_offset=(0, 0),
+                    pad_offset=(0, 0),
+                    # offset text label
+                    label_offset=(-120, -200),
+                    # how many times to try sbend routing if regular routing
+                    # fails
+                    retries=1,
+                )
+            )
 
-    pad_size = (150, 250)
-    outline_coarse = 10
-    outline_fine = 0.5
-    ebeam_overlap = 10
+    # array the nTrons with flex_grid
+    c = qg.utilities.flex_grid(nTrons, shape=(2, 3), spacing=(100, 100))
+    c.show()
 
-    layers = {'annotation':0, 'mgb2_fine':1, 'mgb2_coarse':2, 'pad':3}
-
-    design = qd.Design(
-        name = 'demo_design',
-        chip_w = chip_w, 
-        chip_margin = chip_margin, 
-        N_dies = N_dies, 
-        pad_size = pad_size,
-        device_outline = outline_fine,
-        die_outline = outline_coarse,
-        ebeam_overlap = ebeam_overlap,
-        annotation_layer = layers['annotation'],
-        device_layer = layers['mgb2_fine'],
-        die_layer = layers['mgb2_coarse'],
-        pad_layer = layers['pad']
-    )
-
-    CHIP = design.create_chip(create_devices_map_txt=False)
-
-.. image:: tutorials_images/tuto_gettingstarted_basis.png
-   :alt: tuto_gettingstarted_basis.png
+.. image:: tutorials_images/tutorial_ntrons.png
+   :alt: example ntron array
 
 Add test vehicules cells
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -111,7 +161,7 @@ Add alignment cells like:
 
 .. code-block:: python
     :lineno-start: 38
-    
+
     ALIGN_CELL_LEFT = design.alignment_cell(
         layers_to_align = [layers['mgb2_coarse'], layers['pad']], text = 'LEFT'
     )
@@ -193,4 +243,29 @@ Some nanowire electronics
 .. image:: tutorials_images/tuto_gettingstarted_some_electronics.png
    :alt: tuto_gettingstarted_some_electronics.png
 
-See full code `in GitHub <https://github.com/qnngroup/qnngds/blob/master/docs/user/tutorials/getting_started.py>`_.
+
+Now, let's configure the layers to use positive tone with a different line width for two layers
+(representing different beam currents). We'll use 200 nm line width for the low-current layer, and 5 μm for the high-current layer.
+Edit the class method ``outline`` in ``pdk/layer_map.py``.
+
+Rewrite ``outline`` so that it looks like this
+
+.. code-block:: python
+
+    @classmethod
+    def outline(cls, layer: Layer) -> int:
+        """Used to define desired outline for positive tone layers.
+
+        To make a layer positive tone, return a non-zero value for it.
+
+        E.g. if you want EBEAM_FINE to be positive tone with an outline
+        of 100 nm, then you should define this function to return 0.1
+        when passed a value of EBEAM_FINE (either as an enum type, a string
+        or tuple that is equivalent to the EBEAM_FINE GDS layer).
+        """
+        if gf.get_layer(layer) == cls.EBEAM_FINE:
+            return 0.2
+        elif gf.get_layer(layer) == cls.EBEAM_COARSE:
+            return 5
+        # by default, assume a layer is negative tone
+        return 0

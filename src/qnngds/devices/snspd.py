@@ -12,7 +12,7 @@ from typing import Tuple, Optional, Union
 def basic(
     wire_width: float = 0.2,
     wire_pitch: float = 0.6,
-    size: Tuple[Optional[Union[int, float]], Optional[Union[int, float]]] = (10, 20),
+    size: Tuple[Optional[Union[int, float]], Optional[Union[int, float]]] = (5, 5),
     num_squares: Optional[int] = None,
     turn_ratio: Union[int, float] = 4,
     terminals_same_side: bool = False,
@@ -49,7 +49,7 @@ def basic(
         wire_pitch = 2 * wire_width
 
     SNSPD = gf.Component()
-    SNSPD << gf.components.superconductors.snspd(
+    snspd_i = SNSPD << gf.components.superconductors.snspd(
         wire_width=wire_width,
         wire_pitch=wire_pitch,
         size=size,
@@ -57,13 +57,14 @@ def basic(
         turn_ratio=turn_ratio,
         terminals_same_side=terminals_same_side,
         layer=layer,
-        port_type=port_type,
+        # port_type=port_type,
     )
-    ports = SNSPD.ports
     SNSPDu = gf.Component()
     SNSPDu << qu.union(SNSPD)
     SNSPDu.flatten()
-    SNSPDu.add_ports(ports)
+    SNSPDu.add_ports(snspd_i.ports)
+    for port in SNSPDu.ports:
+        port.port_type = port_type
     return SNSPDu
 
 
@@ -71,7 +72,7 @@ def basic(
 def vertical(
     wire_width: float = 0.2,
     wire_pitch: float = 0.6,
-    size: Tuple[Union[int, float], Union[int, float]] = (10, 20),
+    size: Tuple[Union[int, float], Union[int, float]] = (5, 5),
     num_squares: Optional[int] = None,
     extend: Optional[float] = 1,
     layer: tuple = (1, 0),
@@ -137,14 +138,14 @@ def vertical(
     t2.movex(T.xsize)
 
     ports = []
-    if extend:
+    if extend is not None:
         E = gf.components.compass(size=(extend, wire_width), layer=layer)
         e1 = D << E
         e1.connect(e1.ports["e1"], t1.ports["e2"], allow_type_mismatch=True)
         e2 = D << E
         e2.connect(e2.ports["e1"], t2.ports["e2"], allow_type_mismatch=True)
-        ports.append(e1.ports["e2"])
-        ports.append(e2.ports["e2"])
+        ports.append(e1.ports["e3"])
+        ports.append(e2.ports["e3"])
     else:
         ports.append(t1.ports["e2"])
         ports.append(t2.ports["e2"])
