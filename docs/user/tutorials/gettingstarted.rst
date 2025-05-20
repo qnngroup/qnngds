@@ -73,7 +73,7 @@ Start with the basics
 
 Create a file in the toplevel of the cloned repository.
 
-Import the packages.
+Import the necessary packages and activate the PDK
 
 .. code-block:: python
     :linenos:
@@ -90,7 +90,7 @@ Now let's generate a few different nTron geometries and connect them up to pads.
 We'll make use of the ``pads_tri`` pad layout defined in the custom PDK.
 
 .. code-block:: python
-
+    :linenos:
     :lineno-start: 8
 
     nTrons = []
@@ -154,98 +154,11 @@ We'll make use of the ``pads_tri`` pad layout defined in the custom PDK.
 .. image:: tutorials_images/tutorial_ntrons.png
    :alt: example ntron array
 
-Add test vehicules cells
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-Add alignment cells like:
-
-.. code-block:: python
-    :lineno-start: 38
-
-    ALIGN_CELL_LEFT = design.alignment_cell(
-        layers_to_align = [layers['mgb2_coarse'], layers['pad']], text = 'LEFT'
-    )
-    design.place_on_chip(ALIGN_CELL_LEFT, (0, 2))
-
-Add Van der Pauw cells like:
-
-.. code-block:: python
-    :lineno-start: 48
-
-    VDP_TEST_MGB2 = design.vdp_cell(
-        layers_to_probe=[layers["mgb2_coarse"]],
-        layers_to_outline=[layers["mgb2_coarse"]],
-        text="MGB2",
-    )
-    design.place_on_chip(VDP_TEST_MGB2, (0, 0))
-
-Add resolution test cells like:
-
-.. code-block:: python
-    :lineno-start: 62
-
-    RES_TEST_MGB2_FINE = design.resolution_test_cell(
-        layer_to_resolve=layers["mgb2_fine"], text="MGB2 FINE"
-    )
-    design.place_on_chip(RES_TEST_MGB2_FINE, (2, 2))
-
-Add etch test cell like:
-
-.. code-block:: python
-    :lineno-start: 79
-
-    ETCH_TEST = design.etch_test_cell(layers_to_etch=[[layers["pad"]]], text="PAD")
-    design.place_on_chip(ETCH_TEST, (3, 0))
-
-
-.. image:: tutorials_images/tuto_gettingstarted_test_structures.png
-   :alt: tuto_gettingstarted_test_structures.png
-
-
-Some nanowire electronics
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. code-block:: python
-    :lineno-start: 84
-
-    # SNSPD-NTRON
-
-    SNSPD_NTRON_01 = design.snspd_ntron_cell(w_choke=0.1)
-    design.place_on_chip(SNSPD_NTRON_01, (1, 0))
-
-    # NANOWIRES
-
-    channels_w = [0.025, 0.1, 0.5, 1, 2]
-    channels_sources_w = [(x, 10 * x) for x in channels_w]
-    NANOWIRES = design.nanowires_cell(
-        channels_sources_w=channels_sources_w, text="src=10chn"
-    )
-    design.place_on_chip(NANOWIRES, (1, 1))
-
-    channels_sources_w = [(x, 4 * x) for x in channels_w]
-    NANOWIRES = design.nanowires_cell(
-        channels_sources_w=channels_sources_w, text="src=4chn"
-    )
-    design.place_on_chip(NANOWIRES, (3, 1))
-
-    # NTRONS
-
-    remaining_cells = []
-    chokes_w = [0.025, 0.05, 0.1, 0.25, 0.5]
-    channel_to_choke_ratios = [5, 10]
-    for ratio in channel_to_choke_ratios:
-        for choke_w in chokes_w:
-            channel_w = choke_w * ratio
-            NTRON = design.ntron_cell(choke_w, channel_w)
-            remaining_cells.append(NTRON)
-    design.place_remaining_devices(remaining_cells, write_remaining_devices_map_txt=False)
-
-.. image:: tutorials_images/tuto_gettingstarted_some_electronics.png
-   :alt: tuto_gettingstarted_some_electronics.png
-
+Editing PDK
+~~~~~~~~~~~~~~~~~~
 
 Now, let's configure the layers to use positive tone with a different line width for two layers
-(representing different beam currents). We'll use 200 nm line width for the low-current layer, and 5 μm for the high-current layer.
+(representing different beam currents). We'll use 200 nm line width for the low-current (fine) layer, and 5 μm for the high-current (coarse) layer.
 Edit the class method ``outline`` in ``pdk/layer_map.py``.
 
 Rewrite ``outline`` so that it looks like this
