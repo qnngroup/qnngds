@@ -383,9 +383,9 @@ def generate_experiment(
         Using the example qnngds PDK: `<https://github.com/qnngroup/qnngds-pdk/>`_,
         we can generate an example nTron test layout including pads. The pad array
         is just a linear array from gdsfactory, although a custom array could be defined.
-        The mapping of nTron device ports to pad ports is defined manually with `route_groups`,
+        The mapping of nTron device ports to pad ports is defined manually with ``route_groups``,
         but it's possible to use autoassignment if the ports are facing the same direction
-        (e.g. `pads_tri` in `qnngds-pdk`)
+        (e.g. ``pads_tri`` in ``qnngds-pdk``)
 
         >>> c = qg.utilities.generate_experiment(
         >>>         dut=qg.devices.ntron.sharp,
