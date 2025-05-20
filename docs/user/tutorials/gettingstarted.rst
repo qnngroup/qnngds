@@ -151,7 +151,7 @@ We'll make use of the ``pads_tri`` pad layout defined in the custom PDK.
     c = qg.utilities.flex_grid(nTrons, shape=(2, 3), spacing=(100, 100))
     c.show()
 
-.. image:: tutorials_images/tutorial_ntrons.png
+.. image:: images/ntrons.png
    :alt: example ntron array
 
 Editing PDK
