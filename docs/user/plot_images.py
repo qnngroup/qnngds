@@ -35,8 +35,8 @@ def plot_and_save_functions(module, module_name):
     it uses PHIDL's quickplot function to plot and then saves the plot to a directory corresponding to
     the module name. Plots are saved in PNG format.
     """
-    script_dir = os.path.dirname(__file__)
-    os.makedirs(os.path.join(script_dir, module_name), exist_ok=True)
+    save_dir = os.path.join(os.path.dirname(__file__), "images")
+    os.makedirs(os.path.join(save_dir, module_name), exist_ok=True)
     func_names = dir(module)
     for func_name in func_names:
         func = getattr(module, func_name)
@@ -64,9 +64,7 @@ def plot_and_save_functions(module, module_name):
                     device.draw_ports()
                     device.plot()
                     # qp(device)
-                    plt.savefig(
-                        os.path.join(script_dir, module_name, f"{func_name}.png")
-                    )
+                    plt.savefig(os.path.join(save_dir, module_name, f"{func_name}.png"))
                     plt.close()
                     print(
                         f"Info: in module '{module_name}', function '{func_name}' was plotted"

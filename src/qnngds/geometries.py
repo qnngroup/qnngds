@@ -4,7 +4,7 @@ geometry library."""
 import gdsfactory as gf
 import numpy as np
 
-import qnngds.utilities as qu
+import qnngds as qg
 
 from gdsfactory.typings import LayerSpec
 from typing import Union, List, Optional
@@ -13,8 +13,8 @@ from typing import Union, List, Optional
 @gf.cell
 def taper(
     length: Union[int, float] = 10,
-    wide: Union[int, float] = 5,
-    narrow: Union[int, float] = 2,
+    width1: Union[int, float] = 5,
+    width2: Union[int, float] = 2,
     layer: LayerSpec = (1, 0),
     port_type: str = "electrical",
 ) -> gf.Component:
@@ -22,28 +22,26 @@ def taper(
 
     Parameters
         length (int or float): Length of taper
-        wide (int or float): Width of wide end of taper
-        narrow (int or float): Width of narrow end of taper
+        width1 (int or float): Width of first end of taper
+        width2 (int or float): Width of second end of taper
         layer (LayerSpec): GDS layer tuple (layer, type)
         port_type (string): gdsfactory port type. default "electrical"
 
     Returns
         gf.Component: a single taper
     """
-    if wide < narrow:
-        wide, narrow = narrow, wide
     T = gf.Component()
     pts = [
-        (0, -wide / 2),
-        (length, -narrow / 2),
-        (length, narrow / 2),
-        (0, wide / 2),
+        (0, -width1 / 2),
+        (length, -width2 / 2),
+        (length, width2 / 2),
+        (0, width1 / 2),
     ]
     T.add_polygon(pts, layer=layer)
     T.add_port(
         name="e1" if port_type == "electrical" else "o1",
         center=[0, 0],
-        width=wide,
+        width=width1,
         orientation=180,
         layer=layer,
         port_type=port_type,
@@ -51,7 +49,7 @@ def taper(
     T.add_port(
         name="e2" if port_type == "electrical" else "o2",
         center=[length, 0],
-        width=narrow,
+        width=width2,
         orientation=0,
         layer=layer,
         port_type=port_type,
@@ -84,8 +82,10 @@ def hyper_taper(
     taper_length = length
     wide = wide_section
     narrow = narrow_section
+    swap = False
     if wide < narrow:
         wide, narrow = narrow, wide
+        swap = True
     dx = narrow_section / 1000
     x_list = np.linspace(0, taper_length, int(taper_length / dx), endpoint=True)
     pts = []
@@ -98,7 +98,7 @@ def hyper_taper(
         pts.append((x, -np.cosh(a * x) * narrow / 2))
     HT.add_polygon(pts, layer=layer)
     HT.add_port(
-        name="e1",
+        name="e2" if swap else "e1",
         center=[0, 0],
         width=narrow,
         orientation=180,
@@ -106,7 +106,7 @@ def hyper_taper(
         port_type=port_type,
     )
     HT.add_port(
-        name="e2",
+        name="e1" if swap else "e2",
         center=[taper_length, 0],
         width=wide,
         orientation=0,
@@ -429,7 +429,8 @@ def _create_waffle(
     W = gf.components.shapes.rectangle(size=(res * 80, res * 80), layer=layer)
 
     pattern = [(res * x, res * 80) for x in [2, 1, 1, 2, 3, 5, 8, 13, 21, 15]]
-    WOut = qu.flex_grid(
+    DUMMY = gf.Component()
+    WOut = DUMMY << qg.utilities.flex_grid(
         tuple(gf.components.shapes.rectangle(size=p, layer=layer) for p in pattern),
         spacing=res,
     )
@@ -443,7 +444,7 @@ def _create_waffle(
     text.move(start, (2 * res, -2 * res))
 
     WAFFLEu = gf.Component()
-    WAFFLEu << qu.union(WAFFLE)
+    WAFFLEu << qg.utilities.union(WAFFLE)
     WAFFLEu.flatten()
     return WAFFLEu
 
@@ -482,7 +483,7 @@ def _create_3L(res: Union[float, int] = 1, layer: LayerSpec = (1, 0)) -> gf.Comp
     start = (text.xmin, text.ymin)
     text.move(start, [(i + 1) * space for space in grid_spacing])
     LLLu = gf.Component()
-    LLLu << qu.union(LLL)
+    LLLu << qg.utilities.union(LLL)
     LLLu.flatten()
     return LLLu
 
@@ -514,17 +515,18 @@ def resolution_test(
                 align_y="ymin",
             )
         )
-    RES_TEST = gf.grid(tests, spacing=20, align_x="xmin")
-    RES_TEST.move(RES_TEST.center, (0, 0))
+    RES_TEST = gf.Component()
+    rt = RES_TEST << gf.grid(tests, spacing=20, align_x="xmin")
+    rt.move(rt.center, (0, 0))
 
     if outline is not None:
         if outline > 0:
-            RES_TEST = qu.outline(RES_TEST, {layer: outline})
+            RES_TEST = qg.utilities.outline(RES_TEST, {layer: outline})
         else:
-            RES_TEST = qu.invert(RES_TEST, {layer: 5})
+            RES_TEST = qg.utilities.invert(RES_TEST, {layer: 5})
 
     RES_TESTu = gf.Component()
-    RES_TESTu << qu.union(RES_TEST)
+    RES_TESTu << qg.utilities.union(RES_TEST)
     RES_TESTu.flatten()
     return RES_TESTu
 

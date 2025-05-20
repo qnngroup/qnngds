@@ -108,7 +108,7 @@ Geometries
 
 .. automodule:: qnngds.geometries
     :members:
-    :exclude-members: alignment_mark, angled_taper, hyper_taper, optimal_step, taper, vdp
+    :exclude-members: alignment_mark, angled_taper, hyper_taper, optimal_step, resolution_test, taper, vdp
     :undoc-members:
     :show-inheritance:
 
@@ -131,6 +131,11 @@ Geometries
 
         .. image:: images/geometries/optimal_step.png
             :alt: optimal_step.png
+
+    .. autofunction:: resolution_test
+
+        .. image:: images/geometries/resolution_test.png
+            :alt: resolution_test.png
 
     .. autofunction:: taper
 

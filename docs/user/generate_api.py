@@ -1,7 +1,7 @@
 """Generate api.rst autodoc and call plot_images to generate image examples"""
 
 import os
-from images import plot_images
+import plot_images
 
 
 def automodule(module, image_folder):
@@ -100,7 +100,6 @@ if __name__ == "__main__":
     qnngds_path = os.path.join("..", "..", "src", "qnngds")
 
     try:
-        print(qnngds_path)
         plot_images.process_modules_in_folder(qnngds_path)
         generate_api(qnngds_path)
 
