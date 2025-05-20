@@ -14,7 +14,7 @@ Setup a virtual environment and install ``qnngds``
 
 * Create a new virtual environment:
 
-    * Using ``uv`` (recommended, `installation instructions <https://docs.astral.sh/uv/>`_):
+    * Using ``uv`` (recommended, `installation instructions <https://docs.astral.sh/uv/#installation>`_):
 
         * Open a terminal in the directory you want to put your virtual environment.
 
