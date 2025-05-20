@@ -52,7 +52,7 @@ Setup a virtual environment and install ``qnngds``
 
               # windows
               python -m venv .venv/your-env-name
-              .\\.venv\\your-env-name\\Scripts\\Activate
+              .\.venv\your-env-name\Scripts\Activate
               pip install qnngds
 
           .. code-block:: bash
