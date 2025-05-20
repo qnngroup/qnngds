@@ -48,18 +48,18 @@ Setup a virtual environment and install ``qnngds``
 
         * Execute:
 
-          .. code-block:: bash
+          .. code-block:: powershell
 
               # windows
               python -m venv .venv/your-env-name
-              .\.venv\your-env-name\Scripts\Activate
+              .\\.venv\\your-env-name\\Scripts\\Activate
               pip install qnngds
 
           .. code-block:: bash
 
               # Unix/macOS
               python -m venv .venv/your-env-name
-              source .\.venv\your-env-name\scripts\activate
+              source .venv/your-env-name/scripts/activate
               pip install qnngds
 
 Install klive and gdsfactory extensions for klayout
