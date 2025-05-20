@@ -23,7 +23,7 @@ def basic(
 
     Takes gdsfactory's SNSPD and perform union.
 
-    Parameters:
+    Args:
         wire_width (float): Width of the nanowire.
         wire_pitch (float): Pitch of the nanowire.
         size (tuple of Optional[int or float]): Size of the detector in squares (width, height).
@@ -81,7 +81,7 @@ def vertical(
     """Creates an optimally-rounded SNSPD, with terminals in its center instead
     of the side.
 
-    Parameters:
+    Args:
         wire_width (float): Width of the nanowire.
         wire_pitch (float): Pitch of the nanowire.
         size (tuple of int or float): Size of the detector in squares (width, height).

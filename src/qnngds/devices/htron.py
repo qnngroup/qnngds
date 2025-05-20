@@ -24,7 +24,7 @@ def planar(
 ) -> gf.Component:
     """Create a planar hTron.
 
-    Parameters
+    Args:
         wire_width (int or float): Width of routing wires in microns
         gate_width (int or float): Width of superconducting gate in microns
         channel_width (int or float): Width of superconducting channel in microns
@@ -34,7 +34,7 @@ def planar(
         layer (LayerSpec): GDS layer
         port_type (string): gdsfactory port type. default "electrical"
 
-    Returns
+    Returns:
         gf.Component: a single planar hTron
     """
 
@@ -76,11 +76,11 @@ def multilayer(
 ) -> gf.Component:
     """Create a multilayer hTron.
 
-    Parameters
+    Args:
         channel_spec (ComponentSpec): callable function that generates a gf.Component for the channel nanowire
         gate_spec (ComponentSpec): callable function that generates a gf.Component for the gate nanowire
 
-    Returns
+    Returns:
         gf.Component: a single planar hTron
     """
 

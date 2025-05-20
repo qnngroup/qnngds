@@ -20,14 +20,14 @@ def taper(
 ) -> gf.Component:
     """Linear taper (solid).
 
-    Parameters
+    Args:
         length (int or float): Length of taper
         width1 (int or float): Width of first end of taper
         width2 (int or float): Width of second end of taper
         layer (LayerSpec): GDS layer tuple (layer, type)
         port_type (string): gdsfactory port type. default "electrical"
 
-    Returns
+    Returns:
         gf.Component: a single taper
     """
     T = gf.Component()
@@ -67,14 +67,14 @@ def hyper_taper(
 ) -> gf.Component:
     """Hyperbolic taper (solid). Designed by colang.
 
-    Parameters
+    Args:
         length (int or float): Length of taper
         wide_section (int or float): Width of wide end of taper
         narrow_section (int or float): Width of narrow end of taper
         layer (LayerSpec): GDS layer tuple (layer, type)
         port_type (string): gdsfactory port type. default "electrical"
 
-    Returns
+    Returns:
         gf.Component: a single taper
     """
     HT = gf.Component()
@@ -126,14 +126,14 @@ def angled_taper(
 ) -> gf.Component:
     """Create an angled taper with euler curves.
 
-    Parameters
+    Args:
         wire_width (int or float): Width of wide end of taper
         constr_width (int or float): Width of narrow end of taper
         angle (int or float): Angle between taper ends in degrees
         layer (LayerSpec): GDS layer tuple (layer, type)
         port_type (string): gdsfactory port type. default "electrical"
 
-    Returns
+    Returns:
         gf.Component: a single taper
     """
 
@@ -257,14 +257,14 @@ def _create_comb(
     """Creates vernier caliper comb.
 
     Helper method for alignment_mark
-    Parameters
+    Args:
         pitch1 (int or float): pitch of top comb
         pitch2 (int or float): pitch of bottom comb
         layer1 (tuple): center comb GDS layer tuple (layer, type)
         layer2 (tuple): top/bottom comb GDS layer tuple (layer, type)
         text_angle (int or float): angle to rotate text labels
 
-    Returns
+    Returns:
         gf.Component: alignment vernier calipers
     """
 
@@ -316,11 +316,11 @@ def _create_marker(layer1: tuple = (1, 0), layer2: tuple = (2, 0)) -> gf.Compone
     """Creates vernier caliper comb
 
     Helper method for alignment_mark
-    Parameters
+    Args:
         layer1 (tuple): center comb GDS layer tuple (layer, type)
         layer2 (tuple): top/bottom comb GDS layer tuple (layer, type)
 
-    Returns
+    Returns:
         gf.Component: alignment cross with vernier calipers
     """
 
@@ -388,10 +388,10 @@ def alignment_mark(
 ) -> gf.Component:
     """Creates an alignment mark for each photolithography.
 
-    Parameters
+    Args:
         layers (List[tuple]): A list of GDS layer tuples (layer, type)
 
-    Returns
+    Returns:
         gf.Component: alignment marks between each layer pair
     """
 
