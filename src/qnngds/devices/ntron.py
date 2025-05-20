@@ -3,7 +3,7 @@
 import gdsfactory as gf
 from gdsfactory.typings import ComponentSpec, LayerSpec
 
-import qnngds.utilities as qu
+import qnngds as qg
 
 
 @gf.cell
@@ -62,7 +62,7 @@ def smooth(
     k.move((c.xmin - k.xmax, choke_shift))
 
     Du = gf.Component()
-    Du << qu.union(D)
+    Du << qg.utilities.union(D)
     Du.flatten()
 
     for name, port in zip(
@@ -110,30 +110,36 @@ def sharp(
 
     D = gf.Component()
 
-    choke = gf.components.tapers.taper(choke_l, gate_w, choke_w, layer=layer)
+    choke = qg.geometries.taper(
+        choke_l, gate_w, choke_w, layer=layer, port_type="electrical"
+    )
     k = D << choke
 
     channel = gf.components.compass(
-        size=(channel_w, channel_l), layer=layer, port_type="optical"
+        size=(channel_w, channel_l), layer=layer, port_type="electrical"
     )
     c = D << channel
-    c.connect(port=c.ports["o1"], other=k.ports["o2"], allow_width_mismatch=True)
-    c.move(c.center, (0, 0))
+    c.connect(port=c.ports["e1"], other=k.ports["e2"], allow_width_mismatch=True)
+    D.move(c.center, (0, 0))
 
-    drain = gf.components.tapers.taper(drain_l, channel_w, drain_w, layer=layer)
+    drain = qg.geometries.taper(
+        drain_l, channel_w, drain_w, layer=layer, port_type="electrical"
+    )
     d = D << drain
-    d.connect(port=d.ports["o1"], other=c.ports["o2"])
+    d.connect(port=d.ports["e1"], other=c.ports["e2"])
 
-    source = gf.components.tapers.taper(source_l, channel_w, source_w, layer=layer)
+    source = qg.geometries.taper(
+        source_l, channel_w, source_w, layer=layer, port_type="electrical"
+    )
     s = D << source
-    s.connect(port=s.ports["o1"], other=c.ports["o4"])
+    s.connect(port=s.ports["e1"], other=c.ports["e4"])
 
     Du = gf.Component()
-    Du << qu.union(D)
+    Du << qg.utilities.union(D)
     Du.flatten()
 
     for name, port in zip(
-        ("g", "s", "d"), (k.ports["o1"], s.ports["o2"], d.ports["o2"])
+        ("g", "s", "d"), (k.ports["e1"], s.ports["e2"], d.ports["e2"])
     ):
         Du.add_port(name=name, port=port)
     for port in Du.ports:

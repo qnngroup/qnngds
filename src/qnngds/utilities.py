@@ -154,7 +154,7 @@ def invert(
 
 @gf.cell
 def flex_grid(
-    components: ComponentSpecsOrComponents = (gf.components.shapes.rectangle,),
+    components: ComponentSpecsOrComponents,
     spacing: Spacing | float = (5.0, 5.0),
     shape: tuple[int, int] | None = None,
     align_x: Literal["origin", "xmin", "xmax", "center"] = "center",
@@ -378,6 +378,29 @@ def generate_experiment(
         retries (int): how many times to try rerouting with s_bend (may need to be larger for many port groupings)
     Returns:
         (gf.Component): experiment
+
+    Example:
+        Using the example qnngds PDK: `<https://github.com/qnngroup/qnngds-pdk/>`_,
+        we can generate an example nTron test layout including pads. The pad array
+        is just a linear array from gdsfactory, although a custom array could be defined.
+        The mapping of nTron device ports to pad ports is defined manually with `route_groups`,
+        but it's possible to use autoassignment if the ports are facing the same direction
+        (e.g. `pads_tri` in `qnngds-pdk`)
+        >>> c = qg.utilities.generate_experiment(
+        >>>         dut=qg.devices.ntron.sharp,
+        >>>         pad_array=gf.components.pads.pad_array(pad=gf.components.pads.pad, columns=1, rows=3, column_pitch=1, row_pitch=250, port_orientation=0, size=(200,200), layer="EBEAM_COARSE"),
+        >>>         label=None,
+        >>>         route_groups=(
+        >>>             qg.utilities.RouteGroup(
+        >>>                 PDK.get_cross_section("ebeam"), {"g": "e21", "s": "e11", "d": "e31"}
+        >>>             ),
+        >>>         ),
+        >>>         dut_offset=(250, 250),
+        >>>         pad_offset=(0, 0),
+        >>>         label_offset=(0, 0),
+        >>>         retries=1,
+        >>>     )
+        >>> c.show()
     """
     dut_i = dut() if isinstance(dut, Callable) else dut
     if pad_array is not None:

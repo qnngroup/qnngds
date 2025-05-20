@@ -11,6 +11,53 @@ from typing import Union, List, Optional
 
 
 @gf.cell
+def taper(
+    length: Union[int, float] = 10,
+    wide_section: Union[int, float] = 50,
+    narrow_section: Union[int, float] = 5,
+    layer: LayerSpec = (1, 0),
+    port_type: str = "electrical",
+) -> gf.Component:
+    """Linear taper (solid).
+
+    Parameters
+        length (int or float): Length of taper
+        wide_section (int or float): Width of wide end of taper
+        narrow_section (int or float): Width of narrow end of taper
+        layer (LayerSpec): GDS layer tuple (layer, type)
+        port_type (string): gdsfactory port type. default "electrical"
+
+    Returns
+        gf.Component: a single taper
+    """
+    T = gf.Component()
+    pts = [
+        (0, -wide_section / 2),
+        (length, -narrow_section / 2),
+        (length, narrow_section / 2),
+        (0, wide_section / 2),
+    ]
+    T.add_polygon(pts, layer=layer)
+    T.add_port(
+        name="e1" if port_type == "electrical" else "o1",
+        center=[0, 0],
+        width=wide_section,
+        orientation=180,
+        layer=layer,
+        port_type=port_type,
+    )
+    T.add_port(
+        name="e2" if port_type == "electrical" else "o2",
+        center=[length, 0],
+        width=narrow_section,
+        orientation=0,
+        layer=layer,
+        port_type=port_type,
+    )
+    return T
+
+
+@gf.cell
 def hyper_taper(
     length: Union[int, float] = 10,
     wide_section: Union[int, float] = 50,

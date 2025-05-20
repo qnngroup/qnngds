@@ -1,3 +1,5 @@
+"""Generate api.rst autodoc and call plot_images to generate image examples"""
+
 import os
 from images import plot_images
 
@@ -32,12 +34,12 @@ def automodule(module, image_folder):
             and not f.startswith("_")
         ]
     )
-    content += f"    :members:\n"
+    content += "    :members:\n"
     content += (
         f"    :exclude-members: {', '.join(os.path.splitext(i)[0] for i in images)}\n"
     )
-    content += f"    :undoc-members:\n"
-    content += f"    :show-inheritance:\n\n"
+    content += "    :undoc-members:\n"
+    content += "    :show-inheritance:\n\n"
 
     for image in images:
         figurename, ext = os.path.splitext(image)
@@ -83,7 +85,6 @@ def generate_api(src_path):
                     if not m.startswith("_") and m.endswith(".py")
                 ]
             )
-
             for submodule in submodules:
                 api += f"{submodule[:-3]}\n"  # The subsection title
                 api += f"{'~' * len(submodule[:-3])}\n\n"  # ~~~~~~~~~~~~~~~~~~~~
@@ -99,6 +100,7 @@ if __name__ == "__main__":
     qnngds_path = os.path.join("..", "..", "src", "qnngds")
 
     try:
+        print(qnngds_path)
         plot_images.process_modules_in_folder(qnngds_path)
         generate_api(qnngds_path)
 
