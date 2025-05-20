@@ -386,6 +386,7 @@ def generate_experiment(
         The mapping of nTron device ports to pad ports is defined manually with `route_groups`,
         but it's possible to use autoassignment if the ports are facing the same direction
         (e.g. `pads_tri` in `qnngds-pdk`)
+
         >>> c = qg.utilities.generate_experiment(
         >>>         dut=qg.devices.ntron.sharp,
         >>>         pad_array=gf.components.pads.pad_array(pad=gf.components.pads.pad, columns=1, rows=3, column_pitch=1, row_pitch=250, port_orientation=0, size=(200,200), layer="EBEAM_COARSE"),
