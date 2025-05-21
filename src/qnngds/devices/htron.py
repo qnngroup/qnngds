@@ -7,6 +7,8 @@ import qnngds as qg
 
 import qnngds.devices.nanowire as nanowire
 
+from functools import partial
+
 from gdsfactory.typings import LayerSpec, ComponentSpec
 from typing import Union
 
@@ -71,8 +73,8 @@ def planar(
 
 @gf.cell
 def multilayer(
-    channel_spec: ComponentSpec = nanowire.variable_length,
-    gate_spec: ComponentSpec = nanowire.variable_length,
+    channel_spec: ComponentSpec = partial(nanowire.variable_length, layer=(1, 0)),
+    gate_spec: ComponentSpec = partial(nanowire.variable_length, layer=(2, 0)),
 ) -> gf.Component:
     """Create a multilayer hTron.
 

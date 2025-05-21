@@ -71,7 +71,7 @@ def outline(
     """Outline polygons within component by layer.
 
     Args:
-        component (gf.Component): component to merge
+        component (gf.Component): component to outline
         outline_layers (dict[tuple, float]): map of desired outline amount per layer. If a layer is omitted, it will not be outlined
 
     Returns:
@@ -132,7 +132,7 @@ def invert(
     """Outline polygons within component by layer.
 
     Args:
-        component (gf.Component): component to merge
+        component (gf.Component): component to invert
         ext_bbox_layers (dict[tuple, float]): amount to expand bounding box for each layer. If a layer is omitted, it will not be inverted.
 
     Returns:

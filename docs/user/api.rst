@@ -108,7 +108,7 @@ Geometries
 
 .. automodule:: qnngds.geometries
     :members:
-    :exclude-members: alignment_mark, angled_taper, hyper_taper, optimal_step, resolution_test, taper, vdp
+    :exclude-members: alignment_mark, angled_taper, flagpole, hyper_taper, optimal_step, resolution_test, taper, vdp
     :undoc-members:
     :show-inheritance:
 
@@ -121,6 +121,11 @@ Geometries
 
         .. image:: images/geometries/angled_taper.png
             :alt: angled_taper.png
+
+    .. autofunction:: flagpole
+
+        .. image:: images/geometries/flagpole.png
+            :alt: flagpole.png
 
     .. autofunction:: hyper_taper
 
@@ -145,6 +150,36 @@ Geometries
     .. autofunction:: vdp
 
         .. image:: images/geometries/vdp.png
+            :alt: vdp.png
+
+.. _Test_structures:
+Test_structures
+---------------
+
+.. automodule:: qnngds.test_structures
+    :members:
+    :exclude-members: alignment_mark, rect_tlm, resolution_test, vdp
+    :undoc-members:
+    :show-inheritance:
+
+    .. autofunction:: alignment_mark
+
+        .. image:: images/test_structures/alignment_mark.png
+            :alt: alignment_mark.png
+
+    .. autofunction:: rect_tlm
+
+        .. image:: images/test_structures/rect_tlm.png
+            :alt: rect_tlm.png
+
+    .. autofunction:: resolution_test
+
+        .. image:: images/test_structures/resolution_test.png
+            :alt: resolution_test.png
+
+    .. autofunction:: vdp
+
+        .. image:: images/test_structures/vdp.png
             :alt: vdp.png
 
 .. _Utilities:
