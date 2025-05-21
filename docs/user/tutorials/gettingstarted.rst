@@ -28,10 +28,6 @@ Setup a virtual environment and install ``qnngds``
 
         * Install qnngds
 
-          .. code-block:: bash
-
-              uv pip install qnngds
-
     * Using ``conda`` (recommended, `miniforge installation instructions <https://github.com/conda-forge/miniforge?tab=readme-ov-file#install>`_):
 
         * Execute:
@@ -40,7 +36,6 @@ Setup a virtual environment and install ``qnngds``
 
               conda create -n my-project-env
               conda activate my-project-env
-              pip install qnngds
 
     * Using ``python``:
 
@@ -53,14 +48,30 @@ Setup a virtual environment and install ``qnngds``
               # windows
               python -m venv .venv/your-env-name
               .\.venv\your-env-name\Scripts\Activate
-              pip install qnngds
 
           .. code-block:: bash
 
               # Unix/macOS
               python -m venv .venv/your-env-name
               source .venv/your-env-name/scripts/activate
-              pip install qnngds
+
+* Install ``qnngds``
+
+    * Using ``uv``
+
+        .. code-block:: bash
+
+            uv pip install qnngds
+
+    * Using ``conda`` or ``python`` ``venv``:
+
+        .. code-block:: bash
+
+            pip install qnngds
+
+.. note::
+    To install a development version of qnngds that hasn't been released yet, replace the command ``pip install qnngds`` with ``pip install -e /path/to/cloned/copy/of/qnngds``. Note that this is a different path from the PDK repo you cloned earlier.
+
 
 Install klive and gdsfactory extensions for klayout
 ~~~~~~~~~~~~~~~~~~~~~
