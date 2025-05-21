@@ -4,11 +4,11 @@ from multiproject.utils import get_project
 from importlib.metadata import version
 
 sys.path.insert(0, os.path.abspath(os.path.join("..", "src")))
-import qnngds
 
 extensions = [
     "multiproject",
     # "sphinx_copybutton",
+    "sphinx.ext.viewcode",
     "sphinx.ext.duration",
     "sphinx.ext.doctest",
     "sphinx.ext.autodoc",

@@ -19,7 +19,7 @@ repos:
       - id: interrogate
         name: interrogate-docstrings
         args: [--fail-under=100, --verbose]
-        exclude: "__init__.py"
+        exclude: "__init__.py|docs/conf.py"
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
