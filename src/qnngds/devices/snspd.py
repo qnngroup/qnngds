@@ -15,13 +15,14 @@ def basic(
     size: Tuple[Optional[Union[int, float]], Optional[Union[int, float]]] = (5, 5),
     num_squares: Optional[int] = None,
     turn_ratio: Union[int, float] = 4,
+    extend_terminals: bool = True,
     terminals_same_side: bool = False,
     layer: tuple = (1, 0),
     port_type: str = "electrical",
 ) -> gf.Component:
     """Creates an optimally-rounded SNSPD.
 
-    Takes gdsfactory's SNSPD and perform union.
+    Modification of gdsfactory's implementation
 
     Args:
         wire_width (float): Width of the nanowire.
@@ -31,6 +32,7 @@ def basic(
         turn_ratio (int or float): Specifies how much of the SNSPD width is
             dedicated to the 180 degree turn. A turn_ratio of 10 will result in 20%
             of the width being comprised of the turn.
+        extend_terminals (bool): If True, bring ports flush to edges of device
         terminals_same_side (bool): If True, both ports will be located on the
             same side of the SNSPD.
         layer (tuple): GDS layer tuple (layer, type)
@@ -48,20 +50,80 @@ def basic(
         )
         wire_pitch = 2 * wire_width
 
+    if num_squares is not None:
+        xy = np.sqrt(num_squares * wire_pitch * wire_width)
+        size = (xy, xy)
+        num_squares = None
+
+    xsize, ysize = size
+    if num_squares is not None:
+        if xsize is None:
+            xsize = num_squares * wire_pitch * wire_width / ysize
+        elif ysize is None:
+            ysize = num_squares * wire_pitch * wire_width / xsize
+
+    num_meanders = int(np.ceil(ysize / wire_pitch))
+
     SNSPD = gf.Component()
-    snspd_i = SNSPD << gf.components.superconductors.snspd(
-        wire_width=wire_width,
-        wire_pitch=wire_pitch,
-        size=size,
-        num_squares=num_squares,
+    hairpin = gf.components.superconductors.optimal_hairpin(
+        width=wire_width,
+        pitch=wire_pitch,
         turn_ratio=turn_ratio,
-        terminals_same_side=terminals_same_side,
+        length=xsize / 2,
+        num_pts=20,
         layer=layer,
-        # port_type=port_type,
     )
+
+    if not terminals_same_side and (num_meanders % 2) == 0:
+        num_meanders += 1
+    elif terminals_same_side and (num_meanders % 2) == 1:
+        num_meanders += 1
+
+    if extend_terminals:
+        start_nw = SNSPD.add_ref(
+            gf.c.compass(
+                size=(xsize / 2, wire_width), layer=layer, port_type="electrical"
+            )
+        )
+        hp_prev = SNSPD.add_ref(hairpin)
+        hp_prev.connect("e1", start_nw.ports["e3"])
+    else:
+        start_nw = SNSPD.add_ref(hairpin)
+        hp_prev = start_nw
+    alternate = True
+    last_port = None
+    for _n in range(2, num_meanders):
+        hp = SNSPD.add_ref(hairpin)
+        if alternate:
+            hp.connect("e2", hp_prev.ports["e2"])
+        else:
+            hp.connect("e1", hp_prev.ports["e1"])
+        last_port = hp.ports["e2"] if terminals_same_side else hp.ports["e1"]
+        hp_prev = hp
+        alternate = not alternate
+
+    if extend_terminals:
+        finish_se = SNSPD.add_ref(
+            gf.c.compass(
+                size=(xsize / 2, wire_width), layer=layer, port_type="electrical"
+            )
+        )
+        if last_port is not None:
+            finish_se.connect("e3", last_port)
+        SNSPD.add_port(port=finish_se.ports["e1"], name="e2")
+    else:
+        SNSPD.add_port(port=last_port, name="e2")
+
+    SNSPD.add_port(port=start_nw.ports["e1"], name="e1")
+
+    SNSPD.info["num_squares"] = num_meanders * (xsize / wire_width)
+    SNSPD.info["area"] = xsize * ysize
+    SNSPD.info["xsize"] = xsize
+    SNSPD.info["ysize"] = ysize
+    SNSPD.flatten()
     SNSPDu = gf.Component()
-    SNSPDu << qu.union(SNSPD)
-    SNSPDu.flatten()
+    snspd_i = SNSPDu << qu.union(SNSPD)
+    snspd_i.move(snspd_i.center, (0, 0))
     SNSPDu.add_ports(snspd_i.ports)
     for port in SNSPDu.ports:
         port.port_type = port_type
