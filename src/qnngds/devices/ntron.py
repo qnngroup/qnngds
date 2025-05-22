@@ -78,14 +78,14 @@ def smooth(
 @gf.cell
 def sharp(
     choke_w: float = 0.03,
-    choke_l: float = 0.5,
     gate_w: float = 0.2,
     channel_w: float = 0.1,
-    channel_l: float = 0.1,
     source_w: float = 0.3,
-    source_l: float = 1.5,
     drain_w: float = 0.3,
-    drain_l: float = 1.5,
+    gate_sq: float = 10,
+    channel_sq: float = 1,
+    source_sq: float = 5,
+    drain_sq: float = 5,
     layer: LayerSpec = (1, 0),
     port_type: str = "electrical",
 ) -> gf.Component:
@@ -93,14 +93,14 @@ def sharp(
 
     Args:
         choke_w (float): Width of the choke region.
-        choke_l (float): Length of the choke region.
         gate_w (float): Width of the gate region.
+        gate_sq (float): Length of the gate region in squares.
         channel_w (float): Width of the channel region.
-        channel_l (float): Length of channel region.
+        channel_sq (float): Length of channel region in squares.
         source_w (float): Width of the source region.
-        source_l (float): Length of the source region.
+        source_sq (float): Length of the source region in squares.
         drain_w (float): Width of the drain region.
-        drain_l (float): Length of the drain region.
+        drain_sq (float): Length of the drain region in squares.
         layer (LayerSpec): GDS layer
         port_type (string): gdsfactory port type. default "electrical"
 
@@ -110,8 +110,13 @@ def sharp(
 
     D = gf.Component()
 
+    gate_l = gate_sq * gate_w
+    channel_l = channel_sq * channel_w
+    drain_l = drain_sq * drain_w
+    source_l = source_sq * source_w
+
     choke = qg.geometries.taper(
-        choke_l, gate_w, choke_w, layer=layer, port_type="electrical"
+        gate_l, gate_w, choke_w, layer=layer, port_type="electrical"
     )
     k = D << choke
 

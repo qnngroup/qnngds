@@ -22,7 +22,7 @@ def basic(
 ) -> gf.Component:
     """Creates an optimally-rounded SNSPD.
 
-    Modification of gdsfactory's implementation
+    Modification of gdsfactory's and phidl's implementations
 
     Args:
         wire_width (float): Width of the nanowire.
@@ -50,17 +50,28 @@ def basic(
         )
         wire_pitch = 2 * wire_width
 
-    if num_squares is not None:
+    if num_squares is not None and (
+        (size is None) or ((size[0] is None) and (size[1]) is None)
+    ):
         xy = np.sqrt(num_squares * wire_pitch * wire_width)
-        size = (xy, xy)
+        size = [xy, xy]
         num_squares = None
-
-    xsize, ysize = size
-    if num_squares is not None:
-        if xsize is None:
-            xsize = num_squares * wire_pitch * wire_width / ysize
-        elif ysize is None:
-            ysize = num_squares * wire_pitch * wire_width / xsize
+    if [size[0], size[1], num_squares].count(None) != 1:
+        raise ValueError(
+            "[qnngds] snspd() requires that exactly ONE value of "
+            "the arguments ``num_squares`` and ``size`` be None "
+            "to prevent overconstraining, for example:\n"
+            ">>> snspd(size = (3, None), num_squares = 2000)"
+        )
+    if size[0] is None:
+        ysize = size[1] * wire_width
+        xsize = num_squares * wire_pitch * wire_width / ysize
+    elif size[1] is None:
+        xsize = size[0] * wire_width
+        ysize = num_squares * wire_pitch * wire_width / xsize
+    else:
+        xsize = size[0] * wire_width
+        ysize = size[1] * wire_width
 
     num_meanders = int(np.ceil(ysize / wire_pitch))
 
@@ -69,7 +80,7 @@ def basic(
         width=wire_width,
         pitch=wire_pitch,
         turn_ratio=turn_ratio,
-        length=xsize / 2,
+        length=xsize / 2 + turn_ratio * wire_width,
         num_pts=20,
         layer=layer,
     )
@@ -122,9 +133,9 @@ def basic(
     SNSPD.info["ysize"] = ysize
     SNSPD.flatten()
     SNSPDu = gf.Component()
-    snspd_i = SNSPDu << qu.union(SNSPD)
-    snspd_i.move(snspd_i.center, (0, 0))
-    SNSPDu.add_ports(snspd_i.ports)
+    SNSPDu << qu.union(SNSPD)
+    SNSPDu.add_ports(SNSPD.ports)
+    SNSPDu.move(SNSPDu.center, (0, 0))
     for port in SNSPDu.ports:
         port.port_type = port_type
     return SNSPDu
