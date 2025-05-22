@@ -12,7 +12,7 @@ from typing import Tuple, Optional, Union
 def basic(
     wire_width: float = 0.2,
     wire_pitch: float = 0.6,
-    size: Tuple[Optional[Union[int, float]], Optional[Union[int, float]]] = (10, 10),
+    size: Tuple[Optional[Union[int, float]], Optional[Union[int, float]]] = (20, 20),
     num_squares: Optional[int] = None,
     turn_ratio: Union[int, float] = 4,
     extend_terminals: bool = True,
@@ -147,7 +147,7 @@ def basic(
 def vertical(
     wire_width: float = 0.2,
     wire_pitch: float = 0.6,
-    size: Tuple[Union[int, float], Union[int, float]] = (5, 5),
+    size: Tuple[Union[int, float], Union[int, float]] = (20, 20),
     num_squares: Optional[int] = None,
     extend: Optional[float] = 1,
     layer: tuple = (1, 0),
@@ -178,52 +178,40 @@ def vertical(
 
     D = gf.Component()
 
-    S = gf.components.superconductors.snspd(
+    S = basic(
         wire_width=wire_width,
         wire_pitch=wire_pitch,
         size=size,
         num_squares=num_squares,
+        extend_terminals=False,
         terminals_same_side=False,
         layer=layer,
         port_type="optical",
     )
     D << S
 
-    HP = gf.components.superconductors.optimal_hairpin(
-        width=wire_width, pitch=wire_pitch, length=S.xsize / 2, layer=layer
-    )
-    h1 = D << HP
-    h1.mirror()
-    h1.move(np.subtract(S.ports["e1"].center, h1.ports["e2"].center))
-    h1.movex(size[0] / 2)
-
-    h2 = D << HP
-    h2.move(np.subtract(S.ports["e2"].center, h2.ports["e1"].center))
-    h2.movex(-size[0] / 2)
-
     T = gf.components.superconductors.optimal_90deg(width=wire_width, layer=layer)
     t1 = D << T
-    t1.rotate(90)
-    t1.move(np.subtract(h1.ports["e1"].center, t1.ports["e1"].center))
-    t1.movex(-T.xsize)
+    t1.move(np.subtract(S.ports["e1"].center, t1.ports["e2"].center))
+    t1.movex(T.xsize - wire_width / 2)
 
     t2 = D << T
-    t2.rotate(270)
-    t2.move(np.subtract(h2.ports["e2"].center, t2.ports["e1"].center))
-    t2.movex(T.xsize)
+    t2.rotate(180)
+    t2.move(np.subtract(S.ports["e2"].center, t2.ports["e2"].center))
+    t2.movex(-T.xsize + wire_width / 2)
 
     ports = []
     if extend is not None:
         E = gf.components.compass(size=(extend, wire_width), layer=layer)
         e1 = D << E
-        e1.connect(e1.ports["e1"], t1.ports["e2"], allow_type_mismatch=True)
+        e1.connect(e1.ports["e1"], t1.ports["e1"], allow_type_mismatch=True)
         e2 = D << E
-        e2.connect(e2.ports["e1"], t2.ports["e2"], allow_type_mismatch=True)
+        e2.connect(e2.ports["e1"], t2.ports["e1"], allow_type_mismatch=True)
         ports.append(e1.ports["e3"])
         ports.append(e2.ports["e3"])
     else:
-        ports.append(t1.ports["e2"])
-        ports.append(t2.ports["e2"])
+        ports.append(t1.ports["e1"])
+        ports.append(t2.ports["e1"])
     Du = gf.Component()
     Du << qu.union(D)
     Du.flatten()
