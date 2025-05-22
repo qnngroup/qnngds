@@ -12,9 +12,14 @@ htron
 
 .. automodule:: qnngds.devices.htron
     :members:
-    :exclude-members: multilayer, planar
+    :exclude-members: heater, multilayer, planar
     :undoc-members:
     :show-inheritance:
+
+    .. autofunction:: heater
+
+        .. image:: images/devices/htron/heater.png
+            :alt: heater.png
 
     .. autofunction:: multilayer
 
@@ -31,9 +36,14 @@ nanowire
 
 .. automodule:: qnngds.devices.nanowire
     :members:
-    :exclude-members: variable_length
+    :exclude-members: sharp, variable_length
     :undoc-members:
     :show-inheritance:
+
+    .. autofunction:: sharp
+
+        .. image:: images/devices/nanowire/sharp.png
+            :alt: sharp.png
 
     .. autofunction:: variable_length
 

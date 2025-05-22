@@ -4,6 +4,8 @@ import gdsfactory as gf
 
 from gdsfactory.typings import LayerSpec
 
+import qnngds as qg
+
 
 @gf.cell
 def variable_length(
@@ -58,3 +60,39 @@ def variable_length(
         port.port_type = port_type
 
     return NANOWIRE
+
+
+@gf.cell
+def sharp(
+    constr_width: float = 0.1,
+    wire_width: float = 0.3,
+    length: float = 1,
+    layer: LayerSpec = (1, 0),
+    port_type: str = "electrical",
+) -> gf.Component:
+    """Creates a single wire, made of two linear tapers starting at
+    wire_width tapering down to constriction of width constr_width.
+
+    Args:
+        constr_width (int or float): The width of the channel (at the hot-spot location).
+        wire_width (int or float): The width of connections to source/drain
+        length (int or float): The length of the interior constriction.
+        layer (LayerSpec): GDS layer
+        port_type (string): gdsfactory port type. default "electrical"
+
+    Returns:
+        gf.Component: sharp constriction
+    """
+    NANOWIRE = gf.Component()
+    tap = qg.geometries.taper(length / 2, constr_width, wire_width, layer=layer)
+    taps = []
+    for i in range(2):
+        taps.append(NANOWIRE << tap)
+    taps[0].connect(taps[0].ports["e1"], taps[1].ports["e1"])
+    NANOWIREu = gf.Component()
+    NANOWIREu << qg.utilities.union(NANOWIRE)
+    for n, tap in enumerate(taps):
+        NANOWIREu.add_port(name=f"e{n + 1}", port=tap.ports["e2"])
+    for port in NANOWIREu.ports:
+        port.port_type = port_type
+    return NANOWIREu
