@@ -75,7 +75,7 @@ def basic(
 
     num_meanders = int(np.ceil(ysize / wire_pitch))
 
-    half_size = xsize / 2 + turn_ratio * wire_width
+    half_size = xsize / 2
 
     SNSPD = gf.Component()
     hairpin = gf.components.superconductors.optimal_hairpin(
