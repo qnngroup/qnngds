@@ -177,7 +177,7 @@ def slotted(
 
     """
     D = gf.Component()
-    base = base_spec()
+    base = gf.get_component(base_spec)
     if n_slot == 0:
         return base
 

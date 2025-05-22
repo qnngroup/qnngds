@@ -12,7 +12,7 @@ from typing import Tuple, Optional, Union
 def basic(
     wire_width: float = 0.2,
     wire_pitch: float = 0.6,
-    size: Tuple[Optional[Union[int, float]], Optional[Union[int, float]]] = (5, 5),
+    size: Tuple[Optional[Union[int, float]], Optional[Union[int, float]]] = (10, 10),
     num_squares: Optional[int] = None,
     turn_ratio: Union[int, float] = 4,
     extend_terminals: bool = True,
@@ -75,12 +75,14 @@ def basic(
 
     num_meanders = int(np.ceil(ysize / wire_pitch))
 
+    half_size = xsize / 2 + turn_ratio * wire_width
+
     SNSPD = gf.Component()
     hairpin = gf.components.superconductors.optimal_hairpin(
         width=wire_width,
         pitch=wire_pitch,
         turn_ratio=turn_ratio,
-        length=xsize / 2 + turn_ratio * wire_width,
+        length=half_size,
         num_pts=20,
         layer=layer,
     )
@@ -93,7 +95,7 @@ def basic(
     if extend_terminals:
         start_nw = SNSPD.add_ref(
             gf.c.compass(
-                size=(xsize / 2, wire_width), layer=layer, port_type="electrical"
+                size=(half_size, wire_width), layer=layer, port_type="electrical"
             )
         )
         hp_prev = SNSPD.add_ref(hairpin)
@@ -116,7 +118,7 @@ def basic(
     if extend_terminals:
         finish_se = SNSPD.add_ref(
             gf.c.compass(
-                size=(xsize / 2, wire_width), layer=layer, port_type="electrical"
+                size=(half_size, wire_width), layer=layer, port_type="electrical"
             )
         )
         if last_port is not None:

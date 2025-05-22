@@ -403,9 +403,9 @@ def generate_experiment(
         >>>     )
         >>> c.show()
     """
-    dut_i = dut() if isinstance(dut, Callable) else dut
+    dut_i = gf.get_component(dut)
     if pad_array is not None:
-        pads_i = pad_array() if isinstance(pad_array, Callable) else pad_array
+        pads_i = gf.get_component(pad_array)
         # check appropriate number of ports on pad_array and dut
         if len(dut_i.ports) != len(pads_i.ports):
             raise ValueError(
