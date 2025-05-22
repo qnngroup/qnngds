@@ -129,7 +129,8 @@ def heater(
     HEATERu = gf.Component()
     HEATERu << qg.utilities.union(HEATER)
     for n, t_pad in enumerate(t_pads):
-        HEATERu.add_port(name=f"e{n + 1}", port=t_pad.ports["e3"])
+        for i in range(3):
+            HEATERu.add_port(name=f"e{3 * n + i + 1}", port=t_pad.ports[f"e{i + 2}"])
     for port in HEATERu.ports:
         port.port_type = port_type
     return HEATERu
