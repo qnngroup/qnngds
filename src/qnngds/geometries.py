@@ -250,7 +250,7 @@ def flagpole(
     size: tuple[float, float] = (4, 2),
     stub_size: tuple[float, float] = (2, 1),
     shape: str = "p",
-    taper_type: str | None = "straight",
+    taper_type: str | None = "fillet",
     layer: LayerSpec = (1, 0),
     port_type: str = "electrical",
 ) -> gf.Component:

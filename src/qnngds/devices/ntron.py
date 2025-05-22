@@ -82,7 +82,7 @@ def sharp(
     channel_w: float = 0.1,
     source_w: float = 0.3,
     drain_w: float = 0.3,
-    gate_sq: float = 10,
+    gate_sq: float = 2,
     channel_sq: float = 1,
     source_sq: float = 5,
     drain_sq: float = 5,
