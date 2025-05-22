@@ -126,7 +126,7 @@ def meander(
         (squares - 3.09) / n_turn - 1.09 - (pitch - width) / width
     ) * width / 2 + width
     # round to nearest 2nm, since gdsfactory rounds to nearest 1nm which can cause gaps between each hairpin
-    hp_length = 2e-3 * np.round(hp_length * 2e3)
+    hp_length = np.round(2 * hp_length / gf.kcl.dbu) * (gf.kcl.dbu / 2)
     hp = hairpin(hp_length)
     hp_prev = None
     for i in range(n_turn):
