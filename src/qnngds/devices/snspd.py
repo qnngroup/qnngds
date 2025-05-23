@@ -15,6 +15,7 @@ def basic(
     size: Tuple[Optional[Union[int, float]], Optional[Union[int, float]]] = (20, 20),
     num_squares: Optional[int] = None,
     turn_ratio: Union[int, float] = 4,
+    num_pts: int = 50,
     extend_terminals: bool = True,
     terminals_same_side: bool = False,
     layer: tuple = (1, 0),
@@ -27,11 +28,12 @@ def basic(
     Args:
         wire_width (float): Width of the nanowire.
         wire_pitch (float): Pitch of the nanowire.
-        size (tuple of Optional[int or float]): Size of the detector in squares (width, height).
+        size (tuple of Optional[int or float]): Size of the detector.
         num_squares (Optional[int]): Number of squares in the detector.
         turn_ratio (int or float): Specifies how much of the SNSPD width is
             dedicated to the 180 degree turn. A turn_ratio of 10 will result in 20%
             of the width being comprised of the turn.
+        num_pts (int): number of polygon points to use for turn
         extend_terminals (bool): If True, bring ports flush to edges of device
         terminals_same_side (bool): If True, both ports will be located on the
             same side of the SNSPD.
@@ -64,14 +66,14 @@ def basic(
             ">>> snspd(size = (3, None), num_squares = 2000)"
         )
     if size[0] is None:
-        ysize = size[1] * wire_width
+        ysize = size[1]
         xsize = num_squares * wire_pitch * wire_width / ysize
     elif size[1] is None:
-        xsize = size[0] * wire_width
+        xsize = size[0]
         ysize = num_squares * wire_pitch * wire_width / xsize
     else:
-        xsize = size[0] * wire_width
-        ysize = size[1] * wire_width
+        xsize = size[0]
+        ysize = size[1]
 
     num_meanders = int(np.ceil(ysize / wire_pitch))
 
@@ -83,7 +85,7 @@ def basic(
         pitch=wire_pitch,
         turn_ratio=turn_ratio,
         length=half_size,
-        num_pts=20,
+        num_pts=num_pts,
         layer=layer,
     )
 
