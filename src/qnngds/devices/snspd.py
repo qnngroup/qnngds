@@ -12,7 +12,7 @@ from typing import Tuple, Optional, Union
 def basic(
     wire_width: float = 0.2,
     wire_pitch: float = 0.6,
-    size: Tuple[Optional[Union[int, float]], Optional[Union[int, float]]] = (20, 20),
+    size: Tuple[Optional[Union[int, float]], Optional[Union[int, float]]] = (5, 5),
     num_squares: Optional[int] = None,
     turn_ratio: Union[int, float] = 4,
     num_pts: int = 50,
@@ -149,7 +149,7 @@ def basic(
 def vertical(
     wire_width: float = 0.2,
     wire_pitch: float = 0.6,
-    size: Tuple[Union[int, float], Union[int, float]] = (20, 20),
+    size: Tuple[Union[int, float], Union[int, float]] = (5, 5),
     num_squares: Optional[int] = None,
     extend: Optional[float] = 1,
     layer: tuple = (1, 0),
@@ -161,7 +161,7 @@ def vertical(
     Args:
         wire_width (float): Width of the nanowire.
         wire_pitch (float): Pitch of the nanowire.
-        size (tuple of int or float): Size of the detector in squares (width, height).
+        size (tuple of int or float): Size of the detector.
         num_squares (Optional[int]): Number of squares in the detector.
         extend (Optional[bool]): Whether or not to extend the ports.
         layer (tuple): GDS layer tuple (layer, type)
