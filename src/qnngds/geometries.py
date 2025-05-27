@@ -251,6 +251,7 @@ def flagpole(
     stub_size: tuple[float, float] = (2, 1),
     shape: str = "p",
     taper_type: str | None = "fillet",
+    taper_radius: float | None = None,
     layer: LayerSpec = (1, 0),
     port_type: str = "electrical",
 ) -> gf.Component:
@@ -268,6 +269,7 @@ def flagpole(
         taper_type (str | None) : {'straight', 'fillet', None}
             Type of taper between the bottom corner of the stub on the side of
             the flag and the corner of the flag closest to the stub.
+        taper_radius (float | None) : radius of taper. If None, uses stub_size
         layer (int | array-like[2] | set)
             Specific layer(s) to put polygon geometry on.
         port_type (string): gdsfactory port type. default "electrical"
@@ -304,9 +306,12 @@ def flagpole(
     D = gf.Component()
     D.add_polygon(zip(xpts, ypts), layer=layer)
     if taper_type == "fillet":
-        taper_amount = min([abs(f[0] - p[0]), abs(p[1])]) / gf.kcl.dbu
+        if taper_radius is None:
+            taper_radius = min([abs(f[0] - p[0]), abs(p[1])]) / gf.kcl.dbu
+        else:
+            taper_radius = taper_radius / gf.kcl.dbu
         for poly in D.get_polygons()[gf.get_layer(layer)]:
-            D.add_polygon(poly.round_corners(taper_amount, 0, 300), layer=layer)
+            D.add_polygon(poly.round_corners(taper_radius, 0, 300), layer=layer)
     elif taper_type == "straight":
         D.add_polygon(zip(xpts[3:6], ypts[3:6]), layer=layer)
 
