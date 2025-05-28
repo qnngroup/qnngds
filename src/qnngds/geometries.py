@@ -332,3 +332,125 @@ def flagpole(
         port_type=port_type,
     )
     return D
+
+
+@gf.cell
+def tee(
+    size: tuple[float, float] = (4, 2),
+    stub_size: tuple[float, float] = (2, 1),
+    taper_type: str | None = "fillet",
+    taper_radius: float | None = None,
+    layer: LayerSpec = (1, 0),
+    port_type: str = "electrical",
+) -> gf.Component:
+    """Creates a T-shaped geometry
+
+    Adapted from phidl
+
+    Args:
+        size (array-like): (width, height) of the flag.
+        stub_size : (array-like): (width, height) of the pole stub.
+        taper_type (str | None) : {'straight', 'fillet', None}
+            Type of taper between the bottom corner of the stub on the side of
+            the flag and the corner of the flag closest to the stub.
+        taper_radius (float | None) : radius of taper. If None, uses stub_size
+        layer (int | array-like[2] | set)
+            Specific layer(s) to put polygon geometry on.
+        port_type (string): gdsfactory port type. default "electrical"
+
+    Returns:
+        gf.Component: tee
+    """
+
+    f = np.array(size).astype(np.float64)
+    p = np.array(stub_size).astype(np.float64)
+
+    assert taper_type in [
+        "straight",
+        "fillet",
+        None,
+    ], 'tee() taper_type must "straight"  or "fillet" or None'
+
+    xpts = np.array([f[0], f[0], p[0], p[0], -p[0], -p[0], -f[0], -f[0]]) / 2
+    ypts = [f[1], 0, 0, -p[1], -p[1], 0, 0, f[1]]
+
+    D = gf.Component()
+    D.add_polygon(zip(xpts, ypts), layer=layer)
+    if taper_type == "fillet":
+        if taper_radius is None:
+            taper_radius = min([abs(f[0] - p[0]), abs(p[1])]) / gf.kcl.dbu
+        else:
+            taper_radius = taper_radius / gf.kcl.dbu
+        for poly in D.get_polygons()[gf.get_layer(layer)]:
+            D.add_polygon(poly.round_corners(taper_radius, 0, 300), layer=layer)
+    elif taper_type == "straight":
+        D.add_polygon(zip(xpts[1:4], ypts[1:4]), layer=layer)
+        D.add_polygon(zip(xpts[4:7], ypts[4:7]), layer=layer)
+
+    D.add_port(
+        name="e1" if port_type == "electrical" else "o1",
+        center=(f[0] / 2, f[1] / 2),
+        width=abs(f[1]),
+        orientation=0,
+        layer=layer,
+        port_type=port_type,
+    )
+    D.add_port(
+        name="e2" if port_type == "electrical" else "o2",
+        center=(-f[0] / 2, f[1] / 2),
+        width=abs(f[1]),
+        orientation=180,
+        layer=layer,
+        port_type=port_type,
+    )
+    D.add_port(
+        name="e3" if port_type == "electrical" else "o3",
+        center=(0, -p[1]),
+        width=abs(p[0]),
+        orientation=270,
+        layer=layer,
+        port_type=port_type,
+    )
+    return D
+
+
+@gf.cell
+def via(
+    size: tuple[float, float] = (5, 5),
+    via_undersize: float = 0.5,
+    layer_bottom: LayerSpec = (1, 0),
+    layer_via: LayerSpec = (2, 0),
+    layer_top: LayerSpec = (3, 0),
+    port_type: str = "electrical",
+) -> gf.Component:
+    """Creates a via between two layers
+
+    Args:
+        size (tuple[float, float]): width, height of top/bottom pads
+        via_undersize (float): amount on each side to compensate overetch of via
+        layer_bottom (LayerSpec): bottom layer specification
+        layer_via (LayerSpec): via layer specification
+        layer_top (LayerSpec): top layer specification
+        port_type (string): "electrical" or "optical"
+
+    Returns:
+        gf.Component: via
+    """
+    VIA = gf.Component()
+    if 2 * via_undersize > min(size[0], size[1]):
+        raise ValueError(f"{via_undersize=} is too small for a pad with {size=}.")
+    bot_pad = VIA << gf.components.shapes.compass(size=size, layer=layer_bottom)
+    via = VIA << gf.components.shapes.compass(
+        size=(size[0] - 2 * via_undersize, size[1] - 2 * via_undersize), layer=layer_via
+    )
+    top_pad = VIA << gf.components.shapes.compass(size=size, layer=layer_top)
+    bot_pad.move(bot_pad.center, (0, 0))
+    via.move(via.center, (0, 0))
+    top_pad.move(top_pad.center, (0, 0))
+    prefix = "e" if port_type == "electrical" else "o"
+    for n, comp in enumerate([top_pad, bot_pad]):
+        for m, port in enumerate(comp.ports):
+            VIA.add_port(name=f"{prefix}{n + 1}{m + 1}", port=port)
+    for port in VIA.ports:
+        port.port_type = port_type
+    return VIA

@@ -118,7 +118,7 @@ Geometries
 
 .. automodule:: qnngds.geometries
     :members:
-    :exclude-members: angled_taper, flagpole, hyper_taper, optimal_step, taper
+    :exclude-members: angled_taper, flagpole, hyper_taper, optimal_step, taper, tee, via
     :undoc-members:
     :show-inheritance:
 
@@ -147,13 +147,23 @@ Geometries
         .. image:: images/geometries/taper.png
             :alt: taper.png
 
+    .. autofunction:: tee
+
+        .. image:: images/geometries/tee.png
+            :alt: tee.png
+
+    .. autofunction:: via
+
+        .. image:: images/geometries/via.png
+            :alt: via.png
+
 .. _Test_structures:
 Test_structures
 ---------------
 
 .. automodule:: qnngds.test_structures
     :members:
-    :exclude-members: alignment_mark, circ_tlm, rect_tlm, resolution_test, vdp
+    :exclude-members: alignment_mark, circ_tlm, rect_tlm, resolution_test, vdp, via_chain
     :undoc-members:
     :show-inheritance:
 
@@ -181,6 +191,11 @@ Test_structures
 
         .. image:: images/test_structures/vdp.png
             :alt: vdp.png
+
+    .. autofunction:: via_chain
+
+        .. image:: images/test_structures/via_chain.png
+            :alt: via_chain.png
 
 .. _Utilities:
 Utilities

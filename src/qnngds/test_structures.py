@@ -4,8 +4,10 @@ import gdsfactory as gf
 
 import qnngds as qg
 
-from gdsfactory.typings import LayerSpec, LayerSpecs
+from gdsfactory.typings import LayerSpec, LayerSpecs, ComponentSpecOrComponent
 from typing import Union, List, Optional, Tuple
+
+from functools import partial
 
 
 @gf.cell
@@ -491,3 +493,135 @@ def circ_tlm(
         layer=pad_layer,
     )
     return TLM
+
+
+@gf.cell
+def via_chain(
+    via_spec: ComponentSpecOrComponent = qg.geometries.via,
+    num_vias: int = 5,
+    spacing: float = 10,
+    tap_period: int = 1,
+    port_type: str = "electrical",
+) -> gf.Component:
+    """Makes a chain of vias, with optional taps along the length of the chain
+
+    Args:
+        via_spec (ComponentSpec | Component): function, component name, or component for the via
+        num_vias (int): number of vias to include in chain
+        spacing (float): spacing between vias
+        tap_period (int): number of vias between each tap. If zero, doesn't place any taps.
+        port_type (str): "electrical" or "optical"
+
+    Returns:
+        gf.Component: the via chain
+    """
+    if tap_period < 0:
+        raise ValueError(f"{tap_period=} must be positive")
+    if tap_period > 1:
+        raise ValueError("tap_period > 1 has not been implemented yet")
+
+    VC = gf.Component()
+    via = gf.get_component(via_spec)
+    # get layers
+    port_dict = qg.utilities._get_component_port_direction(via)
+    east_layers = set(port.layer for port in port_dict["E"])
+    west_layers = set(port.layer for port in port_dict["W"])
+    if len(east_layers) == 1 and len(west_layers) == 1:
+        if east_layers == west_layers:
+            raise ValueError("bad via_spec, did not receive ports on different layers")
+        east_layer = east_layers.pop()
+        west_layer = west_layers.pop()
+    else:
+        if east_layers != west_layers:
+            raise ValueError(
+                f"got multiple layers on east/west side of via, but they are not identical. please check via spec: {port_dict=}"
+            )
+        east_layer = east_layers.pop()
+        west_layer = (west_layers - set([east_layer])).pop()
+    east_port = [port for port in port_dict["E"] if port.layer == east_layer]
+    west_port = [port for port in port_dict["W"] if port.layer == west_layer]
+    if len(east_port) > 1 or len(west_port) > 1:
+        raise ValueError(f"got too many ports, please check via spec: {port_dict=}")
+    east_port = east_port[0]
+    west_port = west_port[0]
+    if east_port.width != west_port.width:
+        raise ValueError(f"width mismatch between ports {east_port=} and {west_port=}")
+
+    width = east_port.width
+    if tap_period == 0:
+        p = gf.path.straight(length=spacing, npoints=2)
+        connector = partial(gf.path.extrude, p=p, width=width)
+    else:
+        connector = partial(
+            qg.geometries.tee,
+            size=(spacing, width),
+            stub_size=(width, width),
+            taper_type="fillet",
+            taper_radius=width / 2,
+            port_type="optical",
+        )
+
+    vias = VC.add_ref(
+        via, columns=num_vias, rows=1, column_pitch=via.xsize + spacing, row_pitch=1
+    )
+    east_end_port_layer = west_layer if num_vias % 2 == 0 else east_layer
+    east_end_port_name = [
+        port for port in port_dict["E"] if port.layer == east_end_port_layer
+    ][0].name
+    if num_vias > 1:
+        end_ports = [
+            vias.ports[west_port.name, 0, 0],
+            vias.ports[east_end_port_name, num_vias - 1, 0],
+        ]
+    else:
+        end_ports = [vias.ports[west_port.name], vias.ports[east_end_port_name]]
+    conn_ports = []
+    for i in range(2):
+        layer = east_layer if i == 0 else west_layer
+        port = east_port if i == 0 else west_port
+        odd = i
+        n_conn = (num_vias - odd) // 2
+        if n_conn > 0:
+            conn = VC.add_ref(
+                connector(layer=layer),
+                columns=n_conn,
+                rows=1,
+                column_pitch=2 * (via.xsize + spacing),
+                row_pitch=1,
+            )
+            conn.connect(
+                conn.ports["o1"],
+                vias.ports[port.name, 2 if odd else 0, 0],
+                allow_type_mismatch=True,
+            )
+            if tap_period > 0:
+                if odd:
+                    conn_ports.append(
+                        [
+                            conn.ports["o3", n, 0] if n_conn > 1 else conn.ports["o3"]
+                            for n in range(n_conn - 1, -1, -1)
+                        ]
+                    )
+                else:
+                    conn_ports.append(
+                        [
+                            conn.ports["o3", n, 0] if n_conn > 1 else conn.ports["o3"]
+                            for n in range(n_conn)
+                        ]
+                    )
+        else:
+            conn_ports.append([])
+    ports = [end_ports[0]]
+    if len(conn_ports) > 0:
+        ports += conn_ports[0]
+    ports += [end_ports[1]]
+    if len(conn_ports) > 1:
+        ports += conn_ports[1]
+
+    prefix = "e" if port_type == "electrical" else "o"
+    for n, port in enumerate(ports):
+        VC.add_port(name=f"{prefix}{n + 1}", port=port)
+    for port in VC.ports:
+        port.port_type = port_type
+
+    return VC
