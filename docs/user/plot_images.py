@@ -61,8 +61,13 @@ def plot_and_save_functions(module, module_name):
                     device = devices[0]  # keep only the first device returned
 
                 if device:
-                    device.draw_ports()
-                    device.plot()
+                    # caching causes draw_ports() to modify other devices that are reused,
+                    # so just make a copy
+                    D = gf.Component()
+                    D << device
+                    D.add_ports(device.ports)
+                    D.draw_ports()
+                    D.plot()
                     # qp(device)
                     plt.savefig(os.path.join(save_dir, module_name, f"{func_name}.png"))
                     plt.close()
