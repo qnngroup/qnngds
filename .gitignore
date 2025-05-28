@@ -161,3 +161,4 @@ cython_debug/
 *.gds
 
 *.swp
+*.swo

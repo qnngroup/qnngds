@@ -434,7 +434,7 @@ def circ_tlm(
     ext_radius: float = 100,
     int_radius: List[float] = [50, 70, 80, 90, 95, 98, 99],
     pad_layer: LayerSpec = (3, 0),
-    mesa_layers: LayerSpecs = [(4, 0), (2, 0)],
+    mesa_layers: LayerSpecs = [(1, 0), (2, 0)],
 ) -> gf.Component:
     """Creates rectangular transfer-length-method test structures.
 
