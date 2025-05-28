@@ -4,7 +4,7 @@ import gdsfactory as gf
 
 import qnngds as qg
 
-from gdsfactory.typings import LayerSpec
+from gdsfactory.typings import LayerSpec, LayerSpecs
 from typing import Union, List, Optional, Tuple
 
 
@@ -426,4 +426,68 @@ def rect_tlm(
         size=(TLM.xsize + 50, contact_w), layer=mesa_layer
     )
     mesa.move(mesa.center, (TLM.x, 0))
+    return TLM
+
+
+@gf.cell
+def circ_tlm(
+    ext_radius: float = 100,
+    int_radius: List[float] = [50, 70, 80, 90, 95, 98, 99],
+    pad_layer: LayerSpec = (3, 0),
+    mesa_layers: LayerSpecs = [(4, 0), (2, 0)],
+) -> gf.Component:
+    """Creates rectangular transfer-length-method test structures.
+
+    Args:
+        ext_radius (float): external radius of hole that defines outer pad
+        int_radius (List[float]): list of internal radii. The gap is d = ext_radius - int_radius.
+        pad_layer (LayerSpec): layer for probable pads.
+        mesa_layers (LayerSpecs): layer(s) for bottom metal/semiconductor and/or vias
+
+    Returns:
+        gf.Component: TLM structure
+    """
+    TLM = gf.Component()
+
+    cuts = []
+    for r_i in int_radius:
+        d = ext_radius - r_i
+        r = (ext_radius + r_i) / 2
+        CUT = gf.Component()
+        r = CUT << gf.components.ring(
+            radius=r, width=d, angle_resolution=2.5, layer=pad_layer, angle=360
+        )
+        t = CUT << gf.components.text(
+            text=f"{ext_radius}/{r_i}", size=10, justify="right", layer=pad_layer
+        )
+        t.move((t.xmax, t.ymax), (r.xmax, r.ymax))
+        cuts.append(CUT)
+    c = qg.utilities.flex_grid(
+        cuts,
+        spacing=(10, 10),
+        shape=(1, len(cuts)),
+        align_x="center",
+        align_y="center",
+        rotation=0,
+        mirror=False,
+    )
+    # make the mesa
+    for layer in mesa_layers:
+        m = TLM << gf.components.shapes.compass(
+            size=(c.xsize + 10, c.ysize + 10), layer=layer
+        )
+        m.move(m.center, c.center)
+    DUMMY = gf.Component()
+    p = DUMMY << gf.components.shapes.compass(
+        size=(c.xsize + 10, c.ysize + 10), layer=pad_layer
+    )
+    p.move(p.center, c.center)
+    TLM << gf.boolean(
+        A=p,
+        B=c,
+        operation="A-B",
+        layer1=pad_layer,
+        layer2=pad_layer,
+        layer=pad_layer,
+    )
     return TLM

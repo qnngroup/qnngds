@@ -153,7 +153,7 @@ Test_structures
 
 .. automodule:: qnngds.test_structures
     :members:
-    :exclude-members: alignment_mark, rect_tlm, resolution_test, vdp
+    :exclude-members: alignment_mark, circ_tlm, rect_tlm, resolution_test, vdp
     :undoc-members:
     :show-inheritance:
 
@@ -161,6 +161,11 @@ Test_structures
 
         .. image:: images/test_structures/alignment_mark.png
             :alt: alignment_mark.png
+
+    .. autofunction:: circ_tlm
+
+        .. image:: images/test_structures/circ_tlm.png
+            :alt: circ_tlm.png
 
     .. autofunction:: rect_tlm
 
