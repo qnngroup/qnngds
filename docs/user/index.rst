@@ -21,9 +21,11 @@ follows the following hierarchy for designing layouts:
 
     * Experiment: an individual experiment that has a specific intended use case. Includes circuit/device and pads.
 
-        * Circuit: a circuit comprised of multiple devices e.g. SNSPD with nTron amplifier. Does not include pads
+        * Circuit: a circuit comprised of multiple devices e.g. SNSPD with nTron amplifier. Does not include pads. Typically defined in a PDK.
 
             * Device: a single device e.g. individual nTron, hTron, etc.
+
+This library is intended to be used alongside a PDK that defines a specific layer stackup and any custom circuits/layouts for a fabrication process.
 
 
 Contents

@@ -2,6 +2,7 @@ from . import geometries as geometries
 from . import utilities as utilities
 from . import devices as devices
 from . import test_structures as test_structures
+from . import sample as sample
 
 
 def help():

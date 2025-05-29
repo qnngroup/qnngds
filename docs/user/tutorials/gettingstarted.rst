@@ -69,8 +69,9 @@ Setup a virtual environment and install ``qnngds``
 
             pip install qnngds
 
+
 .. note::
-    To install a development version of qnngds that hasn't been released yet, replace the command ``pip install qnngds`` with ``pip install -e /path/to/cloned/copy/of/qnngds``. Note that this is a different path from the PDK repo you cloned earlier.
+    To install a development version of ``qnngds`` that hasn't been released yet, replace the command ``pip install qnngds`` with ``pip install -e /path/to/cloned/copy/of/qnngds``. Note that this is a different path from the PDK repo you cloned earlier.
 
 
 Install klive and gdsfactory extensions for klayout

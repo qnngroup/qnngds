@@ -16,7 +16,8 @@ authors = [
 ]
 maintainers = [
   { name="A. Jacquillat", email="audrey01@mit.edu" },
-  { name="R. Foster", email="reedf@mit.edu" }
+  { name="R. Foster", email="reedf@mit.edu" },
+  { name="E. Batson", email="emmabat@mit.edu"}
 ]
 description = "The QNN library for creating gds files"
 readme = "README.md"
