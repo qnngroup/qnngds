@@ -15,6 +15,7 @@ htron
     :exclude-members: heater, multilayer, planar
     :undoc-members:
     :show-inheritance:
+    :special-members: __init__
 
     .. autofunction:: heater
 
@@ -39,6 +40,7 @@ nanowire
     :exclude-members: sharp, variable_length
     :undoc-members:
     :show-inheritance:
+    :special-members: __init__
 
     .. autofunction:: sharp
 
@@ -58,6 +60,7 @@ ntron
     :exclude-members: sharp, slotted, smooth
     :undoc-members:
     :show-inheritance:
+    :special-members: __init__
 
     .. autofunction:: sharp
 
@@ -82,6 +85,7 @@ resistor
     :exclude-members: meander, meander_sc_contacts
     :undoc-members:
     :show-inheritance:
+    :special-members: __init__
 
     .. autofunction:: meander
 
@@ -101,6 +105,7 @@ snspd
     :exclude-members: basic, vertical
     :undoc-members:
     :show-inheritance:
+    :special-members: __init__
 
     .. autofunction:: basic
 
@@ -121,6 +126,7 @@ Geometries
     :exclude-members: angled_taper, flagpole, hyper_taper, optimal_step, taper, tee, via
     :undoc-members:
     :show-inheritance:
+    :special-members: __init__
 
     .. autofunction:: angled_taper
 
@@ -163,9 +169,15 @@ Sample
 
 .. automodule:: qnngds.sample
     :members:
-    :exclude-members: wafer100mm, wafer150mm
+    :exclude-members: piece10mm, wafer100mm, wafer150mm
     :undoc-members:
     :show-inheritance:
+    :special-members: __init__
+
+    .. autofunction:: piece10mm
+
+        .. image:: images/sample/piece10mm.png
+            :alt: piece10mm.png
 
     .. autofunction:: wafer100mm
 
@@ -186,6 +198,7 @@ Test_structures
     :exclude-members: alignment_mark, circ_tlm, rect_tlm, resolution_test, vdp, via_chain
     :undoc-members:
     :show-inheritance:
+    :special-members: __init__
 
     .. autofunction:: alignment_mark
 
@@ -226,4 +239,5 @@ Utilities
     :exclude-members:
     :undoc-members:
     :show-inheritance:
+    :special-members: __init__
 

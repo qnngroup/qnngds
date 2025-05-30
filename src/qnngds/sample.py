@@ -3,9 +3,9 @@
 import numpy as np
 
 import gdsfactory as gf
-from gdsfactory.typings import ComponentSpecOrComponent
+from gdsfactory.typings import ComponentSpecOrComponent, LayerSpec
 
-from typing import overload
+from collections.abc import Sequence
 
 from itertools import product
 
@@ -54,7 +54,7 @@ def piece10mm():
     P = gf.Component()
     p_i = P << gf.components.rectangle(size=(10e3, 10e3), layer=(1, 0))
     p_i.move(p_i.center, (0, 0))
-    return
+    return P
 
 
 class Sample:
@@ -101,7 +101,6 @@ class Sample:
 
         Returns:
             None
-
         """
         # Component containing all components added to the sample
         self.components = gf.Component()
@@ -177,7 +176,6 @@ class Sample:
             input("press enter to continue")
         return dies
 
-    @overload
     def place_on_sample(
         self,
         component: gf.Component,
@@ -186,6 +184,7 @@ class Sample:
     ) -> None:
         """Place component on sample
 
+        See also :py:meth:`place_multiple_on_sample`.
         Args:
             component (Component): component to place
             cell_coordinate_bbox (tuple[int, int] | tuple[tuple[int, int], tuple[int, int]]):
@@ -198,6 +197,10 @@ class Sample:
 
         Returns:
             None
+
+        Side Effects:
+            Updates self.open_cells to remove newly allocated cells
+            Updates self.full_cells to add newly allocated cells
         """
         spans_multiple = self._check_component_size(component)
         # check that component fits within specified bounding box
@@ -214,7 +217,7 @@ class Sample:
         xmax, ymax = map(int, np.max(np.array(cell_coordinate_bbox), axis=0))
         row_span = range(ymin, ymax + 1)
         col_span = range(xmin, xmax + 1)
-        cells_to_occupy = product(row_span, col_span)
+        cells_to_occupy = set(product(row_span, col_span))
         for row in row_span:
             for col in col_span:
                 if (row, col) not in self.open_cells:
@@ -233,28 +236,91 @@ class Sample:
         # actually place the components
         c = self.components.add_ref(component)
         # move the component
-        dcenter = np.array(((xmin + xmax + 1), (ymin + ymax + 1))) * self.cell_size / 2
+        dcenter = np.array(((xmin + xmax + 1), -(ymin + ymax + 1))) * self.cell_size / 2
         c.move(c.center, np.array(self.origin) + dcenter)
 
-    @overload
-    def place_on_sample(self, component: gf.Component, placement_area: str) -> None:
-        """Place component on sample
+    def place_multiple_on_sample(
+        self,
+        components: Sequence[gf.Component],
+        cell_coordinate_bbox: tuple,
+        column_major: bool = True,
+        ignore_collisions: bool = False,
+    ) -> None:
+        """Place components on sample
 
+        See also :py:meth:`place_on_sample`.
         Args:
-            component (Component): component to place
-            placement_area (str): desired region of the chip to place sample in.
-                Must be one of "c", "n", "s", "e", "w", "nw", "ne", "sw", "se"
+            components (Sequence[Component]): sequence of components to place
+            cell_coordinate_bbox (tuple[tuple[int, int], tuple[int, int]]):
+                bounding box of cell coordiantes within which the component should be placed.
+            column_major (bool): If True, orders components in column-major order within bbox.
+                (top-to-bottom, then left-to-right). Otherwise, orders row-major (left-to-right,
+                then top-to-bottom).
+            ignore_collisions (bool): If True, ignores any collision of component with
+                previously-placed components.
 
         Returns:
             None
+
+        Side Effects:
+            Updates self.open_cells to remove newly allocated cells
+            Updates self.full_cells to add newly allocated cells
         """
-        self._check_component_size(component)
-        allowed_placement_areas = ["c", "n", "s", "e", "w", "nw", "ne", "sw", "se"]
-        if placement_area.lower() not in allowed_placement_areas:
-            raise ValueError(
-                f"{placement_area=} is not one of {allowed_placement_areas}"
-            )
-        # find open cell(s) to place on
+        # infer desired grid from coordinate bbox
+        pass
+
+    def write_cell_corners(self, width: float, layer: LayerSpec) -> None:
+        """Adds corner markers to all full cells
+
+        Args:
+            width (float): width of corner marker
+            layer (LayerSpec): layer to place marker on
+
+        Returns:
+            None
+
+        Side Effects:
+            Updates self.components with the new markers
+        """
+        corner = gf.components.L(
+            width=width, size=(5 * width, 5 * width), layer=gf.get_layer(layer)
+        )
+        die_corners = gf.Component()
+        for i in range(4):
+            c = die_corners.add_ref(corner)
+            c.rotate(90 * i)
+            if i == 0 or i == 3:
+                c.movex(-c.xmin)
+            else:
+                c.movex(self.cell_size - c.xmax)
+            if i // 2 == 0:
+                c.movey(-self.cell_size - c.ymin)
+            else:
+                c.movey(-c.ymax)
+        for cell in self.full_cells:
+            marks = self.components.add_ref(die_corners)
+            dcenter = np.array((2 * cell[0] + 1, -2 * cell[1] - 1)) * self.cell_size / 2
+            marks.move(marks.center, np.array(self.origin) + dcenter)
+
+    # @overload
+    # def place_on_sample(self, component: gf.Component, placement_area: str) -> None:
+    #    """Place component on sample
+
+    #    Args:
+    #        component (Component): component to place
+    #        placement_area (str): desired region of the chip to place sample in.
+    #            Must be one of "c", "n", "s", "e", "w", "nw", "ne", "sw", "se"
+
+    #    Returns:
+    #        None
+    #    """
+    #    self._check_component_size(component)
+    #    allowed_placement_areas = ["c", "n", "s", "e", "w", "nw", "ne", "sw", "se"]
+    #    if placement_area.lower() not in allowed_placement_areas:
+    #        raise ValueError(
+    #            f"{placement_area=} is not one of {allowed_placement_areas}"
+    #        )
+    #    # find open cell(s) to place on
 
     def _check_component_size(self, component: gf.Component) -> bool:
         """Checks component size
