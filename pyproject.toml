@@ -12,7 +12,8 @@ authors = [
   { name="A. Jacquillat", email="audrey.jacquillat@gmail.com" },
   { name="R. Foster", email="reedf@mit.edu" },
   { name="E. Batson", email="emmabat@mit.edu"},
-  { name="O. Medeiros", email="omedeiro@mit.edu"}
+  { name="O. Medeiros", email="omedeiro@mit.edu"},
+  { name="A. Simon", email="alejansi@mit.edu"}
 ]
 maintainers = [
   { name="A. Jacquillat", email="audrey01@mit.edu" },

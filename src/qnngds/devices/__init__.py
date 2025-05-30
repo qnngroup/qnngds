@@ -6,3 +6,4 @@ from . import htron as htron
 from . import nanowire as nanowire
 from . import resistor as resistor
 from . import snspd as snspd
+from . import resonator as resonator
