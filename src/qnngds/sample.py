@@ -176,6 +176,23 @@ class Sample:
             input("press enter to continue")
         return dies
 
+    @staticmethod
+    def _get_bbox_min_max(cell_coordinate_bbox: tuple) -> tuple:
+        """Gets row and column span from a cell coordinate bounding box
+
+        Args:
+            cell_coordinate_bbox (tuple[tuple[int, int], tuple[int, int]]):
+                bounding box of cell coordiantes within which a component should be placed.
+
+        Returns:
+            (tuple): xmin, ymin, xmax, ymax defined by bounding box
+        """
+        xmin, ymin = map(int, np.min(np.array(cell_coordinate_bbox), axis=0))
+        xmax, ymax = map(int, np.max(np.array(cell_coordinate_bbox), axis=0))
+        row_span = range(ymax, ymin - 1, -1)
+        col_span = range(xmin, xmax + 1)
+        return xmin, ymin, xmax, ymax, row_span, col_span
+
     def place_on_sample(
         self,
         component: gf.Component,
@@ -213,10 +230,9 @@ class Sample:
             cell_coordinate_bbox = (cell_coordinate_bbox, cell_coordinate_bbox)
         assert np.array(cell_coordinate_bbox).shape == (2, 2)
         # check that all cells within the bbox are available
-        xmin, ymin = map(int, np.min(np.array(cell_coordinate_bbox), axis=0))
-        xmax, ymax = map(int, np.max(np.array(cell_coordinate_bbox), axis=0))
-        row_span = range(ymin, ymax + 1)
-        col_span = range(xmin, xmax + 1)
+        xmin, ymin, xmax, ymax, row_span, col_span = Sample._get_rowcolspan(
+            cell_coordinate_bbox
+        )
         cells_to_occupy = set(product(row_span, col_span))
         for row in row_span:
             for col in col_span:
@@ -267,7 +283,36 @@ class Sample:
             Updates self.full_cells to add newly allocated cells
         """
         # infer desired grid from coordinate bbox
-        pass
+        _, _, _, _, row_span, col_span = Sample._get_rowcolspan(cell_coordinate_bbox)
+        num_available = 0
+        for row in row_span:
+            for col in col_span:
+                if (row, col) in self.open_cells:
+                    num_available += 1
+        if num_available < len(components):
+            error_msg = f"insufficient area provided, need to place {len(components)} components, "
+            error_msg += f"but bounding box is of size {(len(row_span), len(col_span))} and contains "
+            error_msg += f"{num_available} empty cells."
+            raise ValueError(error_msg)
+        # iterate over ax_inner within ax_outer loop
+        # by default, column-major iterates over columns within row loop
+        ax_outer = row_span
+        ax_inner = col_span
+        if not column_major:
+            ax_outer, ax_inner = ax_inner, ax_outer
+        component_iter = iter(components)
+        for iout, outer in enumerate(ax_outer):
+            for iin, inner in enumerate(ax_inner):
+                row = outer
+                col = inner
+                if not column_major:
+                    row, col = col, row
+                if (row, col) in self.open_cells:
+                    self.place_on_sample(
+                        next(component_iter),
+                        cell_coordinate_bbox=(row, col),
+                        ignore_collisions=ignore_collisions,
+                    )
 
     def write_cell_corners(self, width: float, layer: LayerSpec) -> None:
         """Adds corner markers to all full cells
