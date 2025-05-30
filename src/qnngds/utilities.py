@@ -433,7 +433,9 @@ def generate_experiment(
         >>>             qg.utilities.RouteGroup(
         >>>                 PDK.get_cross_section("ebeam"), {"c1": "e1", "c2": "e3"}
         >>>             ),
-        >>>             # route photolitho heater layer: g1 and g2 to pads e2 and e4
+        >>>             # route photolitho heater layer: g2 and g5 to pads e4 and e2
+        >>>             # note that DUT ports g1,g3,g4,g6 are not mapped
+        >>>             # however, all pad ports (e1-e4) are mapped
         >>>             qg.utilities.RouteGroup(
         >>>                 PDK.get_cross_section("photo"), {"g2": "e4", "g5": "e2"}
         >>>             ),
