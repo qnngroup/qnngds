@@ -391,7 +391,16 @@ def generate_experiment(
 
         >>> c = qg.utilities.generate_experiment(
         >>>         dut=qg.devices.ntron.sharp,
-        >>>         pad_array=gf.components.pads.pad_array(pad=gf.components.pads.pad, columns=1, rows=3, column_pitch=1, row_pitch=250, port_orientation=0, size=(200,200), layer="EBEAM_COARSE"),
+        >>>         pad_array=gf.components.pads.pad_array(
+        >>>             pad=gf.components.pads.pad,
+        >>>             columns=1,
+        >>>             rows=3,
+        >>>             column_pitch=1,
+        >>>             row_pitch=250,
+        >>>             port_orientation=0,
+        >>>             size=(200,200),
+        >>>             layer="EBEAM_COARSE"
+        >>>         ),
         >>>         label=None,
         >>>         route_groups=(
         >>>             qg.utilities.RouteGroup(
@@ -405,7 +414,8 @@ def generate_experiment(
         >>>     )
         >>> c.show()
 
-        Or, perhaps we want to create an hTron:
+        Or, perhaps we want to create an hTron (now using a custom pad array ``pad_quad``
+        defined in `<https://github.com/qnngroup/qnngds-pdk/>`_:
 
         >>> from pdk.components import pad_quad
         >>> c = qg.utilities.generate_experiment(
