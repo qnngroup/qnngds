@@ -57,7 +57,7 @@ def piece10mm():
     return P
 
 
-class Sample:
+class Sample(object):
     """Class for managing die/experiment area, with manual placement and basic autoplacement
 
     Defines a grid size and divides a sample (wafer/piece) into cells.
@@ -168,8 +168,8 @@ class Sample:
         )
         for cell in self.open_cells:
             d = dies << rect
-            d.move((d.xmin, d.ymax), self.origin).movex(cell[0] * self.cell_size).movey(
-                -cell[1] * self.cell_size
+            d.move((d.xmin, d.ymax), self.origin).movex(cell[1] * self.cell_size).movey(
+                -cell[0] * self.cell_size
             )
         dies.show()
         if blocking:
@@ -177,18 +177,18 @@ class Sample:
         return dies
 
     @staticmethod
-    def _get_bbox_min_max(cell_coordinate_bbox: tuple) -> tuple:
-        """Gets row and column span from a cell coordinate bounding box
+    def _get_bbox_extents(cell_coordinate_bbox: tuple) -> tuple:
+        """Gets extents of a cell coordinate bounding box
 
         Args:
             cell_coordinate_bbox (tuple[tuple[int, int], tuple[int, int]]):
                 bounding box of cell coordiantes within which a component should be placed.
 
         Returns:
-            (tuple): xmin, ymin, xmax, ymax defined by bounding box
+            (tuple): xmin, ymin, xmax, ymax, row_span, col_span defined by bounding box
         """
-        xmin, ymin = map(int, np.min(np.array(cell_coordinate_bbox), axis=0))
-        xmax, ymax = map(int, np.max(np.array(cell_coordinate_bbox), axis=0))
+        ymin, xmin = map(int, np.min(np.array(cell_coordinate_bbox), axis=0))
+        ymax, xmax = map(int, np.max(np.array(cell_coordinate_bbox), axis=0))
         row_span = range(ymax, ymin - 1, -1)
         col_span = range(xmin, xmax + 1)
         return xmin, ymin, xmax, ymax, row_span, col_span
@@ -230,7 +230,7 @@ class Sample:
             cell_coordinate_bbox = (cell_coordinate_bbox, cell_coordinate_bbox)
         assert np.array(cell_coordinate_bbox).shape == (2, 2)
         # check that all cells within the bbox are available
-        xmin, ymin, xmax, ymax, row_span, col_span = Sample._get_rowcolspan(
+        xmin, ymin, xmax, ymax, row_span, col_span = Sample._get_bbox_extents(
             cell_coordinate_bbox
         )
         cells_to_occupy = set(product(row_span, col_span))
@@ -283,21 +283,11 @@ class Sample:
             Updates self.full_cells to add newly allocated cells
         """
         # infer desired grid from coordinate bbox
-        _, _, _, _, row_span, col_span = Sample._get_rowcolspan(cell_coordinate_bbox)
-        num_available = 0
-        for row in row_span:
-            for col in col_span:
-                if (row, col) in self.open_cells:
-                    num_available += 1
-        if num_available < len(components):
-            error_msg = f"insufficient area provided, need to place {len(components)} components, "
-            error_msg += f"but bounding box is of size {(len(row_span), len(col_span))} and contains "
-            error_msg += f"{num_available} empty cells."
-            raise ValueError(error_msg)
+        _, _, _, _, row_span, col_span = Sample._get_bbox_extents(cell_coordinate_bbox)
         # iterate over ax_inner within ax_outer loop
         # by default, column-major iterates over columns within row loop
-        ax_outer = row_span
-        ax_inner = col_span
+        ax_outer = list(row_span)
+        ax_inner = list(col_span)
         if not column_major:
             ax_outer, ax_inner = ax_inner, ax_outer
         component_iter = iter(components)
@@ -308,11 +298,21 @@ class Sample:
                 if not column_major:
                     row, col = col, row
                 if (row, col) in self.open_cells:
-                    self.place_on_sample(
-                        next(component_iter),
-                        cell_coordinate_bbox=(row, col),
-                        ignore_collisions=ignore_collisions,
-                    )
+                    try:
+                        self.place_on_sample(
+                            next(component_iter),
+                            cell_coordinate_bbox=(row, col),
+                            ignore_collisions=ignore_collisions,
+                        )
+                    except StopIteration:
+                        break
+        if next(components, None) is not None:
+            r = 1
+            while next(components, None) is not None and r < 50:
+                r += 1
+            error_msg = "insufficient area provided, available space exhausted and "
+            error_msg += f"still have {'>' if r >= 50 else ''}{r} remaining components."
+            raise ValueError(error_msg)
 
     def write_cell_corners(self, width: float, layer: LayerSpec) -> None:
         """Adds corner markers to all full cells
@@ -344,7 +344,7 @@ class Sample:
                 c.movey(-c.ymax)
         for cell in self.full_cells:
             marks = self.components.add_ref(die_corners)
-            dcenter = np.array((2 * cell[0] + 1, -2 * cell[1] - 1)) * self.cell_size / 2
+            dcenter = np.array((2 * cell[1] + 1, -2 * cell[0] - 1)) * self.cell_size / 2
             marks.move(marks.center, np.array(self.origin) + dcenter)
 
     # @overload
