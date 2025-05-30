@@ -7,6 +7,8 @@ from gdsfactory.typings import ComponentSpecOrComponent
 
 from typing import overload
 
+from itertools import product
+
 
 @gf.cell
 def _wafer(radius: float, flat: float) -> gf.Component:
@@ -132,6 +134,7 @@ class Sample:
         # coordinates from left-to-right, top-to-bottom
         self.origin = (-n_cols * cell_size / 2, n_rows * cell_size / 2)
         self.open_cells = set([])
+        self.full_cells = set([])
         rect = gf.components.rectangle(size=(cell_size, cell_size), layer=(1, 0))
         dummy = gf.Component()
         for row in range(n_rows):
@@ -151,14 +154,14 @@ class Sample:
                 if intersection.get_region(layer=(1, 0)).is_empty():
                     self.open_cells.add((row, col))
 
-    def visualize_open_cells(self, blocking: bool = True) -> None:
+    def visualize_open_cells(self, blocking: bool = True) -> gf.Component:
         """Visualize open cells
 
         Args:
             blocking (bool): if True, waits for user input before exiting
 
         Returns:
-            None
+            (Component): component used for visualization
         """
         dies = gf.Component()
         rect = gf.components.rectangle(
@@ -172,20 +175,66 @@ class Sample:
         dies.show()
         if blocking:
             input("press enter to continue")
+        return dies
 
     @overload
-    def place_on_sample(self, component: gf.Component, cell_coordinates: tuple) -> None:
+    def place_on_sample(
+        self,
+        component: gf.Component,
+        cell_coordinate_bbox: tuple,
+        ignore_collisions: bool = False,
+    ) -> None:
         """Place component on sample
 
         Args:
             component (Component): component to place
-            cell_coordinates (tuple): coordiantes of cell to place component in.
-                If component spans multiple cells, this is the top-left cell
+            cell_coordinate_bbox (tuple[int, int] | tuple[tuple[int, int], tuple[int, int]]):
+                bounding box of cell coordiantes within which the component should be placed.
+                If the component fits within a single cell, then a tuple[int, int] is
+                acceptable instead of passing a tuple with identical coordinates for the bbox.
+                If component spans multiple cells, then the bbox coordinates must be unique.
+            ignore_collisions (bool): If True, ignores any collision of component with
+                previously-placed components.
 
         Returns:
             None
         """
-        pass
+        spans_multiple = self._check_component_size(component)
+        # check that component fits within specified bounding box
+        if not isinstance(cell_coordinate_bbox[0], tuple) and spans_multiple:
+            error_msg = f"component {component.name} spans multiple cells, "
+            error_msg += "but bbox-like coordinates were not provided"
+            raise ValueError(error_msg)
+        # convert singleton to bbox with identical endpoints
+        if not isinstance(cell_coordinate_bbox[0], tuple):
+            cell_coordinate_bbox = (cell_coordinate_bbox, cell_coordinate_bbox)
+        assert np.array(cell_coordinate_bbox).shape == (2, 2)
+        # check that all cells within the bbox are available
+        xmin, ymin = map(int, np.min(np.array(cell_coordinate_bbox), axis=0))
+        xmax, ymax = map(int, np.max(np.array(cell_coordinate_bbox), axis=0))
+        row_span = range(ymin, ymax + 1)
+        col_span = range(xmin, xmax + 1)
+        cells_to_occupy = product(row_span, col_span)
+        for row in row_span:
+            for col in col_span:
+                if (row, col) not in self.open_cells:
+                    # cell isn't open
+                    if (row, col) in self.full_cells:
+                        # cell is occupied
+                        if not ignore_collisions:
+                            raise ValueError(error_msg)
+                    else:
+                        # illegal cell (e.g. in exclusion region)
+                        raise ValueError(error_msg)
+        # Placement can proceed.
+        # First update our open/full tracking sets
+        self.open_cells.difference_update(cells_to_occupy)
+        self.full_cells.update(cells_to_occupy)
+        # actually place the components
+        c = self.components.add_ref(component)
+        # move the component
+        dcenter = np.array(((xmin + xmax + 1), (ymin + ymax + 1))) * self.cell_size / 2
+        c.move(c.center, np.array(self.origin) + dcenter)
 
     @overload
     def place_on_sample(self, component: gf.Component, placement_area: str) -> None:
@@ -199,6 +248,7 @@ class Sample:
         Returns:
             None
         """
+        self._check_component_size(component)
         allowed_placement_areas = ["c", "n", "s", "e", "w", "nw", "ne", "sw", "se"]
         if placement_area.lower() not in allowed_placement_areas:
             raise ValueError(
@@ -206,19 +256,23 @@ class Sample:
             )
         # find open cell(s) to place on
 
-    def _check_component_size(self, component: gf.Component) -> None:
+    def _check_component_size(self, component: gf.Component) -> bool:
         """Checks component size
 
         Args: component (Component): component to check
 
-        Returns: None
+        Returns: True if component spans multiple cells
 
         Raises:
             RuntimeError if component requires more than one (1) cell of area,
             but ``allow_cell_span`` is false
         """
-        too_big = component.xsize > self.cell_size or component.ysize > self.cell_size
-        if too_big and not self.allow_cell_span:
-            raise RuntimeError(
-                f"allow_cell_span is set to False, but the provided component {component.name} is larger than a single cell {self.cell_size=}"
-            )
+        spans_multiple = (
+            component.xsize > self.cell_size or component.ysize > self.cell_size
+        )
+        if spans_multiple and not self.allow_cell_span:
+            error_msg = "allow_cell_span is set to False, "
+            error_msg += f"but the provided component {component.name} "
+            error_msg += "is larger than a single cell {self.cell_size=}"
+            raise RuntimeError(error_msg)
+        return spans_multiple
