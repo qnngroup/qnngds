@@ -157,6 +157,26 @@ Geometries
         .. image:: images/geometries/via.png
             :alt: via.png
 
+.. _Sample:
+Sample
+------
+
+.. automodule:: qnngds.sample
+    :members:
+    :exclude-members: wafer100mm, wafer150mm
+    :undoc-members:
+    :show-inheritance:
+
+    .. autofunction:: wafer100mm
+
+        .. image:: images/sample/wafer100mm.png
+            :alt: wafer100mm.png
+
+    .. autofunction:: wafer150mm
+
+        .. image:: images/sample/wafer150mm.png
+            :alt: wafer150mm.png
+
 .. _Test_structures:
 Test_structures
 ---------------
