@@ -406,6 +406,7 @@ def generate_experiment(
         >>> c.show()
 
         Or, perhaps we want to create an hTron:
+
         >>> from pdk.components import pad_quad
         >>> c = qg.utilities.generate_experiment(
         >>>         dut=qg.devices.htron.multilayer(
@@ -434,6 +435,7 @@ def generate_experiment(
         >>>         retries=1,
         >>>     )
         >>> c.show()
+
         Here, the hTron devices has 8 ports, but the pads only have 4, so we have to assign
         every pad a port on the DUT and pass the ``ignore_port_count_mismatch`` flag.
     """
