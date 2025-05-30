@@ -361,6 +361,7 @@ def generate_experiment(
     dut_offset: tuple[float, float] = (0, 0),
     pad_offset: tuple[float, float] = (0, 0),
     label_offset: tuple[float, float] | None = (-100, -100),
+    ignore_port_count_mismatch: bool = False,
     retries: int = 10,
 ) -> gf.Component:
     """Construct an experiment from a device/circuit (gf.Component).
@@ -375,6 +376,7 @@ def generate_experiment(
         dut_offset (tuple[float, float]): x,y offset for dut (mostly useful for linear pad arrays)
         pad_offset (tuple[float, float]): x,y offset for pad array (mostly useful for linear pad arrays)
         label_offset (tuple[float, float] or None): x,y offset of label
+        ignore_port_count_mismatch (bool): if True, ignores mismatched number of DUT and pads ports, only if route_groups defines a mapping to all pad ports
         retries (int): how many times to try rerouting with s_bend (may need to be larger for many port groupings)
     Returns:
         (gf.Component): experiment
@@ -402,27 +404,82 @@ def generate_experiment(
         >>>         retries=1,
         >>>     )
         >>> c.show()
+
+        Or, perhaps we want to create an hTron:
+        >>> from pdk.components import pad_quad
+        >>> c = qg.utilities.generate_experiment(
+        >>>         dut=qg.devices.htron.multilayer(
+        >>>             gate_spec=qg.devices.htron.heater(
+        >>>                 pad_outline=0,
+        >>>                 pad_layer="PHOTO",
+        >>>                 heater_layer="PHOTO",
+        >>>             ),
+        >>>         ),
+        >>>         pad_array=pad_quad(space=200),
+        >>>         label=None,
+        >>>         route_groups=(
+        >>>             # route ebeam channel layer: c1 and c2 to pads e1 and e3
+        >>>             qg.utilities.RouteGroup(
+        >>>                 PDK.get_cross_section("ebeam"), {"c1": "e1", "c2": "e3"}
+        >>>             ),
+        >>>             # route photolitho heater layer: g1 and g2 to pads e2 and e4
+        >>>             qg.utilities.RouteGroup(
+        >>>                 PDK.get_cross_section("photo"), {"g2": "e4", "g5": "e2"}
+        >>>             ),
+        >>>         ),
+        >>>         dut_offset=(0, 0),
+        >>>         pad_offset=(0, 0),
+        >>>         label_offset=(50, 240),
+        >>>         ignore_port_count_mismatch=True,
+        >>>         retries=1,
+        >>>     )
+        >>> c.show()
+        Here, the hTron devices has 8 ports, but the pads only have 4, so we have to assign
+        every pad a port on the DUT and pass the ``ignore_port_count_mismatch`` flag.
     """
+    # check if route_groups is complete so we can handle ignore_port_count_mismatch flag
+    route_groups_complete = False
+    if route_groups is not None and pad_array is not None:
+        route_groups_complete = True
+        # first figure out all of the assigned pad ports
+        mapped_pad_ports = set([])
+        for route_group in route_groups:
+            for _, pad_port in route_group.port_mapping.items():
+                mapped_pad_ports.add(pad_port)
+        # next, for each port in the pad_array, check that its
+        # name appears in a route_group
+        pads_i = gf.get_component(pad_array)
+        for port in pads_i.ports:
+            if port.name not in mapped_pad_ports:
+                route_groups_complete = False
+                break
+
+    allow_port_count_mismatch = route_groups_complete and ignore_port_count_mismatch
+
     dut_i = gf.get_component(dut)
     if pad_array is not None:
         pads_i = gf.get_component(pad_array)
         # check appropriate number of ports on pad_array and dut
         if len(dut_i.ports) != len(pads_i.ports):
-            raise ValueError(
-                f"DUT ({len(dut.ports)} ports) and pad array ({len(pad_array.ports)} ports) should have the same number of ports."
-            )
+            if not (allow_port_count_mismatch):
+                raise ValueError(
+                    f"DUT ({len(dut_i.ports)} ports) and pad array ({len(pads_i.ports)} ports) should have the same number of ports."
+                )
     # check that number of DUT ports assigned in route_groups is correct
     if len(dut_i.ports) != 0 and route_groups is not None:
         num_assigned_ports = sum(
             len(group.port_mapping.keys()) for group in route_groups
         )
         if num_assigned_ports != len(dut_i.ports):
-            raise ValueError(
-                f"invalid number of port groupings: got {num_assigned_ports}, expected {len(dut.ports)} based on number of ports on DUT"
-            )
+            if not (allow_port_count_mismatch):
+                raise ValueError(
+                    f"invalid number of port groupings: got {num_assigned_ports}, expected {len(dut_i.ports)} based on number of ports on DUT"
+                )
     elif route_groups is not None:
         if pad_array is not None:
-            raise ValueError("cannot route pad array to DUT with zero ports")
+            raise ValueError(
+                "cannot route pad array to DUT with zero ports, did you remember to add ports to your DUT?"
+            )
 
     experiment = gf.Component()
 
