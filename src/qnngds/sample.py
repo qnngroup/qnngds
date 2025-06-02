@@ -189,7 +189,7 @@ class Sample(object):
         """
         ymin, xmin = map(int, np.min(np.array(cell_coordinate_bbox), axis=0))
         ymax, xmax = map(int, np.max(np.array(cell_coordinate_bbox), axis=0))
-        row_span = range(ymax, ymin - 1, -1)
+        row_span = range(ymin, ymax + 1)
         col_span = range(xmin, xmax + 1)
         return xmin, ymin, xmax, ymax, row_span, col_span
 
@@ -285,16 +285,16 @@ class Sample(object):
         # infer desired grid from coordinate bbox
         _, _, _, _, row_span, col_span = Sample._get_bbox_extents(cell_coordinate_bbox)
         # iterate over ax_inner within ax_outer loop
-        # by default, column-major iterates over columns within row loop
-        ax_outer = list(row_span)
-        ax_inner = list(col_span)
+        # by default, column-major iterates over rows within column loop
+        ax_outer = list(col_span)
+        ax_inner = list(row_span)
         if not column_major:
             ax_outer, ax_inner = ax_inner, ax_outer
         component_iter = iter(components)
         for iout, outer in enumerate(ax_outer):
             for iin, inner in enumerate(ax_inner):
-                row = outer
-                col = inner
+                row = inner
+                col = outer
                 if not column_major:
                     row, col = col, row
                 if (row, col) in self.open_cells:
@@ -306,9 +306,9 @@ class Sample(object):
                         )
                     except StopIteration:
                         break
-        if next(components, None) is not None:
+        if next(component_iter, None) is not None:
             r = 1
-            while next(components, None) is not None and r < 50:
+            while next(component_iter, None) is not None and r < 50:
                 r += 1
             error_msg = "insufficient area provided, available space exhausted and "
             error_msg += f"still have {'>' if r >= 50 else ''}{r} remaining components."
