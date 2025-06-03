@@ -42,8 +42,8 @@ def meander(
         straight = D << gf.components.compass(
             size=(width, width * squares), layer=layer, port_type="electrical"
         )
-        D.add_port(name="e1", port=straight.ports["e1"])
-        D.add_port(name="e2", port=straight.ports["e3"])
+        D.add_port(name="e1", port=straight.ports["e2"])
+        D.add_port(name="e2", port=straight.ports["e4"])
         return D
 
     # make meander
