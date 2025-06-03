@@ -237,6 +237,8 @@ class Sample(object):
         for row in row_span:
             for col in col_span:
                 if (row, col) not in self.open_cells:
+                    error_msg = f"cell {(row, col)=} is occupied when attempting "
+                    error_msg += f"to place {component.name=}"
                     # cell isn't open
                     if (row, col) in self.full_cells:
                         # cell is occupied
@@ -299,9 +301,13 @@ class Sample(object):
                     row, col = col, row
                 if (row, col) in self.open_cells:
                     try:
+                        # generate a bounding box
+                        component = next(component_iter)
+                        rows = component.ysize // self.cell_size
+                        cols = component.xsize // self.cell_size
                         self.place_on_sample(
-                            next(component_iter),
-                            cell_coordinate_bbox=(row, col),
+                            component,
+                            cell_coordinate_bbox=((row, col), (row + rows, col + cols)),
                             ignore_collisions=ignore_collisions,
                         )
                     except StopIteration:
@@ -346,26 +352,6 @@ class Sample(object):
             marks = self.components.add_ref(die_corners)
             dcenter = np.array((2 * cell[1] + 1, -2 * cell[0] - 1)) * self.cell_size / 2
             marks.move(marks.center, np.array(self.origin) + dcenter)
-
-    # @overload
-    # def place_on_sample(self, component: gf.Component, placement_area: str) -> None:
-    #    """Place component on sample
-
-    #    Args:
-    #        component (Component): component to place
-    #        placement_area (str): desired region of the chip to place sample in.
-    #            Must be one of "c", "n", "s", "e", "w", "nw", "ne", "sw", "se"
-
-    #    Returns:
-    #        None
-    #    """
-    #    self._check_component_size(component)
-    #    allowed_placement_areas = ["c", "n", "s", "e", "w", "nw", "ne", "sw", "se"]
-    #    if placement_area.lower() not in allowed_placement_areas:
-    #        raise ValueError(
-    #            f"{placement_area=} is not one of {allowed_placement_areas}"
-    #        )
-    #    # find open cell(s) to place on
 
     def _check_component_size(self, component: gf.Component) -> bool:
         """Checks component size
