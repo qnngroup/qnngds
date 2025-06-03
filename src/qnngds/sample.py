@@ -202,6 +202,7 @@ class Sample(object):
         """Place component on sample
 
         See also :py:meth:`place_multiple_on_sample`.
+
         Args:
             component (Component): component to place
             cell_coordinate_bbox (tuple[int, int] | tuple[tuple[int, int], tuple[int, int]]):
@@ -267,6 +268,7 @@ class Sample(object):
         """Place components on sample
 
         See also :py:meth:`place_on_sample`.
+
         Args:
             components (Sequence[Component]): sequence of components to place
             cell_coordinate_bbox (tuple[tuple[int, int], tuple[int, int]]):
