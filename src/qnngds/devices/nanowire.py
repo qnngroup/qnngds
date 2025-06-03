@@ -29,8 +29,25 @@ def variable_length(
 
     Returns:
         gf.Component: 2 optimal steps to/from a narrow wire.
+
+    Raises:
+        ValueError if constr_width > wire_width
     """
     NANOWIRE = gf.Component()
+    if constr_width > wire_width:
+        raise ValueError(
+            f"constriction width {constr_width=} cannot be larger than wire width {wire_width=}"
+        )
+    # if constriction and wire width are the same, just return a straight wire
+    if constr_width == wire_width:
+        constr = NANOWIRE << gf.components.compass(
+            size=(constr_width, length), layer=layer, port_type="electrical"
+        )
+        constr.center = (0, 0)
+        NANOWIRE.add_port(name="e1", port=constr.ports["e2"])
+        NANOWIRE.add_port(name="e2", port=constr.ports["e4"])
+        return NANOWIRE
+    # otherwise, create tapers
     wire = gf.components.superconductors.optimal_step(
         constr_width, wire_width, symmetric=True, num_pts=num_pts, layer=layer
     )
