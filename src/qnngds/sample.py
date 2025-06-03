@@ -303,11 +303,14 @@ class Sample(object):
                     try:
                         # generate a bounding box
                         component = next(component_iter)
-                        rows = component.ysize // self.cell_size
-                        cols = component.xsize // self.cell_size
+                        rows = int(np.ceil(component.ysize / self.cell_size))
+                        cols = int(np.ceil(component.xsize / self.cell_size))
                         self.place_on_sample(
                             component,
-                            cell_coordinate_bbox=((row, col), (row + rows, col + cols)),
+                            cell_coordinate_bbox=(
+                                (row, col),
+                                (row + rows - 1, col + cols - 1),
+                            ),
                             ignore_collisions=ignore_collisions,
                         )
                     except StopIteration:
