@@ -212,6 +212,7 @@ def optimal_step(
     """Returns an optimally-rounded step geometry.
 
     Wrapper for gdsfactory.components.superconductors.optimal_step that provides a port_type
+
     Args:
         start_width (float): Width of the connector on the left end of the step.
         end_width (float): Width of the connector on the right end of the step.
