@@ -101,7 +101,8 @@ if __name__ == "__main__":
     qnngds_path = os.path.join("..", "..", "src", "qnngds")
 
     try:
-        plot_images.process_modules_in_folder(qnngds_path)
+        modules = plot_images.get_modules(qnngds_path)
+        print(modules)
         generate_api(qnngds_path)
 
     except FileNotFoundError as e:

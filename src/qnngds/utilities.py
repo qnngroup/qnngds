@@ -193,7 +193,7 @@ class RouteGroup:
 
     Stores a cross section and mapping of DUT ports to optional pad
     ports. If a DUT port is mapped to None, then a pad port
-    will be automatically assigned in generate_experiment
+    will be automatically assigned in :py:func:`generate_experiment`
     """
 
     def __init__(self, cross_section: CrossSectionSpec, port_mapping: dict | tuple):
@@ -216,7 +216,8 @@ class RouteGroup:
 def _get_segment_from_path(path: gf.Path, p: int) -> ArrayLike:
     """Gets the segment starting from the p'th point in path.
 
-    Helper method for generate_experiment.
+    Helper method for :py:func:`generate_experiment`.
+
     Args:
         path (gf.Path): path to get segment from
         p (int): index of the first point in the line segment
@@ -233,7 +234,8 @@ def _get_segment_from_path(path: gf.Path, p: int) -> ArrayLike:
 def _segments_overlap(segment_1: ArrayLike, segment_2: ArrayLike) -> bool:
     """Determines if two line segments on a manhattan grid overlap.
 
-    Helper method for generate_experiment.
+    Helper method for :py:func:`generate_experiment`.
+
     Args:
         segment_1 (ArrayLike): first segment
         segment_2 (ArrayLike): second segment
@@ -254,7 +256,8 @@ def _segments_overlap(segment_1: ArrayLike, segment_2: ArrayLike) -> bool:
 def _path_self_intersects(path: gf.Path) -> bool:
     """Determines if a manhattan path has any self-intersections
 
-    Helper method for generate_experiment.
+    Helper method for :py:func:`generate_experiment`.
+
     Args:
         path (gf.Path): path to check
 
@@ -275,7 +278,8 @@ def _path_self_intersects(path: gf.Path) -> bool:
 def _paths_intersect(path_1: gf.Path, path_2: gf.Path) -> bool:
     """Determines if two manhattan paths intersect
 
-    Helper method for generate_experiment.
+    Helper method for :py:func:`generate_experiment`.
+
     Args:
         path_1 (gf.Path): first path to check
         path_2 (gf.Path): second path to check
@@ -315,7 +319,8 @@ def _get_port_direction(port: Port) -> str:
 def _get_component_port_direction(component: gf.Component) -> PortsDict:
     """Returns ports of a component organized by direction.
 
-    Helper method for generate_experiment.
+    Helper method for :py:func:`generate_experiment`.
+
     Args:
         component (gf.Component): component to get ports from
 
@@ -334,7 +339,8 @@ def _sort_ports(
 ) -> Ports:
     """Sorts collections of ports all facing the same direction.
 
-    Helper method for generate_experiment.
+    Helper method for :py:func:`generate_experiment`.
+
     Args:
         ports (gf.PortsDict): dictionary of ports.
         sort_map dict[str, Callable]: dictionary mapping a direction to a sort key that takes the port as an input.
@@ -354,10 +360,10 @@ def _sort_ports(
 
 @gf.cell
 def generate_experiment(
-    dut: ComponentSpecOrComponent = gf.components.shapes.rectangle,
-    pad_array: ComponentSpecOrComponent = gf.components.shapes.rectangle,
-    label: ComponentSpecOrComponent | None = gf.components.texts.text,
-    route_groups: Sequence[RouteGroup] | None = None,
+    dut: ComponentSpecOrComponent,
+    pad_array: ComponentSpecOrComponent,
+    label: ComponentSpecOrComponent | None,
+    route_groups: Sequence[RouteGroup] | None,
     dut_offset: tuple[float, float] = (0, 0),
     pad_offset: tuple[float, float] = (0, 0),
     label_offset: tuple[float, float] | None = (-100, -100),

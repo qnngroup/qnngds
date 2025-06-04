@@ -131,15 +131,42 @@ def _create_marker(layer1: tuple = (1, 0), layer2: tuple = (2, 0)) -> gf.Compone
 
     # text
     TEXT = gf.Component()
-    for layer in (layer1, layer2):
-        text1 = TEXT << gf.components.texts.text(
-            f"{layer2[0]}/{layer2[1]}", size=50, layer=layer
-        )
-        text1.move(text1.center, (-200, 200))
-    text2 = TEXT << gf.components.texts.text(
-        f"{layer2[0]}/{layer2[1]} ON {layer1[0]}/{layer1[1]}", size=10, layer=layer2
+    layer1_str = str(gf.get_layer(layer1)).split("_")[0]
+    layer2_str = str(gf.get_layer(layer2)).split("_")[0]
+    bg_label = (
+        layer2_str[:3] if len(layer2_str) < 4 else layer2_str[:2] + layer2_str[-1]
     )
+    sm_label = ""
+    if len(layer2_str) < 5:
+        sm_label += layer2_str
+    else:
+        sm_label += f"{layer2_str[:4]}{layer2_str[-1]}"
+    sm_label += " ON "
+    if len(layer1_str) < 5:
+        sm_label += layer1_str
+    else:
+        sm_label += f"{layer1_str[:4]}{layer1_str[-1]}"
+    for layer in (layer1, layer2):
+        text1 = TEXT << gf.components.texts.text(bg_label, size=50, layer=layer)
+        text1.move(text1.center, (-200, 190))
+    text2 = TEXT << gf.components.texts.text(sm_label, size=10, layer=layer2)
     text2.move(text2.center, (-200, 250))
+    if isinstance(layer1, tuple):
+        layer1_numeric = f"{layer1[0]}/{layer1[1]}"
+    else:
+        layer1_enum = gf.get_layer(layer1)
+        layer1_numeric = f"{layer1_enum[0]}/{layer1_enum[1]}"
+    if isinstance(layer2, tuple):
+        layer2_numeric = f"{layer2[0]}/{layer2[1]}"
+    else:
+        layer2_enum = gf.get_layer(layer2)
+        layer2_numeric = f"{layer2_enum[0]}/{layer2_enum[1]}"
+    text3 = TEXT << gf.components.texts.text(
+        layer2_numeric + " ON " + layer1_numeric,
+        size=10,
+        layer=layer2,
+    )
+    text3.move(text3.center, (-200, 235))
     TEXT.flatten()
     MARK << TEXT
 
@@ -148,12 +175,12 @@ def _create_marker(layer1: tuple = (1, 0), layer2: tuple = (2, 0)) -> gf.Compone
 
 @gf.cell
 def alignment_mark(
-    layers: List[tuple] = [(1, 0), (2, 0), (3, 0), (4, 0)],
+    layers: LayerSpecs = ["EBEAM_COARSE", "PHOTO1", "PHOTO2"],
 ) -> gf.Component:
-    """Creates an alignment mark for each photolithography.
+    """Creates an alignment mark for each lithography layer.
 
     Args:
-        layers (List[tuple]): A list of GDS layer tuples (layer, type)
+        layers (LayerSpecs): A list of GDS layers
 
     Returns:
         gf.Component: alignment marks between each layer pair
