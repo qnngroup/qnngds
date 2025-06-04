@@ -97,6 +97,16 @@ resistor
         .. image:: images/devices/resistor/meander_sc_contacts.png
             :alt: meander_sc_contacts.png
 
+resonator
+~~~~~~~~~
+
+.. automodule:: qnngds.devices.resonator
+    :members:
+    :exclude-members:
+    :undoc-members:
+    :show-inheritance:
+    :special-members: __init__
+
 snspd
 ~~~~~
 

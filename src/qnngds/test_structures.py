@@ -437,6 +437,7 @@ def circ_tlm(
     int_radius: List[float] = [50, 70, 80, 90, 95, 98, 99],
     pad_layer: LayerSpec = (3, 0),
     mesa_layers: LayerSpecs = [(1, 0), (2, 0)],
+    text_size: float = 10,
 ) -> gf.Component:
     """Creates rectangular transfer-length-method test structures.
 
@@ -445,6 +446,7 @@ def circ_tlm(
         int_radius (List[float]): list of internal radii. The gap is d = ext_radius - int_radius.
         pad_layer (LayerSpec): layer for probable pads.
         mesa_layers (LayerSpecs): layer(s) for bottom metal/semiconductor and/or vias
+        text_size (float): size of text label
 
     Returns:
         gf.Component: TLM structure
@@ -460,7 +462,7 @@ def circ_tlm(
             radius=r, width=d, angle_resolution=2.5, layer=pad_layer, angle=360
         )
         t = CUT << gf.components.text(
-            text=f"{ext_radius}/{r_i}", size=10, justify="right", layer=pad_layer
+            text=f"{ext_radius}/{r_i}", size=text_size, justify="right", layer=pad_layer
         )
         t.move((t.xmax, t.ymax), (r.xmax, r.ymax))
         cuts.append(CUT)

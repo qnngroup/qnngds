@@ -20,6 +20,7 @@
           # or that you just want to be managed by nix for one reason or another
           p.numpy
           p.klayout
+          p.ruff
         ]);
       in
       {
@@ -30,7 +31,22 @@
               uv
               python
               pythonEnv
+              stdenv.cc.cc.libgcc
             ];
+
+            nativeBuildInputs = [ autoPatchelfHook ];
+
+            shellHook = ''
+              pre-commit install
+              pre-commit run
+              patch=$(autoPatchelf ~/.cache/pre-commit/)
+              if [[ $? -ne 0 ]]; then
+                echo "$patch"
+                exit 1
+              else
+                echo "patched ~/.cache/pre-commit"
+              fi
+            '';
           };
       }
     );
