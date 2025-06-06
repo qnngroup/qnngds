@@ -101,7 +101,12 @@ def sharp(
         gf.Component: sharp constriction
     """
     NANOWIRE = gf.Component()
-    tap = qg.geometries.taper(length / 2, constr_width, wire_width, layer=layer)
+    tap = qg.geometries.taper(
+        length=length / 2,
+        start_width=constr_width,
+        end_width=wire_width,
+        layer=layer,
+    )
     taps = []
     for i in range(2):
         taps.append(NANOWIRE << tap)

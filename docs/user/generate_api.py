@@ -101,8 +101,8 @@ if __name__ == "__main__":
     qnngds_path = os.path.join("..", "..", "src", "qnngds")
 
     try:
-        modules = plot_images.get_modules(qnngds_path)
-        print(modules)
+        plot_images.generate_pdk(qnngds_path)
+        plot_images.plot_and_save_functions()
         generate_api(qnngds_path)
 
     except FileNotFoundError as e:

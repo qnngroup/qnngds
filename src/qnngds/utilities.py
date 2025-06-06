@@ -27,6 +27,22 @@ from gdsfactory.typings import (
 )
 
 
+def hyper_taper_fn(t, start_width, end_width):
+    """Used for defining custom cross section widths/offsets
+
+    Args:
+        t (float): value on [0,1] mapping to position along length of taper
+        start_width (float): starting width (t=0)
+        end_width (float): ending width (t=1)
+    """
+    if start_width > end_width:
+        a = np.arccosh(start_width / end_width)
+        return np.cosh(a * (1 - t)) * end_width
+    else:
+        a = np.arccosh(end_width / start_width)
+        return np.cosh(a * t) * start_width
+
+
 @gf.cell
 def union(component: gf.Component) -> gf.Component:
     """Merge all polygons within a Component by layer
@@ -72,7 +88,7 @@ def outline(
 
     Args:
         component (gf.Component): component to outline
-        outline_layers (dict[tuple, float]): map of desired outline amount per layer. If a layer is omitted, it will not be outlined
+        outline_layers (dict[str, float]): map of desired outline amount per layer. If a layer is omitted, it will not be outlined
 
     Returns:
         gf.Component: the outlined component
@@ -127,7 +143,7 @@ def outline(
 @gf.cell
 def invert(
     component: gf.Component,
-    ext_bbox_layers: dict[tuple, float] = {},
+    ext_bbox_layers: dict[str, float] = {},
 ) -> gf.Component:
     """Outline polygons within component by layer.
 
@@ -139,12 +155,16 @@ def invert(
         gf.Component: the inverted component
     """
     comp_inverted = gf.Component()
+    bbox_layer_str_map = {
+        gf.get_layer(layer): layer for layer in ext_bbox_layers.keys()
+    }
     for layer in component.layers:
+        layer = gf.get_layer(layer)
         r = component.get_region(layer=layer)
-        if layer not in ext_bbox_layers.keys():
+        if layer not in bbox_layer_str_map.keys():
             comp_inverted.add_polygon(r, layer=layer)
         else:
-            ext = ext_bbox_layers[layer]
+            ext = ext_bbox_layers[bbox_layer_str_map[layer]]
             r_expanded = gf.components.shapes.bbox(
                 component, top=ext, bottom=ext, left=ext, right=ext, layer=layer
             ).get_region(layer=layer)

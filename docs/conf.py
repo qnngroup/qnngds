@@ -47,6 +47,21 @@ todo_include_todos = True
 #     },
 # }
 
+# from gdsfactory
+autodoc_type_aliases = (
+    {
+        "ComponentFactory": "ComponentFactory",
+        "ComponentSpec": "ComponentSpec",
+        "CrossSectionFactory": "CrossSectionFactory",
+        "CrossSectionSpec": "CrossSectionSpec",
+        "LayerSpec": "LayerSpec",
+        "LayerSpecs": "LayerSpecs",
+        "Layer": "Layer",
+        "Layers": "Layers",
+        "PathType": "PathType",
+    },
+)
+
 multiproject_projects = {
     "user": {},
     "dev": {},

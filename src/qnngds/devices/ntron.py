@@ -116,7 +116,11 @@ def sharp(
     source_l = source_sq * source_w
 
     choke = qg.geometries.taper(
-        gate_l, gate_w, choke_w, layer=layer, port_type="electrical"
+        length=gate_l,
+        start_width=gate_w,
+        end_width=choke_w,
+        layer=layer,
+        port_type="electrical",
     )
     k = D << choke
 
@@ -128,13 +132,21 @@ def sharp(
     D.move(c.center, (0, 0))
 
     drain = qg.geometries.taper(
-        drain_l, channel_w, drain_w, layer=layer, port_type="electrical"
+        length=drain_l,
+        start_width=channel_w,
+        end_width=drain_w,
+        layer=layer,
+        port_type="electrical",
     )
     d = D << drain
     d.connect(port=d.ports["e1"], other=c.ports["e2"])
 
     source = qg.geometries.taper(
-        source_l, channel_w, source_w, layer=layer, port_type="electrical"
+        length=source_l,
+        start_width=channel_w,
+        end_width=source_w,
+        layer=layer,
+        port_type="electrical",
     )
     s = D << source
     s.connect(port=s.ports["e1"], other=c.ports["e4"])
