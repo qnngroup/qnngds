@@ -1,5 +1,8 @@
 """Sample defines the Sample class which is used to generate a wafer/piece layout from multiple experiments"""
 
+# can be removed in python 3.14, see https://peps.python.org/pep-0749/
+from __future__ import annotations
+
 import numpy as np
 
 import gdsfactory as gf

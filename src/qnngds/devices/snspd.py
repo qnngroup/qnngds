@@ -1,5 +1,8 @@
 """Superconducting nanowire single photon detector geometries."""
 
+# can be removed in python 3.14, see https://peps.python.org/pep-0749/
+from __future__ import annotations
+
 import gdsfactory as gf
 import numpy as np
 

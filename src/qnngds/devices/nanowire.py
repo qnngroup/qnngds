@@ -1,5 +1,8 @@
 """Single nanowire constriction."""
 
+# can be removed in python 3.14, see https://peps.python.org/pep-0749/
+from __future__ import annotations
+
 import gdsfactory as gf
 
 from gdsfactory.typings import LayerSpec

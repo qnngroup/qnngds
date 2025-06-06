@@ -1,5 +1,8 @@
 """Nanocryotron `[1] <https://doi.org/10.1021/nl502629x>`_ variants."""
 
+# can be removed in python 3.14, see https://peps.python.org/pep-0749/
+from __future__ import annotations
+
 import gdsfactory as gf
 from gdsfactory.typings import ComponentSpec, LayerSpec
 

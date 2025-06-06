@@ -1,5 +1,8 @@
 """Heater cryotron devices `[1] <https://doi.org/10.1038/s41928-019-0300-8>`_, `[2] <https://doi.org/10.1103/PhysRevApplied.14.054011>`_."""
 
+# can be removed in python 3.14, see https://peps.python.org/pep-0749/
+from __future__ import annotations
+
 import gdsfactory as gf
 import numpy as np
 

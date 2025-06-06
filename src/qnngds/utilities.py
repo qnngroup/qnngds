@@ -5,6 +5,9 @@ Cells are made of devices
 device and its die are linked thanks to functions present in this module.
 """
 
+# can be removed in python 3.14, see https://peps.python.org/pep-0749/
+from __future__ import annotations
+
 import gdsfactory as gf
 import kfactory as kf
 from typing import Literal
