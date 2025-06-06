@@ -235,7 +235,8 @@ def _create_waffle(
 
     text = WAFFLE << gf.components.texts.text(str(res), size=20, layer=layer)
     start = (text.xmin, text.ymax)
-    text.move(start, (2 * res, -2 * res))
+    dy = -min(20, 20 * res)
+    text.move(start, (0, dy))
 
     WAFFLEu = gf.Component()
     WAFFLEu << qg.utilities.union(WAFFLE)
@@ -257,25 +258,25 @@ def _create_3L(res: Union[float, int] = 1, layer: LayerSpec = (1, 0)) -> gf.Comp
     """
 
     LLL = gf.Component()
-    grid_spacing = (13 * res, 13 * res)
+    grid_spacing = (15 * res, 15 * res)
 
-    space = [0.8, 1, 1.2]
-    for i, percent in enumerate(space):
+    deviation = [0.8, 1, 1.2]
+    for i, percent in enumerate(deviation):
         bars = gf.Component()
         w = percent * res
         spacing = 2 * res
-        bar = gf.components.shapes.rectangle(size=(min(100 * w, 100), w), layer=layer)
+        bar = gf.components.shapes.rectangle(size=(min(100 * res, 100), w), layer=layer)
         h_bars = bars.add_ref(bar, columns=1, rows=5, column_pitch=0, row_pitch=spacing)
         v_bars = bars.add_ref(bar, columns=1, rows=5, column_pitch=0, row_pitch=spacing)
         h_bars.rotate(90)
-        h_bars.move((LLL.xmin - h_bars.xmin, LLL.ymin - h_bars.ymin))
-        v_bars.move((LLL.xmin - v_bars.xmin, LLL.ymin - v_bars.ymin))
+        h_bars.move((h_bars.xmin, h_bars.ymin), (0, 0))
+        v_bars.move((v_bars.xmin, v_bars.ymin), (0, 0))
         lll = LLL << bars
-        lll.move([i * space for space in grid_spacing])
+        lll.move([i * offset for offset in grid_spacing])
 
     text = LLL << gf.components.texts.text(str(res), size=20, layer=layer)
     start = (text.xmin, text.ymin)
-    text.move(start, [(i + 1) * space for space in grid_spacing])
+    text.move(start, [(len(deviation) + 0.5) * offset for offset in grid_spacing])
     LLLu = gf.Component()
     LLLu << qg.utilities.union(LLL)
     LLLu.flatten()

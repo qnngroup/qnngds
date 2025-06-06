@@ -9,6 +9,7 @@ import gdsfactory as gf
 from gdsfactory.typings import ComponentSpecOrComponent, LayerSpec
 
 from collections.abc import Sequence
+from collections import deque
 
 from itertools import product
 
@@ -155,6 +156,7 @@ class Sample(object):
                 )
                 if intersection.get_region(layer=(1, 0)).is_empty():
                     self.open_cells.add((row, col))
+        self.bounds = self.open_cells.copy()
 
     def visualize_open_cells(self, blocking: bool = True) -> gf.Component:
         """Visualize open cells
@@ -240,6 +242,12 @@ class Sample(object):
         cells_to_occupy = set(product(row_span, col_span))
         for row in row_span:
             for col in col_span:
+                if (row, col) not in self.bounds:
+                    error_msg = (
+                        f"cell {(row, col)=} is outside of sample when attempting "
+                    )
+                    error_msg += f"to place {component.name=}"
+                    raise ValueError(error_msg)
                 if (row, col) not in self.open_cells:
                     error_msg = f"cell {(row, col)=} is occupied when attempting "
                     error_msg += f"to place {component.name=}"
@@ -297,35 +305,33 @@ class Sample(object):
         ax_inner = list(row_span)
         if not column_major:
             ax_outer, ax_inner = ax_inner, ax_outer
-        component_iter = iter(components)
+        component_queue = deque(components)
         for iout, outer in enumerate(ax_outer):
             for iin, inner in enumerate(ax_inner):
+                if len(component_queue) == 0:
+                    break
                 row = inner
                 col = outer
                 if not column_major:
                     row, col = col, row
                 if (row, col) in self.open_cells:
-                    try:
-                        # generate a bounding box
-                        component = next(component_iter)
-                        rows = int(np.ceil(component.ysize / self.cell_size))
-                        cols = int(np.ceil(component.xsize / self.cell_size))
-                        self.place_on_sample(
-                            component,
-                            cell_coordinate_bbox=(
-                                (row, col),
-                                (row + rows - 1, col + cols - 1),
-                            ),
-                            ignore_collisions=ignore_collisions,
-                        )
-                    except StopIteration:
-                        break
-        if next(component_iter, None) is not None:
-            r = 1
-            while next(component_iter, None) is not None and r < 50:
-                r += 1
+                    # generate a bounding box
+                    component = component_queue.popleft()
+                    rows = int(np.ceil(component.ysize / self.cell_size))
+                    cols = int(np.ceil(component.xsize / self.cell_size))
+                    bbox = ((row, col), (row + rows - 1, col + cols - 1))
+                    if bbox[0] not in self.bounds or bbox[1] not in self.bounds:
+                        # make sure extents of proposed bbox are in bounds
+                        component_queue.appendleft(component)
+                        continue
+                    self.place_on_sample(
+                        component,
+                        cell_coordinate_bbox=bbox,
+                        ignore_collisions=ignore_collisions,
+                    )
+        if len(component_queue) > 0:
             error_msg = "insufficient area provided, available space exhausted and "
-            error_msg += f"still have {'>' if r >= 50 else ''}{r} remaining components."
+            error_msg += f"still have {len(component_queue)} remaining components."
             raise ValueError(error_msg)
 
     def write_cell_corners(self, width: float, layer: LayerSpec) -> None:
