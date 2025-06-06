@@ -1,7 +1,6 @@
 """Generate images for callable methods"""
 
 import os
-import traceback
 import importlib.util
 import gdsfactory as gf
 import matplotlib.pyplot as plt
@@ -60,7 +59,7 @@ def plot_and_save_functions():
                     f"not be plotted: {e}"
                 )
             else:
-                print(traceback.format_exc())
+                raise Exception(f"failed to plot cell {short_name}") from e
 
 
 def get_modules(folder_path, module_prefix=""):

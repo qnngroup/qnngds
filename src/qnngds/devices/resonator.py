@@ -122,7 +122,7 @@ def microstrip(
 @gf.cell
 def transmission_line(
     cross_section: CrossSectionSpec,
-    length: float = 50,
+    length: float = 100,
 ) -> gf.Component:
     """Construct a straight transmission line by extruding a cross section
 
@@ -255,7 +255,10 @@ def pad(
 
 @gf.cell
 def transmission_line_resonator(
-    transmission_line_spec: ComponentSpec = transmission_line,
+    transmission_line_specs: tuple[ComponentSpec | None, ComponentSpec | None] = (
+        transmission_line,
+        None,
+    ),
     resonator_spec: ComponentSpec = resonator_meandered,
     tl_cross_section: CrossSectionSpec = partial(cpw, width=75, gap=24),
     res_cross_section: CrossSectionSpec = cpw,
@@ -267,16 +270,18 @@ def transmission_line_resonator(
     Inverts final design based on layer choice and PDK Layer class's outline function
 
     Args:
-        transmission_line (ComponentSpec): Desired component spec for transmission line.
-            Must take a single argument ``cross_section``.
-        resonator (ComponentSpec): Desired component spec for embedded resonator.
+        transmission_line_specs (tuple[ComponentSpec | None, ComponentSpec | None]): Desired component spec for
+            transmission line on either end of resonator. If ComponentSpec, take a single argument
+            ``cross_section``. If None, no transmission line will be created (although the resonator will
+            taper out to the width of the ``tl_cross_section``.
+        resonator_spec (ComponentSpec): Desired component spec for embedded resonator.
             Must take a single argument ``cross_section``.
         tl_cross_section (CrossSectionSpec): CPW or microstrip cross section for transmission line.
         res_cross_section (CrossSectionSpec): CPW or microstrip cross section for resonator.
         taper (ComponentFactory): Callable which produces a Component, used to generate a filled taper
             between resonator and transmission line. Port widths must match. Should be solid (i.e. not outlined);
             will be automatically outlined for CPW.
-        pad (tuple[ComponentSpec | None, ComponentSpec | None]): Component spec or None for each pad.
+        pads (tuple[ComponentSpec | None, ComponentSpec | None]): Component spec or None for each pad.
             If ComponentSpec, must take a single argument ``width``. If None, no pad will be created
 
     Returns:
@@ -309,12 +314,12 @@ def transmission_line_resonator(
     >>>     layer="PHOTO1",
     >>> )
     >>> c = qg.devices.resonator.transmission_line_resonator(
-    >>>     transmission_line=tl_spec,
-    >>>     resonator=res_spec,
+    >>>     transmission_line_specs=tl_spec,
+    >>>     resonator_spec=res_spec,
     >>>     tl_cross_section=tl_xc_spec,
     >>>     res_cross_section=res_xc_spec,
     >>>     taper=qg.geometries.hyper_taper,
-    >>>     pad=qg.devices.resonator.pad,
+    >>>     pads=qg.devices.resonator.pad,
     >>> )
 
     """
@@ -349,7 +354,7 @@ def transmission_line_resonator(
     R.add_ports(res.ports)
     # create new cross-section for taper using transitions
     T = gf.Component()
-    trans_length = tl_xc.sections[0].width
+    trans_length = sum(section.width for section in tl_xc.sections)
     trans_layer = res_xc.sections[0].layer
     transition = taper(
         start_width=res_xc.sections[0].width,
@@ -375,27 +380,35 @@ def transmission_line_resonator(
     else:
         T << transition
     T.add_ports(transition.ports)
-    R_ext = gf.components.extend_ports(
+    # add tapers
+    R = gf.components.extend_ports(
         component=R,
         port_names=["e1", "e2"],
         extension=T,
     )
-    R_ext_tl = gf.components.extend_ports(
-        component=R_ext,
-        port_names=["e1", "e2"],
-        extension=transmission_line_spec(tl_xc),
-    )
+    for n, tl_spec in enumerate(transmission_line_specs):
+        if tl_spec is None:
+            continue
+        # attach tl to component
+        R = gf.components.extend_ports(
+            component=R,
+            port_names=[f"e{n + 1}"],
+            extension=tl_spec(tl_xc),
+        )
     for n, pad in enumerate(pads):
         if pad is None:
             continue
+        # create the pad
         pad_i = pad(tl_xc.sections[0].width)
         if is_cpw:
+            # outline the pad
             pad_i = qg.utilities.outline(
                 component=pad_i,
                 outline_layers={str(tl_xc.sections[1].layer): tl_xc.sections[1].width},
             )
-        R_ext_tl = gf.components.extend_ports(
-            component=R_ext_tl, port_names=[f"e{n + 1}"], extension=pad_i
+        # attach pad to component
+        R = gf.components.extend_ports(
+            component=R, port_names=[f"e{n + 1}"], extension=pad_i
         )
     # invert if needed
     outline_layers = qg.utilities.get_outline_layers(gf.get_active_pdk().layers)
@@ -405,7 +418,7 @@ def transmission_line_resonator(
     ext_bbox_layers |= {
         str(layer): 50 for layer in layers if is_cpw and layer not in outline_layers
     }
-    inverted = qg.utilities.invert(R_ext_tl, ext_bbox_layers=ext_bbox_layers)
+    inverted = qg.utilities.invert(R, ext_bbox_layers=ext_bbox_layers)
     R = gf.Component()
     R << inverted
     R.add_ports(inverted.ports)
