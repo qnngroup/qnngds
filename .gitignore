@@ -159,3 +159,6 @@ cython_debug/
 .vscode
 
 *.gds
+
+*.swp
+*.swo
