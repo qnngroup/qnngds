@@ -228,9 +228,10 @@ class Sample(object):
         spans_multiple = self._check_component_size(component)
         # check that component fits within specified bounding box
         if not isinstance(cell_coordinate_bbox[0], tuple) and spans_multiple:
-            error_msg = f"component {component.name} spans multiple cells, "
-            error_msg += "but bbox-like coordinates were not provided"
-            raise ValueError(error_msg)
+            raise ValueError(
+                f"component {component.name} spans multiple cells, "
+                "but bbox-like coordinates were not provided"
+            )
         # convert singleton to bbox with identical endpoints
         if not isinstance(cell_coordinate_bbox[0], tuple):
             cell_coordinate_bbox = (cell_coordinate_bbox, cell_coordinate_bbox)
@@ -243,14 +244,15 @@ class Sample(object):
         for row in row_span:
             for col in col_span:
                 if (row, col) not in self.bounds:
-                    error_msg = (
-                        f"cell {(row, col)=} is outside of sample when attempting "
+                    raise ValueError(
+                        f"cell {(row, col)=} is outside of sample "
+                        f"when attempting to place {component.name=}"
                     )
-                    error_msg += f"to place {component.name=}"
-                    raise ValueError(error_msg)
                 if (row, col) not in self.open_cells:
-                    error_msg = f"cell {(row, col)=} is occupied when attempting "
-                    error_msg += f"to place {component.name=}"
+                    error_msg = (
+                        f"cell {(row, col)=} is occupied when "
+                        f"attempting to place {component.name=}"
+                    )
                     # cell isn't open
                     if (row, col) in self.full_cells:
                         # cell is occupied
@@ -330,9 +332,10 @@ class Sample(object):
                         ignore_collisions=ignore_collisions,
                     )
         if len(component_queue) > 0:
-            error_msg = "insufficient area provided, available space exhausted and "
-            error_msg += f"still have {len(component_queue)} remaining components."
-            raise ValueError(error_msg)
+            raise ValueError(
+                "insufficient area provided, available space exhausted and "
+                f"still have {len(component_queue)} remaining components."
+            )
 
     def write_cell_corners(self, width: float, layer: LayerSpec) -> None:
         """Adds corner markers to all full cells
@@ -382,8 +385,9 @@ class Sample(object):
             component.xsize > self.cell_size or component.ysize > self.cell_size
         )
         if spans_multiple and not self.allow_cell_span:
-            error_msg = "allow_cell_span is set to False, "
-            error_msg += f"but the provided component {component.name} "
-            error_msg += "is larger than a single cell {self.cell_size=}"
-            raise RuntimeError(error_msg)
+            raise RuntimeError(
+                "allow_cell_span is set to False, "
+                f"but the provided component {component.name} "
+                "is larger than a single cell {self.cell_size=}"
+            )
         return spans_multiple

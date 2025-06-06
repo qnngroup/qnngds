@@ -574,21 +574,45 @@ def generate_experiment(
     # first define route groups if it isn't initialized
     dut_pad_map = {}
     if route_groups is None:
-        try:
-            cross_section = gf.get_active_pdk().get_cross_section("default")
-        except ValueError as e:
-            error_msg = "'default' cross section required if route_groups is None."
-            error_msg += "Please either specify the desired cross section by defining"
-            error_msg += (
-                "route_groups, or define a 'default' cross section in the current Pdk"
+        # add remaining ports
+        dut_pad_map |= {dp.name: pp for (dp, pp) in zip(dut_ports, pad_ports)}
+        # try to group in a reaonsable way:
+        # all port pairs with the same start/end layer go in a group together
+        # all remaining port pairs with the same end layer go in a group together
+        port_maps = {}
+        cross_sections = {}
+        for dut_port_name, pad_port in dut_pad_map.items():
+            dut_port = dut_ref.ports[dut_port_name]
+            if dut_port.layer == pad_port.layer:
+                pair = (dut_port.layer, pad_port.layer)
+                if pair not in port_maps:
+                    port_maps[pair] = {}
+            else:
+                pair = (None, pad_port.layer)
+                if pair not in port_maps:
+                    port_maps[pair] = {}
+            port_maps[pair][dut_port_name] = pad_port.name
+            # create a cross section for the layer
+            found = False
+            for xc in gf.get_active_pdk().cross_sections:
+                xc = gf.get_cross_section(xc)
+                if xc.sections[0].layer == pad_port.layer:
+                    cross_sections[pair] = xc
+                    found = True
+            if not found:
+                raise Warning(
+                    "Failed to automatically select a cross section for "
+                    f"dut/pad pair {dut_port.name}/{pad_port.name}. "
+                    f"Selecting cross section 'default'. This may cause "
+                    "errors if the appropriate transitions aren't defined"
+                )
+        # create route_groups
+        route_groups = []
+        for pair, xc in cross_sections.items():
+            route_groups.append(
+                RouteGroup(cross_section=xc, port_mapping=port_maps[pair])
             )
-            raise ValueError(error_msg) from e
-        route_groups = (
-            RouteGroup(
-                cross_section=cross_section,
-                port_mapping=tuple(p.name for p in dut_ports),
-            ),
-        )
+        route_groups = tuple(route_groups)
     else:
         # reserve routes for any that are defined in route_groups
         for group in route_groups:
@@ -601,10 +625,9 @@ def generate_experiment(
                             if pad_ports[i].name == pad_port_name
                         )
                     except StopIteration as e:
-                        error_msg = (
+                        raise ValueError(
                             f"Port {pad_port_name} not found in pad ports {pad_ports}"
-                        )
-                        raise ValueError(error_msg) from e
+                        ) from e
                     try:
                         dut_port_index = next(
                             i
@@ -613,14 +636,13 @@ def generate_experiment(
                         )
                         dut_pad_map[dut_port_name] = pad_ports[pad_port_index]
                     except StopIteration as e:
-                        error_msg = (
+                        raise ValueError(
                             f"Port {dut_port_name} not found in DUT ports {dut_ports}"
-                        )
-                        raise ValueError(error_msg) from e
+                        ) from e
                     pad_ports.pop(pad_port_index)
                     dut_ports.pop(dut_port_index)
-    # add remaining ports
-    dut_pad_map |= {dp.name: pp for (dp, pp) in zip(dut_ports, pad_ports)}
+        # add remaining ports
+        dut_pad_map |= {dp.name: pp for (dp, pp) in zip(dut_ports, pad_ports)}
 
     # shift pad ports if it's possible to do a straight route between dut and pad without exceeding pad extent
     for gid, route_group in enumerate(route_groups):
@@ -707,10 +729,11 @@ def generate_experiment(
                             points += [portmap[1][r].center]
                             path = gf.Path(points)
                             if _path_self_intersects(path):
-                                error_msg = "After including auto_tapers, routed paths are self-intersecting."
-                                error_msg += " Try increasing the spacing between the pads and DUT or using s_bend routing."
-                                print(f"WARNING: {error_msg}")
-                                raise RuntimeError(error_msg)
+                                raise RuntimeError(
+                                    "After including auto_tapers, routed paths are "
+                                    "self-intersecting. Try increasing the spacing "
+                                    "between the pads and DUT or using s_bend routing."
+                                )
                             # add route to route list for checking intersections later
                             all_paths.append(path)
 
@@ -719,9 +742,10 @@ def generate_experiment(
                     complete = False
                     break
                 except kf.routing.generic.PlacerError as e:
-                    error_msg = "Routing failed, try manually specifying port mapping between DUT"
-                    error_msg += " and pads with route_groups."
-                    raise RuntimeError(error_msg) from e
+                    raise RuntimeError(
+                        "Routing failed, try manually specifying port mapping "
+                        "between DUT and pads with route_groups."
+                    ) from e
             else:
                 # add autotapers and regenerate port groups
                 dut_group_new = gf.routing.auto_taper.add_auto_tapers(
@@ -743,11 +767,10 @@ def generate_experiment(
                     )
                 except ValueError as e:
                     if "radius" in str(e):
-                        error_msg = (
-                            str(e)
-                            + "\nTry increasing spacing between DUT and pads or adjust DUT placement relative to pads."
-                        )
-                        raise ValueError(error_msg) from e
+                        raise ValueError(
+                            f"{e}\nTry increasing spacing between DUT and "
+                            "pads or adjust DUT placement relative to pads."
+                        ) from e
                     else:
                         raise
             # check for intersections between paths that were routed separately
@@ -755,13 +778,12 @@ def generate_experiment(
                 for n in range(m + 1, len(all_paths)):
                     # check that all_paths[p] and all_paths[q] do not intersect
                     if _paths_intersect(all_paths[m], all_paths[n]):
-                        error_msg = "Could not route without intersections."
-                        error_msg += " Try manually specifying port mapping between DUT and pads with route_groups."
-                        error_msg += (
-                            " Also try increasing the spacing between DUT and pads."
+                        raise Warning(
+                            "Could not route without intersections. Try manually "
+                            "specifying port mapping between DUT and pads with "
+                            "route_groups. Also try increasing the spacing between "
+                            "DUT and pads."
                         )
-                        print(error_msg)
-                        # raise RuntimeError(error_msg)
         if complete:
             return routed
     raise RuntimeError(f"failed to route design after {retries} iterations")

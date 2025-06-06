@@ -332,17 +332,19 @@ def transmission_line_resonator(
     tl_layers = set(sect.layer for sect in tl_xc.sections)
     # check inputs
     if res_cpw ^ tl_cpw:
-        error_msg = "Detected mismatch between resonator and transmission line cross-section types."
-        error_msg += f" {res_cpw=} and {tl_cpw=}."
-        raise ValueError(error_msg)
+        raise ValueError(
+            "Detected mismatch between resonator and transmission "
+            f"line cross-section types. {res_cpw=} and {tl_cpw=}."
+        )
     if res_layers != tl_layers:
-        error_msg = "Detected mismatch between resonator and transmission line layers."
-        error_msg += f" {res_layers=} and {tl_layers=}."
-        raise ValueError(error_msg)
-
+        raise ValueError(
+            "Detected mismatch between resonator and transmission "
+            f"line layers. {res_layers=} and {tl_layers=}."
+        )
     if len(res_layers) > 1:
         raise Warning(
-            "WARNING: detected more than 1 layer in cross section spec, tapers may not work correctly"
+            "WARNING: detected more than 1 layer in cross section "
+            "spec, tapers may not work correctly"
         )
 
     is_cpw = res_cpw

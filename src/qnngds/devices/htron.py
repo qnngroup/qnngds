@@ -99,11 +99,11 @@ def heater(
         gf.Component: a heater
     """
     if pad_size[1] - 2 * pad_outline < constr_width:
-        error_msg = (
-            f"{pad_size=} and {pad_outline=} do not give enough space to make a "
+        raise ValueError(
+            f"{pad_size=} and {pad_outline=} do not give enough space to "
+            f"make a constriction of width {constr_width=}. "
+            "Increase pad_size and/or decrease pad_outline"
         )
-        error_msg += f"constriction of width {constr_width=}. Increase pad_size and/or decrease pad_outline"
-        raise ValueError(error_msg)
     h_pad = gf.components.shapes.compass(
         size=(pad_size[0] - pad_outline, pad_size[1] - 2 * pad_outline),
         layer=heater_layer,
