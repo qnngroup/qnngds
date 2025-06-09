@@ -14,6 +14,19 @@ from collections import deque
 from itertools import product
 
 
+class PlaceError(Exception):
+    """Exception raised when placement fails"""
+
+    def __init__(self, message):
+        """Constructor for PlaceError
+
+        Args:
+            message (str): error message
+        """
+        self.message = message
+        super().__init__(self.message)
+
+
 @gf.cell
 def _wafer(radius: float, flat: float) -> gf.Component:
     """Generic template for wafers
@@ -244,7 +257,7 @@ class Sample(object):
         for row in row_span:
             for col in col_span:
                 if (row, col) not in self.bounds:
-                    raise ValueError(
+                    raise PlaceError(
                         f"cell {(row, col)=} is outside of sample "
                         f"when attempting to place {component.name=}"
                     )
@@ -257,10 +270,10 @@ class Sample(object):
                     if (row, col) in self.full_cells:
                         # cell is occupied
                         if not ignore_collisions:
-                            raise ValueError(error_msg)
+                            raise PlaceError(error_msg)
                     else:
                         # illegal cell (e.g. in exclusion region)
-                        raise ValueError(error_msg)
+                        raise PlaceError(error_msg)
         # Placement can proceed.
         # First update our open/full tracking sets
         self.open_cells.difference_update(cells_to_occupy)
@@ -326,13 +339,16 @@ class Sample(object):
                         # make sure extents of proposed bbox are in bounds
                         component_queue.appendleft(component)
                         continue
-                    self.place_on_sample(
-                        component,
-                        cell_coordinate_bbox=bbox,
-                        ignore_collisions=ignore_collisions,
-                    )
+                    try:
+                        self.place_on_sample(
+                            component,
+                            cell_coordinate_bbox=bbox,
+                            ignore_collisions=ignore_collisions,
+                        )
+                    except PlaceError:
+                        component_queue.appendleft(component)
         if len(component_queue) > 0:
-            raise ValueError(
+            raise PlaceError(
                 "insufficient area provided, available space exhausted and "
                 f"still have {len(component_queue)} remaining components."
             )
