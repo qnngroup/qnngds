@@ -47,9 +47,9 @@ def compute_res_wavelength(n_eff: float, res_freq: float) -> float:
 
 
 def cpw(
-    width: float = 15,
-    radius: float = 20,
-    gap: float = 4,
+    width: float = 10,
+    radius: float = 50,
+    gap: float = 5,
     layer: LayerSpec = "PHOTO1",
 ) -> gf.CrossSection:
     """Creates a coplanar waveguide (CPW) cross section.
@@ -90,8 +90,8 @@ def cpw(
 
 
 def microstrip(
-    width: float = 15,
-    radius: float = 20,
+    width: float = 5,
+    radius: float = 50,
     layer: LayerSpec = "PHOTO1",
 ) -> gf.CrossSection:
     """Creates a microstrip cross section
@@ -142,9 +142,9 @@ def transmission_line(
 @gf.cell
 def resonator_meandered(
     cross_section: CrossSectionSpec,
-    n_eff: float = 100,
-    resonant_freq: float = 1e9,
-    meander_width: float = 300,
+    n_eff: float = 10,
+    resonant_freq: float = 5e9,
+    meander_width: float = 500,
 ) -> gf.Component:
     """Construct meandered half-wave resonator
 
@@ -159,8 +159,8 @@ def resonator_meandered(
     """
     xc = gf.get_cross_section(cross_section)
     desired_length = compute_res_wavelength(n_eff=n_eff, res_freq=resonant_freq) / 2
-    left_bend = gf.path.euler(radius=xc.radius, angle=90, use_eff=False)
-    right_bend = gf.path.euler(radius=xc.radius, angle=-90, use_eff=False)
+    left_bend = gf.path.euler(radius=xc.radius, angle=90, use_eff=False, p=1)
+    right_bend = gf.path.euler(radius=xc.radius, angle=-90, use_eff=False, p=1)
     L_bend = left_bend.length()
     x_bend = left_bend.xsize
     # compute number of lines
