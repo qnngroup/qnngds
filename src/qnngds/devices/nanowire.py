@@ -43,7 +43,7 @@ def variable_length(
         )
     # if constriction and wire width are the same, just return a straight wire
     if constr_width == wire_width:
-        constr = NANOWIRE << gf.components.compass(
+        constr = NANOWIRE << qg.geometries.compass(
             size=(constr_width, length), layer=layer, port_type="electrical"
         )
         constr.center = (0, 0)
@@ -58,7 +58,7 @@ def variable_length(
     bot = NANOWIRE << wire
     if length > 0:
         compass_size = (constr_width, length)
-        constr = NANOWIRE << gf.components.compass(
+        constr = NANOWIRE << qg.geometries.compass(
             size=compass_size, layer=layer, port_type="electrical"
         )
         constr.center = [0, 0]

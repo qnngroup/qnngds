@@ -8,6 +8,8 @@ import numpy as np
 import gdsfactory as gf
 from gdsfactory.typings import ComponentSpecOrComponent, LayerSpec
 
+import qnngds as qg
+
 from collections.abc import Sequence
 from collections import deque
 
@@ -41,7 +43,7 @@ def _wafer(radius: float, flat: float) -> gf.Component:
     flat_dist = (radius**2 - (flat / 2) ** 2) ** 0.5
     circ = gf.components.circle(radius=radius, angle_resolution=2.5, layer=(1, 0))
     FLAT = gf.Component()
-    flat = FLAT << gf.components.rectangle(
+    flat = FLAT << qg.geometries.rectangle(
         size=(flat, radius - flat_dist), layer=(1, 0)
     )
     flat.move((flat.x, flat.ymin), (circ.x, circ.ymin))
@@ -69,7 +71,7 @@ def wafer100mm():
 def piece10mm():
     """Template for 10 mm piece"""
     P = gf.Component()
-    p_i = P << gf.components.rectangle(size=(10e3, 10e3), layer=(1, 0))
+    p_i = P << qg.geometries.compass(size=(10e3, 10e3), layer=(1, 0))
     p_i.move(p_i.center, (0, 0))
     return P
 
@@ -151,7 +153,7 @@ class Sample(object):
         self.origin = (-n_cols * cell_size / 2, n_rows * cell_size / 2)
         self.open_cells = set([])
         self.full_cells = set([])
-        rect = gf.components.rectangle(size=(cell_size, cell_size), layer=(1, 0))
+        rect = qg.geometries.compass(size=(cell_size, cell_size), layer=(1, 0))
         dummy = gf.Component()
         for row in range(n_rows):
             for col in range(n_cols):
@@ -181,7 +183,7 @@ class Sample(object):
             (Component): component used for visualization
         """
         dies = gf.Component()
-        rect = gf.components.rectangle(
+        rect = qg.geometries.compass(
             size=(self.cell_size, self.cell_size), layer=(1, 0)
         )
         for cell in self.open_cells:

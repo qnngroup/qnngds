@@ -6,7 +6,7 @@ from __future__ import annotations
 import gdsfactory as gf
 import numpy as np
 
-import qnngds.utilities as qu
+import qnngds as qg
 
 from typing import Tuple, Optional
 
@@ -42,7 +42,7 @@ def meander(
 
     if max_length is None or width * squares < max_length:
         # just make a straight
-        straight = D << gf.components.compass(
+        straight = D << qg.geometries.compass(
             size=(width, width * squares), layer=layer, port_type="electrical"
         )
         D.add_port(name="e1", port=straight.ports["e2"])
@@ -53,10 +53,8 @@ def meander(
     def hairpin(hp_length):
         """Create hairpin used in meander."""
         H = gf.Component()
-        straight = gf.components.shapes.rectangle(
-            size=(hp_length - width, width), layer=layer
-        )
-        conn = gf.components.shapes.rectangle(
+        straight = qg.geometries.compass(size=(hp_length - width, width), layer=layer)
+        conn = qg.geometries.compass(
             size=(width, (2 + meander_spacing) * width), layer=layer
         )
         for i in range(2):
@@ -85,7 +83,7 @@ def meander(
     def stub(orientation):
         """Create stub to connect to meander ends."""
         S = gf.Component()
-        straight = gf.components.shapes.rectangle(size=(width, 2 * width), layer=layer)
+        straight = qg.geometries.compass(size=(width, 2 * width), layer=layer)
         s = S << straight
         s.move((-s.x, -s.ymin))
         S.add_port(
@@ -152,7 +150,7 @@ def meander(
         port=stub_bot.ports["e1"], other=hp_prev.ports[f"e{2 - (n_turn % 2)}"]
     )
     Du = gf.Component()
-    Du << qu.union(D)
+    Du << qg.utilities.union(D)
     Du.flatten()
     for name, port in zip(("e1", "e2"), (stub_top.ports["e2"], stub_bot.ports["e2"])):
         Du.add_port(
@@ -206,13 +204,13 @@ def meander_sc_contacts(
         squares=squares,
         max_length=max_length,
     )
-    stub = gf.components.shapes.rectangle(
+    stub = qg.geometries.compass(
         size=(width, outline_sc), layer=layer_res, port_type="electrical"
     )
-    contact = gf.components.shapes.rectangle(
+    contact = qg.geometries.compass(
         size=contact_size, layer=layer_res, port_type="electrical"
     )
-    contact_sc = gf.components.shapes.rectangle(
+    contact_sc = qg.geometries.compass(
         size=(contact_size[0] + 2 * outline_sc, contact_size[1] + 2 * outline_sc),
         layer=layer_sc,
         port_type="electrical",
@@ -228,7 +226,7 @@ def meander_sc_contacts(
         ports.append(c_sc.ports[f"e{2 + 2 * (p % 2)}"])
 
     Du = gf.Component()
-    Du << qu.union(D)
+    Du << qg.utilities.union(D)
     Du.flatten()
     for name, port in zip(("e1", "e2"), ports):
         Du.add_port(

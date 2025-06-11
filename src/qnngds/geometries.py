@@ -9,7 +9,8 @@ import numpy as np
 
 import qnngds as qg
 
-from gdsfactory.typings import LayerSpec
+from gdsfactory.typings import LayerSpec, Ints, Size
+from gdsfactory.config import valid_port_orientations
 from typing import Union
 
 
@@ -421,11 +422,11 @@ def via(
     VIA = gf.Component()
     if 2 * via_undersize > min(size[0], size[1]):
         raise ValueError(f"{via_undersize=} is too small for a pad with {size=}.")
-    bot_pad = VIA << gf.components.shapes.compass(size=size, layer=layer_bottom)
-    via = VIA << gf.components.shapes.compass(
+    bot_pad = VIA << qg.geometries.compass(size=size, layer=layer_bottom)
+    via = VIA << qg.geometries.compass(
         size=(size[0] - 2 * via_undersize, size[1] - 2 * via_undersize), layer=layer_via
     )
-    top_pad = VIA << gf.components.shapes.compass(size=size, layer=layer_top)
+    top_pad = VIA << qg.geometries.compass(size=size, layer=layer_top)
     bot_pad.move(bot_pad.center, (0, 0))
     via.move(via.center, (0, 0))
     top_pad.move(top_pad.center, (0, 0))
@@ -436,3 +437,242 @@ def via(
     for port in VIA.ports:
         port.port_type = port_type
     return VIA
+
+
+@gf.cell
+def optimal_hairpin(
+    width: float = 0.2,
+    pitch: float = 0.6,
+    length: float = 10,
+    turn_ratio: float = 4,
+    num_pts: int = 50,
+    layer: LayerSpec = (1, 0),
+) -> gf.Component:
+    """Returns an optimally-rounded hairpin geometry, with a 180 degree turn.
+
+    based on phidl.geometry and gdsfactory. Used instead of gdsfactory due to
+    `snapping issue <https://github.com/gdsfactory/gdsfactory/pull/3816V>`_.
+
+    Args:
+        width: Width of the hairpin leads.
+        pitch: Distance between the two hairpin leads. Must be greater than width.
+        length: Length of the hairpin from the connectors to the opposite end of the curve.
+        turn_ratio: int or float
+            Specifies how much of the hairpin is dedicated to the 180 degree turn.
+            A turn_ratio of 10 will result in 20% of the hairpin being comprised of the turn.
+        num_pts: Number of points constituting the 180 degree turn.
+        layer: Specific layer(s) to put polygon geometry on.
+
+    Notes:
+        Hairpin pitch must be greater than width.
+
+        Optimal structure from https://doi.org/10.1103/PhysRevB.84.174510
+        Clem, J., & Berggren, K. (2011). Geometry-dependent critical currents in
+        superconducting nanocircuits. Physical Review B, 84(17), 1-27.
+    """
+    # ==========================================================================
+    #  Create the basic geometry
+    # ==========================================================================
+    a = (pitch + width) / 2
+    y = -(pitch - width) / 2
+    x = -pitch
+    dl = width / (num_pts * 2)
+    n = 0
+
+    # Get points of ideal curve from conformal mapping
+    # TODO This is an inefficient way of finding points that you need
+    xpts = [x]
+    ypts = [y]
+    while (y < 0) & (n < 1e6):
+        s = x + 1j * y
+        w = np.sqrt(1 - np.exp(np.pi * s / a))
+        wx = np.real(w)
+        wy = np.imag(w)
+        wx = wx / np.sqrt(wx**2 + wy**2)
+        wy = wy / np.sqrt(wx**2 + wy**2)
+        x = x + wx * dl
+        y = y + wy * dl
+        xpts.append(x)
+        ypts.append(y)
+        n += 1
+    ypts[-1] = 0  # Set last point be on the x=0 axis for sake of cleanliness
+    ds_factor = len(xpts) // num_pts
+    xpts = xpts[::-ds_factor]
+    xpts = xpts[::-1]  # This looks confusing, but it's just flipping the arrays around
+    ypts = ypts[::-ds_factor]
+    ypts = ypts[::-1]  # so the last point is guaranteed to be included when downsampled
+
+    # Add points for the rest of meander
+    xpts.append(xpts[-1] + turn_ratio * width)
+    ypts.append(0)
+    xpts.append(xpts[-1])
+    ypts.append(-a)
+    xpts.append(xpts[0])
+    ypts.append(-a)
+    xpts.append(max(xpts) - length)
+    ypts.append(-a)
+    xpts.append(xpts[-1])
+    ypts.append(-a + width)
+    xpts.append(xpts[0])
+    ypts.append(ypts[0])
+
+    xpts_np = np.array(xpts)
+    ypts_np = np.array(ypts)
+
+    # ==========================================================================
+    #  Create a blank device, add the geometry, and define the ports
+    # ==========================================================================
+    c = gf.Component()
+    c.add_polygon(list(zip(xpts_np, +ypts_np)), layer=layer)
+    c.add_polygon(list(zip(xpts_np, -ypts_np)), layer=layer)
+    port_type = "electrical"
+
+    xports = float(np.min(xpts_np))
+    yports = -a + width / 2
+    c.add_port(
+        name="e1",
+        center=(xports, -yports),
+        width=width,
+        orientation=180,
+        layer=layer,
+        port_type=port_type,
+    )
+    c.add_port(
+        name="e2",
+        center=(xports, yports),
+        width=width,
+        orientation=180,
+        layer=layer,
+        port_type=port_type,
+    )
+    return c
+
+
+@gf.cell
+def compass(
+    size: Size = (4.0, 2.0),
+    layer: LayerSpec = (1, 0),
+    port_type: str | None = "electrical",
+    port_inclusion: float = 0.0,
+    port_orientations: Ints | None = (180, 90, 0, -90),
+    auto_rename_ports: bool = True,
+) -> gf.Component:
+    """Rectangle with ports on each edge (north, south, east, and west).
+
+    Copied from gdsfactory to deal with snapping issue for dbu less than 1nm.
+    See `this PR <https://github.com/gdsfactory/gdsfactory/pull/3816V>`_.
+
+    Args:
+        size: rectangle size.
+        layer: tuple (int, int).
+        port_type: optical, electrical.
+        port_inclusion: from edge.
+        port_orientations: list of port_orientations to add. None does not add ports.
+        auto_rename_ports: auto rename ports.
+    """
+    c = gf.Component()
+    dx, dy = size
+    port_orientations = port_orientations or []
+
+    c << rectangle(size=size, layer=layer)
+
+    if port_type:
+        for port_orientation in port_orientations:
+            if port_orientation not in valid_port_orientations:
+                raise ValueError(
+                    f"{port_orientation=} must be in {valid_port_orientations}"
+                )
+
+        if 180 in port_orientations:
+            c.add_port(
+                name="e1",
+                center=(-dx / 2 + port_inclusion, 0),
+                width=dy,
+                orientation=180,
+                layer=layer,
+                port_type=port_type,
+            )
+        if 90 in port_orientations:
+            c.add_port(
+                name="e2",
+                center=(0, dy / 2 - port_inclusion),
+                width=dx,
+                orientation=90,
+                layer=layer,
+                port_type=port_type,
+            )
+        if 0 in port_orientations:
+            c.add_port(
+                name="e3",
+                center=(dx / 2 - port_inclusion, 0),
+                width=dy,
+                orientation=0,
+                layer=layer,
+                port_type=port_type,
+            )
+        if -90 in port_orientations or 270 in port_orientations:
+            c.add_port(
+                name="e4",
+                center=(0, -dy / 2 + port_inclusion),
+                width=dx,
+                orientation=-90,
+                layer=layer,
+                port_type=port_type,
+            )
+
+        if auto_rename_ports:
+            c.auto_rename_ports()
+    return c
+
+
+@gf.cell
+def rectangle(
+    size: Size = (4.0, 2.0),
+    layer: LayerSpec = (1, 0),
+) -> gf.Component:
+    """Rectangle with no ports
+
+    Args:
+        size: rectangle size.
+        layer: tuple (int, int).
+    """
+    c = gf.Component()
+    dx, dy = size
+
+    if dx <= 0 or dy <= 0:
+        raise ValueError(f"dx={dx} and dy={dy} must be > 0")
+
+    points = [
+        (-dx / 2.0, -dy / 2.0),
+        (-dx / 2.0, dy / 2),
+        (dx / 2, dy / 2),
+        (dx / 2, -dy / 2.0),
+    ]
+
+    c.add_polygon(points, layer=layer)
+
+    return c
+
+
+@gf.cell
+def cross(
+    length: float = 10.0,
+    width: float = 3.0,
+    layer: LayerSpec = (1, 0),
+) -> gf.Component:
+    """Returns a cross from two rectangles of length and width.
+
+    Args:
+        length: float Length of the cross from one end to the other.
+        width: float Width of the arms of the cross.
+        layer: layer for geometry.
+    """
+    layer = gf.get_layer(layer)
+    c = gf.Component()
+    R = rectangle(size=(width, length), layer=layer)
+    r1 = c.add_ref(R).rotate(90)
+    r2 = c.add_ref(R)
+    r1.center = (0, 0)
+    r2.center = (0, 0)
+    c.flatten()
+    return c

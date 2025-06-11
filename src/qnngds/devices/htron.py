@@ -104,11 +104,11 @@ def heater(
             f"make a constriction of width {constr_width=}. "
             "Increase pad_size and/or decrease pad_outline"
         )
-    h_pad = gf.components.shapes.compass(
+    h_pad = qg.geometries.compass(
         size=(pad_size[0] - pad_outline, pad_size[1] - 2 * pad_outline),
         layer=heater_layer,
     )
-    t_pad = gf.components.shapes.compass(size=pad_size, layer=pad_layer)
+    t_pad = qg.geometries.compass(size=pad_size, layer=pad_layer)
     HEATER = gf.Component()
     h_pads = []
     t_pads = []

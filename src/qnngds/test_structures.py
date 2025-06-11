@@ -38,12 +38,12 @@ def _create_comb(
     COMB = gf.Component()
 
     # middle comb (made of layer1), pitch = 10
-    rect1 = gf.components.shapes.rectangle(size=(5, 30), layer=layer1)
+    rect1 = qg.geometries.compass(size=(5, 30), layer=layer1)
     middle_comb = COMB.add_ref(rect1, columns=21, rows=1, column_pitch=10, row_pitch=0)
     middle_comb.move(COMB.center, (0, 0))
 
     # top and bottom combs (made of layer2), pitchs = 10+pitch1, 10+pitch2
-    rect2 = gf.components.shapes.rectangle(size=(5, 30), layer=layer2)
+    rect2 = qg.geometries.compass(size=(5, 30), layer=layer2)
     top_comb = COMB.add_ref(
         rect2, columns=21, rows=1, column_pitch=10 + pitch1, row_pitch=0
     )
@@ -67,11 +67,11 @@ def _create_comb(
     bottom_text.move(bottom_text.center, (140, -30))
 
     # additional markers (made of layer1), for clarity
-    rect1a = gf.components.shapes.rectangle((5, 20), layer=layer1)
+    rect1a = qg.geometries.compass((5, 20), layer=layer1)
     marksa = COMB.add_ref(rect1a, columns=3, rows=2, column_pitch=100, row_pitch=110)
     marksa.move(marksa.center, middle_comb.center)
 
-    rect1b = gf.components.shapes.rectangle((5, 10), layer=layer1)
+    rect1b = qg.geometries.compass((5, 10), layer=layer1)
     marksb = COMB.add_ref(rect1b, columns=2, rows=2, column_pitch=100, row_pitch=100)
     marksb.move(marksb.center, middle_comb.center)
 
@@ -96,8 +96,8 @@ def _create_marker(layer1: tuple = (1, 0), layer2: tuple = (2, 0)) -> gf.Compone
     # central part with cross
 
     CROSS = gf.Component()
-    cross = CROSS << gf.components.shapes.cross(length=200, width=2, layer=layer1)
-    rect = gf.components.shapes.rectangle(size=(45, 45), layer=layer2)
+    cross = CROSS << qg.geometries.cross(length=200, width=2, layer=layer1)
+    rect = qg.geometries.compass(size=(45, 45), layer=layer2)
     window = CROSS.add_ref(rect, rows=2, columns=2, row_pitch=155, column_pitch=155)
     window.move(window.center, cross.center)
     CROSS.flatten()
@@ -220,12 +220,12 @@ def _create_waffle(
     """
 
     WAFFLE = gf.Component()
-    W = gf.components.shapes.rectangle(size=(res * 80, res * 80), layer=layer)
+    W = qg.geometries.compass(size=(res * 80, res * 80), layer=layer)
 
     pattern = [(res * x, res * 80) for x in [2, 1, 1, 2, 3, 5, 8, 13, 21, 15]]
     DUMMY = gf.Component()
     WOut = DUMMY << qg.utilities.flex_grid(
-        tuple(gf.components.shapes.rectangle(size=p, layer=layer) for p in pattern),
+        tuple(qg.geometries.compass(size=p, layer=layer) for p in pattern),
         spacing=res,
     )
     WOut.move(WOut.center, W.center)
@@ -265,7 +265,7 @@ def _create_3L(res: Union[float, int] = 1, layer: LayerSpec = (1, 0)) -> gf.Comp
         bars = gf.Component()
         w = percent * res
         spacing = 2 * res
-        bar = gf.components.shapes.rectangle(size=(min(100 * res, 100), w), layer=layer)
+        bar = qg.geometries.compass(size=(min(100 * res, 100), w), layer=layer)
         h_bars = bars.add_ref(bar, columns=1, rows=5, column_pitch=0, row_pitch=spacing)
         v_bars = bars.add_ref(bar, columns=1, rows=5, column_pitch=0, row_pitch=spacing)
         h_bars.rotate(90)
@@ -432,7 +432,7 @@ def rect_tlm(
                 fp.movex(xoff - fp.xmin + 50)
             xoff = fp.xmax
             if via_layer is not None:
-                via = TLM << gf.components.rectangle(
+                via = TLM << qg.geometries.compass(
                     size=(contact_l, contact_w + 10), layer=via_layer
                 )
                 if i % 2:
@@ -440,7 +440,7 @@ def rect_tlm(
                 else:
                     via.move((fp.xmin + contact_l / 2 - via.x, -via.y))
                 # add vias to lower metal pads
-                pad_via = TLM << gf.components.rectangle(
+                pad_via = TLM << qg.geometries.compass(
                     size=(fp_w, pad_size[1]), layer=via_layer
                 )
                 pad_via.movex(fp.xmax - pad_via.xmax)
@@ -448,17 +448,18 @@ def rect_tlm(
                     pad_via.movey(fp.ymin - pad_via.ymin)
                 else:
                     pad_via.movey(fp.ymax - pad_via.ymax)
-                top_pad = TLM << gf.components.rectangle(
+                top_pad = TLM << qg.geometries.compass(
                     size=(fp_w + 2, pad_size[1] + 2), layer=pad_layer
                 )
                 top_pad.move(top_pad.center, pad_via.center)
         text = TLM << gf.components.texts.text(str(space), layer=finger_layer)
         text.move((xoff - text.xmin + 5, -w / 2 - pad_size[1] + 10 - text.ymin))
     # add mesa
-    mesa = TLM << gf.components.rectangle(
+    center = (TLM.x, 0)
+    mesa = TLM << qg.geometries.compass(
         size=(TLM.xsize + 50, contact_w), layer=mesa_layer
     )
-    mesa.move(mesa.center, (TLM.x, 0))
+    mesa.move(mesa.center, center)
     return TLM
 
 
@@ -508,12 +509,12 @@ def circ_tlm(
     )
     # make the mesa
     for layer in mesa_layers:
-        m = TLM << gf.components.shapes.compass(
+        m = TLM << qg.geometries.rectangle(
             size=(c.xsize + 10, c.ysize + 10), layer=layer
         )
         m.move(m.center, c.center)
     DUMMY = gf.Component()
-    p = DUMMY << gf.components.shapes.compass(
+    p = DUMMY << qg.geometries.rectangle(
         size=(c.xsize + 10, c.ysize + 10), layer=pad_layer
     )
     p.move(p.center, c.center)

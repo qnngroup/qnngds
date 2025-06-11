@@ -43,7 +43,7 @@ def smooth(
     )
     k = D << choke
 
-    channel = gf.components.compass(
+    channel = qg.geometries.compass(
         size=(channel_w, choke_w), layer=layer, port_type="optical"
     )
     c = D << channel
@@ -127,7 +127,7 @@ def sharp(
     )
     k = D << choke
 
-    channel = gf.components.compass(
+    channel = qg.geometries.compass(
         size=(channel_w, channel_l), layer=layer, port_type="electrical"
     )
     c = D << channel

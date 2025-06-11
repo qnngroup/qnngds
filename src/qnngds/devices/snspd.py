@@ -6,7 +6,7 @@ from __future__ import annotations
 import gdsfactory as gf
 import numpy as np
 
-import qnngds.utilities as qu
+import qnngds as qg
 
 from typing import Tuple, Optional, Union
 
@@ -83,7 +83,7 @@ def basic(
     half_size = xsize / 2
 
     SNSPD = gf.Component()
-    hairpin = gf.components.superconductors.optimal_hairpin(
+    hairpin = qg.geometries.optimal_hairpin(
         width=wire_width,
         pitch=wire_pitch,
         turn_ratio=turn_ratio,
@@ -140,7 +140,7 @@ def basic(
     SNSPD.info["ysize"] = ysize
     SNSPD.flatten()
     SNSPDu = gf.Component()
-    SNSPDu << qu.union(SNSPD)
+    SNSPDu << qg.utilities.union(SNSPD)
     SNSPDu.add_ports(SNSPD.ports)
     SNSPDu.move(SNSPDu.center, (0, 0))
     for port in SNSPDu.ports:
@@ -155,6 +155,7 @@ def vertical(
     size: Tuple[Union[int, float], Union[int, float]] = (5, 5),
     num_squares: Optional[int] = None,
     extend: Optional[float] = 1,
+    num_pts: int = 50,
     layer: tuple = (1, 0),
     port_type: str = "electrical",
 ) -> gf.Component:
@@ -167,6 +168,7 @@ def vertical(
         size (tuple of int or float): Size of the detector.
         num_squares (Optional[int]): Number of squares in the detector.
         extend (Optional[bool]): Whether or not to extend the ports.
+        num_pts (int): number of points to use for optimal hairpin.
         layer (tuple): GDS layer tuple (layer, type)
         port_type (string): gdsfactory port type. default "electrical"
 
@@ -191,6 +193,7 @@ def vertical(
         extend_terminals=False,
         terminals_same_side=False,
         layer=layer,
+        num_pts=num_pts,
         port_type="optical",
     )
     D << S
@@ -218,7 +221,7 @@ def vertical(
         ports.append(t1.ports["e1"])
         ports.append(t2.ports["e1"])
     Du = gf.Component()
-    Du << qu.union(D)
+    Du << qg.utilities.union(D)
     Du.flatten()
     for p, port in enumerate(ports):
         Du.add_port(

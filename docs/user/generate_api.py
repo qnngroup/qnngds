@@ -65,7 +65,11 @@ def generate_api(src_path):
 
     api = "API\n===\n\n"
 
-    modules = [m for m in os.listdir(src_path) if not m.startswith("_")]
+    modules = [
+        m
+        for m in os.listdir(src_path)
+        if not m.startswith("_") and not m.startswith(".")
+    ]
     for module in sorted(modules):
         if module.endswith(".py"):
             api += f".. _{module[:-3].capitalize()}:\n"  # For referencing this section
