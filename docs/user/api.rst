@@ -245,7 +245,7 @@ Test_structures
 
 .. automodule:: qnngds.test_structures
     :members:
-    :exclude-members: alignment_mark, circ_tlm, rect_tlm, resolution_test, vdp, via_chain
+    :exclude-members: alignment_mark, circ_tlm, etch_test, rect_tlm, resolution_test, vdp, via_chain
     :undoc-members:
     :show-inheritance:
     :special-members: __init__
@@ -259,6 +259,11 @@ Test_structures
 
         .. image:: images/test_structures/circ_tlm.png
             :alt: circ_tlm.png
+
+    .. autofunction:: etch_test
+
+        .. image:: images/test_structures/etch_test.png
+            :alt: etch_test.png
 
     .. autofunction:: rect_tlm
 

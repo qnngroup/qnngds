@@ -659,3 +659,40 @@ def via_chain(
         port.port_type = port_type
 
     return VC
+
+
+@gf.cell
+def etch_test(
+    layer: LayerSpec = "EBEAM_FINE",
+    pad_size: tuple[float, float] = (2000, 2000),
+    trench_width: float = 10,
+) -> gf.Component:
+    """Construct side-by-side pads for performing electrical etch tests
+
+    Args:
+        layer (LayerSpec): desired layer specification
+        pad_size (tuple[float, float]): width, height of each pad
+        trench_width (float): width of trench around each pad
+
+    Returns:
+        gf.Component: etch test structure
+    """
+    TRENCHES = gf.Component()
+    # create trench
+    pad_outlined = qg.utilities.outline(
+        component=qg.geometries.rectangle(size=pad_size, layer=layer),
+        outline_layers={layer: trench_width},
+    )
+    t = TRENCHES.add_ref(
+        pad_outlined, columns=2, column_pitch=pad_size[0] + 5 * trench_width
+    )
+    t.move(t.center, (0, 0))
+    outline_layers = qg.utilities.get_outline_layers(gf.get_active_pdk().layers)
+    pos_tone = str(gf.get_layer(layer)) in outline_layers
+    if pos_tone:
+        return TRENCHES
+    TRENCHES_INV = gf.Component()
+    TRENCHES_INV << qg.utilities.invert(
+        component=TRENCHES, ext_bbox_layers={layer: 5 * trench_width}
+    )
+    return TRENCHES_INV
