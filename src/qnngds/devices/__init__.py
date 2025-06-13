@@ -7,3 +7,4 @@ from . import nanowire as nanowire
 from . import resistor as resistor
 from . import snspd as snspd
 from . import resonator as resonator
+from . import diode as diode

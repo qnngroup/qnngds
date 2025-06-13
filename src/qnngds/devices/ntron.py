@@ -17,6 +17,7 @@ def smooth(
     source_w: float = 0.3,
     drain_w: float = 0.3,
     choke_shift: float = -0.3,
+    num_pts: int = 100,
     layer: LayerSpec = (1, 0),
     port_type: str = "electrical",
 ) -> gf.Component:
@@ -29,6 +30,7 @@ def smooth(
         source_w (float): Width of the source region.
         drain_w (float): Width of the drain region.
         choke_shift (float): Shift of the choke region.
+        num_pts (int): number of points to use for optimal steps
         layer (LayerSpec): GDS layer
         port_type (string): gdsfactory port type. default "electrical"
 
@@ -39,7 +41,7 @@ def smooth(
     D = gf.Component()
 
     choke = gf.components.superconductors.optimal_step(
-        gate_w, choke_w, symmetric=True, num_pts=500, layer=layer
+        gate_w, choke_w, symmetric=True, num_pts=num_pts, layer=layer
     )
     k = D << choke
 
@@ -51,13 +53,13 @@ def smooth(
     c.move(c.center, (0, 0))
 
     drain = gf.components.superconductors.optimal_step(
-        drain_w, channel_w, symmetric=False, num_pts=100, layer=layer
+        drain_w, channel_w, symmetric=False, num_pts=num_pts, layer=layer
     )
     d = D << drain
     d.connect(port=d.ports["e2"], other=c.ports["o2"])
 
     source = gf.components.superconductors.optimal_step(
-        channel_w, source_w, symmetric=False, num_pts=100, layer=layer
+        channel_w, source_w, symmetric=False, num_pts=num_pts, layer=layer
     )
     s = D << source
     s.connect(port=s.ports["e1"], other=c.ports["o4"])
@@ -175,6 +177,7 @@ def slotted(
     slot_length: int | float = 1.5,
     slot_pitch: int | float = 0.08,
     n_slot: int = 2,
+    num_pts: int = 100,
 ) -> gf.Component:
     """Parallel-channel nanocryotron
 
@@ -186,6 +189,7 @@ def slotted(
         slot_length (int or float): length of each slot
         slot_pitch (int or float): pitch of slots
         n_slot (int): number of slots
+        num_pts (int): number of points to use for hairpin
 
     Returns:
         (gf.Component): nTron with slots
@@ -202,7 +206,7 @@ def slotted(
         pitch=slot_pitch,
         length=slot_length / 2,
         turn_ratio=2,
-        num_pts=300,
+        num_pts=num_pts,
         layer=(1, 0),
     )
     slot_inv = gf.Component()

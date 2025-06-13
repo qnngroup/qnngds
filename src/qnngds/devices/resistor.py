@@ -8,7 +8,7 @@ import numpy as np
 
 import qnngds as qg
 
-from typing import Tuple, Optional
+from gdsfactory.typings import LayerSpec
 
 
 @gf.cell
@@ -16,8 +16,8 @@ def meander(
     width: float = 2,
     pitch: float = 4,
     squares: float = 100,
-    max_length: Optional[float] = 20,
-    layer: tuple = (1, 0),
+    max_length: float | None = 20,
+    layer: LayerSpec = (1, 0),
     port_type: str = "electrical",
 ) -> gf.Component:
     """Create resistor meander with specified number of squares.
@@ -30,7 +30,7 @@ def meander(
         pitch (float): desired pitch of meander in microns
         squares (float or None): desired number of squares
         max_length (float): desired length of device
-        layer (tuple): GDS layer tuple (layer, type)
+        layer (LayerSpec): GDS layer
         port_type (string): gdsfactory port type. default "electrical"
 
     Returns:
@@ -166,12 +166,12 @@ def meander(
 def meander_sc_contacts(
     width: float = 1,
     squares: float = 60,
-    max_length: Optional[float] = 10,
-    meander_pitch: Optional[float] = 2,
-    contact_size: Tuple[float, float] = (8, 3),
+    max_length: float | None = 10,
+    meander_pitch: float | None = 2,
+    contact_size: tuple[float, float] = (8, 3),
     outline_sc: float = 1,
-    layer_res: tuple = (3, 0),
-    layer_sc: tuple = (1, 0),
+    layer_res: LayerSpec = (3, 0),
+    layer_sc: LayerSpec = (1, 0),
     port_type: str = "electrical",
 ) -> gf.Component:
     """Create resistor meander with superconducting contacts.
@@ -185,8 +185,8 @@ def meander_sc_contacts(
         meander_pitch (float or None): desired pitch of meander in microns
         contact_size (tuple[float, float]): (width, height) of resistor<->superconductor contact
         outline_sc (float): superconductor extra width on each side of contact
-        layer_res (tuple): resistor GDS layer tuple (layer, type)
-        layer_sc (tuple): superconductor GDS layer tuple (layer, type)
+        layer_res (LayerSpec): resistor GDS layer
+        layer_sc (LayerSpec): superconductor GDS layer
         port_type (string): gdsfactory port type. default "electrical"
 
     Returns:

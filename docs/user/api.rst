@@ -7,6 +7,26 @@ Devices
 
 .. automodule:: qnngds.devices
 
+diode
+~~~~~
+
+.. automodule:: qnngds.devices.diode
+    :members:
+    :exclude-members: basic, gated
+    :undoc-members:
+    :show-inheritance:
+    :special-members: __init__
+
+    .. autofunction:: basic
+
+        .. image:: images/devices/diode/basic.png
+            :alt: basic.png
+
+    .. autofunction:: gated
+
+        .. image:: images/devices/diode/gated.png
+            :alt: gated.png
+
 htron
 ~~~~~
 

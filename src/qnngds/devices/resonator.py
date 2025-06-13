@@ -13,6 +13,7 @@ from gdsfactory.typings import (
     ComponentSpec,
     CrossSectionSpec,
     LayerSpec,
+    LayerSpecs,
     ComponentFactory,
 )
 
@@ -228,7 +229,7 @@ def pad(
     length: float = 200,
     edge_exclusion: float = 10,
     sc_layer: LayerSpec = "PHOTO1",
-    metal_layer: LayerSpec = "PHOTO2",
+    metal_layers: LayerSpecs = ("PHOTO2",),
 ) -> gf.Component:
     """Construct a pad for resonator with a metal layer for bonding on top of superconductor.
 
@@ -236,7 +237,7 @@ def pad(
         width (float): Desired width of superconductor layer
         edge_exclusion (float): Amount on each side to decrease width of top metal bonding pad.
         sc_layer (LayerSpec): layer for superconductor
-        metal_layer (LayerSpec): layer for metal
+        metal_layers (LayerSpecs): layer(s) for metal
 
     Returns:
         gf.Component: pad
@@ -244,11 +245,12 @@ def pad(
     PAD = gf.Component()
     sc = PAD << qg.geometries.compass(size=(width, length), layer=sc_layer)
     sc.move(sc.center, (0, 0))
-    metal = PAD << qg.geometries.compass(
-        size=(width - 2 * edge_exclusion, length - 2 * edge_exclusion),
-        layer=metal_layer,
-    )
-    metal.move(metal.center, (0, 0))
+    for metal_layer in metal_layers:
+        metal = PAD << qg.geometries.compass(
+            size=(width - 2 * edge_exclusion, length - 2 * edge_exclusion),
+            layer=metal_layer,
+        )
+        metal.move(metal.center, (0, 0))
     PAD.add_port(name="e1", port=sc.ports["e4"])
     return PAD
 
@@ -264,6 +266,7 @@ def transmission_line_resonator(
     res_cross_section: CrossSectionSpec = cpw,
     taper: ComponentFactory = qg.geometries.hyper_taper,
     pads: tuple[ComponentSpec | None, ComponentSpec | None] = (pad, None),
+    bbox_extension: float = 500,
 ) -> gf.Component:
     """Construct a resonator embedded between two transmission lines
 
@@ -283,6 +286,8 @@ def transmission_line_resonator(
             will be automatically outlined for CPW.
         pads (tuple[ComponentSpec | None, ComponentSpec | None]): Component spec or None for each pad.
             If ComponentSpec, must take a single argument ``width``. If None, no pad will be created
+        bbox_extension (float): amount to extend ground plane for negative tone layout CPW, or positive
+            tone microstrip
 
     Returns:
         gf.Component: resonator embedded between transmission lines
@@ -314,12 +319,13 @@ def transmission_line_resonator(
     >>>     layer="PHOTO1",
     >>> )
     >>> c = qg.devices.resonator.transmission_line_resonator(
-    >>>     transmission_line_specs=tl_spec,
+    >>>     transmission_line_specs=(tl_spec, None),
     >>>     resonator_spec=res_spec,
     >>>     tl_cross_section=tl_xc_spec,
     >>>     res_cross_section=res_xc_spec,
     >>>     taper=qg.geometries.hyper_taper,
-    >>>     pads=qg.devices.resonator.pad,
+    >>>     pads=(qg.devices.resonator.pad, None),
+    >>>     bbox_extension=200,
     >>> )
 
     """
@@ -415,10 +421,14 @@ def transmission_line_resonator(
     # invert if needed
     outline_layers = qg.utilities.get_outline_layers(gf.get_active_pdk().layers)
     # if not CPW and layer is positive-tone, invert
-    ext_bbox_layers = {str(layer): 50 for layer in outline_layers if not is_cpw}
+    ext_bbox_layers = {
+        str(layer): bbox_extension for layer in outline_layers if not is_cpw
+    }
     # if CPW and layer is negative-tone, invert
     ext_bbox_layers |= {
-        str(layer): 50 for layer in layers if is_cpw and layer not in outline_layers
+        str(layer): bbox_extension
+        for layer in layers
+        if is_cpw and layer not in outline_layers
     }
     inverted = qg.utilities.invert(R, ext_bbox_layers=ext_bbox_layers)
     R = gf.Component()

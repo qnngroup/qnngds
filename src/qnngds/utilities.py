@@ -9,6 +9,7 @@ device and its die are linked thanks to functions present in this module.
 from __future__ import annotations
 
 import gdsfactory as gf
+from gdsfactory.typings import CrossSectionSpec
 import kfactory as kf
 from typing import Literal
 from collections.abc import Callable, Sequence
@@ -22,7 +23,7 @@ from numpy.typing import ArrayLike
 from gdsfactory.typings import (
     ComponentSpecOrComponent,
     ComponentSpecsOrComponents,
-    CrossSectionSpec,
+    LayerSpec,
     Port,
     Ports,
     PortsDict,
@@ -178,6 +179,25 @@ def invert(
             comp_inverted.add_polygon(r_expanded - r, layer=layer)
     comp_inverted.flatten()
     return comp_inverted
+
+
+def get_cross_section_with_layer(
+    layer: LayerSpec = "PHOTO1", default: CrossSectionSpec | None = None
+) -> CrossSectionSpec | None:
+    """Find the cross section associated with the given layer, or default
+
+    Args:
+        layer (LayerSpec): layer to find cross section for
+        default (CrossSectionSpec | None): default return value if cross section
+            is not found
+
+    Returns:
+        CrossSectionSpec | None: found cross section or default
+    """
+    for xc in gf.get_active_pdk().cross_sections:
+        xc = gf.get_cross_section(xc)
+        if xc.sections[0].layer == layer:
+            return xc
 
 
 @gf.cell
@@ -621,19 +641,16 @@ def generate_experiment(
                     port_maps[pair] = {}
             port_maps[pair][dut_port_name] = pad_port.name
             # create a cross section for the layer
-            found = False
-            for xc in gf.get_active_pdk().cross_sections:
-                xc = gf.get_cross_section(xc)
-                if xc.sections[0].layer == pad_port.layer:
-                    cross_sections[pair] = xc
-                    found = True
-            if not found:
+            xc = get_cross_section_with_layer(pad_port.layer)
+            if xc is None:
                 raise Warning(
                     "Failed to automatically select a cross section for "
                     f"dut/pad pair {dut_port.name}/{pad_port.name}. "
                     f"Selecting cross section 'default'. This may cause "
                     "errors if the appropriate transitions aren't defined"
                 )
+            else:
+                cross_sections[pair] = xc
         # create route_groups
         route_groups = []
         for pair, xc in cross_sections.items():
