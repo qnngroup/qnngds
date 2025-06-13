@@ -234,9 +234,7 @@ def _create_waffle(
     WAFFLE << gf.boolean(W, WOut, "-", layer=layer)
 
     text = WAFFLE << gf.components.texts.text(str(res), size=20, layer=layer)
-    start = (text.xmin, text.ymax)
-    dy = -min(20, 20 * res)
-    text.move(start, (0, dy))
+    text.move((text.xmin, text.ymax), (W.xmin, W.ymin - min(20, 20 * res)))
 
     WAFFLEu = gf.Component()
     WAFFLEu << qg.utilities.union(WAFFLE)
@@ -285,7 +283,7 @@ def _create_3L(res: Union[float, int] = 1, layer: LayerSpec = (1, 0)) -> gf.Comp
 
 @gf.cell
 def resolution_test(
-    resolutions: List[float] = [0.8, 1, 1.2, 1.4, 1.6, 1.8, 2.0],
+    resolutions: List[float] = [0.8, 1.2, 1.6],
     outline: Optional[float] = None,
     layer: LayerSpec = (2, 0),
 ) -> gf.Component:
