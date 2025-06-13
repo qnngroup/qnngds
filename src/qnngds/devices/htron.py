@@ -51,7 +51,7 @@ def planar(
         (-1, gate_width, gate_length),
     ):
         compass_size = (width, np.max((length - 4 * width, 0.1)))
-        constr = HTRON << gf.components.compass(
+        constr = HTRON << qg.geometries.compass(
             size=compass_size, layer=layer, port_type="electrical"
         )
         constr.center = [0, 0]

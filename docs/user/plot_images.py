@@ -125,6 +125,7 @@ def generate_pdk(folder_path: str) -> None:
         cells=cells,
     )
     PDK.activate()
+    gf.kcl.dbu = 0.0001
 
 
 if __name__ == "__main__":

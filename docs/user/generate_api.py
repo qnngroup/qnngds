@@ -35,9 +35,10 @@ def automodule(module, image_folder):
         ]
     )
     content += "    :members:\n"
-    content += (
-        f"    :exclude-members: {', '.join(os.path.splitext(i)[0] for i in images)}\n"
-    )
+    exclude_members = ", ".join(os.path.splitext(i)[0] for i in images)
+    if len(exclude_members) > 0:
+        exclude_members = " " + exclude_members
+    content += f"    :exclude-members:{exclude_members}\n"
     content += "    :undoc-members:\n"
     content += "    :show-inheritance:\n"
     content += "    :special-members: __init__\n\n"

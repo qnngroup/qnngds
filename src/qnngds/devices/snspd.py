@@ -99,7 +99,7 @@ def basic(
 
     if extend_terminals:
         start_nw = SNSPD.add_ref(
-            gf.c.compass(
+            qg.geometries.compass(
                 size=(half_size, wire_width), layer=layer, port_type="electrical"
             )
         )
@@ -122,7 +122,7 @@ def basic(
 
     if extend_terminals:
         finish_se = SNSPD.add_ref(
-            gf.c.compass(
+            qg.geometries.compass(
                 size=(half_size, wire_width), layer=layer, port_type="electrical"
             )
         )
@@ -210,7 +210,7 @@ def vertical(
 
     ports = []
     if extend is not None:
-        E = gf.components.compass(size=(extend, wire_width), layer=layer)
+        E = qg.geometries.compass(size=(extend, wire_width), layer=layer)
         e1 = D << E
         e1.connect(e1.ports["e1"], t1.ports["e1"], allow_type_mismatch=True)
         e2 = D << E

@@ -242,9 +242,9 @@ def pad(
         gf.Component: pad
     """
     PAD = gf.Component()
-    sc = PAD << gf.components.compass(size=(width, length), layer=sc_layer)
+    sc = PAD << qg.geometries.compass(size=(width, length), layer=sc_layer)
     sc.move(sc.center, (0, 0))
-    metal = PAD << gf.components.compass(
+    metal = PAD << qg.geometries.compass(
         size=(width - 2 * edge_exclusion, length - 2 * edge_exclusion),
         layer=metal_layer,
     )

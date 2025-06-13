@@ -197,7 +197,7 @@ def slotted(
         return base
 
     # use optimal hairpin as template for slot
-    hairpin = gf.components.optimal_hairpin(
+    hairpin = qg.geometries.optimal_hairpin(
         width=slot_pitch - slot_width,
         pitch=slot_pitch,
         length=slot_length / 2,
