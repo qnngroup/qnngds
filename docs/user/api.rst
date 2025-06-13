@@ -173,7 +173,7 @@ Geometries
 
 .. automodule:: qnngds.geometries
     :members:
-    :exclude-members: angled_taper, compass, cross, flagpole, hyper_taper, optimal_hairpin, optimal_step, rectangle, taper, tee, via
+    :exclude-members: angled_taper, compass, cross, flagpole, hyper_taper, optimal_90deg, optimal_hairpin, optimal_step, rectangle, taper, tee, via
     :undoc-members:
     :show-inheritance:
     :special-members: __init__
@@ -202,6 +202,11 @@ Geometries
 
         .. image:: images/geometries/hyper_taper.png
             :alt: hyper_taper.png
+
+    .. autofunction:: optimal_90deg
+
+        .. image:: images/geometries/optimal_90deg.png
+            :alt: optimal_90deg.png
 
     .. autofunction:: optimal_hairpin
 

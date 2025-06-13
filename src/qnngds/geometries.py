@@ -181,54 +181,6 @@ def angled_taper(
 
 
 @gf.cell
-def optimal_step(
-    start_width: float = 10,
-    end_width: float = 22,
-    num_pts: int = 50,
-    width_tol: float = 1e-3,
-    anticrowding_factor: float = 1.2,
-    symmetric: bool = False,
-    layer: LayerSpec = (1, 0),
-    port_type: str = "electrical",
-) -> gf.Component:
-    """Returns an optimally-rounded step geometry.
-
-    Wrapper for gdsfactory.components.superconductors.optimal_step that provides a port_type
-
-    Args:
-        start_width (float): Width of the connector on the left end of the step.
-        end_width (float): Width of the connector on the right end of the step.
-        num_pts (int): number of points comprising the entire step geometry.
-        width_tol (float): Point at which to terminate the calculation of the optimal step
-        anticrowding_factor (float): Factor to reduce current crowding by elongating
-            the structure and reducing the curvature
-        symmetric: If True, adds a mirrored copy of the step across the x-axis to the
-            geometry and adjusts the width of the ports.
-        layer (LayerSpec): GDS layer spec, string or tuple (layer, type)
-        port_type (string): gdsfactory port type. default "electrical"
-
-    Optimal structure from https://doi.org/10.1103/PhysRevB.84.174510
-    Clem, J., & Berggren, K. (2011). Geometry-dependent critical currents in
-    superconducting nanocircuits. Physical Review B, 84(17), 1-27.
-    """
-    S = gf.Component()
-    step = gf.components.superconductors.optimal_step(
-        start_width=start_width,
-        end_width=end_width,
-        num_pts=num_pts,
-        width_tol=width_tol,
-        anticrowding_factor=anticrowding_factor,
-        symmetric=symmetric,
-        layer=layer,
-    )
-    S.add_ref(step)
-    S.add_ports(step.ports)
-    for port in S.ports:
-        port.port_type = port_type
-    return S
-
-
-@gf.cell
 def flagpole(
     size: tuple[float, float] = (4, 2),
     stub_size: tuple[float, float] = (2, 1),
@@ -451,7 +403,7 @@ def optimal_hairpin(
     """Returns an optimally-rounded hairpin geometry, with a 180 degree turn.
 
     based on phidl.geometry and gdsfactory. Used instead of gdsfactory due to
-    `snapping issue <https://github.com/gdsfactory/gdsfactory/pull/3816V>`_.
+    `snapping issue <https://github.com/gdsfactory/gdsfactory/pull/3816>`_.
 
     Args:
         width: Width of the hairpin leads.
@@ -546,6 +498,90 @@ def optimal_hairpin(
         port_type=port_type,
     )
     return c
+
+
+@gf.cell
+def optimal_step(
+    start_width: float = 10,
+    end_width: float = 22,
+    num_pts: int = 50,
+    width_tol: float = 1e-3,
+    anticrowding_factor: float = 1.2,
+    symmetric: bool = False,
+    layer: LayerSpec = (1, 0),
+    port_type: str = "electrical",
+) -> gf.Component:
+    """Returns an optimally-rounded step geometry.
+
+    Wrapper for gdsfactory.components.superconductors.optimal_step that provides a port_type
+
+    Args:
+        start_width (float): Width of the connector on the left end of the step.
+        end_width (float): Width of the connector on the right end of the step.
+        num_pts (int): number of points comprising the entire step geometry.
+        width_tol (float): Point at which to terminate the calculation of the optimal step
+        anticrowding_factor (float): Factor to reduce current crowding by elongating
+            the structure and reducing the curvature
+        symmetric: If True, adds a mirrored copy of the step across the x-axis to the
+            geometry and adjusts the width of the ports.
+        layer (LayerSpec): GDS layer spec, string or tuple (layer, type)
+        port_type (string): gdsfactory port type. default "electrical"
+
+    Optimal structure from https://doi.org/10.1103/PhysRevB.84.174510
+    Clem, J., & Berggren, K. (2011). Geometry-dependent critical currents in
+    superconducting nanocircuits. Physical Review B, 84(17), 1-27.
+    """
+    S = gf.Component()
+    step = gf.components.superconductors.optimal_step(
+        start_width=start_width,
+        end_width=end_width,
+        num_pts=num_pts,
+        width_tol=width_tol,
+        anticrowding_factor=anticrowding_factor,
+        symmetric=symmetric,
+        layer=layer,
+    )
+    S.add_ref(step)
+    S.add_ports(step.ports)
+    for port in S.ports:
+        port.port_type = port_type
+    return S
+
+
+@gf.cell
+def optimal_90deg(
+    width: float = 100,
+    num_pts: int = 15,
+    length_adjust: float = 1,
+    layer: LayerSpec = (1, 0),
+    port_type: str = "electrical",
+) -> gf.Component:
+    """Returns optimally-rounded 90 degree bend that is sharp on the outer corner.
+
+    Wrapper for gdsfactory to allow port_type to be defined
+
+    Args:
+        width (float): Width of the ports on either side of the bend.
+        num_pts (int): The number of points comprising the curved section of the bend.
+        length_adjust (float): Adjusts the length of the non-curved portion of the bend.
+        layer (LayerSpec): Specific layer(s) to put polygon geometry on.
+
+    Notes:
+        Optimal structure from https://doi.org/10.1103/PhysRevB.84.174510
+        Clem, J., & Berggren, K. (2011). Geometry-dependent critical currents in
+        superconducting nanocircuits. Physical Review B, 84(17), 1-27.
+    """
+    L = gf.Component()
+    bend = L << gf.components.superconductors.optimal_90deg(
+        width=width,
+        num_pts=num_pts,
+        length_adjust=length_adjust,
+        layer=layer,
+    )
+    L.add_ports(bend.ports)
+    for port in L.ports:
+        port.port_type = port_type
+    return L
 
 
 @gf.cell
