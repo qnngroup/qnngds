@@ -405,6 +405,8 @@ def optimal_hairpin(
     based on phidl.geometry and gdsfactory. Used instead of gdsfactory due to
     `snapping issue <https://github.com/gdsfactory/gdsfactory/pull/3816>`_.
 
+    Also centers apex of hairpin at (0, 0)
+
     Args:
         width: Width of the hairpin leads.
         pitch: Distance between the two hairpin leads. Must be greater than width.
@@ -454,6 +456,8 @@ def optimal_hairpin(
     ypts = ypts[::-ds_factor]
     ypts = ypts[::-1]  # so the last point is guaranteed to be included when downsampled
 
+    apex = (xpts[-1], 0)
+
     # Add points for the rest of meander
     xpts.append(xpts[-1] + turn_ratio * width)
     ypts.append(0)
@@ -497,6 +501,7 @@ def optimal_hairpin(
         layer=layer,
         port_type=port_type,
     )
+    c.move(apex, (0, 0))
     return c
 
 

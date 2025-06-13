@@ -48,11 +48,11 @@ def basic(
     ]
 
     DIODE.add_polygon(points, layer=layer)
-    DIODE.move(DIODE.center, (0, 0))
+    DIODE.move((DIODE.x + width / 2 - notch_depth, DIODE.y), (0, 0))
 
     DIODE.add_port(
         name="e1",
-        center=(0, length / 2),
+        center=(DIODE.x, length / 2),
         width=width,
         orientation=90,
         layer=layer,
@@ -61,7 +61,7 @@ def basic(
 
     DIODE.add_port(
         name="e2",
-        center=(0, -length / 2),
+        center=(DIODE.x, -length / 2),
         width=width,
         orientation=270,
         layer=layer,
@@ -91,6 +91,7 @@ def gated(
 
     channel = DIODE << gf.get_component(channel_spec)
     gate = DIODE << gf.get_component(gate_spec)
+    gate.movex(channel.ports["e1"].width / 2)
     for n, port in enumerate(channel.ports):
         DIODE.add_port(name=f"c{n + 1}", port=port)
     for n, port in enumerate(gate.ports):
