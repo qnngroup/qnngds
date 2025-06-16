@@ -255,5 +255,5 @@ and then modify our python script from before to use these layers
 
 Now we get a nice positive-tone outline!
 
-.. image:: images/ntron_neg.png
-   :alt: example ntron array with negative tone (single layer)
+.. image:: images/ntron_pos.png
+   :alt: example ntron array with positive tone (two layers)
