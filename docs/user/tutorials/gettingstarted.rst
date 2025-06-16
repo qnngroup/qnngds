@@ -257,3 +257,11 @@ Now we get a nice positive-tone outline!
 
 .. image:: images/ntron_pos.png
    :alt: example ntron array with positive tone (two layers)
+
+Note that the taper between the coarse and fine layers is handled automatically by constructing
+a hyper taper on the fine layer. This is done by passing a taper function
+``fine_to_coarse`` in ``pdk/components.py`` to ``layer_transitions`` defined in ``pdk/pdk.py``
+that creates an oversize hyper taper on the fine layer that overlaps a straight on the coarse layer:
+
+.. image:: images/ntron_pos_zoom.png
+   :alt: zoom in of fine/coarse interface for ntron
