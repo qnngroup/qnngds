@@ -62,6 +62,7 @@ We can define our text label and the pads used to connect to the device (dependi
 .. code-block:: python
     :linenos:
     :lineno-start: 32
+
         # define text label
         label = f"nTron\nwg/wc/Nc\n{choke_w}/{channel_w}/{n_branch}"
         # determine pads automatically from layer
