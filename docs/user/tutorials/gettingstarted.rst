@@ -99,17 +99,17 @@ Import the necessary packages and activate the PDK
     PDK.activate()
 
 Now let's generate a few different nTron geometries and connect them up to pads.
-We'll make use of the ``pads_tri`` pad layout defined in the custom PDK.
+We'll make use of the ``pad_ntron`` pad layout and ``pad_stack`` defined in the custom PDK.
 
 .. code-block:: python
     :linenos:
     :lineno-start: 8
 
     nTrons = []
-    for choke_w in [0.01, 0.03, 0.1]:
-        for channel_w in [0.3, 2]:
+    for choke_w in [1, 2]:
+        for channel_w in [5, 10]:
             # create our nTrons
-            gate_w = 10 * choke_w
+            gate_w = 2 * choke_w
             smooth_ntron = qg.devices.ntron.smooth(
                 choke_w=choke_w,
                 gate_w=gate_w,
@@ -117,9 +117,9 @@ We'll make use of the ``pads_tri`` pad layout defined in the custom PDK.
                 source_w=max(2, channel_w + 0.1),
                 drain_w=max(2, channel_w + 0.1),
                 choke_shift=0.0,
-                layer="EBEAM_FINE",
+                layer="NTRON_COARSE",
             )
-            # extend the gate port with an optimal step
+            # extend the gate port with an optimal step since it's very small
             dut = gf.components.extend_ports(
                 component=smooth_ntron,
                 port_names="g",
@@ -129,26 +129,28 @@ We'll make use of the ``pads_tri`` pad layout defined in the custom PDK.
                     end_width=5,
                     num_pts=200,
                     symmetric=True,
+                    layer="NTRON_COARSE",
                 ),
             )
             # generate an experiment: a gf.Component with pads, routing between
             # DUT and pads, and a text label
-            label = f"nTron\nwg/wc/Nc\n{choke_w}/{channel_w}/{n_branch}"
+            label = f"nTron\nwg/wc\n{choke_w}/{channel_w}"
             nTrons.append(
                 qg.utilities.generate_experiment(
-                    # extend gate port with an optimal taper
                     dut=dut,
-                    pad_array=pads_tri,
+                    pad_array=pad_ntron(
+                        pad_spec=pad_stack(layers=["NTRON_COARSE"]),
+                        yspace=200,
+                        xspace=150
+                    ),
                     label=gf.components.texts.text(
-                        label, size=25, layer="EBEAM_COARSE", justify="right"
+                        label, size=25, layer="NTRON_COARSE", justify="right"
                     ),
-                    route_groups=(
-                        # route g,s,d automatically to the closest pad using
-                        # the ebeam cross section
-                        qg.utilities.RouteGroup(
-                            PDK.get_cross_section("ebeam"), ("g", "s", "d")
-                        ),
-                    ),
+                    # if route_groups is None, then all ports on the DUT
+                    # will be automatically paired with a port on the pad_array
+                    # component and routed using a cross section that matches
+                    # the layer of the corresponding pad.
+                    route_groups=None,
                     dut_offset=(0, 0),
                     pad_offset=(0, 0),
                     # offset text label
@@ -159,21 +161,37 @@ We'll make use of the ``pads_tri`` pad layout defined in the custom PDK.
                 )
             )
 
-    # array the nTrons with flex_grid
-    c = qg.utilities.flex_grid(nTrons, shape=(2, 3), spacing=(100, 100))
-    c.show()
+    # create a 10 x 10 cm piece and place the nTrons on it
+    tron_sample = qg.sample.Sample(
+        cell_size=1e3,
+        sample=qg.sample.piece10mm,
+        edge_exclusion=1e3, # don't place within 1 mm of edge
+        allow_cell_span=True,
+    )
+    tron_sample.place_multiple_on_sample(
+        components=nTrons,
+        # place only in 2x2 square in top-left
+        cell_coordinate_bbox=((0, 0), (1, 1)),
+        # place in column-major order
+        column_major=True,
+    )
+    # plot it
+    tron_sample.components.show()
 
-.. image:: images/ntrons.png
-   :alt: example ntron array
 
-Editing PDK
-~~~~~~~~~~~~~~~~~~
+.. image:: images/ntron_neg.png
+   :alt: example ntron array with negative tone (single layer)
 
-Now, let's configure the layers to use positive tone with a different line width for two layers
-(representing different beam currents). We'll use 200 nm line width for the low-current (fine) layer, and 5 μm for the high-current (coarse) layer.
+Positive-tone ebeam layouts
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Now, let's configure the layers to use positive tone and make the nTron smaller.
+We'll split the design into two layers, one for the device (to be written with a low beam current),
+and one for the pads (to be written at a high beam current).
+We'll use 200 nm line width for the low-current (fine) layer, and 5 μm for the high-current (coarse) layer.
 Edit the class method ``outline`` in ``pdk/layer_map.py``.
 
-Rewrite ``outline`` so that it looks like this
+Rewrite ``outline`` so that it looks like this (adding the layers ``EBEAM_FINE`` and ``EBEAM_COARSE`` if needed):
 
 .. code-block:: python
 
@@ -194,3 +212,48 @@ Rewrite ``outline`` so that it looks like this
             return 5
         # by default, assume a layer is negative tone
         return 0
+
+and then modify our python script from before to use these layers
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 8
+
+    nTrons = []
+    for choke_w in [0.03, 0.1]:
+        for channel_w in [0.3, 2]:
+            # create our nTrons
+            gate_w = 10 * choke_w
+            smooth_ntron = qg.devices.ntron.smooth(
+                ...
+                layer="EBEAM_FINE",
+            )
+            # extend the gate port with an optimal step since it's very small
+            dut = gf.components.extend_ports(
+                component=smooth_ntron,
+                ...
+                extension=partial(
+                    qg.geometries.optimal_step,
+                    ...
+                    layer="EBEAM_FINE",
+                ),
+            )
+            ...
+            nTrons.append(
+                qg.utilities.generate_experiment(
+                    dut=dut,
+                    pad_array=pad_ntron(
+                        pad_spec=pad_stack(layers=["EBEAM_COARSE"]),
+                        ...
+                    ),
+                    label=gf.components.texts.text(
+                        label, size=25, layer="EBEAM_COARSE", justify="right"
+                    ),
+                    ...
+                )
+            )
+
+Now we get a nice positive-tone outline!
+
+.. image:: images/ntron_neg.png
+   :alt: example ntron array with negative tone (single layer)
