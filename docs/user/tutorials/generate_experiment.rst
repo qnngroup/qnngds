@@ -55,9 +55,9 @@ nTron
             num_pts=20,
         )
 
-Now we've created our DUT (``slotted_ntron``), which is an nTron with one or more parallel channels.
-
-We can define our text label and the pads used to connect to the device (depending on the desired layer).
+With the above portion of code, we've created our device-under-test or DUT (``slotted_ntron``),
+which is an nTron with one or more parallel channels.
+Next, we can define our text label and the pads used to connect to the device (depending on the desired layer).
 
 .. code-block:: python
     :linenos:
@@ -69,13 +69,14 @@ We can define our text label and the pads used to connect to the device (dependi
         if "fine" in str(gf.get_layer(layer)).lower():
             layer = str(gf.get_layer(layer)).split("_")[0] + "_COARSE"
         pad_layers = [layer]
+        # if bottom layer is below the oxide, open a via so we can connect to it
         if gf.get_layer(layer)[0] < gf.get_layer("VIA")[0]:
             pad_layers += ["VIA", "RESISTOR"]
 
-Finally, we can construct the experiment by passing the DUT and constructing a pad array.
+Finally, we can construct the experiment by calling ``generate_experiment``.
 ``route_groups`` is used to specify how the ports should be connected/routed between
 the DUT and the pad array.  However, in this case, the DUT and pad array are simple
-enough that this can be determined automatically (even if the PAD and DUT are on different
+enough that this can be determined automatically (even if the pad and DUT are on different
 layers, provided there's a defined transition between the layers), so we just pass
 ``None`` as an argument for ``route_groups``.
 
@@ -87,7 +88,6 @@ layers, provided there's a defined transition between the layers), so we just pa
         # DUT and pads, and a text label
         NT = gf.Component()
         NT << qg.utilities.generate_experiment(
-            # extend gate port with an optimal taper
             dut=slotted_ntron,
             pad_array=pad_ntron(
                 pad_spec=pad_stack(layers=pad_layers), xspace=100, yspace=400
@@ -107,3 +107,6 @@ layers, provided there's a defined transition between the layers), so we just pa
 
 hTron
 ~~~~~
+
+In the last example with the nTron, the routing is simple enough that ``generate_experiment`` can
+automatically generate the appropriate ``route_groups`` variable
