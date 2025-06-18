@@ -14,10 +14,21 @@ how to define custom experiments.
    Currently, the contacts are outlined, but the area covered by the meander is not also removed,
    causing the entire resistor to be shorted by the superconductor.
 
+There are 4 phases to the ``generate_experiment`` function.
+
+1. Verifies the inputs as best it can to check for mistakes. For example, unconnected pads, a difference between the number of ports on the DUT and pad array.
+2. Determines which device-under-test (DUT) ports will connect to which pad ports, using any information supplied from the ``route_groups`` argument.
+3. Outlines the pads and DUT on all positive-tone layers.
+4. Routes between DUT and pad ports, using the ``cross_section`` specified by each route group, automatically adding tapers defined in the PDK. In addition to same-layer tapers, layer transitions (e.g. bewteen fine and coarse layers for low and high beam current e-beam layers) must also be explicitly defined in the PDK.
 
 
 nTron
 ~~~~~
+
+Let's look at the source code for the nTron experiment.
+This function creates an nTron with a specific choke width, channel width, and number of branches in the channel (use ``n_branch = 1`` for a standard nTron, ``n_branch > 1`` for a slotted nTron).
+
+The following block sets up the device-under-test (DUT) to be connected to pads (and optionally outlined):
 
 .. code-block:: python
     :linenos:
@@ -29,6 +40,19 @@ nTron
         n_branch: int = 1,
         layer: LayerSpec = "NTRON_COARSE",
     ) -> gf.Component:
+        """Generates an experiment with a nTron and pads
+
+        nTron can optionally have slots by making n_branch > 1.
+
+        Args:
+            choke_w (float): width of choke
+            channel_w (float): width of channel
+            n_branch (int): number of branches in channel (num slots + 1)
+            layer (LayerSpec): layer for ntron
+
+        Returns:
+            (gf.Component): nTron with connected pads
+        """
         slot_w = channel_w / n_branch
         total_channel_w = (2 * n_branch - 1) * slot_w
         gate_w = 2 * choke_w + 0.5
@@ -55,58 +79,68 @@ nTron
             num_pts=20,
         )
 
-With the above portion of code, we've created our device-under-test or DUT (``slotted_ntron``),
-which is an nTron with one or more parallel channels.
-Next, we can define our text label and the pads used to connect to the device (depending on the desired layer).
+Next, we'll define the label text for the experiment and the pads for the nTron.
+In this case, we're placing all the pads on the same side, with a pitch of 150 μm
+for use with a multi-contact wedge in a probe station.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 32
-
-        # define text label
-        label = f"nTron\nwg/wc/Nc\n{choke_w}/{channel_w}/{n_branch}"
-        # determine pads automatically from layer
-        if "fine" in str(gf.get_layer(layer)).lower():
-            layer = str(gf.get_layer(layer)).split("_")[0] + "_COARSE"
-        pad_layers = [layer]
-        # if bottom layer is below the oxide, open a via so we can connect to it
-        if gf.get_layer(layer)[0] < gf.get_layer("VIA")[0]:
-            pad_layers += ["VIA", "RESISTOR"]
-
-Finally, we can construct the experiment by calling ``generate_experiment``.
-``route_groups`` is used to specify how the ports should be connected/routed between
-the DUT and the pad array.  However, in this case, the DUT and pad array are simple
-enough that this can be determined automatically (even if the pad and DUT are on different
-layers, provided there's a defined transition between the layers), so we just pass
-``None`` as an argument for ``route_groups``.
-
-.. code-block:: python
-    :linenos:
-    :lineno-start: 32
+    :lineno-start: 46
 
         # generate an experiment: a gf.Component with pads, routing between
         # DUT and pads, and a text label
+        if "fine" in str(gf.get_layer(layer)).lower():
+            layer = str(gf.get_layer(layer)).split("_")[0] + "_COARSE"
+        pad_layers = [layer]
+        if gf.get_layer(layer)[0] < gf.get_layer("VIA")[0]:
+            pad_layers += ["VIA", "RESISTOR"]
+        cross_section = qg.utilities.get_cross_section_with_layer(
+            gf.get_layer(layer), default="default"
+        )
+        label = gf.Component()
+        label.add_ref(
+            gf.components.texts.text(
+                f"wg/wc/Nc {choke_w}/{channel_w}/{n_branch}",
+                size=25,
+                layer=layer,
+                justify="center",
+            )
+        ).rotate(-90)
+        pitch = 300
+        pads = pad_array(
+            pad_specs=(pad_stack(layers=pad_layers, size=(200, 100)),),
+            columns=1,
+            rows=3,
+            pitch=pitch,
+        )
+
+Now, we actually create the experiment by combining the DUT (``slotted_ntron``) with the pad array.
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 71
+
         NT = gf.Component()
         NT << qg.utilities.generate_experiment(
+            # extend gate port with an optimal taper
             dut=slotted_ntron,
-            pad_array=pad_ntron(
-                pad_spec=pad_stack(layers=pad_layers), xspace=100, yspace=400
+            pad_array=pads,
+            label=label,
+            route_groups=(
+                qg.utilities.RouteGroup(
+                    gf.get_active_pdk().get_cross_section(cross_section),
+                    {"s": "e1", "g": "e2", "d": "e3"},
+                ),
             ),
-            label=gf.components.texts.text(label, size=25, layer=layer, justify="right"),
-            route_groups=None,  # automatically select cross_section and DUT/Pad pairings
-            dut_offset=(0, 0),
-            pad_offset=(0, 0),
+            dut_offset=(50, 0),
+            pad_offset=(-pads.xsize, -pitch),
             # offset text label
-            label_offset=(-120, -200),
+            label_offset=(100, 0),
             # how many times to try sbend routing if regular routing
             # fails
             retries=1,
         )
+        NT.rotate(90)
         return NT
 
 
-hTron
-~~~~~
-
-In the last example with the nTron, the routing is simple enough that ``generate_experiment`` can
-automatically generate the appropriate ``route_groups`` variable

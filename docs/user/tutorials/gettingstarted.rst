@@ -2,17 +2,28 @@ Getting started
 ===============
 
 Clone boilerplate PDK
-------------
+---------------------
 * Create a repository on github for your layouts using the template `qnngds-pdk <https://github.com/qnngroup/qnngds-pdk>`_.
 
 * Clone the repository to your machine. The cloned directory will contain everything related to your new design
   (python files, gds files, notes).
 
 Setup a virtual environment and install ``qnngds``
---------------------
+--------------------------------------------------
 * Navigate to the directory you cloned the repository to.
 
 * Create a new virtual environment:
+
+    * Using ``conda`` (recommended, `miniforge installation instructions <https://github.com/conda-forge/miniforge?tab=readme-ov-file#install>`_):
+
+        * Execute:
+
+          .. code-block:: bash
+
+              conda create -n my-project-env python=3.11
+              conda activate my-project-env
+
+        * Install ``qnngds``
 
     * Using ``uv`` (recommended, `installation instructions <https://docs.astral.sh/uv/#installation>`_):
 
@@ -26,18 +37,9 @@ Setup a virtual environment and install ``qnngds``
 
         * Follow the instructions from ``uv`` to activate the environment, as they will differ depending on the platform.
 
-        * Install qnngds
+        * Install ``qnngds``
 
-    * Using ``conda`` (recommended, `miniforge installation instructions <https://github.com/conda-forge/miniforge?tab=readme-ov-file#install>`_):
-
-        * Execute:
-
-          .. code-block:: bash
-
-              conda create -n my-project-env
-              conda activate my-project-env
-
-    * Using ``python``:
+    * Using ``python`` virtual environment (dispreffered, since one has to manually install separate version of python):
 
         * Open a terminal in the directory you want to put your virtual environment.
 
@@ -55,13 +57,9 @@ Setup a virtual environment and install ``qnngds``
               python -m venv .venv/your-env-name
               source .venv/your-env-name/scripts/activate
 
+        * Install ``qnngds``
+
 * Install ``qnngds``
-
-    * Using ``uv``
-
-        .. code-block:: bash
-
-            uv pip install qnngds
 
     * Using ``conda`` or ``python`` ``venv``:
 
@@ -69,19 +67,27 @@ Setup a virtual environment and install ``qnngds``
 
             pip install qnngds
 
+    * Using ``uv``
+
+        .. code-block:: bash
+
+            uv pip install qnngds
+
 
 .. note::
-    To install a development version of ``qnngds`` that hasn't been released yet, replace the command ``pip install qnngds`` with ``pip install -e /path/to/cloned/copy/of/qnngds``. Note that this is a different path from the PDK repo you cloned earlier.
+    To install a development version of ``qnngds`` that hasn't been released on pypi yet, first clone ``qnngds`` from github onto your local machine.
+    Then, when installing with pip, replace the command ``[uv] pip install qnngds`` with ``[uv] pip install -e /path/to/cloned/copy/of/qnngds``.
+    Note that this will be a different path from the PDK repo you cloned earlier.
 
 
 Install klive and gdsfactory extensions for klayout
-~~~~~~~~~~~~~~~~~~~~~
+---------------------------------------------------
 
 * Follow the instructions from the `gdsfactory docs <https://gdsfactory.github.io/klive>`_ and restart klayout.
 
 
-Start with the basics
-~~~~~~~~~~~~~~~~~~~~~
+Create your first layout using builtins from PDK
+------------------------------------------------
 
 Create a file in the toplevel of the cloned repository.
 
@@ -91,7 +97,7 @@ Import the necessary packages and activate the PDK
     :linenos:
 
     from pdk import PDK
-    from pdk.components import *
+    from pdk.components import experiment_ntron
 
     import qnngds as qg
     import gdsfactory as gf
@@ -136,7 +142,10 @@ not already present in the PDK).
     tron_sample.components.show()
 
 
+This will generate the following GDS:
+
 .. image:: images/ntron_neg.png
    :alt: example ntron array with negative tone (single layer)
 
-
+There are a number of useful ``_experiment`` functions already, check out ``example.py`` in ``qnngds-pdk`` for more examples.
+To design your own experiments, see :py:ref:`generate_experiment` and the :ref:`associated tutorial<Generate Experiment>`.
