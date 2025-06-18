@@ -141,8 +141,8 @@ class Sample(object):
 
         # get number of rows/columns
         bbox = mask_region.bbox()
-        n_cols = int(np.floor(bbox.width() * gf.kcl.dbu / cell_size))
-        n_rows = int(np.floor(bbox.height() * gf.kcl.dbu / cell_size))
+        self.n_cols = int(np.floor(bbox.width() * gf.kcl.dbu / cell_size))
+        self.n_rows = int(np.floor(bbox.height() * gf.kcl.dbu / cell_size))
 
         # create a component whose area defines which placements are legal
         mask = gf.Component()
@@ -150,13 +150,13 @@ class Sample(object):
         mask.move(mask.center, (0, 0))
 
         # coordinates from left-to-right, top-to-bottom
-        self.origin = (-n_cols * cell_size / 2, n_rows * cell_size / 2)
+        self.origin = (-self.n_cols * cell_size / 2, self.n_rows * cell_size / 2)
         self.open_cells = set([])
         self.full_cells = set([])
         rect = qg.geometries.compass(size=(cell_size, cell_size), layer=(1, 0))
         dummy = gf.Component()
-        for row in range(n_rows):
-            for col in range(n_cols):
+        for row in range(self.n_rows):
+            for col in range(self.n_cols):
                 d = dummy << rect
                 d.move((d.xmin, d.ymax), self.origin).movex(col * cell_size).movey(
                     -row * cell_size
@@ -387,6 +387,52 @@ class Sample(object):
             marks = self.components.add_ref(die_corners)
             dcenter = np.array((2 * cell[1] + 1, -2 * cell[0] - 1)) * self.cell_size / 2
             marks.move(marks.center, np.array(self.origin) + dcenter)
+
+    def write_cell_labels(
+        self, size: float, layer: LayerSpec, inset_dist: float, location: int
+    ) -> None:
+        """Adds text label to all cells
+
+        Args:
+            size (float): text size
+            layer (LayerSpec): layer to place text on
+            inset_dist (float): distance between label and corner
+            location (int): 0 -> NW, 1 -> NE, 2 -> SE, 3 -> SW
+
+        Returns:
+            None
+
+        Side Effects:
+            Updates self.components with the new labels
+        """
+        row_digits = int(np.ceil(np.log(self.n_rows) / np.log(26)))
+        col_digits = int(np.ceil(np.log(self.n_cols) / np.log(10)))
+        for cell in self.full_cells:
+            col_str = f"{cell[1]:0{col_digits}d}"
+            row = cell[0]
+            row_str = ""
+            for _ in range(row_digits):
+                row_str = chr(65 + (row % 26)) + row_str
+                row = row // 26
+            label = self.components << gf.components.texts.text(
+                row_str + col_str,
+                size=size,
+                layer=layer,
+                justify="center",
+            )
+            if ((location + 1) % 4) // 2 > 0:
+                label.movex(self.cell_size - inset_dist - label.xmax)
+            else:
+                label.movex(inset_dist - label.xmin)
+            if location // 2 == 0:
+                label.movey(self.cell_size - inset_dist - label.ymax)
+            else:
+                label.movey(inset_dist - label.ymin)
+            dcenter = np.array((2 * cell[1] + 1, -2 * cell[0] - 1)) * self.cell_size / 2
+            label.move(
+                (self.cell_size / 2, self.cell_size / 2),
+                np.array(self.origin) + dcenter,
+            )
 
     def _check_component_size(self, component: gf.Component) -> bool:
         """Checks component size
