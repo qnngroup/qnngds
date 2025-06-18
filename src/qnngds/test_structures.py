@@ -694,3 +694,62 @@ def etch_test(
         component=TRENCHES, ext_bbox_layers={layer: 5 * trench_width}
     )
     return TRENCHES_INV
+
+
+@gf.cell
+def cross_bridge_kelvin_resistor(
+    size: float = 50,
+    lead_length: float = 50,
+    layer_top: LayerSpec = "PHOTO1",
+    layer_bot: LayerSpec = "EBEAM_COARSE",
+    layer_via: LayerSpec | None = None,
+    port_type: str = "electrical",
+) -> gf.Component:
+    """Generate a cross-bridge Kelvin resistor
+
+    See `this paper <http://ieeexplore.ieee.org/document/913141/>`_.
+
+    Args:
+        size (float): side length of square junction
+        lead_length (float): length of leads to junction
+        layer_top (LayerSpec): layer of top conductor
+        layer_bot (LayerSpec): layer of bottom conductor
+        layer_via (LayerSpec | None): if not None, create via on specified layer
+        port_type (string): gdsfactory port type. default "electrical"
+
+    Returns:
+        gf.Component: cross-bridge Kelvin resistor
+    """
+    CBKR = gf.Component()
+    if layer_via is not None:
+        center = qg.geometries.via(
+            size=(size, size),
+            via_undersize=1,
+            layer_bottom=layer_bot,
+            layer_via=layer_via,
+            layer_top=layer_top,
+        )
+    else:
+        center = gf.Component()
+        cbot = center << qg.geometries.compass(size=(size, size), layer=layer_bot)
+        ctop = center << qg.geometries.compass(size=(size, size), layer=layer_top)
+        for n, port in enumerate(cbot.ports):
+            center.add_port(name=f"e2{n + 1}", port=port)
+        for n, port in enumerate(ctop.ports):
+            center.add_port(name=f"e1{n + 1}", port=port)
+    top_ext = qg.geometries.compass(size=(lead_length, size), layer=layer_top)
+    bot_ext = qg.geometries.compass(size=(lead_length, size), layer=layer_bot)
+    center_i = CBKR << center
+    ports = []
+    for layer_i in range(2):
+        for lead_i in range(2):
+            lead = CBKR << (bot_ext if layer_i == 0 else top_ext)
+            con_port = f"e{2 - layer_i}{lead_i + 1 + 2 * layer_i}"
+            lead.connect(port=lead.ports["e1"], other=center_i.ports[con_port])
+            ports.append(lead.ports["e3"])
+    prefix = "e" if port_type == "electrical" else "o"
+    for n, port in enumerate(ports):
+        CBKR.add_port(name=f"{prefix}{n + 1}", port=port)
+    for port in CBKR.ports:
+        port.port_type = port_type
+    return CBKR

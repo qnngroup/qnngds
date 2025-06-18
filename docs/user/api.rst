@@ -124,7 +124,7 @@ resonator
 
 .. automodule:: qnngds.devices.resonator
     :members:
-    :exclude-members: pad, resonator_meandered, resonator_straight, transmission_line_resonator
+    :exclude-members: pad, resonator_meandered, resonator_straight, transmission_line, transmission_line_resonator
     :undoc-members:
     :show-inheritance:
     :special-members: __init__
@@ -143,6 +143,11 @@ resonator
 
         .. image:: images/devices/resonator/resonator_straight.png
             :alt: resonator_straight.png
+
+    .. autofunction:: transmission_line
+
+        .. image:: images/devices/resonator/transmission_line.png
+            :alt: transmission_line.png
 
     .. autofunction:: transmission_line_resonator
 
@@ -272,7 +277,7 @@ Test_structures
 
 .. automodule:: qnngds.test_structures
     :members:
-    :exclude-members: alignment_mark, circ_tlm, etch_test, rect_tlm, resolution_test, vdp, via_chain
+    :exclude-members: alignment_mark, circ_tlm, cross_bridge_kelvin_resistor, etch_test, rect_tlm, resolution_test, vdp, via_chain
     :undoc-members:
     :show-inheritance:
     :special-members: __init__
@@ -286,6 +291,11 @@ Test_structures
 
         .. image:: images/test_structures/circ_tlm.png
             :alt: circ_tlm.png
+
+    .. autofunction:: cross_bridge_kelvin_resistor
+
+        .. image:: images/test_structures/cross_bridge_kelvin_resistor.png
+            :alt: cross_bridge_kelvin_resistor.png
 
     .. autofunction:: etch_test
 

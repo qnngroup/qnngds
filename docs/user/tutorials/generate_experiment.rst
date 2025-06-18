@@ -115,10 +115,11 @@ for use with a multi-contact wedge in a probe station.
         )
 
 Now, we actually create the experiment by combining the DUT (``slotted_ntron``) with the pad array.
+Notice how we map the ports using ``route_groups``: the source ``s`` of the nTron goes to port ``e1`` on the pad array, the gate ``g`` goes to ``e2``, and the drain ``d`` goes to ``e3``
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 71
+    :lineno-start: 72
 
         NT = gf.Component()
         NT << qg.utilities.generate_experiment(

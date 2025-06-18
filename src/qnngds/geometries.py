@@ -405,7 +405,11 @@ def optimal_hairpin(
     based on phidl.geometry and gdsfactory. Used instead of gdsfactory due to
     `snapping issue <https://github.com/gdsfactory/gdsfactory/pull/3816>`_.
 
-    Also centers apex of hairpin at (0, 0)
+    Modifications from gdsfactory/phidl:
+        - Centers apex of hairpin at (0, 0)
+        - If ``length`` is too short to fit all the points in the hairpin,
+            the device length is increased to the minimum required length to fit
+            the points.
 
     Args:
         width: Width of the hairpin leads.

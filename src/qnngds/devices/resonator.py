@@ -122,7 +122,7 @@ def microstrip(
 
 @gf.cell
 def transmission_line(
-    cross_section: CrossSectionSpec,
+    cross_section: CrossSectionSpec = cpw,
     length: float = 100,
 ) -> gf.Component:
     """Construct a straight transmission line by extruding a cross section
@@ -142,7 +142,7 @@ def transmission_line(
 
 @gf.cell
 def resonator_meandered(
-    cross_section: CrossSectionSpec,
+    cross_section: CrossSectionSpec = cpw,
     n_eff: float = 10,
     resonant_freq: float = 5e9,
     meander_width: float = 500,
@@ -203,16 +203,16 @@ def resonator_meandered(
 
 @gf.cell
 def resonator_straight(
+    cross_section: CrossSectionSpec = cpw,
     n_eff: float = 100,
     resonant_freq: float = 1e9,
-    cross_section: CrossSectionSpec = cpw,
 ):
     """Construct straight half-wave resonator
 
     Args:
+        cross_section (CrossSectionSpec): cross section to use (e.g. CPW)
         n_eff (float): effective index of refraction
         resonant_freq (float): resonant frequeny in Hz
-        cross_section (CrossSectionSpec): cross section to use (e.g. CPW)
 
     Returns:
         gf.Component: meandered half-wave resonator

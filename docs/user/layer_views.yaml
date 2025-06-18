@@ -16,7 +16,7 @@ LayerViews:
   PHOTO1:
     layer: [3, 0]
     layer_in_name: true
-    hatch_pattern: solid
+    hatch_pattern: plus
     transparent: true
     width: 1
     color: "#ffb86c"
