@@ -436,6 +436,7 @@ def generate_experiment(
     pad_offset: tuple[float, float] = (0, 0),
     label_offset: tuple[float, float] | None = (-100, -100),
     ignore_port_count_mismatch: bool = False,
+    ignore_dut_bbox: bool = False,
     retries: int = 10,
 ) -> gf.Component:
     """Construct an experiment from a device/circuit (gf.Component).
@@ -451,6 +452,7 @@ def generate_experiment(
         pad_offset (tuple[float, float]): x,y offset for pad array (mostly useful for linear pad arrays)
         label_offset (tuple[float, float] or None): x,y offset of label
         ignore_port_count_mismatch (bool): if True, ignores mismatched number of DUT and pads ports, only if route_groups defines a mapping to all pad ports
+        ignore_dut_bbox (bool): if True, does not attempt to route around DUT bounding box (bbox)
         retries (int): how many times to try rerouting with s_bend (may need to be larger for many port groupings)
     Returns:
         (gf.Component): experiment
@@ -765,31 +767,38 @@ def generate_experiment(
                         # estimate amount bbox needs to be extended by to include taper length
                         # this code is borrowed from gdsfactory.routing.auto_taper.add_auto_tapers
                         xc = gf.get_cross_section(route_group.cross_section)
-                        for port in portmap[0]:
-                            key = (
-                                port.layer
-                                if port.layer == xc.layer
-                                else (port.layer, xc.layer)
-                            )
-                            try:
-                                taper = layer_transitions.get(key)
-                                widths = (port.width, xc.width)
-                                if taper is None and isinstance(key, tuple):
-                                    taper = layer_transitions.get((key[1], key[0]))
-                                    widths = (xc.width, port.width)
-                                taper_comp = gf.get_component(
-                                    taper, width1=widths[0], width2=widths[1]
+                        if not ignore_dut_bbox:
+                            for port in portmap[0]:
+                                key = (
+                                    port.layer
+                                    if port.layer == xc.layer
+                                    else (port.layer, xc.layer)
                                 )
-                                bbox_extension = max(taper_comp.xsize, taper_comp.ysize)
-                            except KeyError:
-                                bbox_extension = 0
-                        bboxes = [dut_ref.bbox().enlarge(bbox_extension)]
+                                try:
+                                    taper = layer_transitions.get(key)
+                                    widths = (port.width, xc.width)
+                                    if taper is None and isinstance(key, tuple):
+                                        taper = layer_transitions.get((key[1], key[0]))
+                                        widths = (xc.width, port.width)
+                                    if taper is None:
+                                        raise KeyError
+                                    taper_comp = gf.get_component(
+                                        taper, width1=widths[0], width2=widths[1]
+                                    )
+                                    bbox_extension = max(
+                                        taper_comp.xsize, taper_comp.ysize
+                                    )
+                                except KeyError:
+                                    bbox_extension = 0
+                            bboxes = [dut_ref.bbox().enlarge(bbox_extension)]
+                        else:
+                            bboxes = []
                         routes = gf.routing.route_bundle(
                             component=routed,
                             ports1=portmap[0],
                             ports2=portmap[1],
-                            separation=xc.width,
-                            cross_section=route_group.cross_section,
+                            separation=xc.sections[0].width / 2,
+                            cross_section=xc,
                             bboxes=bboxes,
                             taper=None,
                             auto_taper=True,

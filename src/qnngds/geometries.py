@@ -465,7 +465,12 @@ def optimal_hairpin(
     ypts.append(-a)
     xpts.append(xpts[0])
     ypts.append(-a)
-    xpts.append(max(xpts) - length)
+    # if length is too short, artificially extend it
+    xmin = min(max(xpts) - length, min(xpts))
+    # snap point to twice grid spacing so that there's no gap
+    # between hairpin and port
+    xmin = round(xmin / (2 * gf.kcl.dbu)) * (2 * gf.kcl.dbu)
+    xpts.append(xmin)
     ypts.append(-a)
     xpts.append(xpts[-1])
     ypts.append(-a + width)
