@@ -84,7 +84,7 @@ class Sample(object):
     can be placed on one or more cells in the grid, manually or automatically.
     If initialized with ``allow_cell_span``, experiments can span multiple columns/rows.
 
-    For a wafer, it is recommended to have two hierarchies of ``Sample``s.
+    For a wafer, it is recommended to have two hierarchies of ``Sample`` s.
     At the top-level, define a wafer-sized Sample, with a number of cells that
     can be cut/cleaved into dies. Each cell may be defined as a ``Sample`` to place
     multiple experiments on a grid within the die. For example:

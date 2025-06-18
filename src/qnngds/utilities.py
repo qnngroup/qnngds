@@ -451,7 +451,8 @@ def generate_experiment(
         dut_offset (tuple[float, float]): x,y offset for dut (mostly useful for linear pad arrays)
         pad_offset (tuple[float, float]): x,y offset for pad array (mostly useful for linear pad arrays)
         label_offset (tuple[float, float] or None): x,y offset of label
-        ignore_port_count_mismatch (bool): if True, ignores mismatched number of DUT and pads ports, only if route_groups defines a mapping to all pad ports
+        ignore_port_count_mismatch (bool): if True, ignores mismatched number of DUT and pads ports,
+            only if route_groups defines a mapping to all pad ports
         ignore_dut_bbox (bool): if True, does not attempt to route around DUT bounding box (bbox)
         retries (int): how many times to try rerouting with s_bend (may need to be larger for many port groupings)
     Returns:
@@ -462,8 +463,9 @@ def generate_experiment(
         we can generate an example nTron test layout including pads. The pad array
         is just a linear array from gdsfactory, although a custom array could be defined.
         The mapping of nTron device ports to pad ports is defined manually with ``route_groups``,
-        but it's possible to use autoassignment if the ports are facing the same direction
-        (e.g. ``pads_tri`` in ``qnngds-pdk``)
+        but it's possible to use autoassignment by setting ``route_groups=None``.
+        However, autoassignment only works in some cases, and in the case of this nTron,
+        it would most likely fail.
 
         >>> c = qg.utilities.generate_experiment(
         >>>         dut=qg.devices.ntron.sharp,
@@ -490,42 +492,6 @@ def generate_experiment(
         >>>     )
         >>> c.show()
 
-        Or, perhaps we want to create an hTron (now using a custom pad array ``pad_quad``
-        defined in `<https://github.com/qnngroup/qnngds-pdk/>`_:
-
-        >>> from pdk.components import pad_quad
-        >>> c = qg.utilities.generate_experiment(
-        >>>         dut=qg.devices.htron.multilayer(
-        >>>             gate_spec=qg.devices.htron.heater(
-        >>>                 pad_outline=0,
-        >>>                 pad_layer="PHOTO",
-        >>>                 heater_layer="PHOTO",
-        >>>             ),
-        >>>         ),
-        >>>         pad_array=pad_quad(space=200),
-        >>>         label=None,
-        >>>         route_groups=(
-        >>>             # route ebeam channel layer: c1 and c2 to pads e1 and e3
-        >>>             qg.utilities.RouteGroup(
-        >>>                 PDK.get_cross_section("ebeam"), {"c1": "e1", "c2": "e3"}
-        >>>             ),
-        >>>             # route photolitho heater layer: g2 and g5 to pads e4 and e2
-        >>>             # note that DUT ports g1,g3,g4,g6 are not mapped
-        >>>             # however, all pad ports (e1-e4) are mapped
-        >>>             qg.utilities.RouteGroup(
-        >>>                 PDK.get_cross_section("photo"), {"g2": "e4", "g5": "e2"}
-        >>>             ),
-        >>>         ),
-        >>>         dut_offset=(0, 0),
-        >>>         pad_offset=(0, 0),
-        >>>         label_offset=(50, 240),
-        >>>         ignore_port_count_mismatch=True,
-        >>>         retries=1,
-        >>>     )
-        >>> c.show()
-
-        Here, the hTron devices has 8 ports, but the pads only have 4, so we have to assign
-        every pad a port on the DUT and pass the ``ignore_port_count_mismatch`` flag.
     """
     # check if route_groups is complete so we can handle ignore_port_count_mismatch flag
     route_groups_complete = False
