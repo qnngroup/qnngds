@@ -23,6 +23,8 @@ follows the following hierarchy for designing layouts:
       Includes circuit/device and pads.
 
         * Circuit: a circuit comprised of multiple devices e.g. SNSPD with nTron amplifier.
+          Defined in negative tone and automatically converted to positive tone
+          based on PDK layer class when using :py:func:`generate_experiment`.
           Use of pads is generally discouraged, as it decreases reusability of circuits.
           Typically defined in a PDK.
 
