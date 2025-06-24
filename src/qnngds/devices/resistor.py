@@ -128,6 +128,7 @@ def meander(
     ) * width / 2 + width
     # round to nearest 2nm, since gdsfactory rounds to nearest 1nm which can cause gaps between each hairpin
     hp_length = np.round(hp_length / (2 * gf.kcl.dbu)) * (gf.kcl.dbu * 2)
+    hp_length = max(hp_length, width + 2 * gf.kcl.dbu)
     hp = hairpin(hp_length)
     hp_prev = None
     for i in range(n_turn):
@@ -170,8 +171,9 @@ def meander_sc_contacts(
     meander_pitch: float | None = 2,
     contact_size: tuple[float, float] = (8, 3),
     outline_sc: float = 1,
-    layer_res: LayerSpec = (3, 0),
+    layer_res: LayerSpec = (4, 0),
     layer_sc: LayerSpec = (1, 0),
+    layer_keepout: LayerSpec | None = (3, 0),
     port_type: str = "electrical",
 ) -> gf.Component:
     """Create resistor meander with superconducting contacts.
@@ -187,6 +189,7 @@ def meander_sc_contacts(
         outline_sc (float): superconductor extra width on each side of contact
         layer_res (LayerSpec): resistor GDS layer
         layer_sc (LayerSpec): superconductor GDS layer
+        layer_keepout (LayerSpec): layer to do keepout on
         port_type (string): gdsfactory port type. default "electrical"
 
     Returns:
@@ -204,6 +207,11 @@ def meander_sc_contacts(
         squares=squares,
         max_length=max_length,
     )
+    if layer_keepout is not None:
+        res_ko = D << qg.geometries.rectangle(
+            size=(res.xsize + 2 * width, res.ysize), layer=layer_keepout
+        )
+        res_ko.move(res_ko.center, res.center)
     stub = qg.geometries.compass(
         size=(width, outline_sc), layer=layer_res, port_type="electrical"
     )

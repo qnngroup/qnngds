@@ -68,14 +68,14 @@ def union(component: gf.Component) -> gf.Component:
     return comp_union
 
 
-def get_outline_layers(layer_map: gf.LayerEnum) -> dict[tuple, float]:
-    """Get dictionary maping a layer tuple to the desired outline amount as specified by the LayerMap
+def get_outline_layers(layer_map: gf.LayerEnum) -> dict[str, float]:
+    """Get dictionary maping a layer to the desired outline amount as specified by the LayerMap
 
     Args:
         layer_map (gf.LayerEnum): enum layer equipped with outline method
 
     Returns:
-        dict[tuple, float]: mapping of GDS tuple to outline distance. Layers that aren't outlined are omitted.
+        dict[str, float]: mapping of GDS layer name to outline distance. Layers that aren't outlined are omitted.
     """
     # outline
     outline_layers = {}
@@ -84,6 +84,24 @@ def get_outline_layers(layer_map: gf.LayerEnum) -> dict[tuple, float]:
         if ol > 0:
             outline_layers[str(gf.get_layer(layer))] = ol
     return outline_layers
+
+
+def get_keepout_layers(layer_map: gf.LayerEnum) -> dict[str, str]:
+    """Get dictionary maping a layer to a second layer which it should serve as a keepout for
+
+    Args:
+        layer_map (gf.LayerEnum): enum layer equipped with keepout method
+
+    Returns:
+        dict[str, str]: mapping of GDS layer name to GDS layer name.
+    """
+    # keepout
+    keepout_layers = {}
+    for layer in layer_map:
+        ol = layer_map.keepout(layer)
+        if ol is not None:
+            keepout_layers[str(gf.get_layer(layer))] = str(ol)
+    return keepout_layers
 
 
 @gf.cell
@@ -146,6 +164,64 @@ def outline(
     comp_outlined.flatten()
     comp_outlined.add_ports(new_ports)
     return comp_outlined
+
+
+@gf.cell
+def keepout(
+    component: gf.Component,
+    outline_layers: dict[str, float] | None = None,
+    keepout_layers: dict[str, str] | None = None,
+) -> gf.Component:
+    """Apply keepout layers
+
+    Args:
+        component (gf.Component): component to outline
+        outline_layers (dict[str, float]): map of desired outline amount per layer.
+            If a layer is omitted, it will not be outlined
+        keepout_layers (dict[str, float]): map of desired layer to keepout. If a keepout
+            layer applies to a positive-tone layer (i.e. layer in outline_layers with non-zero outline),
+            then the keepout regions will be unioned. If keepout layer applies to negative-tone
+            (i.e. layer not in outline_layers), then the keepout region will be subtracted.
+
+    Returns:
+        gf.Component: component with keepout applied
+    """
+    comp_keepout = gf.Component()
+    if keepout_layers is None:
+        return component
+    if outline_layers is None:
+        outline_layers = {}
+
+    outline_layer_values = {
+        gf.get_layer(k).value: str(gf.get_layer(k)) for k in outline_layers.keys()
+    }
+    keepout_layer_values = {
+        gf.get_layer(k).value: str(gf.get_layer(k)) for k in keepout_layers.keys()
+    }
+    processed_layers = set([])
+    for layer in keepout_layers.keys():
+        keepout_region = component.get_region(layer=gf.get_layer(layer))
+        mapped_layer = gf.get_layer(keepout_layers[layer])
+        r = component.get_region(layer=mapped_layer)
+        if mapped_layer not in outline_layer_values:
+            # neg-tone, subtract
+            comp_keepout.add_polygon(r - keepout_region, layer=mapped_layer)
+        else:
+            # pos-tone, add/union
+            comp_keepout.add_polygon(r + keepout_region, layer=mapped_layer)
+        processed_layers.add(mapped_layer)
+    # add remaining layers
+    for layer in component.layers:
+        if gf.get_layer(layer) in processed_layers:
+            continue
+        if gf.get_layer(layer) in keepout_layer_values:
+            continue
+        r = component.get_region(layer=layer)
+        comp_keepout.add_polygon(r, layer=layer)
+    # add ports
+    comp_keepout.flatten()
+    comp_keepout.add_ports(component.ports)
+    return comp_keepout
 
 
 @gf.cell
@@ -544,9 +620,12 @@ def generate_experiment(
 
     # figure out which layers to outline
     outline_layers = get_outline_layers(gf.get_active_pdk().layers)
+    keepout_layers = get_keepout_layers(gf.get_active_pdk().layers)
 
     # outline and add DUT
-    dut_ref = experiment.add_ref(outline(dut_i, outline_layers))
+    dut_ref = experiment.add_ref(
+        keepout(outline(dut_i, outline_layers), outline_layers, keepout_layers)
+    )
     dut_ref.move(dut_offset)
     if pad_array is None:
         return experiment

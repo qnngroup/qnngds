@@ -13,15 +13,22 @@ LayerViews:
     transparent: true
     width: 1
     color: "#6272a4"
-  PHOTO1:
+  EBEAM_KEEPOUT:
     layer: [3, 0]
+    layer_in_name: true
+    hatch_pattern: lightly cross-hatched
+    transparent: true
+    width: 1
+    color: "#c11d19"
+  PHOTO1:
+    layer: [4, 0]
     layer_in_name: true
     hatch_pattern: plus
     transparent: true
     width: 1
     color: "#ffb86c"
   PHOTO2:
-    layer: [4, 0]
+    layer: [5, 0]
     layer_in_name: true
     hatch_pattern: lightly cross-hatched
     transparent: true

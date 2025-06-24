@@ -40,29 +40,27 @@ def smooth(
 
     D = gf.Component()
 
-    choke = gf.components.superconductors.optimal_step(
+    choke = qg.geometries.optimal_step(
         gate_w, choke_w, symmetric=True, num_pts=num_pts, layer=layer
     )
     k = D << choke
 
-    channel = qg.geometries.compass(
-        size=(channel_w, choke_w), layer=layer, port_type="optical"
-    )
+    channel = qg.geometries.compass(size=(channel_w, choke_w), layer=layer)
     c = D << channel
-    c.connect(port=c.ports["o1"], other=k.ports["e2"], allow_width_mismatch=True)
+    c.connect(port=c.ports["e1"], other=k.ports["e2"], allow_width_mismatch=True)
     c.move(c.center, (0, 0))
 
-    drain = gf.components.superconductors.optimal_step(
+    drain = qg.geometries.optimal_step(
         drain_w, channel_w, symmetric=False, num_pts=num_pts, layer=layer
     )
     d = D << drain
-    d.connect(port=d.ports["e2"], other=c.ports["o2"])
+    d.connect(port=d.ports["e2"], other=c.ports["e2"])
 
-    source = gf.components.superconductors.optimal_step(
+    source = qg.geometries.optimal_step(
         channel_w, source_w, symmetric=False, num_pts=num_pts, layer=layer
     )
     s = D << source
-    s.connect(port=s.ports["e1"], other=c.ports["o4"])
+    s.connect(port=s.ports["e1"], other=c.ports["e4"])
 
     k.move((c.xmin - k.xmax, choke_shift))
 

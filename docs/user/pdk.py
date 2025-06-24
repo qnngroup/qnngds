@@ -11,8 +11,9 @@ class ApiGenLayers(gf.LayerEnum):
 
     EBEAM_FINE: Layer = (1, 0)
     EBEAM_COARSE: Layer = (2, 0)
-    PHOTO1: Layer = (3, 0)
-    PHOTO2: Layer = (4, 0)
+    EBEAM_KEEPOUT: Layer = (3, 0)
+    PHOTO1: Layer = (4, 0)
+    PHOTO2: Layer = (5, 0)
 
     @classmethod
     def outline(cls, layer: Layer) -> int:
@@ -33,3 +34,19 @@ class ApiGenLayers(gf.LayerEnum):
             return 10
         # by default, assume a layer is negative tone
         return 0
+
+    @classmethod
+    def keepout(cls, layer: Layer) -> Layer:
+        """Used to define keepout regions
+
+        For example, if ``layer`` is a keepout layer
+        for ``EBEAM_FINE``, then return ``EBEAM_FINE``.
+        If ``layer`` is not a keepout layer, return ``None``.
+
+        """
+        if gf.get_layer(layer) == cls.EBEAM_KEEPOUT:
+            return cls.EBEAM_FINE
+        return None
+
+
+LAYERS = ApiGenLayers
