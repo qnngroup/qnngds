@@ -6,10 +6,17 @@ Documentation for qnngds' contributors
 You are a user of the package and wish to complete it with your newly created
 functions. You will find here the instructions to contribute to the package.
 
+There are two ways to contribute your new functions.
+The preferred route for contribution is generally to open a pull request to merge your changes into ``qnngds``.
+However, in some cases, the functionality introduced is very closely intertwined with specifics of the PDK in use (this is often the case for circuits comprised of many devices, although may not be for simple single-layer circuits), and as such does not make sense to include in ``qnngds``.
+Or, it's possible that the design is confidential or otherwise not appropriate for public release.
+In these cases, it is preferred to open a pull request to merge your changes into your private PDK template repo (e.g. ``qnngds-pdk``).
+
+
 .. warning::
     Be careful, make sure the branch you are working on does **not** start with
     ``dev-``, this prefix is reserved for developers.
- 
+
 0. What and where to add
 ------------------------
 
@@ -19,12 +26,12 @@ package was though in terms of hierarchy. If you are already a user of the
 package, the contribution should be quite straighforward; otherwise, please
 first refer to `qnngds user's documentation
 <https://qnngds.readthedocs.io/en/latest/>`_, you can also check the `tutorials
-<https://qnngds.readthedocs.io/en/latest/tutorials.html>`_. 
+<https://qnngds.readthedocs.io/en/latest/tutorials.html>`_.
 
 .. todo::
-    Send the contributors to the tuto ``creating your cell``. This is what 
-    every contributor should ideally go through when adding a new circuit 
-    to the package. 
+    Send the contributors to the tuto ``creating your cell``. This is what
+    every contributor should ideally go through when adding a new circuit
+    to the package.
 
 .. _Comment your functions:
 
@@ -75,30 +82,30 @@ for more details.
 --------------------------
 
 After modifying, adding or deleting any function of the package, you will
-obviously want to update the package's `documentation
+need to update the package's `documentation
 <https://qnngds.readthedocs.io/en/latest/>`_. To do so, open a terminal and
 execute:
 
 .. code-block:: bash
-    
+
     cd /path-to-qnngds/docs/user
     python generate_api.py
 
 Executing this file will automatically call the ``plot_images.py`` script. This
-script saves png images for every function of the package that returns a
-``Device`` Phidl object. Then, it generates the updated API including your
-contribution. The generated API inlines the plotted images of the devices.
+script saves ``.png`` images for every ``ComponentFactory`` (i.e. function or method that generates a ``Component``).
+Then, it generates the updated API including your contribution.
+The generated API inlines the plotted images of the devices.
 
 .. _rtd version in qnngds:
 
 3. Preview the documentation: automatic versioning
 --------------------------------------------------
 
-You might want to check that the changes you made to the package are well
+Before opening a pull request, verify the changes you made to the package are well
 generated and properly display in the documentation. When pushing your code on
 your branch, a new verison of qnngds' documentation will be accessible.
 
-Commit your changes:
+Commit your changes on a new branch:
 
 .. code-block:: bash
 
@@ -111,12 +118,12 @@ Push your branch to GitHub:
 
   .. code-block:: bash
 
-      git push [--set-upstream] origin your_new_branch_name 
+      git push [--set-upstream] origin your_new_branch_name
 
 * Any other time, you can simply use:
 
   .. code-block:: bash
-    
+
       git push
 
 Open the `documentation <https://qnngds.readthedocs.io/en/latest/>`_. You will
@@ -125,7 +132,7 @@ on it and select the version corresponding to your branch. Your changes should
 appear in this documentation's version. Check that the API displays properly and
 that your new devices are part of the libraries (if applicable).
 
-.. note:: Cannot see your documentation's version? 
+.. note:: Cannot see your documentation's version?
     * Be patient and refresh the page
 
     * Check the `Read The Docs <https://readthedocs.org/projects/qnngds/>`_

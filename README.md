@@ -3,6 +3,7 @@
 ## Description
 `qnngds` is a toolbox built on top of [gdsfactory](https://gdsfactory.github.io)
 for layout generation within the [QNN group](https://qnn-rle.mit.edu).
+`qnngds` is intended to be used alongside a PDK, such as the one in [qnngds-pdk](https://github.com/qnngroup/qnngds-pdk).
 
 ## Getting Started
 ### Installing
