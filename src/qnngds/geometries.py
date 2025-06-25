@@ -804,12 +804,13 @@ def fine_to_coarse(
         t2_i = taper.add_ref(t2)
         t1_i = taper.add_ref(t1)
         t1_i.connect(
-            t1_i.ports["e2"],
-            t2_i.ports["e2"],
+            t1_i.ports["e1"],
+            t2_i.ports["e1"],
             allow_width_mismatch=True,
             allow_layer_mismatch=True,
         )
-        ports = [t1_i.ports["e1"], t2_i.ports["e1"]]
+        t1_i.movex(0.8 * t1_i.xsize)
+        ports = [t1_i.ports["e2"], t2_i.ports["e2"]]
 
     for n, port in enumerate(ports):
         taper.add_port(

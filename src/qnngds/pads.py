@@ -3,7 +3,7 @@
 # can be removed in python 3.14, see https://peps.python.org/pep-0749/
 from __future__ import annotations
 
-from gdsfactory.typings import LayerSpecs, ComponentSpecs
+from gdsfactory.typings import LayerSpecs, ComponentSpecs, ComponentSpec
 import gdsfactory as gf
 import numpy as np
 
@@ -12,7 +12,7 @@ import qnngds as qg
 
 @gf.cell
 def stack(
-    size: tuple[float, float] = (200, 200),
+    size: tuple[float, float] = (200, 100),
     layers: LayerSpecs = ("EBEAM_COARSE",),
     port_type: str = "electrical",
     port_span: tuple[float, float] = (0, 1),
@@ -70,7 +70,7 @@ def stack(
 def array(
     pad_specs: ComponentSpecs = (stack,),
     columns: int = 1,
-    rows: int = 1,
+    rows: int = 4,
     pitch: float = 150,
 ) -> gf.Component:
     """Creates a linear array of pads
@@ -138,5 +138,43 @@ def vdp(
         pads.add_port(
             name=f"e{i + 1}",
             port=pad.ports["e1"],
+        )
+    return pads
+
+
+@gf.cell
+def quad(
+    array_spec: ComponentSpec = array,
+    port_width: float = 20,
+    port_pitch: float = 50,
+    port_offset: tuple[float, float] = (100, 0),
+) -> gf.Component:
+    """Create pads with quad routing to intermediate ports
+
+    Args:
+        array_spec (ComponentSpec): spec for pad array (assumes 1D array along y-axis)
+        port_width (float): width of intermediate ports
+        port_pitch (float): pitch of intermediate ports
+        port_offset (tuple[float, float]): offset of intermediate ports
+            relative to pad array port center
+
+    Returns:
+        gf.Component: pads with intermediate finer ports
+    """
+    pads = gf.Component()
+    array = pads << gf.get_component(array_spec)
+    for p, port in enumerate(array.ports):
+        dy = (p - (len(array.ports) - 1) / 2) * port_pitch
+        center = (port.x + port_offset[0], array.y + port_offset[1] + dy)
+        pads.add_port(
+            name=port.name,
+            width=port_width,
+            center=center,
+            orientation=0,
+            layer=port.layer,
+            port_type=port.port_type,
+        )
+        gf.routing.route_quad(
+            pads, port1=port, port2=pads.ports[port.name], layer=port.layer
         )
     return pads
