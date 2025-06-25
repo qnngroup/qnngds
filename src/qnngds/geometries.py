@@ -726,3 +726,98 @@ def cross(
     r2.center = (0, 0)
     c.flatten()
     return c
+
+
+@gf.cell
+def fine_to_coarse(
+    width1: float = 2.0,
+    width2: float = 5.0,
+    layer1: LayerSpec = "PHOTO1",
+    layer2: LayerSpec = "PHOTO2",
+    port_type: str = "electrical",
+) -> gf.Component:
+    """Create transition between fine and coarse layers
+
+    Automatically performs outlining for positive-tone resist
+    Args:
+        width1 (float): starting width on first layer
+        width2 (float): ending width on second layer
+        layer1 (LayerSpec): layer specification (string or tuple) for first layer
+        layer2 (LayerSpec): layer specification (string or tuple) for second layer
+        port_type (str): "electrical" or "optical"
+
+    Returns:
+        gf.Component: transition between fine and coarse layers
+    """
+    taper = gf.Component()
+    outline_layers = qg.utilities.get_outline_layers(gf.get_active_pdk().layers)
+    pos_tone = False
+    for layer in outline_layers.keys():
+        if (gf.get_layer(layer) == gf.get_layer(layer1)) or (
+            gf.get_layer(layer) == gf.get_layer(layer2)
+        ):
+            pos_tone = True
+            break
+    if pos_tone:
+        # positive tone
+        t2 = gf.components.straight(
+            length=outline_layers[str(gf.get_layer(layer2))],
+            npoints=2,
+            cross_section=qg.utilities.get_cross_section_with_layer(layer2),
+            width=None,
+        )
+        wide = outline_layers[str(gf.get_layer(layer2))] * 2 + width2
+        if wide < width1:
+            wide = width2
+        t1 = qg.geometries.hyper_taper(
+            length=wide * 0.8,
+            start_width=wide,
+            end_width=width1,
+            layer=layer1,
+        )
+        t1 = qg.utilities.outline(t1, outline_layers)
+        t2_i = taper.add_ref(t2)
+        t1_i = taper.add_ref(t1)
+        t1_i.connect(
+            t1_i.ports["e1"],
+            t2_i.ports["e2"],
+            allow_width_mismatch=True,
+            allow_layer_mismatch=True,
+        )
+        t1_i.movex(-outline_layers[str(gf.get_layer(layer2))] / 2)
+        ports = [t1_i.ports["e2"], t2_i.ports["e1"]]
+    else:
+        t2 = gf.components.superconductors.optimal_step(
+            start_width=0.7 * width1,
+            end_width=width2,
+            num_pts=500,
+            anticrowding_factor=0.6,
+            symmetric=True,
+            layer=layer2,
+        )
+        t1 = qg.geometries.hyper_taper(
+            length=t2.xsize * 0.7,
+            start_width=(width2 + width1) / 2,
+            end_width=width1,
+            layer=layer1,
+        )
+        t2_i = taper.add_ref(t2)
+        t1_i = taper.add_ref(t1)
+        t1_i.connect(
+            t1_i.ports["e2"],
+            t2_i.ports["e2"],
+            allow_width_mismatch=True,
+            allow_layer_mismatch=True,
+        )
+        ports = [t1_i.ports["e1"], t2_i.ports["e1"]]
+
+    for n, port in enumerate(ports):
+        taper.add_port(
+            name=f"e{n + 1}",
+            center=port.center,
+            orientation=port.orientation,
+            width=port.width,
+            layer=layer1 if n == 0 else layer2,
+            port_type=port_type,
+        )
+    return taper

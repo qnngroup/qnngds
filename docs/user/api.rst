@@ -180,7 +180,7 @@ Geometries
 
 .. automodule:: qnngds.geometries
     :members:
-    :exclude-members: angled_taper, compass, cross, flagpole, hyper_taper, optimal_90deg, optimal_hairpin, optimal_step, rectangle, taper, tee, via
+    :exclude-members: angled_taper, compass, cross, fine_to_coarse, flagpole, hyper_taper, optimal_90deg, optimal_hairpin, optimal_step, rectangle, taper, tee, via
     :undoc-members:
     :show-inheritance:
     :special-members: __init__
@@ -199,6 +199,11 @@ Geometries
 
         .. image:: images/geometries/cross.png
             :alt: cross.png
+
+    .. autofunction:: fine_to_coarse
+
+        .. image:: images/geometries/fine_to_coarse.png
+            :alt: fine_to_coarse.png
 
     .. autofunction:: flagpole
 
@@ -244,6 +249,32 @@ Geometries
 
         .. image:: images/geometries/via.png
             :alt: via.png
+
+.. _Pads:
+Pads
+----
+
+.. automodule:: qnngds.pads
+    :members:
+    :exclude-members: array, stack, vdp
+    :undoc-members:
+    :show-inheritance:
+    :special-members: __init__
+
+    .. autofunction:: array
+
+        .. image:: images/pads/array.png
+            :alt: array.png
+
+    .. autofunction:: stack
+
+        .. image:: images/pads/stack.png
+            :alt: stack.png
+
+    .. autofunction:: vdp
+
+        .. image:: images/pads/vdp.png
+            :alt: vdp.png
 
 .. _Sample:
 Sample

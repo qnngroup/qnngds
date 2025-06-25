@@ -786,7 +786,7 @@ def generate_experiment(
 
     # actually do routing
     problem_groups = set([])
-    for _ in range(retries + 1):
+    for _ in range((retries + 1) * len(route_groups)):
         routed = gf.Component()
         routed.add_ref(experiment)
         # for each grouping, try route_bundle, if that fails use route_bundle_sbend
@@ -838,11 +838,12 @@ def generate_experiment(
                             bboxes = [dut_ref.bbox().enlarge(bbox_extension)]
                         else:
                             bboxes = []
+                        separation = 0.8 * sum(section.width for section in xc.sections)
                         routes = gf.routing.route_bundle(
                             component=routed,
                             ports1=portmap[0],
                             ports2=portmap[1],
-                            separation=xc.sections[0].width / 2,
+                            separation=separation,
                             cross_section=xc,
                             bboxes=bboxes,
                             taper=None,
@@ -874,7 +875,7 @@ def generate_experiment(
                 except RuntimeError:
                     problem_groups.add(gid)
                     complete = False
-                    break
+                    continue
                 except kf.routing.generic.PlacerError as e:
                     raise RuntimeError(
                         "Routing failed, try manually specifying port mapping "
