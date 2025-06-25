@@ -890,6 +890,15 @@ def generate_experiment(
                     routed, pad_group, route_group.cross_section
                 )
                 try:
+                    # check that ports are facing each other
+                    for p1, p2 in zip(pad_group_new, dut_group_new):
+                        if (p1.orientation - p2.orientation) % 360 != 180:
+                            print(p1, p2)
+                            raise RuntimeError(
+                                "Manhattan routing failed and unable to perform "
+                                "sbend routing. Try aligning all DUT ports to "
+                                "face pad ports."
+                            )
                     gf.routing.route_bundle_sbend(
                         component=routed,
                         ports1=pad_group_new,
