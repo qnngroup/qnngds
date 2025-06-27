@@ -70,7 +70,7 @@ def stack(
 def array(
     pad_specs: ComponentSpecs = (stack,),
     columns: int = 1,
-    rows: int = 4,
+    rows: int = 1,
     pitch: float = 150,
 ) -> gf.Component:
     """Creates a linear array of pads

@@ -434,6 +434,31 @@ class Sample(object):
                 np.array(self.origin) + dcenter,
             )
 
+    def write_alignment_marks(
+        self, marker_spec: ComponentSpecOrComponent, location: tuple[float, float]
+    ) -> None:
+        """Adds alignment markers
+
+        Args:
+            marker_spec (ComponentSpec | Component): marker to use (e.g. cross)
+            location (tuple[float, float]): location of top-right alignment mark.
+                makes symmetric alignment marks about origin (0, 0)
+
+        Returns:
+            None
+
+        Side Effects:
+            Updates self.components with the alignment markers
+        """
+        marker_refs = self.components.add_ref(
+            gf.get_component(marker_spec),
+            columns=2,
+            rows=2,
+            column_pitch=2 * location[0],
+            row_pitch=2 * location[1],
+        )
+        marker_refs.center = (0, 0)
+
     def _check_component_size(self, component: gf.Component) -> bool:
         """Checks component size
 
