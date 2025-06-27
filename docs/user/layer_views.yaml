@@ -1,0 +1,36 @@
+LayerViews:
+  EBEAM_FINE:
+    layer: [1, 0]
+    layer_in_name: true
+    hatch_pattern: lightly left-hatched
+    transparent: true
+    width: 1
+    color: "#8be9fd"
+  EBEAM_COARSE:
+    layer: [2, 0]
+    layer_in_name: true
+    hatch_pattern: lightly right-hatched
+    transparent: true
+    width: 1
+    color: "#6272a4"
+  EBEAM_KEEPOUT:
+    layer: [3, 0]
+    layer_in_name: true
+    hatch_pattern: lightly cross-hatched
+    transparent: true
+    width: 1
+    color: "#c11d19"
+  PHOTO1:
+    layer: [4, 0]
+    layer_in_name: true
+    hatch_pattern: plus
+    transparent: true
+    width: 1
+    color: "#ffb86c"
+  PHOTO2:
+    layer: [5, 0]
+    layer_in_name: true
+    hatch_pattern: lightly cross-hatched
+    transparent: true
+    width: 1
+    color: "#ff5555"

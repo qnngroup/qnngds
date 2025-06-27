@@ -1,7 +1,7 @@
 Welcome to qnngds documentation!
 ===================================
 
-``qnngds`` is a toolbox built on top of phidl for device design in the `QNN
+``qnngds`` is a toolbox built on top of gdsfactory for device design in the `QNN
 group <https://qnn-rle.mit.edu/>`_. It is made for helping in the design of gds
 files.
 
@@ -15,33 +15,23 @@ General description
 The package is built so that any person wanting to create a new design can do it
 easily and quickly. It offers various devices, circuits, and test structures
 used and designed in the `QNN group <https://qnn-rle.mit.edu/>`_. The package
-hierarchy is though as follow:
+follows the following hierarchy for designing layouts:
 
-.. image:: images/_home_page/hierarchy.png
+* Sample: toplevel of design, either a wafer or piece that contains multiple experiments.
 
-* :ref:`Design`: contains classes from which a complete design can be built. The class
-  inputs are the basic parameters of the chip. Its methods are pre-built cells
-  and tools for distributing and managing the cells over the chip.
+    * Experiment: an individual experiment that has a specific intended use case.
+      Includes circuit/device and pads.
 
-   * :ref:`Cells`: is a library of cells pre-built, that are called by the Design's
-     classes. Each cell contains a text, border marks and an experiment
-     (circuits, devices, or tests) connected to pads for external connection.
+        * Circuit: a circuit comprised of multiple devices e.g. SNSPD with nTron amplifier.
+          Defined in negative tone and automatically converted to positive tone
+          based on PDK layer class when using :py:func:`generate_experiment`.
+          Use of pads is generally discouraged, as it decreases reusability of circuits.
+          Typically defined in a PDK.
 
-      * :ref:`Circuits`: is a library of circuits made of devices.
+        * Device: a single device e.g. individual nTron, hTron, etc.
 
-         * :ref:`Devices`: is a library of basic devices like nTron, hTron, nanowires, resistors etc...
-
-      * :ref:`Tests`: is a library of test structures that help through the fabrication process and
-        characterization.
-
-      * :ref:`Geometries`: contains useful shapes/geometries that are not available in
-        Phidl or has been adapted from it for special use case.
-
-      * :ref:`Utilities`: contains useful tools for building cells and circuits.
-
-Below is an example of the modules used to build a design.
-
-.. image:: images/_home_page/example_hierarchy.png
+This library is intended to be used alongside a PDK that defines a specific
+layer stackup and any custom circuits/layouts for a fabrication process.
 
 
 Contents

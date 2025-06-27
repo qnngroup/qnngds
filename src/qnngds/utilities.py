@@ -5,1047 +5,930 @@ Cells are made of devices
 device and its die are linked thanks to functions present in this module.
 """
 
-from phidl import Device, Port
-import phidl.geometry as pg
-import phidl.routing as pr
-from typing import Optional, Tuple, List, Union, Dict, Set
-from phidl.device_layout import (
-    Device,
+# can be removed in python 3.14, see https://peps.python.org/pep-0749/
+from __future__ import annotations
+
+import gdsfactory as gf
+from gdsfactory.typings import CrossSectionSpec
+import kfactory as kf
+from typing import Literal
+from collections.abc import Callable, Sequence
+
+from functools import partial
+
+import numpy as np
+
+from numpy.typing import ArrayLike
+
+from gdsfactory.typings import (
+    ComponentSpecOrComponent,
+    ComponentSpecsOrComponents,
+    LayerSpec,
     Port,
+    Ports,
+    PortsDict,
+    Spacing,
 )
-import qnngds.geometries as geometry
 
-class DieParameters:
-    """A class regrouping every parameter proper to a die_cell.
+import qnngds as qg
 
-    This class does not include anything linked to the device/circuit/experiment to
-    be placed in the cells.
 
-    Parameters:
-        unit_die_size (tuple of (int or float, int or float)): Dimensions of a unit die/cell (width, height).
-        pad_size (tuple of int or float): Dimensions of the die's pads (width, height).
-        pad_tolerance (int or float): Amount to shrink gold pads vs e-beam gaps for alignment error tolerance.
-        xspace (int or float): Extra space to add in x-direction between pad and edge of die
-        yspace (int or float): Extra space to add in y-direction between pad adn edge of die
-        contact_l (int or float): Extra length of the routes above the die's
-            ports to assure alignment with the device (useful for ebeam
-            lithography).
-        outline (int or float): The width of the pads' outline.
-        die_layer (int): The layer where the die is placed.
-        pad_layer (int): The layer where the pads are placed.
-        fill_pad_layer (bool): If True, the cells are filled with ground in
-            pad's layer.
-        positive_tone (bool): If True, inverts the die's layer for positive lithography.
-        text_size (int or float): The size of the text in the cells.
+def hyper_taper_fn(t, start_width, end_width):
+    """Used for defining custom cross section widths/offsets
+
+    Args:
+        t (float): value on [0,1] mapping to position along length of taper
+        start_width (float): starting width (t=0)
+        end_width (float): ending width (t=1)
+    """
+    if start_width > end_width:
+        a = np.arccosh(start_width / end_width)
+        return np.cosh(a * (1 - t)) * end_width
+    else:
+        a = np.arccosh(end_width / start_width)
+        return np.cosh(a * t) * start_width
+
+
+@gf.cell
+def union(component: gf.Component) -> gf.Component:
+    """Merge all polygons within a Component by layer
+
+    Args:
+        component (gf.Component): component to merge
+
+    Returns:
+        gf.Component: the merged component
+    """
+    comp_union = gf.Component()
+    for layer in component.layers:
+        temp = gf.Component()
+        temp.add_polygon(component.get_region(layer), layer=layer)
+        comp_union << gf.boolean(temp, temp, operation="or", layer=layer)
+    comp_union.flatten()
+    return comp_union
+
+
+def get_outline_layers(layer_map: gf.LayerEnum) -> dict[str, float]:
+    """Get dictionary maping a layer to the desired outline amount as specified by the LayerMap
+
+    Args:
+        layer_map (gf.LayerEnum): enum layer equipped with outline method
+
+    Returns:
+        dict[str, float]: mapping of GDS layer name to outline distance. Layers that aren't outlined are omitted.
+    """
+    # outline
+    outline_layers = {}
+    for layer in layer_map:
+        ol = layer_map.outline(layer)
+        if ol > 0:
+            outline_layers[str(gf.get_layer(layer))] = ol
+    return outline_layers
+
+
+def get_keepout_layers(layer_map: gf.LayerEnum) -> dict[str, str]:
+    """Get dictionary maping a layer to a second layer which it should serve as a keepout for
+
+    Args:
+        layer_map (gf.LayerEnum): enum layer equipped with keepout method
+
+    Returns:
+        dict[str, str]: mapping of GDS layer name to GDS layer name.
+    """
+    # keepout
+    keepout_layers = {}
+    for layer in layer_map:
+        ol = layer_map.keepout(layer)
+        if ol is not None:
+            keepout_layers[str(gf.get_layer(layer))] = str(ol)
+    return keepout_layers
+
+
+@gf.cell
+def outline(
+    component: gf.Component,
+    outline_layers: dict[str, float] | None = None,
+) -> gf.Component:
+    """Outline polygons within component by layer.
+
+    Args:
+        component (gf.Component): component to outline
+        outline_layers (dict[str, float]): map of desired outline amount per layer. If a layer is omitted, it will not be outlined
+
+    Returns:
+        gf.Component: the outlined component
+    """
+    comp_outlined = gf.Component()
+    # extend ports
+    comp_extended = gf.Component()
+    comp = comp_extended.add_ref(component)
+    if outline_layers is None:
+        outline_layers = {}
+    for k, v in outline_layers.items():
+        if v <= 0:
+            raise ValueError(f"outline must be greater than zero, got {outline_layers}")
+    new_ports = []
+    processed_ports = []
+    for layer in outline_layers.keys():
+        for port in gf.port.select_ports(comp, gf.get_layer(layer)):
+            ext = comp_extended.add_ref(
+                qg.geometries.compass(
+                    size=(outline_layers[layer], port.width),
+                    layer=port.layer,
+                    port_type=port.port_type,
+                )
+            )
+            prefix = "o" if port.port_type == "optical" else "e"
+            ext.connect(port=ext.ports[f"{prefix}1"], other=port)
+            p = ext.ports[f"{prefix}3"]
+            p.name = port.name
+            new_ports.append(p)
+            processed_ports.append(port)
+
+    new_ports += [p for p in comp.ports if p not in processed_ports]
+    outline_layer_values = {
+        gf.get_layer(k).value: str(gf.get_layer(k)) for k in outline_layers.keys()
+    }
+    for layer in comp_extended.layers:
+        r = component.get_region(layer=layer)
+        if gf.get_layer(layer) not in outline_layer_values:
+            comp_outlined.add_polygon(r, layer=layer)
+        else:
+            layer = outline_layer_values[gf.get_layer(layer)]
+            outline_dbu = outline_layers[layer] / gf.kcl.dbu
+            r_expanded = r.sized(outline_dbu)
+            comp_outlined.add_polygon(
+                r_expanded - comp_extended.get_region(layer=layer), layer=layer
+            )
+    # add ports
+    comp_outlined.flatten()
+    comp_outlined.add_ports(new_ports)
+    return comp_outlined
+
+
+@gf.cell
+def keepout(
+    component: gf.Component,
+    outline_layers: dict[str, float] | None = None,
+    keepout_layers: dict[str, str] | None = None,
+) -> gf.Component:
+    """Apply keepout layers
+
+    Args:
+        component (gf.Component): component to outline
+        outline_layers (dict[str, float]): map of desired outline amount per layer.
+            If a layer is omitted, it will not be outlined
+        keepout_layers (dict[str, float]): map of desired layer to keepout. If a keepout
+            layer applies to a positive-tone layer (i.e. layer in outline_layers with non-zero outline),
+            then the keepout regions will be unioned. If keepout layer applies to negative-tone
+            (i.e. layer not in outline_layers), then the keepout region will be subtracted.
+
+    Returns:
+        gf.Component: component with keepout applied
+    """
+    comp_keepout = gf.Component()
+    if keepout_layers is None:
+        return component
+    if outline_layers is None:
+        outline_layers = {}
+
+    outline_layer_values = {
+        gf.get_layer(k).value: str(gf.get_layer(k)) for k in outline_layers.keys()
+    }
+    keepout_layer_values = {
+        gf.get_layer(k).value: str(gf.get_layer(k)) for k in keepout_layers.keys()
+    }
+    processed_layers = set([])
+    for layer in keepout_layers.keys():
+        keepout_region = component.get_region(layer=gf.get_layer(layer))
+        mapped_layer = gf.get_layer(keepout_layers[layer])
+        r = component.get_region(layer=mapped_layer)
+        if mapped_layer not in outline_layer_values:
+            # neg-tone, subtract
+            comp_keepout.add_polygon(r - keepout_region, layer=mapped_layer)
+        else:
+            # pos-tone, add/union
+            comp_keepout.add_polygon(r + keepout_region, layer=mapped_layer)
+        processed_layers.add(mapped_layer)
+    # add remaining layers
+    for layer in component.layers:
+        if gf.get_layer(layer) in processed_layers:
+            continue
+        if gf.get_layer(layer) in keepout_layer_values:
+            continue
+        r = component.get_region(layer=layer)
+        comp_keepout.add_polygon(r, layer=layer)
+    # add ports
+    comp_keepout.flatten()
+    comp_keepout.add_ports(component.ports)
+    return comp_keepout
+
+
+@gf.cell
+def invert(
+    component: gf.Component,
+    ext_bbox_layers: dict[str, float] = {},
+) -> gf.Component:
+    """Outline polygons within component by layer.
+
+    Args:
+        component (gf.Component): component to invert
+        ext_bbox_layers (dict[tuple, float]): amount to expand bounding box for each layer. If a layer is omitted, it will not be inverted.
+
+    Returns:
+        gf.Component: the inverted component
+    """
+    comp_inverted = gf.Component()
+    bbox_layer_str_map = {
+        gf.get_layer(layer): layer for layer in ext_bbox_layers.keys()
+    }
+    for layer in component.layers:
+        layer = gf.get_layer(layer)
+        r = component.get_region(layer=layer)
+        if layer not in bbox_layer_str_map.keys():
+            comp_inverted.add_polygon(r, layer=layer)
+        else:
+            ext = ext_bbox_layers[bbox_layer_str_map[layer]]
+            r_expanded = gf.components.shapes.bbox(
+                component, top=ext, bottom=ext, left=ext, right=ext, layer=layer
+            ).get_region(layer=layer)
+            comp_inverted.add_polygon(r_expanded - r, layer=layer)
+    comp_inverted.flatten()
+    return comp_inverted
+
+
+def get_cross_section_with_layer(
+    layer: LayerSpec = "PHOTO1", default: CrossSectionSpec | None = None
+) -> CrossSectionSpec | None:
+    """Find the cross section associated with the given layer, or default
+
+    Args:
+        layer (LayerSpec): layer to find cross section for
+        default (CrossSectionSpec | None): default return value if cross section
+            is not found
+
+    Returns:
+        CrossSectionSpec | None: found cross section or default
+    """
+    for xc in gf.get_active_pdk().cross_sections:
+        xc = gf.get_cross_section(xc)
+        if xc.sections[0].layer == layer:
+            return xc
+
+
+@gf.cell
+def flex_grid(
+    components: ComponentSpecsOrComponents,
+    spacing: Spacing | float = (5.0, 5.0),
+    shape: tuple[int, int] | None = None,
+    align_x: Literal["origin", "xmin", "xmax", "center"] = "center",
+    align_y: Literal["origin", "ymin", "ymax", "center"] = "center",
+    rotation: int = 0,
+    mirror: bool = False,
+) -> gf.Component:
+    """Implement gdsfactory grid using kfactory's flex_grid method"""
+    c = gf.Component()
+    instances = kf.flexgrid(
+        c,
+        kcells=[gf.get_component(component) for component in components],
+        shape=shape,
+        spacing=(
+            (float(spacing[0]), float(spacing[1]))
+            if isinstance(spacing, tuple | list)
+            else float(spacing)
+        ),
+        align_x=align_x,
+        align_y=align_y,
+        rotation=rotation,
+        mirror=mirror,
+    )
+    for i, instance in enumerate(instances):
+        c.add_ports(instance.ports, prefix=f"{i}_")
+    return c
+
+
+#########################
+# Experiment generation
+#########################
+
+
+class RouteGroup:
+    """Stores information for routing DUTs to pads.
+
+    Stores a cross section and mapping of DUT ports to optional pad
+    ports. If a DUT port is mapped to None, then a pad port
+    will be automatically assigned in :py:func:`generate_experiment`
     """
 
     def __init__(
         self,
-        unit_die_size: Tuple[Union[int, float], Union[int, float]] = (980, 980),
-        pad_size: Tuple[Union[int, float], Union[int, float]] = (150, 250),
-        pad_tolerance: float = 5,
-        xspace: Union[int, float] = 0,
-        yspace: Union[int, float] = 100,
-        contact_l: Union[int, float] = 10,
-        outline: Union[int, float] = 10,
-        die_layer: int = 2,
-        pad_layer: int = 3,
-        fill_pad_layer: bool = False,
-        positive_tone: bool = True,
-        text_size: Union[int, float] = 40,
+        cross_section: CrossSectionSpec,
+        port_mapping: dict | tuple,
+        ground: bool = False,
     ):
+        """Initialize route group
 
-        self.unit_die_size = unit_die_size
-        self.unit_die_w = unit_die_size[0]
-        self.unit_die_h = unit_die_size[1]
-        self.pad_size = pad_size
-        self.pad_tolerance = pad_tolerance
-        self.xspace = xspace
-        self.yspace = yspace
-        self.contact_l = contact_l
-        self.outline = outline
-        self.die_layer = die_layer
-        self.pad_layer = pad_layer
-        self.fill_pad_layer = fill_pad_layer
-        self.positive_tone = positive_tone
-        self.text_size = text_size
-
-        self.die_border_w = round(
-            min((pad_size[0] + outline) / 2, 0.15 * min(unit_die_size))
-        )
-
-    def calculate_available_space_for_dev(
-        self,
-        device_ports: List[str] = ["N", "W", "S", "E"],
-    ) -> Tuple[float, float]:
-        """Calculates the maximum space available for a device in a
-        unit_die_cell.
-
-        Note that the device should be even smaller than this function's output, as
-        it does not account for routing from the device to the die's ports.
-
-        Parameters:
-            device_ports (List of string): a list of existing ports in the device.
-                E.g.: the device has 2 ports North and 1 South, device_ports = ["N", "S"].
-
+        Args:
+            cross_section (CrossSectionSpec): factory method for desired cross section used for routing
+            port_mapping (dict | tuple): either dictionary manually specifying mapping of DUT port names
+                to pad port names or a tuple of DUT port names that should be mapped automatically to
+                pad ports.
+            ground (bool): If True, then all dut ports will not be connected to a pad port. This allows
+                connection to ground plane for positive-tone layouts.
         Returns:
-            Tuple[float, float]: A tuple containing the width and height of space
-            available for a device in a die_cell
+            None
         """
-
-        num_pads_y = 0
-        num_pads_x = 0
-        if "N" in device_ports:
-            num_pads_y += 1
-        if "S" in device_ports:
-            num_pads_y += 1
-        if "E" in device_ports:
-            num_pads_x += 1
-        if "W" in device_ports:
-            num_pads_x += 1
-
-        dev_max_x = (
-            self.unit_die_size[0]
-            - 2 * self.outline
-            - max(
-                2 * self.die_border_w,
-                num_pads_x * (2 * self.outline + self.pad_size[1] + 2 * self.contact_l),
-            )
-        )
-        dev_max_y = (
-            self.unit_die_size[1]
-            - 2 * self.outline
-            - max(
-                2 * self.die_border_w,
-                num_pads_y * (2 * self.outline + self.pad_size[1] + 2 * self.contact_l),
-            )
-        )
-        return dev_max_x, dev_max_y
-
-    def find_num_diecells_for_dev(
-        self,
-        device_max_size: Tuple[Union[int, float], Union[int, float]],
-        device_ports: Dict[str, int] = {"N": 1, "E": 1, "W": 1, "S": 1},
-    ) -> Tuple[float, float]:
-        """Finds the number of unit die cells that can accommodate a device.
-
-        Parameters:
-            device_max_size (tuple of int or float, optional): Max dimensions of the
-                device inside the cell (width, height).
-            device_ports (dict): The ports of the device, format must be {'N':m, 'E':n, 'W':p, 'S':q}.
-
-        Returns:
-            Tuple[float, float]: A tuple containing the number of die cells in width
-            and height required to accommodate the device
-        """
-
-        max_num_ports_y = max(device_ports.get("E", 0), device_ports.get("W", 0))
-        max_num_ports_x = max(device_ports.get("N", 0), device_ports.get("S", 0))
-
-        max_x = max(
-            device_max_size[0],
-            max_num_ports_x * 1.5 * self.pad_size[0] + 2 * self.die_border_w,
-        )
-        max_y = max(
-            device_max_size[1],
-            max_num_ports_y * 1.5 * self.pad_size[0] + 2 * self.die_border_w,
-        )
-        compass_ports = [W for W in ["N", "E", "S", "W"] if device_ports.get(W, 0) != 0]
-
-        n = 1
-        dev_x_bigger = True
-        available_space_for_dev = self.calculate_available_space_for_dev(
-            compass_ports,
-        )
-
-        while dev_x_bigger:
-
-            if max_x > n * available_space_for_dev[0]:
-                n += 1
-            else:
-                break
-
-        m = 1
-        dev_y_bigger = True
-
-        while dev_y_bigger:
-
-            if max_y > m * available_space_for_dev[1]:
-                m += 1
-            else:
-                break
-
-        return n, m
-
-    def calculate_contact_w(
-        self,
-        circuit_ports: List[Port],
-    ) -> Union[int, float]:
-        """Calculate the minimal width acceptable for the contact from the
-        die_cell to the circuit/experiment.
-
-        The conditions are that the contact width should be bigger than (1) the
-        biggest port of the circuit, (2) the contact_l (to avoid a short/open circuit).
-
-        Parameters:
-            circuit_ports (list of Port): The ports of the circuit to be placed in the
-                cell (use .get_ports()).
-
-        Returns:
-            (int or float): the suggested contact_w to input in the die_cell of the
-            given circuit
-        """
-        max_circuit_port_width = max([port.width for port in circuit_ports])
-        return max(max_circuit_port_width, self.contact_l)
-
-class ConnectionToPCB():
-    """
-    A super-class for different pad archetypes to generate.
-
-    pad_pitch (int, float): separation between centers of pads
-    pad_width (int, float): width of each pad
-    pad_length (int, float): length of each pad
-    contact_w (int, float): width of gold contact to pad
-    """
-    def __init__(self, 
-                 pad_pitch, 
-                 pad_width, 
-                 pad_length, 
-                 contact_w = None):
-        self.pad_pitch = pad_pitch
-        self.pad_width = pad_width
-        self.pad_length = pad_length
-        if contact_w == None:
-            self.contact_w = pad_pitch/3
-        else:
-            self.contact_w = contact_w
-
-class MultiProbeTip(ConnectionToPCB):
-    """
-    A class for specifying parameters for pads compatible with
-    a multiprobe tip. Default parameters match the one currently
-    available in the probe station.
-
-    Inherits ConnectionToPCB. Adds:
-    num_tips (int): number of tips on the probe
-    """
-    def __init__(self,  
-                 pad_pitch: Union[int, float] = 100,
-                 pad_width = None,
-                 pad_length = 200,
-                 contact_w = None,
-                 num_tips: int = 6,):
-        self.num_tips = num_tips
-        self.pad_pitch = pad_pitch
-        self.pad_length = pad_length
-        if contact_w == None:
-            self.contact_w = pad_pitch/3
-        else:
-            self.contact_w = contact_w 
-        if pad_width == None:
-            self.pad_width = pad_pitch*3/4
-        else:
-            self.pad_width = pad_width
-
-class WireBond(ConnectionToPCB):
-    """
-    A class for specifying parameters for pads compatible with
-    wirebonding. Default parameters should be big enough to be
-    comfortable.
-
-    Inherits ConnectionToPCB.
-    """
-    def __init__(self,
-                 pad_pitch: Union[int, float] = 200,
-                 pad_width: Union[int, float] = 100,
-                 pad_length: Union[int, float] = 200,
-                 contact_w = None):
-        self.pad_pitch = pad_pitch 
-        self.pad_width = pad_width
-        self.pad_length = pad_length
-        if contact_w == None:
-            self.contact_w = pad_width/3
-        else:
-            self.contact_w = contact_w
-
-class PadPlacement:
-    """
-    A class for specifying how pads are placed around a
-    given device. Assumes device ports are named like (0, 1, 2...)
-
-    cell_scaling_factor_x (int, float): specify extra x-spacing between N-S pads
-    cell_scaling_factor_y (int, float): specify extra y-spacing between E-W pads
-    num_pads_n/s/e/w (int): number of pads in N/S/E/W
-    contact_w (int or float): override ConnectionToPCB contact_w
-    ports_gnd (list of str, optional): specify a side where all ports join common ground
-    port_map_x (dict of int:(str, int)): maps numbered port names to N1, N2...Nx and S1, S2...Sy pads for routing
-    port_map_y (dict of int:(str, int)): maps numbered port names to E1, E2...Ex and W1, W2...Wy pads for routing
-    probe_tip (ConnectionToPCB inheritor): specifies what kind of probe connection to satisfy
-    tight_y_spacing (bool): whether to pack devices closer to pads during routing (useful for MultiProbeTip)
-    """
-    def __init__(self, 
-                 cell_scaling_factor_x: Union[int, float] = 1,
-                 cell_scaling_factor_y: Union[int, float] = 1,
-                 num_pads_n: int = 1,
-                 num_pads_s: int = 1,
-                 num_pads_e: int = 0,
-                 num_pads_w: int = 0,
-                 contact_w: Union[float, int, None] = None,
-                 ports_gnd: List[Union[str, None]] = [None],
-                 port_map_x: Dict[int, Tuple[str, int]] = {1:("N",1), 2:("S",1)},
-                 port_map_y: Dict[int, Tuple[str, int]] = {},
-                 probe_tip: Union[None, MultiProbeTip, WireBond] = WireBond(),
-                 tight_y_spacing: bool = False):
-
-        self.cell_scaling_factor_x = cell_scaling_factor_x
-        self.cell_scaling_factor_y = cell_scaling_factor_y
-        self.num_pads_n = num_pads_n
-        self.num_pads_s = num_pads_s
-        self.num_pads_e = num_pads_e
-        self.num_pads_w = num_pads_w
-        self.ports_gnd = ports_gnd
-        self.port_map_x = port_map_x
-        self.port_map_y = port_map_y
-        self.probe_tip = probe_tip
-        self.tight_y_spacing = tight_y_spacing
-
-        if contact_w == None:
-            self.contact_w = probe_tip.contact_w 
-        else:
-            self.contact_w = contact_w
-
-class QnnDevice(Device):
-    """
-    Extends PHIDL Device to allow for adding a PadPlacement object
-    """
-    def set_pads(self, pads: PadPlacement = PadPlacement()):
-        """
-        pads (PadPlacement): specifies how device ports should route to pads
-        """
-        self.pads = pads
-
-def die_cell(
-    die_parameters: DieParameters = DieParameters(),
-    n_m_units: Tuple[int, int] = (1, 1),
-    contact_w: Union[int, float] = 50,
-    device_max_size: Tuple[Union[int, float], Union[int, float]] = (
-        round(DieParameters().unit_die_w / 3),
-        round(DieParameters().unit_die_h / 3),
-    ),
-    ports: Dict[str, int] = {"N": 1, "E": 1, "W": 1, "S": 1},
-    ports_gnd: List[str] = ["E", "S"],
-    text: str = "",
-    text_size: Union[None, int, float] = None,
-    probe_tip: Union[None, MultiProbeTip] = WireBond(),
-    num_devices = 1,
-    device_y = 0
-) -> Device:
-    """Creates a die cell with dicing marks, text, and pads to connect to a
-    device.
-
-    Parameters:
-        die_parameters (DieParameters): the die's parameters.
-        n_m_units (tuple of int): number of unit dies that compose the cell in width and height.
-        device_max_size (tuple of int or float): Max dimensions of the device
-            inside the cell (width, height).
-        ports (dict): The ports of the device, format must be {'N':m, 'E':n, 'W':p, 'S':q}.
-        ports_gnd (list of string): The ports connected to ground.
-        text (string): The text to be displayed on the cell.
-        text_size (int or float): If specified, overwrites the Die's
-            text_size. Size of text, corresponds to phidl geometry std.
-
-    Returns:
-        DIE (Device): The cell, with ports of width contact_w positioned around a device_max_size area.
-    """
-    contact_w = probe_tip.contact_w
-    def offset(overlap_port):
-        port_name = overlap_port.name[0]
-        if port_name == "N":
-            overlap_port.midpoint[1] += -die_parameters.contact_l
-        elif port_name == "S":
-            overlap_port.midpoint[1] += die_parameters.contact_l
-        elif port_name == "W":
-            overlap_port.midpoint[0] += die_parameters.contact_l
-        elif port_name == "E":
-            overlap_port.midpoint[0] += -die_parameters.contact_l
-
-    die_name = text.replace("\n", "")
-    die_size = [n_m_units[i] * die_parameters.unit_die_size[i] for i in [0, 1]]
-    DIE = Device(f"DIE {die_name} ")
-
-    border = pg.rectangle(die_size)
-    border.move(border.center, (0, 0))
-
-    borderOut = Device()
-
-    ## Make the routes and pads
-    padOut = Device()
-
-    pad_block_size = (
-        die_size[0] - 2 * probe_tip.pad_length - 4 * die_parameters.outline - die_parameters.xspace,
-        die_size[1] - 2 * probe_tip.pad_length - 4 * die_parameters.outline - die_parameters.yspace - device_y,
-    )
-    # standard pad definition for wirebonding
-    if type(probe_tip) == WireBond:
-        inner_block = pg.compass_multi(device_max_size, ports)
-        outer_block = pg.compass_multi(pad_block_size, ports)
-
-    # pad definition for specific probe tip
-    elif type(probe_tip) == MultiProbeTip:
-        unit_size = probe_tip.num_tips*probe_tip.pad_pitch
-        inner_block = pg.compass_multi((unit_size*num_devices, device_max_size[1]), ports)
-        outer_block = Device()
-        if 'N' in ports:
-            side = 'N'
-        elif 'E' in ports:
-            side = 'E'
-        ports_per_dev = int(ports[side]/num_devices)
-        block_i = pg.compass_multi((unit_size, pad_block_size[1]/2), {side:probe_tip.num_tips})
-        for i in range(num_devices):
-            ref = outer_block << block_i
-            ref.center = [-unit_size*num_devices/2 + (i+1/2)*unit_size, 0]
-            for j in range(ports_per_dev):
-                port = list(ref.ports.values())[j]
-                outer_block.add_port(f"{side}{i*ports_per_dev+j+1}", port=port)
-        device_max_size = inner_block.size
-
-    inner_ports = list(inner_block.ports.values())
-    Connects = Device()
-    for i, port in enumerate(list(outer_block.ports.values())):
-
-        CONNECT = Device()
-        port.rotate(180)
-        # create the pad
-        pad = pad_with_offset(die_parameters, probe_tip)
-        pad.add_port(
-            "1",
-            midpoint=(probe_tip.pad_width / 2, 0),
-            width=probe_tip.pad_width,
-            orientation=90,
-        )
-        pad_ref = CONNECT << pad
-        pad_ref.connect(pad.ports["1"], port)
-
-        # create the route from pad to contact
-        port.width = probe_tip.pad_width
-        inner_ports[i].width = contact_w
-        CONNECT << pr.route_quad(port, inner_ports[i], layer=die_parameters.die_layer)
-
-        # create the route from contact to overlap
-        overlap_port = CONNECT.add_port(port=inner_ports[i])
-        offset(overlap_port)
-        overlap_port.rotate(180)
-
-        CONNECT << pr.route_quad(
-            inner_ports[i], overlap_port, layer=die_parameters.die_layer
-        )
-
-        # isolate the pads that are not grounded
-        port_grounded = any(port.name[0] == P for P in ports_gnd)
-        if not port_grounded:
-            padOut << pg.outline(
-                CONNECT,
-                distance=die_parameters.outline,
-                join="round",
-                open_ports=2 * die_parameters.outline,
-            )
-            Connects << CONNECT
-
-        # add the port to the die
-        DIE.add_port(port=inner_ports[i].rotate(180))
-        DIE << CONNECT
-
-    borderOut << padOut
-
-    ## Add the die markers
-
-    # mark the corners
-    cornersOut = Device()
-
-    corners_coord = [
-        (
-            -die_size[0] / 2 + die_parameters.die_border_w / 2,
-            -die_size[1] / 2 + die_parameters.die_border_w / 2,
-        ),
-        (
-            die_size[0] / 2 - die_parameters.die_border_w / 2,
-            -die_size[1] / 2 + die_parameters.die_border_w / 2,
-        ),
-        (
-            die_size[0] / 2 - die_parameters.die_border_w / 2,
-            die_size[1] / 2 - die_parameters.die_border_w / 2,
-        ),
-        (
-            -die_size[0] / 2 + die_parameters.die_border_w / 2,
-            die_size[1] / 2 - die_parameters.die_border_w / 2,
-        ),
-    ]
-    for corner_coord in corners_coord:
-        corner = pg.rectangle(
-            (
-                die_parameters.die_border_w - die_parameters.outline,
-                die_parameters.die_border_w - die_parameters.outline,
-            )
-        )
-        corner = pg.outline(corner, -1 * die_parameters.outline)
-        corner.move(corner.center, corner_coord)
-        cornersOut << corner
-
-    borderOut << cornersOut
-
-    # label the cell
-    if text_size is not None:
-        label_size = text_size
-    else:
-        label_size = die_parameters.text_size
-
-    label = pg.text(text, size=label_size, layer=die_parameters.die_layer)
-    label.move((label.xmin, label.ymin), (0, 0))
-    pos = [
-        x + 2 * die_parameters.outline + 10
-        for x in (-die_size[0] / 2, -die_size[1] / 2)
-    ]
-    label.move(pos)
-    DIE << label
-    labelOut = pg.outline(label, die_parameters.outline)
-
-    borderOut << labelOut
-
-    border = pg.boolean(border, borderOut, "A-B", layer=die_parameters.die_layer)
-    DIE << border
-
-    if die_parameters.fill_pad_layer:
-        border_filled = pg.rectangle(die_size)
-        center = pg.rectangle(device_max_size)
-        border_filled.move(border_filled.center, (0, 0))
-        center.move(center.center, (0, 0))
-        border_filled = pg.boolean(border_filled, center, "A-B")
-
-        border_filled = pg.boolean(
-            border_filled, borderOut, "A-B", layer=die_parameters.pad_layer
-        )
-        border_filled = pg.offset(border_filled, -die_parameters.pad_tolerance, layer=die_parameters.pad_layer)
-        DIE << border_filled
-
-    DIE.flatten()
-    ports = DIE.get_ports()
-    DIE = pg.union(DIE, by_layer=True)
-
-    PADS = pg.deepcopy(DIE)
-    PADS.remove_layers([die_parameters.die_layer])
-    PADS.name = "pads"
-    DIE = pg.invert(DIE, border=0, layer=die_parameters.die_layer)
-    DIE << PADS
-    for port in ports:
-        DIE.add_port(port)
-
-    DIE.name = f"DIE {die_name}"
-    #DIE << pg.copy_layer(Connects, layer=die_parameters.die_layer, new_layer=3)
-    return DIE
-
-
-def pad_with_offset(die_parameters: DieParameters = DieParameters(), probe_tip = None):
-    """
-    Creates a pad with a gold contact that is smaller than the superconducting layer
-    by some amount specified in die_parameters to account for MLA offset
-
-    die_parameters (DieParameters): for specifying pad shape
-    probe_tip (ConnectToPCB inheritor, optional): can override pad shape 
-    """
-    DEVICE = Device()
-    if probe_tip == None:
-        pad_size = die_parameters.pad_size
-    else:
-        pad_size = (probe_tip.pad_width, probe_tip.pad_length)
-    outer_pad = pg.rectangle(
-        pad_size,
-        layer=die_parameters.die_layer,
-    )
-    inner_pad = pg.rectangle(
-        [dim - die_parameters.pad_tolerance for dim in pad_size],
-        layer=die_parameters.pad_layer,
-    )
-    inner_pad.center = outer_pad.center
-
-    DEVICE << outer_pad
-    DEVICE << inner_pad
-    return DEVICE
-
-
-def add_optimalstep_to_dev(
-    DEVICE: Device, ratio: Union[int, float] = 10, layer: int = 1
-) -> Device:
-    """Add an optimal step to the device's ports.
-
-    Note that the subports of the input Device are ignored but still conserved
-    in the returned device.
-
-    Parameters:
-        DEVICE (Device): The Phidl Device to add the optimal steps to.
-        ratio (int or float): the ratio between the width at the end of the step
-            and the width of the device's ports.
-        layer (int or array-like[2]): the layer to place the optimal steps into.
-
-    Returns:
-        (Device): The given Device, with additional steps on its ports. The
-        ports of the returned device have the same name than the ports of the
-        input device and correspond to the steps extremities.
-    """
-    DEV_STP = Device(DEVICE.name)
-
-    DEV_STP << DEVICE
-    for port in DEVICE.flatten().get_ports():
-        STP = pg.optimal_step(
-            port.width, port.width * ratio, symmetric=True, layer=layer
-        )
-        STP.name = f"optimal step x{ratio} "
-        stp = DEV_STP << STP
-        stp.connect(port=1, destination=port)
-        DEV_STP.add_port(port=stp.ports[2], name=port.name)
-
-    return DEV_STP
-
-
-def rename_ports_to_compass(DEVICE: Device, depth: Union[int, None] = 0) -> Device:
-    """Rename ports of a Device based on compass directions.
-
-    Parameters:
-        DEVICE (Device): The Phidl Device object whose ports are to be renamed.
-
-    Returns:
-        Device: A new Phidl Device object with ports renamed to compass directions.
-    """
-
-    ports = DEVICE.get_ports(depth=depth)
-    # Create a new Device object to store renamed ports
-    DEV_COMPASS = Device(DEVICE.name)
-
-    # Copy ports from the original device to the new device
-    DEV_COMPASS << DEVICE
-
-    # Initialize counters for each direction
-    E_count = 1
-    N_count = 1
-    W_count = 1
-    S_count = 1
-
-    # Iterate through each port in the original device
-    for port in ports:
-        # Determine the orientation of the port and rename it accordingly
-        if port.orientation % 360 == 0:
-            DEV_COMPASS.add_port(port=port, name=f"E{E_count}")
-            E_count += 1
-        elif port.orientation % 360 == 90:
-            DEV_COMPASS.add_port(port=port, name=f"N{N_count}")
-            N_count += 1
-        elif port.orientation % 360 == 180:
-            DEV_COMPASS.add_port(port=port, name=f"W{W_count}")
-            W_count += 1
-        elif port.orientation % 360 == 270:
-            DEV_COMPASS.add_port(port=port, name=f"S{S_count}")
-            S_count += 1
-
-    return DEV_COMPASS
-
-
-def add_hyptap_to_cell(
-    die_ports: List[Port],
-    contact_l: Union[int, float] = 10,
-    contact_w: Union[int, float] = 5,
-    layer: int = 1,
-    positive_tone = True,
-) -> Tuple[Device, Device]:
-    """Takes the cell and adds hyper taper at its ports.
-
-    Parameters:
-        die_ports (list of Port): The ports of the die cell (use .get_ports()).
-        contact_l (int or float): The overlap width (accounts for
-            misalignment between 1st and 2nd ebeam exposures). Will also
-            correspond to the hyper taper's length.
-        contact_w (int or float): The width of the contact with the device's
-            route (width of hyper taper's end).
-        layer (int or array-like[2]): The layer on which to place the tapers
-            (usually the same as the circuit's layer).
-
-    Returns:
-        Tuple[Device, Device]: a tuple containing:
-
-        - **HT** (*Device*): The hyper tapers, positioned at the die's ports.
-          Ports of the same name as the die's ports are added to the output of
-          the tapers.
-        - **device_ports** (*Device*): A device containing only the input ports
-          of the tapers, named as the die's ports.
-    """
-
-    HT = Device("HYPER TAPERS ")
-    device_ports = Device()
-
-    for port in die_ports:
-        if positive_tone:
-            ht_w = port.width + 2 * contact_l
-        else:
-            ht_w = port.width
-        ht = HT << geometry.hyper_taper(contact_l, ht_w, contact_w)
-        ht.connect(ht.ports[2], port)
-        HT.add_port(port=ht.ports[1], name=port.name)
-        device_ports.add_port(port=ht.ports[2], name=port.name)
-
-    HT.flatten(single_layer=layer)
-    return HT, device_ports
-
-
-def route_to_dev(ext_ports: List[Port], dev_ports: Set[Port], layer: int = 1) -> Device:
-    """Creates smooth routes from external ports to the device's ports. If
-    route_smooth is not working, routes quad.
-
-    Parameters:
-        ext_ports (list of Port): The external ports, e.g., of the die or hyper tapers (use .get_ports()).
-        dev_ports (set of Port): The device's ports, should be named as the external ports (use .ports).
-        layer (int or array-like[2]): The layer to put the routes on.
-
-    Returns:
-        ROUTES (Device): The routes from ports to ports, on the specified layer.
-    """
-
-    ROUTES = Device("ROUTES ")
-
-    for port in ext_ports:
-        print(dev_ports)
-        dev_port = dev_ports[port.name]
-        try:
-            radius = port.width
-            length1 = 2 * radius
-            length2 = 2 * radius
-            ROUTES << pr.route_smooth(
-                port, dev_port, radius, path_type="Z", length1=length1, length2=length2
-            )
-        except ValueError:
-            try:
-                radius = dev_port.width
-                length1 = radius
-                length2 = radius
-                ROUTES << pr.route_smooth(
-                    port,
-                    dev_port,
-                    radius,
-                    path_type="Z",
-                    length1=length1,
-                    length2=length2,
+        self.cross_section = cross_section
+        self.ground = ground
+        if isinstance(port_mapping, dict):
+            self.port_mapping = port_mapping
+            if ground:
+                raise ValueError(
+                    f"{ground=}, but a dictionary port mapping was specified. "
+                    "Please set ground=True or list the dut ports you wish to "
+                    "ground in a tuple."
                 )
-            except ValueError:
-                ROUTES << pr.route_quad(port, dev_port)
-    ROUTES.flatten(single_layer=layer)
-    return ROUTES
+        elif isinstance(port_mapping, tuple):
+            self.port_mapping = {p: None for p in port_mapping}
+        else:
+            raise TypeError(
+                f"got port_mapping of type {type(port_mapping)}, expected "
+                "dict or tuple."
+            )
 
 
-# from previous qnngds: to be tested...
+def _get_segment_from_path(path: gf.Path, p: int) -> ArrayLike:
+    """Gets the segment starting from the p'th point in path.
 
-# def outline(elements, distance = 1, precision = 1e-4, num_divisions = [1, 1],
-#             join = 'miter', tolerance = 2, join_first = True,
-#             max_points = 4000, layer = 0, open_ports=-1, rotate_ports=False):
-#     """ Creates an outline around all the polygons passed in the `elements`
-#     argument. `elements` may be a Device, Polygon, or list of Devices.
-#     Parameters
-#     ----------
-#     elements : Device(/Reference), list of Device(/Reference), or Polygon
-#         Polygons to outline or Device containing polygons to outline.
-#     distance : int or float
-#         Distance to offset polygons. Positive values expand, negative shrink.
-#     precision : float
-#         Desired precision for rounding vertex coordinates.
-#     num_divisions : array-like[2] of int
-#         The number of divisions with which the geometry is divided into
-#         multiple rectangular regions. This allows for each region to be
-#         processed sequentially, which is more computationally efficient.
-#     join : {'miter', 'bevel', 'round'}
-#         Type of join used to create the offset polygon.
-#     tolerance : int or float
-#         For miter joints, this number must be at least 2 and it represents the
-#         maximal distance in multiples of offset between new vertices and their
-#         original position before beveling to avoid spikes at acute joints. For
-#         round joints, it indicates the curvature resolution in number of
-#         points per full circle.
-#     join_first : bool
-#         Join all paths before offsetting to avoid unnecessary joins in
-#         adjacent polygon sides.
-#     max_points : int
-#         The maximum number of vertices within the resulting polygon.
-#     layer : int, array-like[2], or set
-#         Specific layer(s) to put polygon geometry on.
-#   open_ports : int or float
-#       Trims the outline at each port of the element. The value of open_port
-#       scales the length of the trim gemoetry (must be positive).
-#       Useful for positive tone layouts.
-#     Returns
-#     -------
-#     D : Device
-#         A Device containing the outlined polygon(s).
-#     """
-#     D = Device('outline')
-#     if type(elements) is not list: elements = [elements]
-#     for e in elements:
-#         if isinstance(e, Device): D.add_ref(e)
-#         else: D.add(e)
-#     gds_layer, gds_datatype = _parse_layer(layer)
-#     D_bloated = pg.offset(D, distance = distance, join_first = join_first,
-#                        num_divisions = num_divisions, precision = precision,
-#                        max_points = max_points, join = join,
-#                        tolerance = tolerance, layer = layer)
-#     Outline = pg.boolean(A = D_bloated, B = D, operation = 'A-B',
-#                       num_divisions = num_divisions, max_points = max_points,
-#                       precision = precision, layer = layer)
-#     if open_ports>=0:
-#       for i in e.ports:
-#           trim = pg.rectangle(size=(distance, e.ports[i].width+open_ports*distance))
+    Helper method for :py:func:`generate_experiment`.
 
-#           trim.rotate(e.ports[i].orientation)
-#           trim.move(trim.center, destination=e.ports[i].midpoint)
-#           if rotate_ports:
-#               trim.movex(-np.cos(e.ports[i].orientation/180*np.pi)*distance/2)
-#               trim.movey(-np.sin(e.ports[i].orientation/180*np.pi)*distance/2)
-#           else:
-#               trim.movex(np.cos(e.ports[i].orientation/180*np.pi)*distance/2)
-#               trim.movey(np.sin(e.ports[i].orientation/180*np.pi)*distance/2)
+    Args:
+        path (gf.Path): path to get segment from
+        p (int): index of the first point in the line segment
 
-#           Outline = pg.boolean(A = Outline, B = trim, operation = 'A-B',
-#                      num_divisions = num_divisions, max_points = max_points,
-#                      precision = precision, layer = layer)
-#       for i in e.ports: Outline.add_port(port=e.ports[i])
-#     return Outline
-
-# def assign_ids(device_list, ids):
-#     """
-#     Attach device ID to device list.
-
-#     Parameters
-#     ----------
-#     device_list : LIST
-#         List of phidl device objects.
-#     ids : LIST
-#         list of identification strings.
-#         typically generated from packer_rect/text_labels.
-
-#     Returns
-#     -------
-#     None.
-
-#     """
-#     device_list = list(filter(None,device_list))
-#     for i in range(len(device_list)):
-#         device_list[i].name = ids[i]
-
-# def packer(D_list,
-#            text_letter,
-#            text_pos=(0,-70),
-#            text_layer=1,
-#            text_height=50,
-#            spacing = 100,
-#            aspect_ratio = (1,1),
-#            max_size = (None,750),
-#            sort_by_area = False,
-#            density = 1.1,
-#            precision = 1e-2,
-#            verbose = False):
-#     """
-#     Returns Device "p" with references from D_list. Names, or index, of each device is assigned and can be called from p.references[i].parent.name
+    Returns:
+        ArrayLike: line segment defined by two points
+    """
+    points = path.points
+    return (
+        np.array([points[p % len(points)], points[(p + 1) % len(points)]]) / gf.kcl.dbu
+    ).astype(int)
 
 
-#     Parameters
-#     ----------
-#     D_list : TYPE
-#         DESCRIPTION.
-#     text_letter : TYPE
-#         DESCRIPTION.
-#     text_pos : TYPE, optional
-#         DESCRIPTION. The default is None.
-#     text_layer : TYPE, optional
-#         DESCRIPTION. The default is 1.
-#     text_height : TYPE, optional
-#         DESCRIPTION. The default is 50.
-#     spacing : TYPE, optional
-#         DESCRIPTION. The default is 10.
-#     aspect_ratio : TYPE, optional
-#         DESCRIPTION. The default is (1,1).
-#     max_size : TYPE, optional
-#         DESCRIPTION. The default is (None,None).
-#     sort_by_area : TYPE, optional
-#         DESCRIPTION. The default is True.
-#     density : TYPE, optional
-#         DESCRIPTION. The default is 1.1.
-#     precision : TYPE, optional
-#         DESCRIPTION. The default is 1e-2.
-#     verbose : TYPE, optional
-#         DESCRIPTION. The default is False.
-#      : TYPE
-#         DESCRIPTION.
+def _segments_overlap(segment_1: ArrayLike, segment_2: ArrayLike) -> bool:
+    """Determines if two line segments on a manhattan grid overlap.
 
-#     Returns
-#     -------
-#     TYPE
-#         DESCRIPTION.
+    Helper method for :py:func:`generate_experiment`.
 
-#     """
+    Args:
+        segment_1 (ArrayLike): first segment
+        segment_2 (ArrayLike): second segment
 
-#     p = pg.packer(D_list,
-#         spacing = spacing,
-#         aspect_ratio = aspect_ratio,
-#         max_size = max_size,
-#         sort_by_area = sort_by_area,
-#         density = density,
-#         precision = precision,
-#         verbose = verbose,
-#         )
+    Returns:
+        bool: True if the segments overlap, False otherwise.
+    """
+    for i in range(2):
+        x_1_min = np.min(segment_1[:, i])
+        x_1_max = np.max(segment_1[:, i])
+        x_2_min = np.min(segment_2[:, i])
+        x_2_max = np.max(segment_2[:, i])
+        if x_1_min > x_2_max or x_2_min > x_1_max:
+            return False
+    return True
 
 
-#     for i in range(len(p[0].references)):
-#         device_text = text_letter+str(i)
-#         text_object = pg.text(text=device_text, size = text_height, justify='left', layer=text_layer)
-#         t = p[0].references[i].parent.add_ref(text_object)
-#         t.move(origin=text_object.bbox[0], destination= (text_pos[0], text_pos[1]))
+def _path_self_intersects(path: gf.Path) -> bool:
+    """Determines if a manhattan path has any self-intersections
 
-#         p[0].references[i].parent.name = device_text
+    Helper method for :py:func:`generate_experiment`.
 
-#     p = p[0]
-#     p.name = text_letter
-#     p._internal_name = text_letter
-#     # p.flatten() # do not flatten.
+    Args:
+        path (gf.Path): path to check
 
-#     return p
+    Returns:
+        bool: True if the path intersects itself, False otherwise.
+    """
+    # points are on manhattan grid so checking intersection is pretty easy
+    for p in range(len(path.points) - 1):
+        segment_1 = _get_segment_from_path(path, p)
+        for q in range(p + 2, len(path.points) - 1):
+            segment_2 = _get_segment_from_path(path, q)
+            # check that segment_1 and segment_2's x and y projections don't overlap
+            if _segments_overlap(segment_1, segment_2):
+                return True
+    return False
 
-# def packer_rect(device_list, dimensions, spacing, text_pos=None, text_size = 50, text_layer = 1):
-#     """
-#     This function distributes devices from a list onto a rectangular grid. The aspect ratio (dimensions) and spacing must be specified.
-#     If specified, text can be added automatically in a A1, B2, C3, style. The text will start with A0 in the NW corner.
 
-#     Parameters
-#     ----------
-#     device_list : LIST
-#         LIST OF PHIDL DEVICE OBJECTS
-#     dimensions : TUPLE
-#         (X,Y) X BY Y GRID POINTS
-#     spacing : TUPLE
-#         (dX,dY) SPACING BETWEEN GRID POINTS
-#     text_pos : TUPLE, optional
-#         IF SPECIFIED THE GENERATED TEXT IS LOCATED AT (dX,dY) FROM SW CORNER. The default is None.
-#     text_size : INT, optional
-#         SIZE OF TEXT LABEL. The default is 50.
-#     text_layer : INT, optional
-#         LAYER TO ADD TEXT LABEL TO The default is 1.
+def _paths_intersect(path_1: gf.Path, path_2: gf.Path) -> bool:
+    """Determines if two manhattan paths intersect
 
-#     Returns
-#     -------
-#     D : DEVICE
-#         PHIDL device object. List is entered and a single device is returned with labels.
-#     text_list : LIST
-#         LIST of strings of device labels.
+    Helper method for :py:func:`generate_experiment`.
 
-#     """
+    Args:
+        path_1 (gf.Path): first path to check
+        path_2 (gf.Path): second path to check
 
-#     letters = list(string.ascii_uppercase)
+    Returns:
+        bool: True if the paths intersect, False otherwise.
+    """
+    for p in range(len(path_1.points) - 1):
+        segment_1 = _get_segment_from_path(path_1, p)
+        for q in range(len(path_2.points) - 1):
+            segment_2 = _get_segment_from_path(path_2, q)
+            if _segments_overlap(segment_1, segment_2):
+                return True
+    return False
 
-#     while len(device_list) < np.product(dimensions):
-#         device_list.append(None)
 
-#     new_shape = np.reshape(device_list,dimensions)
-#     text_list=[]
-#     D = Device('return')
-#     for i in range(dimensions[0]):
-#         for j in range(dimensions[1]):
-#             if not new_shape[i][j] == None:
-#                 moved_device = new_shape[i][j].move(origin=new_shape[i][j].bbox[0], destination=(i*spacing[0], -j*spacing[1]))
-#                 D.add_ref(moved_device)
-#                 if text_pos:
-#                     device_text = letters[i]+str(j)
-#                     text_list.append(device_text)
-#                     text_object = pg.text(text=device_text, size = text_size, justify='left', layer=text_layer)
-#                     text_object.move(destination= (i*spacing[0]+text_pos[0], -j*spacing[1]+text_pos[1]))
-#                     D.add_ref(text_object)
+def _get_port_direction(port: Port) -> str:
+    """Gets string port direction ("N", "S", "E" or "W") of a port
 
-#     return D, text_list
+    Args:
+        port (gf.Port): port
 
-# def packer_doc(D_pack_list):
-#     """
-#     This function creates a text document to be referenced during meansurement.
-#     Its primary purpose is to serve as a reference for device specifications on chip.
-#     For instance, "A2 is a 3um device."
+    Returns:
+        str: string of port orientation
+    """
+    angle = port.orientation % 360
+    if angle <= 45 or angle >= 315:
+        return "E"
+    elif angle <= 135 and angle >= 45:
+        return "N"
+    elif angle <= 225 and angle >= 135:
+        return "W"
+    else:
+        return "S"
 
-#     Currently. This function really only works with D_pack_list from packer().
-#     It looks at each reference and grabs the device parameters (which are hard coded).
-#     'line.append(str(D_pack_list[i].references[j].parent.width))'
-#     It would be great to have this as a dynamical property that can be expounded for every kind of device/parameter.
 
-#     'create_device_doc' predated this function and took every np.array parameter in the parameter-dict and wrote it to a .txt file.
-#     The main problem with this function is that the device name is not associated in the parameter-dict.
+def _get_component_port_direction(component: gf.Component) -> PortsDict:
+    """Returns ports of a component organized by direction.
 
-#     Inputs
-#     ----------
-#     sample: STRING
-#         enter a sample name "SPX000". The file path will be generated on the NAS and the .txt file will be saved there.
+    Helper method for :py:func:`generate_experiment`.
 
-#     Parameters
-#     ----------
-#     D_pack_list : LIST
-#         List containing PHIDL Device objects.
+    Args:
+        component (gf.Component): component to get ports from
 
-#     Returns
-#     -------
-#     None.
+    Returns:
+        dict[str, Ports]: list of ports for each direction
+    """
+    ports = {x: [] for x in ["E", "N", "W", "S"]}
+    # group by direction
+    for p in component.ports:
+        ports[_get_port_direction(p)].append(p)
+    return ports
 
-#     """
 
-#     """ Safety net for writing to the correct location"""
+def _sort_ports(
+    ports: PortsDict, sort_map: dict[str, Callable], direction_order: Sequence[str]
+) -> Ports:
+    """Sorts collections of ports all facing the same direction.
 
-#     sample = input('enter a sample name: ')
-#     if sample == '':
-#         print('Doc not created')
-#         return
-#     else:
-#         path = os.path.join('S:\SC\Measurements',sample)
-#         os.makedirs(path, exist_ok=True)
+    Helper method for :py:func:`generate_experiment`.
 
-#         path = os.path.join('S:\SC\Measurements',sample, sample+'_device_doc.txt')
+    Args:
+        ports (gf.PortsDict): dictionary of ports.
+        sort_map dict[str, Callable]: dictionary mapping a direction to a sort key that takes the port as an input.
+        direction_order Sequence[str]: order of keys in port dictionary to use when flattening.
 
-#         file = open(path, "w")
+    Returns:
+        Ports: list of sorted ports
+    """
+    # sort
+    for direction in sort_map.keys():
+        ports[direction].sort(key=sort_map[direction])
+    flat_ports = []
+    for direction in direction_order:
+        flat_ports += ports[direction]
+    return flat_ports
 
-#         tab = ',\t'
-#         string_list=[]
-#         headers = ['ID', 'WIDTH', 'AREA', 'SQUARES']
-#         headers.append('\n----------------------------------\n')
 
-#         for i in range(len(D_pack_list)):
-#             for j in range(len(D_pack_list[i].references)):
-#                 line = []
-#                 line.append(str(D_pack_list[i].references[j].parent.name))
-#                 line.append(str(D_pack_list[i].references[j].parent.width))
-#                 line.append(str(D_pack_list[i].references[j].parent.area))
-#                 line.append(str(D_pack_list[i].references[j].parent.squares))
+@gf.cell
+def generate_experiment(
+    dut: ComponentSpecOrComponent,
+    pad_array: ComponentSpecOrComponent,
+    label: ComponentSpecOrComponent | None,
+    route_groups: Sequence[RouteGroup] | None,
+    dut_offset: tuple[float, float] = (0, 0),
+    pad_offset: tuple[float, float] = (0, 0),
+    label_offset: tuple[float, float] | None = (-100, -100),
+    ignore_port_count_mismatch: bool = False,
+    ignore_dut_bbox: bool = False,
+    retries: int = 10,
+) -> gf.Component:
+    """Construct an experiment from a device/circuit (gf.Component).
 
-#                 line.append('\n')
-#                 string_list.append(tab.join(line))
-#                 string_list.append('. . . . . . . . . . . . . . . . \n')
-#             string_list.append('\\-----------------------------------\\ \n')
+    Includes text, pads, and routing to connect pads to devices
 
-#         file.write(tab.join(headers))
-#         file.writelines(string_list)
-#         file.close()
+    Parameters:
+        dut (ComponentSpec or Component): finished device to be connected to pads
+        pad_array (ComponentSpec or Component or None): pad array to connect to device
+        label (ComponentSpecOrComponent or None): text label or factory.
+        route_groups (Sequence[RouteGroup] or None): how to route DUT to pads
+        dut_offset (tuple[float, float]): x,y offset for dut (mostly useful for linear pad arrays)
+        pad_offset (tuple[float, float]): x,y offset for pad array (mostly useful for linear pad arrays)
+        label_offset (tuple[float, float] or None): x,y offset of label
+        ignore_port_count_mismatch (bool): if True, ignores mismatched number of DUT and pads ports,
+            only if route_groups defines a mapping to all pad ports
+        ignore_dut_bbox (bool): if True, does not attempt to route around DUT bounding box (bbox)
+        retries (int): how many times to try rerouting with s_bend (may need to be larger for many port groupings)
+    Returns:
+        (gf.Component): experiment
 
-# def assign_ids(device_list, ids):
-#     """
-#     Attach device ID to device list.
+    Example:
+        Using the example qnngds PDK: `<https://github.com/qnngroup/qnngds-pdk/>`_,
+        we can generate an example nTron test layout including pads. The pad array
+        is just a linear array from gdsfactory, although a custom array could be defined.
+        The mapping of nTron device ports to pad ports is defined manually with ``route_groups``,
+        but it's possible to use autoassignment by setting ``route_groups=None``.
+        However, autoassignment only works in some cases, and in the case of this nTron,
+        it would most likely fail.
 
-#     Parameters
-#     ----------
-#     device_list : LIST
-#         List of phidl device objects.
-#     ids : LIST
-#         list of identification strings.
-#         typically generated from packer_rect/text_labels.
+        >>> c = qg.utilities.generate_experiment(
+        >>>         dut=qg.devices.ntron.sharp,
+        >>>         pad_array=gf.components.pads.pad_array(
+        >>>             pad=gf.components.pads.pad,
+        >>>             columns=1,
+        >>>             rows=3,
+        >>>             column_pitch=1,
+        >>>             row_pitch=250,
+        >>>             port_orientation=0,
+        >>>             size=(200,200),
+        >>>             layer="EBEAM_COARSE"
+        >>>         ),
+        >>>         label=None,
+        >>>         route_groups=(
+        >>>             qg.utilities.RouteGroup(
+        >>>                 PDK.get_cross_section("ebeam"), {"g": "e21", "s": "e11", "d": "e31"}
+        >>>             ),
+        >>>         ),
+        >>>         dut_offset=(250, 250),
+        >>>         pad_offset=(0, 0),
+        >>>         label_offset=(0, 0),
+        >>>         retries=1,
+        >>>     )
+        >>> c.show()
 
-#     Returns
-#     -------
-#     None.
+    """
+    # check if route_groups is complete so we can handle ignore_port_count_mismatch flag
+    route_groups_complete = False
+    if route_groups is not None and pad_array is not None:
+        route_groups_complete = True
+        # first figure out all of the assigned pad ports
+        mapped_pad_ports = set([])
+        for route_group in route_groups:
+            for _, pad_port in route_group.port_mapping.items():
+                mapped_pad_ports.add(pad_port)
+        # next, for each port in the pad_array, check that its
+        # name appears in a route_group
+        pads_i = gf.get_component(pad_array)
+        for port in pads_i.ports:
+            if port.name not in mapped_pad_ports:
+                route_groups_complete = False
+                break
 
-#     """
-#     device_list = list(filter(None,device_list))
-#     for i in range(len(device_list)):
-#         device_list[i].name = ids[i]
+    allow_port_count_mismatch = route_groups_complete and ignore_port_count_mismatch
+
+    dut_i = gf.get_component(dut)
+    if pad_array is not None:
+        pads_i = gf.get_component(pad_array)
+        # check appropriate number of ports on pad_array and dut
+        if len(dut_i.ports) != len(pads_i.ports):
+            if not (allow_port_count_mismatch):
+                raise ValueError(
+                    f"DUT ({len(dut_i.ports)} ports) and pad array "
+                    f"({len(pads_i.ports)} ports) should have the same number of ports."
+                )
+    # check that number of DUT ports assigned in route_groups is correct
+    if len(dut_i.ports) != 0 and route_groups is not None:
+        num_assigned_ports = sum(
+            len(group.port_mapping.keys()) for group in route_groups
+        )
+        if num_assigned_ports != len(dut_i.ports):
+            if not (allow_port_count_mismatch):
+                raise ValueError(
+                    f"invalid number of port groupings: got {num_assigned_ports}, "
+                    f"expected {len(dut_i.ports)} based on number of ports on DUT"
+                )
+    elif route_groups is not None:
+        if pad_array is not None:
+            raise ValueError(
+                "cannot route pad array to DUT with zero ports, "
+                "did you remember to add ports to your DUT?"
+            )
+
+    experiment = gf.Component()
+
+    # figure out which layers to outline
+    outline_layers = get_outline_layers(gf.get_active_pdk().layers)
+    keepout_layers = get_keepout_layers(gf.get_active_pdk().layers)
+
+    # outline and add DUT
+    dut_ref = experiment.add_ref(
+        keepout(outline(dut_i, outline_layers), outline_layers, keepout_layers)
+    )
+    dut_ref.move(dut_offset)
+    if pad_array is None:
+        return experiment
+
+    # add pads
+    # don't outline, and add to dummy component.
+    # after pad port adjustment, perform the outline
+    dummy_pads = gf.Component()
+    pads_ref = dummy_pads.add_ref(pads_i)
+    pads_ref.move(pad_offset)
+
+    # add text label (don't outline)
+    if label is not None:
+        label_i = label() if isinstance(label, Callable) else label
+        label_ref = experiment.add_ref(label_i)
+        label_ref.move(label_offset)
+
+    sort_cw = {
+        "E": lambda p: -p.y,  # north to south
+        "N": lambda p: +p.x,  # west to east
+        "W": lambda p: +p.y,  # south to north
+        "S": lambda p: -p.x,  # east to west
+    }
+    sort_ccw = {
+        "E": lambda p: +p.y,  # south to north
+        "N": lambda p: -p.x,  # east to west
+        "W": lambda p: -p.y,  # north to south
+        "S": lambda p: +p.x,  # west to east
+    }
+
+    # sort dut cw
+    dut_ports = _sort_ports(
+        _get_component_port_direction(dut_ref), sort_cw, ("W", "N", "E", "S")
+    )
+    # sort pads ccw
+    pad_ports = _sort_ports(
+        _get_component_port_direction(pads_ref), sort_ccw, ("E", "S", "W", "N")
+    )
+
+    # create mapping from dut ports to pad ports
+    # first define route groups if it isn't initialized
+    dut_pad_map = {}
+    if route_groups is None:
+        # add remaining ports
+        dut_pad_map |= {dp.name: pp for (dp, pp) in zip(dut_ports, pad_ports)}
+        # try to group in a reaonsable way:
+        # all port pairs with the same start/end layer go in a group together
+        # all remaining port pairs with the same end layer go in a group together
+        port_maps = {}
+        cross_sections = {}
+        for dut_port_name, pad_port in dut_pad_map.items():
+            dut_port = dut_ref.ports[dut_port_name]
+            if dut_port.layer == pad_port.layer:
+                pair = (dut_port.layer, pad_port.layer)
+                if pair not in port_maps:
+                    port_maps[pair] = {}
+            else:
+                pair = (None, pad_port.layer)
+                if pair not in port_maps:
+                    port_maps[pair] = {}
+            port_maps[pair][dut_port_name] = pad_port.name
+            # create a cross section for the layer
+            xc = get_cross_section_with_layer(pad_port.layer)
+            if xc is None:
+                raise Warning(
+                    "Failed to automatically select a cross section for "
+                    f"dut/pad pair {dut_port.name}/{pad_port.name}. "
+                    f"Selecting cross section 'default'. This may cause "
+                    "errors if the appropriate transitions aren't defined"
+                )
+            else:
+                cross_sections[pair] = xc
+        # create route_groups
+        route_groups = []
+        for pair, xc in cross_sections.items():
+            route_groups.append(
+                RouteGroup(cross_section=xc, port_mapping=port_maps[pair])
+            )
+        route_groups = tuple(route_groups)
+    else:
+        # reserve routes for any that are defined in route_groups
+        for group in route_groups:
+            for dut_port_name, pad_port_name in group.port_mapping.items():
+                if (pad_port_name is None) and not (group.ground):
+                    # auto mapped later
+                    continue
+                try:
+                    dut_port_index = next(
+                        i
+                        for i in range(len(dut_ports))
+                        if dut_ports[i].name == dut_port_name
+                    )
+                    if not group.ground:
+                        # determine pad port to connect to
+                        try:
+                            pad_port_index = next(
+                                i
+                                for i in range(len(pad_ports))
+                                if pad_ports[i].name == pad_port_name
+                            )
+                        except StopIteration as e:
+                            raise ValueError(
+                                f"Port {pad_port_name} not found in pad ports {pad_ports}"
+                            ) from e
+                        dut_pad_map[dut_port_name] = pad_ports[pad_port_index]
+                        pad_ports.pop(pad_port_index)
+                except StopIteration as e:
+                    raise ValueError(
+                        f"Port {dut_port_name} not found in DUT ports {dut_ports}"
+                    ) from e
+                dut_ports.pop(dut_port_index)
+        # add remaining ports
+        dut_pad_map |= {dp.name: pp for (dp, pp) in zip(dut_ports, pad_ports)}
+
+    # shift pad ports if it's possible to do a straight route between dut and pad without exceeding pad extent
+    for gid, route_group in enumerate(route_groups):
+        if route_group.ground:
+            continue
+        for dut_port_name in route_group.port_mapping:
+            dut_port = dut_ref.ports[dut_port_name]
+            pad_port = dut_pad_map[dut_port_name]
+            if (dut_port.orientation - pad_port.orientation) % 360 == 180:
+                # ports are facing each other
+                w_route = route_group.cross_section.width
+                w_pad = pad_port.width
+                dw = w_pad - w_route
+                dwidth = 0
+                center = (pad_port.x, pad_port.y)
+                if dut_port.orientation % 180 == 0:
+                    # route along x
+                    if pad_port.y - dw / 2 <= dut_port.y <= pad_port.y + dw / 2:
+                        # change port location on pad
+                        dwidth = -2 * abs(dut_port.y - pad_port.y)
+                        center = (pad_port.x, dut_port.y)
+                else:
+                    # route along y
+                    if pad_port.x - dw / 2 <= dut_port.x <= pad_port.x + dw / 2:
+                        dwidth = -2 * abs(dut_port.x - pad_port.x)
+                        center = (dut_port.x, pad_port.y)
+                pad_port = Port(
+                    name=pad_port.name,
+                    width=pad_port.width + dwidth,
+                    center=center,
+                    orientation=pad_port.orientation,
+                    layer=pad_port.layer,
+                    port_type=pad_port.port_type,
+                )
+                dummy_pads.add_port(port=pad_port)
+                dut_pad_map[dut_port_name] = pad_port
+            else:
+                dummy_pads.add_port(port=pad_port)
+
+    # add pads to actual device
+    experiment.add_ref(outline(dummy_pads, outline_layers))
+
+    # get layer transitions for computing taper lengths (to allow addition of autotapers)
+    layer_transitions = gf.get_active_pdk().layer_transitions
+
+    # actually do routing
+    problem_groups = set([])
+    for _ in range((retries + 1) * len(route_groups)):
+        routed = gf.Component()
+        routed.add_ref(experiment)
+        # for each grouping, try route_bundle, if that fails use route_bundle_sbend
+        complete = True
+        for gid, route_group in enumerate(route_groups):
+            if route_group.ground:
+                continue
+            all_paths = []
+            # get list of pad ports
+            dut_group = [dut_ref.ports[p] for p in route_group.port_mapping]
+            pad_group = [dut_pad_map[p] for p in route_group.port_mapping]
+            if gid not in problem_groups:
+                try:
+                    # loop over each orientation
+                    ports = {x: [[], []] for x in ["N", "E", "S", "W"]}
+                    for d, p in zip(dut_group, pad_group):
+                        direction = _get_port_direction(d)
+                        ports[direction][0].append(d)
+                        ports[direction][1].append(p)
+                    for _, portmap in ports.items():
+                        if len(portmap[0]) == 0:
+                            continue
+                        # estimate amount bbox needs to be extended by to include taper length
+                        # this code is borrowed from gdsfactory.routing.auto_taper.add_auto_tapers
+                        xc = gf.get_cross_section(route_group.cross_section)
+                        if not ignore_dut_bbox:
+                            for port in portmap[0]:
+                                key = (
+                                    port.layer
+                                    if port.layer == xc.layer
+                                    else (port.layer, xc.layer)
+                                )
+                                try:
+                                    taper = layer_transitions.get(key)
+                                    widths = (port.width, xc.width)
+                                    if taper is None and isinstance(key, tuple):
+                                        taper = layer_transitions.get((key[1], key[0]))
+                                        widths = (xc.width, port.width)
+                                    if taper is None:
+                                        raise KeyError
+                                    taper_comp = gf.get_component(
+                                        taper, width1=widths[0], width2=widths[1]
+                                    )
+                                    bbox_extension = max(
+                                        taper_comp.xsize, taper_comp.ysize
+                                    )
+                                except KeyError:
+                                    bbox_extension = 0
+                            bboxes = [dut_ref.bbox().enlarge(bbox_extension)]
+                        else:
+                            bboxes = []
+                        separation = 0.8 * sum(section.width for section in xc.sections)
+                        routes = gf.routing.route_bundle(
+                            component=routed,
+                            ports1=portmap[0],
+                            ports2=portmap[1],
+                            separation=separation,
+                            cross_section=xc,
+                            bboxes=bboxes,
+                            taper=None,
+                            auto_taper=True,
+                            on_collision="error",
+                            router="optical",
+                        )
+                        # check for self-intersecting paths
+                        for r, route in enumerate(routes):
+                            # route.backbone doesn't include tapers, so add the original ports to either end of
+                            # route.backbone and then check for intersection.
+                            # this assumes that all auto_tapers are straight (e.g. no 90 deg bends)
+                            points = [portmap[0][r].center]
+                            points += [
+                                [point.x * gf.kcl.dbu, point.y * gf.kcl.dbu]
+                                for point in route.backbone
+                            ]
+                            points += [portmap[1][r].center]
+                            path = gf.Path(points)
+                            if _path_self_intersects(path):
+                                raise RuntimeError(
+                                    "After including auto_tapers, routed paths are "
+                                    "self-intersecting. Try increasing the spacing "
+                                    "between the pads and DUT or using s_bend routing."
+                                )
+                            # add route to route list for checking intersections later
+                            all_paths.append(path)
+
+                except RuntimeError:
+                    problem_groups.add(gid)
+                    complete = False
+                    continue
+                except kf.routing.generic.PlacerError as e:
+                    raise RuntimeError(
+                        "Routing failed, try manually specifying port mapping "
+                        "between DUT and pads with route_groups."
+                    ) from e
+            else:
+                # add autotapers and regenerate port groups
+                dut_group_new = gf.routing.auto_taper.add_auto_tapers(
+                    routed, dut_group, route_group.cross_section
+                )
+                pad_group_new = gf.routing.auto_taper.add_auto_tapers(
+                    routed, pad_group, route_group.cross_section
+                )
+                try:
+                    # check that ports are facing each other
+                    for p1, p2 in zip(pad_group_new, dut_group_new):
+                        if (p1.orientation - p2.orientation) % 360 != 180:
+                            print(p1, p2)
+                            raise RuntimeError(
+                                "Manhattan routing failed and unable to perform "
+                                "sbend routing. Try aligning all DUT ports to "
+                                "face pad ports."
+                            )
+                    gf.routing.route_bundle_sbend(
+                        component=routed,
+                        ports1=pad_group_new,
+                        ports2=dut_group_new,
+                        enforce_port_ordering=True,
+                        port_name="e1",
+                        bend_s=partial(
+                            gf.components.bends.bend_s,
+                            cross_section=route_group.cross_section,
+                        ),
+                    )
+                except ValueError as e:
+                    if "radius" in str(e):
+                        raise ValueError(
+                            f"{e}\nTry increasing spacing between DUT and "
+                            "pads or adjust DUT placement relative to pads."
+                        ) from e
+                    else:
+                        raise
+            # check for intersections between paths that were routed separately
+            for m in range(len(all_paths) - 1):
+                for n in range(m + 1, len(all_paths)):
+                    # check that all_paths[p] and all_paths[q] do not intersect
+                    if _paths_intersect(all_paths[m], all_paths[n]):
+                        raise Warning(
+                            "Could not route without intersections. Try manually "
+                            "specifying port mapping between DUT and pads with "
+                            "route_groups. Also try increasing the spacing between "
+                            "DUT and pads."
+                        )
+        if complete:
+            return routed
+    raise RuntimeError(f"failed to route design after {retries} iterations")
