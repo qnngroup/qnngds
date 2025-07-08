@@ -256,7 +256,7 @@ Pads
 
 .. automodule:: qnngds.pads
     :members:
-    :exclude-members: array, quad, stack, vdp
+    :exclude-members: array, quad_line, stack, vdp
     :undoc-members:
     :show-inheritance:
     :special-members: __init__
@@ -266,10 +266,10 @@ Pads
         .. image:: images/pads/array.png
             :alt: array.png
 
-    .. autofunction:: quad
+    .. autofunction:: quad_line
 
-        .. image:: images/pads/quad.png
-            :alt: quad.png
+        .. image:: images/pads/quad_line.png
+            :alt: quad_line.png
 
     .. autofunction:: stack
 

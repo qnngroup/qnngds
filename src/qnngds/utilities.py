@@ -528,7 +528,7 @@ def generate_experiment(
         pad_offset (tuple[float, float]): x,y offset for pad array (mostly useful for linear pad arrays)
         label_offset (tuple[float, float] or None): x,y offset of label
         ignore_port_count_mismatch (bool): if True, ignores mismatched number of DUT and pads ports,
-            only if route_groups defines a mapping to all pad ports
+            only if route_groups defines a mapping to all pad ports, or lists all DUT ports.
         ignore_dut_bbox (bool): if True, does not attempt to route around DUT bounding box (bbox)
         retries (int): how many times to try rerouting with s_bend (may need to be larger for many port groupings)
     Returns:
@@ -573,18 +573,29 @@ def generate_experiment(
     route_groups_complete = False
     if route_groups is not None and pad_array is not None:
         route_groups_complete = True
-        # first figure out all of the assigned pad ports
+        # first figure out all of the assigned pad ports and dut ports
+        # there are two ways the route group can be complete:
+        #  1. If number of declared (but unassigned) DUT ports is equal to the
+        #     number of unassigned pad ports
+        #  2. If all pad ports are assigned
         mapped_pad_ports = set([])
+        declared_dut_ports = set([])
         for route_group in route_groups:
-            for _, pad_port in route_group.port_mapping.items():
+            if route_group.ground:
+                continue
+            for dut_port, pad_port in route_group.port_mapping.items():
                 mapped_pad_ports.add(pad_port)
-        # next, for each port in the pad_array, check that its
-        # name appears in a route_group
+                if pad_port is None:
+                    declared_dut_ports.add(dut_port)
+        # get all unassigned pad ports and check that either total number of unassigned pad ports
+        # is zero, or that it matches the number of declared (but unassigned) DUT ports.
         pads_i = gf.get_component(pad_array)
-        for port in pads_i.ports:
-            if port.name not in mapped_pad_ports:
+        unassigned_pad_ports = (
+            set(port.name for port in pads_i.ports) - mapped_pad_ports
+        )
+        if len(unassigned_pad_ports) > 0:
+            if len(unassigned_pad_ports) != len(declared_dut_ports):
                 route_groups_complete = False
-                break
 
     allow_port_count_mismatch = route_groups_complete and ignore_port_count_mismatch
 

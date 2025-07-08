@@ -143,7 +143,7 @@ def vdp(
 
 
 @gf.cell
-def quad(
+def quad_line(
     array_spec: ComponentSpec = array,
     port_width: float = 20,
     port_pitch: float = 50,
