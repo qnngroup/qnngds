@@ -8,7 +8,7 @@ import numpy as np
 
 import qnngds as qg
 
-from gdsfactory.typings import LayerSpec
+from gdsfactory.typings import LayerSpec, LayerSpecs
 
 
 @gf.cell
@@ -171,9 +171,9 @@ def meander_sc_contacts(
     meander_pitch: float | None = 2,
     contact_size: tuple[float, float] = (8, 3),
     outline_sc: float = 1,
-    layer_res: LayerSpec = (4, 0),
-    layer_sc: LayerSpec = (1, 0),
-    layer_keepout: LayerSpec | None = (3, 0),
+    layer_res: LayerSpec = "PHOTO1",
+    layer_contacts: LayerSpecs = ["EBEAM_FINE", "PHOTO2"],
+    layer_keepout: LayerSpecs = ["EBEAM_KEEPOUT"],
     port_type: str = "electrical",
 ) -> gf.Component:
     """Create resistor meander with superconducting contacts.
@@ -188,8 +188,8 @@ def meander_sc_contacts(
         contact_size (tuple[float, float]): (width, height) of resistor<->superconductor contact
         outline_sc (float): superconductor extra width on each side of contact
         layer_res (LayerSpec): resistor GDS layer
-        layer_sc (LayerSpec): superconductor GDS layer
-        layer_keepout (LayerSpec): layer to do keepout on
+        layer_contacts (LayerSpecs): layer(s) for contact to superconductor (first will define port layer)
+        layer_keepout (LayerSpecs): layer(s) to do keepout on
         port_type (string): gdsfactory port type. default "electrical"
 
     Returns:
@@ -200,6 +200,9 @@ def meander_sc_contacts(
     if meander_pitch is None:
         meander_pitch = np.inf
 
+    if len(layer_contacts) < 1:
+        raise ValueError(f"must have at least one contact layer, got {layer_contacts}")
+
     res = D << meander(
         layer=layer_res,
         width=width,
@@ -207,9 +210,9 @@ def meander_sc_contacts(
         squares=squares,
         max_length=max_length,
     )
-    if layer_keepout is not None:
+    for layer in layer_keepout:
         res_ko = D << qg.geometries.rectangle(
-            size=(res.xsize + 2 * width, res.ysize), layer=layer_keepout
+            size=(res.xsize + 2 * width, res.ysize), layer=layer
         )
         res_ko.move(res_ko.center, res.center)
     stub = qg.geometries.compass(
@@ -218,20 +221,29 @@ def meander_sc_contacts(
     contact = qg.geometries.compass(
         size=contact_size, layer=layer_res, port_type="electrical"
     )
-    contact_sc = qg.geometries.compass(
-        size=(contact_size[0] + 2 * outline_sc, contact_size[1] + 2 * outline_sc),
-        layer=layer_sc,
-        port_type="electrical",
-    )
+    contacts = []
+    for layer in layer_contacts:
+        contacts.append(
+            qg.geometries.compass(
+                size=(
+                    contact_size[0] + 2 * outline_sc,
+                    contact_size[1] + 2 * outline_sc,
+                ),
+                layer=layer,
+                port_type="electrical",
+            )
+        )
     ports = []
     for p, port in enumerate(res.ports):
         s = D << stub
         s.connect(port=s.ports["e4"], other=port)
         c = D << contact
         c.connect(port=c.ports["e4"], other=s.ports["e2"], allow_width_mismatch=True)
-        c_sc = D << contact_sc
-        c_sc.center = c.center
-        ports.append(c_sc.ports[f"e{2 + 2 * (p % 2)}"])
+        for i, con_sc in enumerate(contacts):
+            c_sc = D << con_sc
+            c_sc.center = c.center
+            if i == 0:
+                ports.append(c_sc.ports[f"e{2 + 2 * (p % 2)}"])
 
     Du = gf.Component()
     Du << qg.utilities.union(D)
