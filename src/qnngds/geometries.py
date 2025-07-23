@@ -731,9 +731,11 @@ def cross(
 @gf.cell
 def fine_to_coarse(
     width1: float = 2.0,
-    width2: float = 5.0,
-    layer1: LayerSpec = "PHOTO1",
-    layer2: LayerSpec = "PHOTO2",
+    width2: float = 20.0,
+    # layer1: LayerSpec = "PHOTO1",
+    # layer2: LayerSpec = "PHOTO2",
+    layer1: LayerSpec = "EBEAM_FINE",
+    layer2: LayerSpec = "EBEAM_COARSE",
     port_type: str = "electrical",
 ) -> gf.Component:
     """Create transition between fine and coarse layers
@@ -759,16 +761,18 @@ def fine_to_coarse(
             pos_tone = True
             break
     if pos_tone:
+        outline = outline_layers[str(gf.get_layer(layer2))]
         # positive tone
         t2 = gf.components.straight(
-            length=outline_layers[str(gf.get_layer(layer2))],
+            length=2 * outline,
             npoints=2,
             cross_section=qg.utilities.get_cross_section_with_layer(layer2),
             width=None,
         )
-        wide = outline_layers[str(gf.get_layer(layer2))] * 2 + width2
+        wide = 2 * outline + width2
         if wide < width1:
             wide = width2
+        wide += 2 * outline
         t1 = qg.geometries.hyper_taper(
             length=wide * 0.8,
             start_width=wide,
@@ -784,7 +788,7 @@ def fine_to_coarse(
             allow_width_mismatch=True,
             allow_layer_mismatch=True,
         )
-        t1_i.movex(-outline_layers[str(gf.get_layer(layer2))] / 2)
+        t1_i.movex(-outline_layers[str(gf.get_layer(layer2))] * 2)
         ports = [t1_i.ports["e2"], t2_i.ports["e1"]]
     else:
         t2 = gf.components.superconductors.optimal_step(

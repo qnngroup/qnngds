@@ -1,7 +1,10 @@
 """Dummy PDK with some example layers"""
 
 import gdsfactory as gf
-from gdsfactory.typings import Layer
+from gdsfactory.typings import Layer, LayerSpec
+from gdsfactory.cross_section import CrossSection, cross_section, xsection
+
+from functools import partial
 
 
 class ApiGenLayers(gf.LayerEnum):
@@ -50,3 +53,66 @@ class ApiGenLayers(gf.LayerEnum):
 
 
 LAYERS = ApiGenLayers
+
+
+@xsection
+def default(
+    width: float = 25,
+    layer: LayerSpec = LAYERS.EBEAM_FINE,
+    radius: float = 30.0,
+    radius_min: float = 30.0,
+    force_no_outline: bool = False,
+    **kwargs,
+) -> CrossSection:
+    """Return Strip cross_section.
+
+    Args:
+        width (float): width of cross section
+        layer (LayerSpec): desired layer for cross section
+        radius (float): bend radius
+        radius_min (float): minimum bend radius
+        force_no_outline (bool): if True, ignores if layer is positive tone.
+        kwargs: keyword args for gf.CrossSection
+
+    Returns:
+        CrossSection
+    """
+    outline = LAYERS.outline(layer)
+    if (outline > 0) and not (force_no_outline):
+        # if outline is greater than zero, then do a positive tone cross section
+        # with the center of the cross section missing (hidden=True)
+        top = gf.Section(width=outline, offset=(width + outline) / 2, layer=layer)
+        bot = gf.Section(width=outline, offset=-(width + outline) / 2, layer=layer)
+        mid = gf.Section(
+            width=width,
+            offset=0,
+            layer=layer,
+            hidden=True,
+            port_names=("e1", "e2"),
+            port_types=("electrical", "electrical"),
+        )
+        section = gf.CrossSection(
+            sections=(mid, top, bot),
+            radius=radius,
+            radius_min=radius_min,
+            **kwargs,
+        )
+        return section
+    else:
+        # just do a normal cross section
+        return cross_section(
+            width=width,
+            layer=layer,
+            radius=radius,
+            radius_min=radius_min,
+            port_names=("e1", "e2"),
+            port_types=("electrical", "electrical"),
+            **kwargs,
+        )
+
+
+cross_sections = dict(
+    ebeam_coarse=partial(default, layer="EBEAM_COARSE"),
+    ebeam_fine=partial(default, layer="EBEAM_FINE"),
+    default=default,
+)

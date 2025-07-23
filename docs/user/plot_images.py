@@ -5,7 +5,7 @@ import importlib.util
 import gdsfactory as gf
 import matplotlib.pyplot as plt
 
-from pdk import ApiGenLayers
+from pdk import ApiGenLayers, cross_sections
 
 
 def import_module(module_path, module_name):
@@ -120,6 +120,7 @@ def generate_pdk(folder_path: str) -> None:
     pwd = os.path.dirname(os.path.realpath(__file__))
     PDK = gf.Pdk(
         name="apigen_pdk",
+        cross_sections=cross_sections,
         layer_views=gf.technology.LayerViews(filepath=f"{pwd}/layer_views.yaml"),
         layers=ApiGenLayers,
         cells=cells,
