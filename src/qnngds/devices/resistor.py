@@ -170,7 +170,7 @@ def meander_sc_contacts(
     max_length: float | None = 10,
     meander_pitch: float | None = 2,
     contact_size: tuple[float, float] = (8, 3),
-    outline_sc: float = 1,
+    outline_contacts: float = 1,
     layer_res: LayerSpec = "PHOTO1",
     layer_contacts: LayerSpecs = ["EBEAM_FINE", "PHOTO2"],
     layer_keepout: LayerSpecs = ["EBEAM_KEEPOUT"],
@@ -186,7 +186,7 @@ def meander_sc_contacts(
         max_length (float or None): maximum desired length of device
         meander_pitch (float or None): desired pitch of meander in microns
         contact_size (tuple[float, float]): (width, height) of resistor<->superconductor contact
-        outline_sc (float): superconductor extra width on each side of contact
+        outline_contacts (float): superconductor extra width on each side of contact
         layer_res (LayerSpec): resistor GDS layer
         layer_contacts (LayerSpecs): layer(s) for contact to superconductor (first will define port layer)
         layer_keepout (LayerSpecs): layer(s) to do keepout on
@@ -216,7 +216,7 @@ def meander_sc_contacts(
         )
         res_ko.move(res_ko.center, res.center)
     stub = qg.geometries.compass(
-        size=(width, outline_sc), layer=layer_res, port_type="electrical"
+        size=(width, outline_contacts), layer=layer_res, port_type="electrical"
     )
     contact = qg.geometries.compass(
         size=contact_size, layer=layer_res, port_type="electrical"
@@ -226,8 +226,8 @@ def meander_sc_contacts(
         contacts.append(
             qg.geometries.compass(
                 size=(
-                    contact_size[0] + 2 * outline_sc,
-                    contact_size[1] + 2 * outline_sc,
+                    contact_size[0] + 2 * outline_contacts,
+                    contact_size[1] + 2 * outline_contacts,
                 ),
                 layer=layer,
                 port_type="electrical",
