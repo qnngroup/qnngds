@@ -313,7 +313,7 @@ Test_structures
 
 .. automodule:: qnngds.test_structures
     :members:
-    :exclude-members: alignment_mark, circ_tlm, cross_bridge_kelvin_resistor, etch_test, rect_tlm, resolution_test, vdp, via_chain
+    :exclude-members: alignment_mark, circ_tlm, cross_bridge_kelvin_resistor, etch_test, litho_checkerboard, litho_star, rect_tlm, resolution_test, vdp, via_chain
     :undoc-members:
     :show-inheritance:
     :special-members: __init__
@@ -337,6 +337,16 @@ Test_structures
 
         .. image:: images/test_structures/etch_test.png
             :alt: etch_test.png
+
+    .. autofunction:: litho_checkerboard
+
+        .. image:: images/test_structures/litho_checkerboard.png
+            :alt: litho_checkerboard.png
+
+    .. autofunction:: litho_star
+
+        .. image:: images/test_structures/litho_star.png
+            :alt: litho_star.png
 
     .. autofunction:: rect_tlm
 

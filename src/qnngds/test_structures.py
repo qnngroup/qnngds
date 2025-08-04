@@ -10,6 +10,8 @@ import qnngds as qg
 from gdsfactory.typings import LayerSpec, LayerSpecs, ComponentSpecOrComponent
 from typing import Union, List, Optional, Tuple
 
+import numpy as np
+
 from functools import partial
 
 
@@ -322,6 +324,141 @@ def resolution_test(
     RES_TESTu << qg.utilities.union(RES_TEST)
     RES_TESTu.flatten()
     return RES_TESTu
+
+
+@gf.cell
+def _litho_steps(
+    resolutions: List[float] = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8],
+    width: float = 5,
+    spacing: float = 5,
+    layer: LayerSpec = (2, 0),
+) -> gf.Component:
+    """Creates step pattern for lithographic resolution test
+
+    Copied from PHIDL
+
+    Args:
+        resolutions (List[float]): List of resolutions (in µm) to be tested.
+        width (float): width of stripes
+        spacing (float): spacing between stripes
+        layer (LayerSpec): GDS layer tuple (layer, type)
+
+    Returns:
+        gf.Component: the test structure
+    """
+
+    D = gf.Component()
+
+    R1 = qg.geometries.rectangle(size=(width, spacing), layer=layer)
+    r = D << R1
+    r.xmin = -width
+    r.ymin = 0
+    offset = 0.0
+    for resolution in reversed(resolutions):
+        offset += spacing + resolution
+        R2 = qg.geometries.rectangle(size=(width, resolution), layer=layer)
+        r = D << R1
+        r.xmin = 0
+        r.ymin = 0
+        r.movey(offset)
+        r.movex(-width)
+        r = D << R2
+        r.xmin = 0
+        r.ymin = 0
+        r.movey(offset - resolution)
+
+    return D
+
+
+@gf.cell
+def litho_checkerboard(
+    resolutions: List[float] = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+    layer: LayerSpec = (2, 0),
+    label_interval: int = -1,
+    label_size: float = 20,
+) -> gf.Component:
+    """Creates crossed lith_steps pattern for lithographic resolution test
+
+    Args:
+        resolutions (List[float]): List of resolutions (in µm) to be tested.
+        layer (LayerSpec): GDS layer tuple (layer, type)
+        label_interval (bool): how often to label (set to -1 to disable all labels)
+        label_size (float): size of text label
+
+    Returns:
+        gf.Component: the litho test structure
+    """
+
+    D = gf.Component()
+    max_res = np.max(resolutions)
+    widths = list(resolutions) + list(max_res * np.linspace(2, 10, 9)) + [100 * max_res]
+    xmax = 0
+    spacing = 2 * max_res
+    for width in widths:
+        steps = D << _litho_steps(
+            resolutions=resolutions,
+            spacing=spacing,
+            width=width,
+            layer=layer,
+        )
+        steps.movex(xmax - steps.xmax)
+        xmax = steps.xmin
+
+    # add labels
+    offset = 0
+    for n, resolution in enumerate(reversed(resolutions)):
+        offset += spacing + resolution
+        if label_interval == 0:
+            continue
+        if n % label_interval == 0:
+            label = D << gf.components.texts.text(
+                f"{round(resolution * 10) / 10}UM", size=label_size, layer=layer
+            )
+            label.move((label.xmin, label.y), (2 * label_size, offset - resolution / 2))
+            # add wider rectangle
+            tick = D << qg.geometries.rectangle(
+                size=(label_size, max(spacing / 2, 1.5)), layer=layer
+            )
+        else:
+            # add narrower rectangle
+            tick = D << qg.geometries.rectangle(
+                size=(label_size / 2, max(spacing / 2, 1.5)), layer=layer
+            )
+        tick.move((tick.xmin, tick.y), (label_size / 2, offset - resolution / 2))
+
+    return D
+
+
+@gf.cell
+def litho_star(
+    num_lines: int = 20,
+    line_width: float = 2,
+    diameter: float = 200,
+    layer: LayerSpec = (1, 0),
+) -> gf.Component:
+    """Creates circular-star shape from lines, used as a lithographic resolution
+    test pattern.
+
+    Copied from PHIDL
+
+    Args:
+        num_lines (int): number of lines to make
+        line_width (float): width of each line
+        diameter (float): diameter of circle
+        layer (LayerSpec): GDS layer specification
+
+    Returns:
+        gf.Component: the litho test structure
+    """
+    D = gf.Component()
+    degree = 180 / num_lines
+    R1 = qg.geometries.rectangle(size=(line_width, diameter), layer=layer)
+    for i in range(num_lines):
+        r1 = D.add_ref(R1).rotate(degree * i)
+        r1.center = (0, 0)
+    # GDSfactory doesn't like non-integer dbu, which happens when rotating rectangles
+    D.flatten()
+    return D
 
 
 @gf.cell
