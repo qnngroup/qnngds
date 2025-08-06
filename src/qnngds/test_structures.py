@@ -374,15 +374,15 @@ def _litho_steps(
 def litho_checkerboard(
     resolutions: List[float] = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
     layer: LayerSpec = (2, 0),
-    label_interval: int = -1,
-    label_size: float = 20,
+    label_interval: int = 5,
+    label_size: float = 10,
 ) -> gf.Component:
     """Creates crossed lith_steps pattern for lithographic resolution test
 
     Args:
         resolutions (List[float]): List of resolutions (in µm) to be tested.
         layer (LayerSpec): GDS layer tuple (layer, type)
-        label_interval (bool): how often to label (set to -1 to disable all labels)
+        label_interval (bool): how often to label (set to 0 to disable all labels)
         label_size (float): size of text label
 
     Returns:
