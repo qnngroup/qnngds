@@ -88,6 +88,7 @@ def planar_hTron(wire_width: Union[int, float]= 0.3,
             3:("N", 1)
         }
     ))
+    final_HTRON.set_contact_width()
     final_HTRON << HTRON
     for p, port in enumerate(ports):
         final_HTRON.add_port(name=p, port=port)

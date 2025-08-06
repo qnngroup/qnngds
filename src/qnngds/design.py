@@ -676,7 +676,8 @@ class Design:
             self,
             device: ArrayLike,
             text: Union[None, str] = None,
-            device_y = 0
+            device_y = 0,
+            dev_max_size=None
     ) -> Device:
         """
         Creates an experiment containing the input Device(s)
@@ -694,5 +695,6 @@ class Design:
             die_parameters=self.die_parameters,
             device_layer=self.layers['device'],
             text=text,
-            device_y=device_y
+            device_y=device_y,
+            dev_max_size=dev_max_size
         )

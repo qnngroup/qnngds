@@ -82,6 +82,7 @@ def smooth(
         },
         ports_gnd=["S"]
     ))
+    final_ntron.set_contact_width()
 
     final_ntron << D 
     for p, port in D.ports.items():
@@ -170,8 +171,9 @@ def sharp(
         port_map_y={
             0:("W", 1)
         },
-        ports_gnd=["S"]
+        #ports_gnd=["S"]
     ))
+    final_ntron.set_contact_width()
 
     final_ntron << D 
     for p, port in D.ports.items():

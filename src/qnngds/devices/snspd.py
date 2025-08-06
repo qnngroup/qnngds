@@ -66,7 +66,7 @@ def vertical(
     wire_pitch: float = 0.6,
     size: Tuple[Union[int, float], Union[int, float]] = (60, 100),
     num_squares: Optional[int] = None,
-    extend: Optional[float] = None,
+    extend: Optional[float] = 30,
     layer: int = 1,
     positive_tone=True,
 ) -> Device:
@@ -158,9 +158,12 @@ def vertical(
             0:("N", 1),
             1:("S", 1)
         },
-        ports_gnd=ports_gnd,
+        #ports_gnd=ports_gnd,
         tight_y_spacing=True
     ))
+
+    final_SNSPD.set_contact_width(wire_width*10)
+
     final_SNSPD << D
     for p, port in enumerate(D.ports):
         final_SNSPD.add_port(name=p, port=D.ports[port])

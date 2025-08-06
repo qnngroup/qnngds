@@ -5,6 +5,7 @@ Cells are made of devices
 device and its die are linked thanks to functions present in this module.
 """
 
+import numpy as np
 from phidl import Device, Port
 import phidl.geometry as pg
 import phidl.routing as pr
@@ -257,8 +258,8 @@ class WireBond(ConnectionToPCB):
     """
     def __init__(self,
                  pad_pitch: Union[int, float] = 200,
-                 pad_width: Union[int, float] = 100,
-                 pad_length: Union[int, float] = 200,
+                 pad_width: Union[int, float] = 125,
+                 pad_length: Union[int, float] = 250,
                  contact_w = None):
         self.pad_pitch = pad_pitch 
         self.pad_width = pad_width
@@ -324,6 +325,9 @@ class QnnDevice(Device):
         """
         self.pads = pads
 
+    def set_contact_width(self, width=None):
+        self.contact_width = width
+
 def die_cell(
     die_parameters: DieParameters = DieParameters(),
     n_m_units: Tuple[int, int] = (1, 1),
@@ -338,7 +342,8 @@ def die_cell(
     text_size: Union[None, int, float] = None,
     probe_tip: Union[None, MultiProbeTip] = WireBond(),
     num_devices = 1,
-    device_y = 0
+    device_y = 0,
+    positive_tone = True,
 ) -> Device:
     """Creates a die cell with dicing marks, text, and pads to connect to a
     device.
@@ -357,13 +362,13 @@ def die_cell(
     Returns:
         DIE (Device): The cell, with ports of width contact_w positioned around a device_max_size area.
     """
-    contact_w = probe_tip.contact_w
+    contact_w = 18#probe_tip.contact_w
     def offset(overlap_port):
         port_name = overlap_port.name[0]
         if port_name == "N":
-            overlap_port.midpoint[1] += -die_parameters.contact_l
+            overlap_port.midpoint[1] += -die_parameters.contact_l + 5
         elif port_name == "S":
-            overlap_port.midpoint[1] += die_parameters.contact_l
+            overlap_port.midpoint[1] += die_parameters.contact_l - 5
         elif port_name == "W":
             overlap_port.midpoint[0] += die_parameters.contact_l
         elif port_name == "E":
@@ -387,6 +392,7 @@ def die_cell(
     )
     # standard pad definition for wirebonding
     if type(probe_tip) == WireBond:
+
         inner_block = pg.compass_multi(device_max_size, ports)
         outer_block = pg.compass_multi(pad_block_size, ports)
 
@@ -403,7 +409,7 @@ def die_cell(
         block_i = pg.compass_multi((unit_size, pad_block_size[1]/2), {side:probe_tip.num_tips})
         for i in range(num_devices):
             ref = outer_block << block_i
-            ref.center = [-unit_size*num_devices/2 + (i+1/2)*unit_size, 0]
+            ref.center = [-unit_size*num_devices/2 + (i+11/16)*unit_size, 0]
             for j in range(ports_per_dev):
                 port = list(ref.ports.values())[j]
                 outer_block.add_port(f"{side}{i*ports_per_dev+j+1}", port=port)
@@ -416,6 +422,10 @@ def die_cell(
         CONNECT = Device()
         port.rotate(180)
         # create the pad
+        if not positive_tone:
+            pad_connect_layer = 2
+        else:
+            pad_connect_layer = die_parameters.die_layer
         pad = pad_with_offset(die_parameters, probe_tip)
         pad.add_port(
             "1",
@@ -429,7 +439,7 @@ def die_cell(
         # create the route from pad to contact
         port.width = probe_tip.pad_width
         inner_ports[i].width = contact_w
-        CONNECT << pr.route_quad(port, inner_ports[i], layer=die_parameters.die_layer)
+        CONNECT << pr.route_quad(port, inner_ports[i], layer=pad_connect_layer)
 
         # create the route from contact to overlap
         overlap_port = CONNECT.add_port(port=inner_ports[i])
@@ -437,25 +447,29 @@ def die_cell(
         overlap_port.rotate(180)
 
         CONNECT << pr.route_quad(
-            inner_ports[i], overlap_port, layer=die_parameters.die_layer
+            inner_ports[i], overlap_port, layer=pad_connect_layer
         )
 
         # isolate the pads that are not grounded
         port_grounded = any(port.name[0] == P for P in ports_gnd)
         if not port_grounded:
-            padOut << pg.outline(
-                CONNECT,
-                distance=die_parameters.outline,
-                join="round",
-                open_ports=2 * die_parameters.outline,
-            )
+            if positive_tone:
+                padOut << pg.outline(
+                    CONNECT,
+                    distance=die_parameters.outline,
+                    join="round",
+                    open_ports=2 * die_parameters.outline,
+                )
+            else:
+                padOut << CONNECT 
             Connects << CONNECT
 
         # add the port to the die
         DIE.add_port(port=inner_ports[i].rotate(180))
         DIE << CONNECT
 
-    borderOut << padOut
+    if positive_tone:
+        borderOut << padOut
 
     ## Add the die markers
 
@@ -543,7 +557,6 @@ def die_cell(
     #DIE << pg.copy_layer(Connects, layer=die_parameters.die_layer, new_layer=3)
     return DIE
 
-
 def pad_with_offset(die_parameters: DieParameters = DieParameters(), probe_tip = None):
     """
     Creates a pad with a gold contact that is smaller than the superconducting layer
@@ -557,9 +570,13 @@ def pad_with_offset(die_parameters: DieParameters = DieParameters(), probe_tip =
         pad_size = die_parameters.pad_size
     else:
         pad_size = (probe_tip.pad_width, probe_tip.pad_length)
+    if die_parameters.positive_tone:
+        pad_layer = die_parameters.die_layer
+    else:
+        pad_layer = 2
     outer_pad = pg.rectangle(
         pad_size,
-        layer=die_parameters.die_layer,
+        layer=pad_layer,
     )
     inner_pad = pg.rectangle(
         [dim - die_parameters.pad_tolerance for dim in pad_size],
@@ -682,10 +699,11 @@ def add_hyptap_to_cell(
 
     for port in die_ports:
         if positive_tone:
-            ht_w = port.width + 2 * contact_l
+            ht_w = port.width + 1 * contact_l
         else:
             ht_w = port.width
         ht = HT << geometry.hyper_taper(contact_l, ht_w, contact_w)
+        #ht = HT << pg.taper(contact_l, contact_w, ht_w)
         ht.connect(ht.ports[2], port)
         HT.add_port(port=ht.ports[1], name=port.name)
         device_ports.add_port(port=ht.ports[2], name=port.name)

@@ -299,6 +299,7 @@ def snspd_ntron(
             6:("W", 1)
         }
     ))
+    final_circuit.set_contact_width()
 
     final_circuit << SNSPD_NTRON
     for p, port in SNSPD_NTRON.ports.items():

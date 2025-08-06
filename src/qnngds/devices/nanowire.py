@@ -57,7 +57,8 @@ def variable_length(
     four_point_probe: bool = False,
     layer: int = 1,
     num_pts: int = 100,
-    rotation: float = -90
+    rotation: float = -90,
+    substitute_line = None
 ) -> QnnDevice:
     """Creates a single wire, made of two optimal steps from channel_w to
     source_w with a constriction of the chosen length in the middle.
@@ -84,8 +85,12 @@ def variable_length(
         "bottom", midpoint=(constr_length / 2, 0), orientation=0, width=channel_w
     )
 
+    if substitute_line is not None:
+        constriction = NANOWIRE << substitute_line
+    else:
+        constriction = NANOWIRE << line
+
     source = NANOWIRE << wire
-    constriction = NANOWIRE << line
     gnd = NANOWIRE << wire
     source.connect(source.ports[1], constriction.ports["top"])
     gnd.connect( gnd.ports[1], constriction.ports["bottom"])
@@ -93,10 +98,10 @@ def variable_length(
     NANOWIRE.rotate(rotation)
     #NANOWIRE = pg.union(NANOWIRE, layer=layer)
     if four_point_probe and rotation == -90:
-        add_voltage_probe(NANOWIRE, channel_w)
+        add_voltage_probe(NANOWIRE, source_w)
     
         nw_padplace = PadPlacement(
-        cell_scaling_factor_x= 2.5,
+        cell_scaling_factor_x= 3.5,
         num_pads_n=2,
         num_pads_s=2,
         port_map_x={
@@ -105,7 +110,8 @@ def variable_length(
             3: ("N", 1),
             4: ("S", 2)
         },
-        probe_tip=WireBond()
+        probe_tip=WireBond(),
+        tight_y_spacing=False
         
         )
         NANOWIRE.add_port(name=1, port=source.ports[2])
@@ -154,7 +160,8 @@ def variable_length(
     for p, port in ports.items():
         final_nw.add_port(name=p, port=port)
     final_nw.set_pads(nw_padplace)
-    final_nw.move(NANOWIRE.center, (0, 0))
+    final_nw.set_contact_width(channel_w)
+    final_nw.move(NANOWIRE.center, (-100, 0))
     final_nw.name = f"NANOWIRE.VAR(w={channel_w:.2f} l={constr_length:.1f})"
     #NANOWIRE.simplify(1e-3)
 
@@ -168,9 +175,9 @@ def add_voltage_probe(device: Device, channel_w: Union[int, float]):
     """
     device.add_port(name=3, 
                     midpoint = (device.center[0], device.ymax),
-                    width = channel_w*3,
+                    width = channel_w,
                     orientation=90)
     device.add_port(name=4, 
                     midpoint = (device.center[0], device.ymin),
-                    width = channel_w*3,
+                    width = channel_w,
                     orientation=-90)

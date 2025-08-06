@@ -302,9 +302,10 @@ def experiment(
         device: ArrayLike = devices.nanowire.spot(),
         die_parameters: utility.DieParameters = utility.DieParameters(),
         device_layer: int = 1,
-        outline_dev: Union[int, float] = 1,
+        outline_dev: Union[int, float] = 0.1,
         text: Union[None, str] = None,
-        device_y = 0
+        device_y = 0,
+        dev_max_size = None
 ) -> Device:
     """
     Creates an experiment containing Device[s]
@@ -375,20 +376,25 @@ def experiment(
         die_contact_w = default_contact_w
     else:
         die_contact_w = die_parameters.pad_size[0]
-    dev_contact_w = USER_DEVICES.xsize
+    if device[-1].contact_width is not None:
+        dev_contact_w = device[-1].contact_width
+    else:
+        dev_contact_w = USER_DEVICES.xsize
     routes_margin = 4 * die_contact_w
 
-    device_max_x = max_x_num * num_dev * max(die_parameters.pad_size[0]*cell_scaling_factor_x, USER_DEVICES.xsize+2*die_parameters.outline)
-    
-    if device[0].pads.tight_y_spacing == True:
-        device_max_y = USER_DEVICES.ysize+2*die_parameters.contact_l
-    else:
-        device_max_y = USER_DEVICES.ysize+routes_margin
+    if dev_max_size is None:
 
-    dev_max_size = (
-        device_max_x,
-        device_max_y,
-    )
+        device_max_x = max_x_num * num_dev * max(die_parameters.pad_size[0]*cell_scaling_factor_x, USER_DEVICES.xsize+2*die_parameters.outline)
+        
+        if device[0].pads.tight_y_spacing == True:
+            device_max_y = USER_DEVICES.ysize+2*die_parameters.contact_l
+        else:
+            device_max_y = USER_DEVICES.ysize+routes_margin
+
+        dev_max_size = (
+            device_max_x,
+            device_max_y,
+        )
 
     ports = {"N": num_pads_n*num_dev, "S": num_pads_s*num_dev, 
                "E": num_pads_e*num_dev, "W": num_pads_w*num_dev}
@@ -430,7 +436,7 @@ def experiment(
     ## Route the nanowires and the die
 
     # hyper tapers
-    taper_contact = min(dev_contact_w, device[0].pads.contact_w/2)
+    taper_contact = device[0].pads.contact_w/6#min(dev_contact_w, device[0].pads.contact_w/2)
     HT, dev_ports = utility.add_hyptap_to_cell(
         BORDER.get_ports(), die_parameters.contact_l, taper_contact, positive_tone=die_parameters.positive_tone
     )
