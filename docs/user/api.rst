@@ -180,7 +180,7 @@ Geometries
 
 .. automodule:: qnngds.geometries
     :members:
-    :exclude-members: angled_taper, compass, cross, fine_to_coarse, flagpole, hyper_taper, optimal_90deg, optimal_hairpin, optimal_step, rectangle, taper, tee, via
+    :exclude-members: angled_taper, compass, cross, euler_taper, fine_to_coarse, flagpole, hyper_taper, optimal_90deg, optimal_hairpin, optimal_step, rectangle, taper, tee, via
     :undoc-members:
     :show-inheritance:
     :special-members: __init__
@@ -199,6 +199,11 @@ Geometries
 
         .. image:: images/geometries/cross.png
             :alt: cross.png
+
+    .. autofunction:: euler_taper
+
+        .. image:: images/geometries/euler_taper.png
+            :alt: euler_taper.png
 
     .. autofunction:: fine_to_coarse
 

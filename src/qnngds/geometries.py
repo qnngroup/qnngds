@@ -95,6 +95,71 @@ def hyper_taper(
 
 
 @gf.cell
+def euler_taper(
+    start_width: Union[int, float] = 5,
+    end_width: Union[int, float] = 50,
+    layer: LayerSpec = (1, 0),
+    port_type: str = "electrical",
+) -> gf.Component:
+    """Hyperbolic taper (solid). Designed by reedf.
+
+    Args:
+        length (int or float): Length of taper
+        start_width (int or float): Width of start of taper
+        end_width (int or float): Width of end of taper
+        layer (LayerSpec): GDS layer specification e.g. tuple (layer, type)
+        port_type (string): gdsfactory port type. default "electrical"
+
+    Returns:
+        gf.Component: a single taper
+    """
+    prefix = "e" if port_type == "electrical" else "o"
+    swapped = False
+    if start_width > end_width:
+        start_width, end_width = end_width, start_width
+        swapped = True
+    P_euler = gf.path.euler(
+        radius=end_width / 2 - start_width / 2,
+        angle=90,
+        use_eff=True,
+        p=1,
+    )
+
+    D = gf.Component()
+    upper = np.array([(x, y + start_width / 2) for x, y in P_euler.points])
+    lower = np.array([(x, -y - start_width / 2) for x, y in P_euler.points[::-1]])
+    length = np.max(P_euler.points[:, 1])
+
+    # create a polygon
+    points = np.concatenate((upper, lower))
+    points = np.array([(length - x if swapped else x, y) for x, y in points])
+    D.add_polygon(points, layer=layer)
+
+    if swapped:
+        start_width, end_width = end_width, start_width
+
+    # port 1: narrow/start_width end, port 2: wide/end_width end
+    D.add_port(
+        name=f"{prefix}1",
+        center=(0, 0),
+        width=start_width,
+        orientation=180,
+        layer=layer,
+        port_type=port_type,
+    )
+    D.add_port(
+        name=f"{prefix}2",
+        center=(length, 0),
+        width=end_width,
+        orientation=0,
+        layer=layer,
+        port_type=port_type,
+    )
+
+    return D
+
+
+@gf.cell
 def angled_taper(
     end_width: Union[int, float] = 0.2,
     start_width: Union[int, float] = 0.1,
