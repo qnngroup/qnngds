@@ -67,6 +67,7 @@ def hyper_taper(
     start_width: Union[int, float] = 5,
     end_width: Union[int, float] = 50,
     layer: LayerSpec = (1, 0),
+    num_points: int = 200,
     port_type: str = "electrical",
 ) -> gf.Component:
     """Hyperbolic taper (solid). Designed by colang.
@@ -76,6 +77,7 @@ def hyper_taper(
         start_width (int or float): Width of start of taper
         end_width (int or float): Width of end of taper
         layer (LayerSpec): GDS layer tuple (layer, type)
+        num_points (int): number of points to use
         port_type (string): gdsfactory port type. default "electrical"
 
     Returns:
@@ -91,7 +93,7 @@ def hyper_taper(
         port_names=(f"{prefix}1", f"{prefix}2"),
     )
     xc = gf.CrossSection(sections=(section,))
-    return gf.path.extrude(gf.path.straight(length=length, npoints=200), xc)
+    return gf.path.extrude(gf.path.straight(length=length, npoints=num_points), xc)
 
 
 @gf.cell
@@ -99,6 +101,7 @@ def euler_taper(
     start_width: Union[int, float] = 5,
     end_width: Union[int, float] = 50,
     layer: LayerSpec = (1, 0),
+    num_points: int = 200,
     port_type: str = "electrical",
 ) -> gf.Component:
     """Hyperbolic taper (solid). Designed by reedf.
@@ -108,6 +111,7 @@ def euler_taper(
         start_width (int or float): Width of start of taper
         end_width (int or float): Width of end of taper
         layer (LayerSpec): GDS layer specification e.g. tuple (layer, type)
+        num_points (int): number of points to use
         port_type (string): gdsfactory port type. default "electrical"
 
     Returns:
@@ -123,6 +127,7 @@ def euler_taper(
         angle=90,
         use_eff=True,
         p=1,
+        npoints=num_points,
     )
 
     D = gf.Component()
