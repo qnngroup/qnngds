@@ -8,9 +8,6 @@ device and its die are linked thanks to functions present in this module.
 # can be removed in python 3.14, see https://peps.python.org/pep-0749/
 from __future__ import annotations
 
-import gdsfactory as gf
-from gdsfactory.typings import CrossSectionSpec
-import kfactory as kf
 from typing import Literal
 from collections.abc import Callable, Sequence
 
@@ -20,17 +17,20 @@ import numpy as np
 
 from numpy.typing import ArrayLike
 
-from gdsfactory.typings import (
-    ComponentSpecOrComponent,
-    ComponentSpecsOrComponents,
-    LayerSpec,
-    Port,
-    Ports,
-    PortsDict,
-    Spacing,
-)
-
 import qnngds as qg
+
+
+def _create_layered_ports(device: Device, layer: tuple | str):
+    """Regenerates new ports for device, assigning them all to a layer
+
+    Parameters:
+        device (Device): device to modify
+        layer (tuple | str): GDS layer/datatype or name of layer
+    """
+    for name, port in device.ports.items():
+        device.ports[name] = qg.Port(
+            name, port.midpoint, port.width, port.orientation, layer, port.parent
+        )
 
 
 def hyper_taper_fn(t, start_width, end_width):
@@ -47,25 +47,6 @@ def hyper_taper_fn(t, start_width, end_width):
     else:
         a = np.arccosh(end_width / start_width)
         return np.cosh(a * t) * start_width
-
-
-@gf.cell
-def union(component: gf.Component) -> gf.Component:
-    """Merge all polygons within a Component by layer
-
-    Args:
-        component (gf.Component): component to merge
-
-    Returns:
-        gf.Component: the merged component
-    """
-    comp_union = gf.Component()
-    for layer in component.layers:
-        temp = gf.Component()
-        temp.add_polygon(component.get_region(layer), layer=layer)
-        comp_union << gf.boolean(temp, temp, operation="or", layer=layer)
-    comp_union.flatten()
-    return comp_union
 
 
 def get_outline_layers(layer_map: gf.LayerEnum) -> dict[str, float]:
@@ -104,7 +85,6 @@ def get_keepout_layers(layer_map: gf.LayerEnum) -> dict[str, str]:
     return keepout_layers
 
 
-@gf.cell
 def outline(
     component: gf.Component,
     outline_layers: dict[str, float] | None = None,
@@ -166,7 +146,6 @@ def outline(
     return comp_outlined
 
 
-@gf.cell
 def keepout(
     component: gf.Component,
     outline_layers: dict[str, float] | None = None,
@@ -224,7 +203,6 @@ def keepout(
     return comp_keepout
 
 
-@gf.cell
 def invert(
     component: gf.Component,
     ext_bbox_layers: dict[str, float] = {},
@@ -276,7 +254,6 @@ def get_cross_section_with_layer(
             return xc
 
 
-@gf.cell
 def flex_grid(
     components: ComponentSpecsOrComponents,
     spacing: Spacing | float = (5.0, 5.0),
@@ -502,7 +479,6 @@ def _sort_ports(
     return flat_ports
 
 
-@gf.cell
 def generate_experiment(
     dut: ComponentSpecOrComponent,
     pad_array: ComponentSpecOrComponent,
