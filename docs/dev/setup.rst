@@ -15,78 +15,44 @@ It is **strongly** recommended to set up a virtual environment or conda environm
   .. code-block:: bash
 
       git clone git@github.com/qnngroup/qnngds.git
+      cd qnngds
 
-* Create a new virtual environment:
+* Create a new virtual environment. Follow the instructions `here <https://qnngds.readthedocs.io/en/latest/tutorials/gettingstarted.html#setup-a-virtual-environment-and-install-qnngds>`_.
 
-    * Open a terminal in the directory you want to put your virtual environment.
+* From within the same directory, install ``qnngds`` as an editable package:
 
-    * Create a ``venv`` with python (by default uses the system python version):
+    * Using ``conda`` or ``python`` ``venv``:
 
-      .. code-block:: bash
+        .. code-block:: bash
 
-          python -m venv/your-env-name
-          .\.venv\your-env-name\Scripts\Activate
+            pip install -e .
 
-    * Alternatively, create a conda environment (useful if you want to include other non-python packages):
+    * Using ``uv``
 
-      .. code-block:: bash
+        .. code-block:: bash
 
-          conda create -n qnngds-dev python=3.x
-          conda activate qnngds-dev
+            uv pip install -e .
 
-
-2. Install the package
-----------------------
-
-* On **windows** systems, the qnngds package needs ``gdspy`` to be installed first. To do so, you can follow instruction `here <https://pypi.org/project/gdspy/>`_.
-  First, `install a pre-built wheel <https://github.com/heitzmann/gdspy/releases>`_ 
-  and run :
-
-  .. code-block:: bash
-
-    pip install path/to/gdspy-1.6.12-cp38-cp38-win_amd64.whl
-
-  Make sure you download the wheel corresponding to your device:
-
-    * `cpXX` is the version of python that it is built for.
-    * `winxx_amdXX` should be selected based on your system type.
-
-* On **Linux**, ``gdspy`` can be installed with ``pip``, so no action is needed.
-
-Once ``gdspy`` is installed in your virtual environment, you can install ``qnngds``
-package (that you intend to modify) in editable mode. This allows to test the
-changes made to the package without having to reinstall it every time.
-Be sure to specify the same path as you downloaded the repository to in Step 1.
-
-.. code-block:: bash
-
-    pip install -e /path/to/qnngds
-
-.. note::
-    If any issues come up, delete the ``.pdm-build`` folder before trying to run the 
-    previous steps.
-
-3. Start coding
+2. Start coding
 ---------------
 
-* Before you start coding, install `pre-commit <https://pre-commit.com/>`_ and run 
+* Before you start coding, install `pre-commit <https://pre-commit.com/>`_ and run
   it in the repository root directory:
 
   .. code-block:: bash
 
-    pip install pre-commit
+    [uv] pip install pre-commit
     pre-commit install
 
-  This will add lint/autoformatting checks that run before each commit, as well as 
-  checks to make sure you don't accidentally commit unresolved merge conflicts or 
+  This will add lint/autoformatting checks that run before each commit, as well as
+  checks to make sure you don't accidentally commit unresolved merge conflicts or
   commit directly to master.
 
-* When you're ready to make changes to the source code, make sure you create a new 
+* When you're ready to make changes to the source code, make sure you create a new
   branch of the git. To do so, open a terminal and execute:
 
   .. code-block:: bash
 
-    cd path/to/qnngds
     git checkout -b your-branch-name
 
 .. warning::
@@ -94,10 +60,10 @@ Be sure to specify the same path as you downloaded the repository to in Step 1.
   make sure your branch does **not** start with ``dev-``; this prefix is reserved for
   updates to the documentation or packaging.
 
-You can now modify the package as wanted. 
+You can now modify the package as wanted.
 
 Continue to the :ref:`documentation for qnngds' contributors<doc for
-contributors>` if you have functions to add to the package (most standard case). 
+contributors>` if you have functions to add to the package (most standard case).
 
 Continue to the :ref:`documentation for qnngds' developers<doc for developers>`
 if you have deeper modifications to make to the package.
