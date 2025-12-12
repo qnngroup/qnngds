@@ -7,6 +7,9 @@ from __future__ import annotations
 
 import numpy as np
 import qnngds as qg
+from qnngds import Device
+
+from qnngds.typing import LayerSpec
 
 from phidl import CrossSection
 import phidl.path as pp
@@ -17,20 +20,20 @@ def taper(
     length: int | float = 10,
     start_width: int | float = 5,
     end_width: int | float = 2,
-    layer: tuple | str = (1, 0),
-) -> qg.Device:
+    layer: LayerSpec = (1, 0),
+) -> Device:
     """Linear taper (solid).
 
     Args:
         length (int or float): Length of taper
         start_width (int or float): Width of first end of taper
         end_width (int or float): Width of second end of taper
-        layer (tuple | str): GDS layer tuple (layer, type) or string
+        layer (LayerSpec): GDS layer tuple (layer, type) or string
 
     Returns:
-        qg.Device: a single taper
+        Device: a single taper
     """
-    T = qg.Device("taper")
+    T = Device("taper")
     pts = [
         (0, -start_width / 2),
         (length, -end_width / 2),
@@ -59,20 +62,20 @@ def hyper_taper(
     length: int | float = 10,
     start_width: int | float = 5,
     end_width: int | float = 50,
-    layer: tuple | str = (1, 0),
+    layer: LayerSpec = (1, 0),
     num_points: int = 50,
-) -> qg.Device:
+) -> Device:
     """Hyperbolic taper (solid). Designed by colang.
 
     Args:
         length (int or float): Length of taper
         start_width (int or float): Width of start of taper
         end_width (int or float): Width of end of taper
-        layer (tuple | str): GDS layer tuple (layer, type) or string
+        layer (LayerSpec): GDS layer tuple (layer, type) or string
         num_points (int): number of points to use
 
     Returns:
-        qg.Device: a single taper
+        Device: a single taper
     """
     path = pp.straight(length=length, num_pts=num_points)
     xc = CrossSection()
@@ -90,20 +93,20 @@ def hyper_taper(
 def euler_taper(
     start_width: int | float = 5,
     end_width: int | float = 50,
-    layer: tuple | str = (1, 0),
+    layer: LayerSpec = (1, 0),
     num_points: int = 200,
-) -> qg.Device:
+) -> Device:
     """Hyperbolic taper (solid). Designed by reedf.
 
     Args:
         length (int | float): Length of taper
         start_width (int | float): Width of start of taper
         end_width (int | float): Width of end of taper
-        layer (tuple | str): GDS layer specification e.g. tuple (layer, type) or string
+        layer (LayerSpec): GDS layer specification e.g. tuple (layer, type) or string
         num_points (int): number of points to use
 
     Returns:
-        qg.Device: a single taper
+        Device: a single taper
     """
     swapped = False
     if start_width > end_width:
@@ -114,10 +117,10 @@ def euler_taper(
         angle=90,
         use_eff=True,
         p=1,
-        npoints=num_points,
+        num_pts=num_points,
     )
 
-    D = qg.Device()
+    D = Device("euler_taper")
     upper = np.array([(x, y + start_width / 2) for x, y in P_euler.points])
     lower = np.array([(x, -y - start_width / 2) for x, y in P_euler.points[::-1]])
     length = np.max(P_euler.points[:, 1])
@@ -152,24 +155,24 @@ def angled_taper(
     end_width: int | float = 0.2,
     start_width: int | float = 0.1,
     angle: int | float = 60,
-    layer: tuple | str = (1, 0),
-) -> qg.Device:
+    layer: LayerSpec = (1, 0),
+) -> Device:
     """Create an angled taper with euler curves.
 
     Args:
         end_width (int or float): Width of wide end of taper
         start_width (int or float): Width of narrow end of taper
         angle (int or float): Angle between taper ends in degrees
-        layer (tuple | str): GDS layer tuple (layer, type) or string
+        layer (LayerSpec): GDS layer tuple (layer, type) or string
 
     Returns:
-        qg.Device: a single taper
+        Device: a single taper
     """
 
     if start_width > end_width:
         raise ValueError("{start_width=} > {end_width=} is not yet implemented")
 
-    D = qg.Device()
+    D = Device("angled_taper")
     # heuristic for length between narrow end and bend
     l_constr = start_width * 2 + end_width * 2
     # heuristic for length between wide end and bend
@@ -229,26 +232,94 @@ def angled_taper(
     return D
 
 
+def tee(
+    size: tuple[float, float] = (4, 2),
+    stub_size: tuple[float, float] = (2, 1),
+    taper_type: str | None = "fillet",
+    taper_radius: float | None = None,
+    layer: LayerSpec = (1, 0),
+) -> Device:
+    """Creates a T-shaped geometry
+    Adapted from phidl
+
+    Args:
+        size (array-like): (width, height) of the flag.
+        stub_size : (array-like): (width, height) of the pole stub.
+        taper_type (str | None) : {'straight', 'fillet', None}
+            Type of taper between the bottom corner of the stub on the side of
+            the flag and the corner of the flag closest to the stub.
+        taper_radius (float | None) : radius of taper. If None, uses stub_size
+        layer (LayerSpec): Specific layer(s) to put polygon geometry on.
+    Returns:
+        Device: tee
+    """
+
+    f = np.array(size).astype(np.float64)
+    p = np.array(stub_size).astype(np.float64)
+
+    assert taper_type in [
+        "straight",
+        "fillet",
+        None,
+    ], 'tee() taper_type must "straight"  or "fillet" or None'
+
+    xpts = np.array([f[0], f[0], p[0], p[0], -p[0], -p[0], -f[0], -f[0]]) / 2
+    ypts = [f[1], 0, 0, -p[1], -p[1], 0, 0, f[1]]
+
+    D = Device("tee")
+    tee = D.add_polygon([xpts, ypts], layer=layer)
+    if taper_type == "fillet":
+        if taper_radius is None:
+            taper_radius = min([abs(f[0] - p[0]), abs(p[1])])
+        tee.fillet([0, 0, taper_radius, 0, 0, taper_radius, 0, 0])
+    elif taper_type == "straight":
+        D.add_polygon([xpts[1:4], ypts[1:4]], layer=layer)
+        D.add_polygon([xpts[4:7], ypts[4:7]], layer=layer)
+
+    D.add_port(
+        name=1,
+        midpoint=(f[0] / 2, f[1] / 2),
+        width=abs(f[1]),
+        orientation=0,
+        layer=layer,
+    )
+    D.add_port(
+        name=2,
+        midpoint=(-f[0] / 2, f[1] / 2),
+        width=abs(f[1]),
+        orientation=180,
+        layer=layer,
+    )
+    D.add_port(
+        name=3,
+        midpoint=(0, -p[1]),
+        width=abs(p[0]),
+        orientation=270,
+        layer=layer,
+    )
+    return D
+
+
 def via(
     size: tuple[float, float] = (5, 5),
     via_undersize: float = 0.5,
-    layer_bottom: tuple | str = (1, 0),
-    layer_via: tuple | str = (2, 0),
-    layer_top: tuple | str = (3, 0),
-) -> qg.Device:
+    layer_bottom: LayerSpec = (1, 0),
+    layer_via: LayerSpec = (2, 0),
+    layer_top: LayerSpec = (3, 0),
+) -> Device:
     """Creates a via between two layers
 
     Args:
         size (tuple[float, float]): width, height of top/bottom pads
         via_undersize (float): amount on each side to compensate overetch of via
-        layer_bottom (tuple | str): bottom layer specification
-        layer_via (tuple | str): via layer specification
-        layer_top (tuple | str): top layer specification
+        layer_bottom (LayerSpec): bottom layer specification
+        layer_via (LayerSpec): via layer specification
+        layer_top (LayerSpec): top layer specification
 
     Returns:
-        qg.Device: via
+        Device: via
     """
-    VIA = qg.Device()
+    VIA = Device("via")
     if 2 * via_undersize > min(size[0], size[1]):
         raise ValueError(f"{via_undersize=} is too small for a pad with {size=}.")
     bot_pad = VIA << pg.compass(size=size, layer=layer_bottom)
@@ -270,36 +341,34 @@ def via(
 def fine_to_coarse(
     width1: float = 2.0,
     width2: float = 20.0,
-    # layer1: tuple | str = "PHOTO1",
-    # layer2: tuple | str = "PHOTO2",
-    layer1: tuple | str = "EBEAM_FINE",
-    layer2: tuple | str = "EBEAM_COARSE",
+    layer1: LayerSpec = "EBEAM_FINE",
+    layer2: LayerSpec = "EBEAM_COARSE",
     port_type: str = "electrical",
-) -> qg.Device:
+) -> Device:
     """Create transition between fine and coarse layers
 
     Automatically performs outlining for positive-tone resist
     Args:
         width1 (float): starting width on first layer
         width2 (float): ending width on second layer
-        layer1 (tuple | str): layer specification (string or tuple) for first layer
-        layer2 (tuple | str): layer specification (string or tuple) for second layer
+        layer1 (LayerSpec): layer specification (string or tuple) for first layer
+        layer2 (LayerSpec): layer specification (string or tuple) for second layer
         port_type (str): "electrical" or "optical"
 
     Returns:
-        qg.Device: transition between fine and coarse layers
+        Device: transition between fine and coarse layers
     """
-    taper = qg.Device()
-    outline_layers = qg.utilities.get_outline_layers(gf.get_active_pdk().layers)
+    taper = Device()
+    outline_layers = qg.utilities.get_outline_layers(qg.get_active_pdk().layers)
     pos_tone = False
     for layer in outline_layers.keys():
-        if (gf.get_layer(layer) == gf.get_layer(layer1)) or (
-            gf.get_layer(layer) == gf.get_layer(layer2)
+        if (qg.get_layer(layer).tuple == qg.get_layer(layer1).tuple) or (
+            qg.get_layer(layer).tuple == qg.get_layer(layer2).tuple
         ):
             pos_tone = True
             break
     if pos_tone:
-        outline = outline_layers[str(gf.get_layer(layer2))]
+        outline = outline_layers[qg.get_layer(layer2).name]
         # positive tone
         t2 = gf.components.straight(
             length=2 * outline,

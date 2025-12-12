@@ -8,7 +8,6 @@ device and its die are linked thanks to functions present in this module.
 # can be removed in python 3.14, see https://peps.python.org/pep-0749/
 from __future__ import annotations
 
-from typing import Literal
 from collections.abc import Callable, Sequence
 
 from functools import partial
@@ -16,24 +15,32 @@ from functools import partial
 import numpy as np
 
 from numpy.typing import ArrayLike
+from qnngds.typing import LayerSpec, LayerSpecs, DeviceSpec
+from qnngds import Device, LayerSet
 
 import qnngds as qg
+import phidl.geometry as pg
 
 
-def _create_layered_ports(device: Device, layer: tuple | str):
+def _create_layered_ports(device: Device, layer: LayerSpec):
     """Regenerates new ports for device, assigning them all to a layer
 
     Parameters:
         device (Device): device to modify
-        layer (tuple | str): GDS layer/datatype or name of layer
+        layer (LayerSpec): GDS layer/datatype or name of layer
     """
     for name, port in device.ports.items():
         device.ports[name] = qg.Port(
-            name, port.midpoint, port.width, port.orientation, layer, port.parent
+            name=name,
+            midpoint=port.midpoint,
+            width=port.width,
+            orientation=port.orientation,
+            layer=layer,
+            parent=port.parent,
         )
 
 
-def hyper_taper_fn(t, start_width, end_width):
+def hyper_taper_fn(t: float, start_width: int | float, end_width: int | float):
     """Used for defining custom cross section widths/offsets
 
     Args:
@@ -49,59 +56,66 @@ def hyper_taper_fn(t, start_width, end_width):
         return np.cosh(a * t) * start_width
 
 
-def get_outline_layers(layer_map: gf.LayerEnum) -> dict[str, float]:
-    """Get dictionary maping a layer to the desired outline amount as specified by the LayerMap
+def get_outline_layers(layer_set: LayerSet) -> dict[str, float]:
+    """Get dictionary maping each layer in a LayerSet to its desired outline amount
 
     Args:
-        layer_map (gf.LayerEnum): enum layer equipped with outline method
+        layer_set (LayerSet): LayerSet
 
     Returns:
         dict[str, float]: mapping of GDS layer name to outline distance. Layers that aren't outlined are omitted.
     """
     # outline
     outline_layers = {}
-    for layer in layer_map:
-        ol = layer_map.outline(layer)
+    for layer in layer_set:
+        layer = layer_set[layer]
+        ol = layer.outline
         if ol > 0:
-            outline_layers[str(gf.get_layer(layer))] = ol
+            outline_layers[layer.name] = ol
     return outline_layers
 
 
-def get_keepout_layers(layer_map: gf.LayerEnum) -> dict[str, str]:
+def get_keepout_layers(layer_set: LayerSet) -> dict[str, str]:
     """Get dictionary maping a layer to a second layer which it should serve as a keepout for
 
     Args:
-        layer_map (gf.LayerEnum): enum layer equipped with keepout method
+        layer_set (LayerSet): LayerSet
 
     Returns:
         dict[str, str]: mapping of GDS layer name to GDS layer name.
     """
     # keepout
     keepout_layers = {}
-    for layer in layer_map:
-        ol = layer_map.keepout(layer)
-        if ol is not None:
-            keepout_layers[str(gf.get_layer(layer))] = str(ol)
+    for layer in layer_set:
+        layer = layer_set[layer]
+        keepout = layer.keepout
+        if keepout is not None:
+            keepout_layers[layer.name] = keepout
     return keepout_layers
 
 
 def outline(
-    component: gf.Component,
+    device: Device,
     outline_layers: dict[str, float] | None = None,
-) -> gf.Component:
-    """Outline polygons within component by layer.
+    kl_tile_size: int | None = None,
+    kl_precision: float = 1e-4,
+) -> Device:
+    """Outline polygons within device by layer.
 
     Args:
-        component (gf.Component): component to outline
+        device (Device): device to outline
         outline_layers (dict[str, float]): map of desired outline amount per layer. If a layer is omitted, it will not be outlined
+        kl_tile_size (int | None): if not None, size of tile to divide geometry into for multithreaded execution
+        kl_precision (int | None): precision for KLayout operation (equivalently, sets dbu for KLayout)
 
     Returns:
-        gf.Component: the outlined component
+        Device: the outlined device
     """
-    comp_outlined = gf.Component()
+    tile_size = None if kl_tile_size is None else (kl_tile_size, kl_tile_size)
+    dev_outlined = Device()
     # extend ports
-    comp_extended = gf.Component()
-    comp = comp_extended.add_ref(component)
+    dev_extended = Device()
+    dev = dev_extended.add_ref(device)
     if outline_layers is None:
         outline_layers = {}
     for k, v in outline_layers.items():
@@ -110,129 +124,182 @@ def outline(
     new_ports = []
     processed_ports = []
     for layer in outline_layers.keys():
-        for port in gf.port.select_ports(comp, gf.get_layer(layer)):
-            ext = comp_extended.add_ref(
-                qg.geometries.compass(
+        for port in dev.ports:
+            if port.layer != layer:
+                continue
+            ext = dev_extended.add_ref(
+                pg.straight(
                     size=(outline_layers[layer], port.width),
                     layer=port.layer,
-                    port_type=port.port_type,
                 )
             )
-            prefix = "o" if port.port_type == "optical" else "e"
-            ext.connect(port=ext.ports[f"{prefix}1"], other=port)
-            p = ext.ports[f"{prefix}3"]
+            ext.connect(port=ext.ports[1], other=port)
+            p = ext.ports[2]
             p.name = port.name
+            _create_layered_ports(ext, layer)
             new_ports.append(p)
             processed_ports.append(port)
-
-    new_ports += [p for p in comp.ports if p not in processed_ports]
-    outline_layer_values = {
-        gf.get_layer(k).value: str(gf.get_layer(k)) for k in outline_layers.keys()
-    }
-    for layer in comp_extended.layers:
-        r = component.get_region(layer=layer)
-        if gf.get_layer(layer) not in outline_layer_values:
-            comp_outlined.add_polygon(r, layer=layer)
+    new_ports += [p for p in dev.ports if p not in processed_ports]
+    outline_layers = {qg.get_layer(k).tuple: v for k, v in outline_layers.items()}
+    polygons = device.get_polygons(by_spec=True)
+    extended_polygons = dev_extended.get_polygons(by_spec=True)
+    for layer, poly in polygons.items():
+        layer = qg.get_layer(layer).tuple
+        if layer not in outline_layers:
+            dev_outlined.add_polygon(poly, layer=layer)
         else:
-            layer = outline_layer_values[gf.get_layer(layer)]
-            outline_dbu = outline_layers[layer] / gf.kcl.dbu
-            r_expanded = r.sized(outline_dbu)
-            comp_outlined.add_polygon(
-                r_expanded - comp_extended.get_region(layer=layer), layer=layer
+            dummy = Device()
+            dummy.add_polygon(poly, layer=layer)
+            bloated = pg.kl_offset(
+                dummy,
+                distance=outline_layers[layer],
+                precision=kl_precision,
+                tile_size=tile_size,
+                layer=layer,
             )
+            dummy = Device()
+            dummy.add_polygon(extended_polygons[layer], layer=layer)
+            outlined = pg.kl_boolean(
+                A=bloated,
+                B=dummy,
+                operation="A-B",
+                precision=kl_precision,
+                tile_size=tile_size,
+                layer=layer,
+            )
+            dev_outlined << outlined
     # add ports
-    comp_outlined.flatten()
-    comp_outlined.add_ports(new_ports)
-    return comp_outlined
-
-
-def keepout(
-    component: gf.Component,
-    outline_layers: dict[str, float] | None = None,
-    keepout_layers: dict[str, str] | None = None,
-) -> gf.Component:
-    """Apply keepout layers
-
-    Args:
-        component (gf.Component): component to outline
-        outline_layers (dict[str, float]): map of desired outline amount per layer.
-            If a layer is omitted, it will not be outlined
-        keepout_layers (dict[str, float]): map of desired layer to keepout. If a keepout
-            layer applies to a positive-tone layer (i.e. layer in outline_layers with non-zero outline),
-            then the keepout regions will be unioned. If keepout layer applies to negative-tone
-            (i.e. layer not in outline_layers), then the keepout region will be subtracted.
-
-    Returns:
-        gf.Component: component with keepout applied
-    """
-    comp_keepout = gf.Component()
-    if keepout_layers is None:
-        return component
-    if outline_layers is None:
-        outline_layers = {}
-
-    outline_layer_values = {
-        gf.get_layer(k).value: str(gf.get_layer(k)) for k in outline_layers.keys()
-    }
-    keepout_layer_values = {
-        gf.get_layer(k).value: str(gf.get_layer(k)) for k in keepout_layers.keys()
-    }
-    processed_layers = set([])
-    for layer in keepout_layers.keys():
-        keepout_region = component.get_region(layer=gf.get_layer(layer))
-        mapped_layer = gf.get_layer(keepout_layers[layer])
-        r = component.get_region(layer=mapped_layer)
-        if mapped_layer not in outline_layer_values:
-            # neg-tone, subtract
-            comp_keepout.add_polygon(r - keepout_region, layer=mapped_layer)
-        else:
-            # pos-tone, add/union
-            comp_keepout.add_polygon(r + keepout_region, layer=mapped_layer)
-        processed_layers.add(mapped_layer)
-    # add remaining layers
-    for layer in component.layers:
-        if gf.get_layer(layer) in processed_layers:
-            continue
-        if gf.get_layer(layer) in keepout_layer_values:
-            continue
-        r = component.get_region(layer=layer)
-        comp_keepout.add_polygon(r, layer=layer)
-    # add ports
-    comp_keepout.flatten()
-    comp_keepout.add_ports(component.ports)
-    return comp_keepout
+    dev_outlined.flatten()
+    dev_outlined.add_ports(new_ports)
+    dev_outlined.name = "ol_" + device.name
+    return dev_outlined
 
 
 def invert(
-    component: gf.Component,
-    ext_bbox_layers: dict[str, float] = {},
-) -> gf.Component:
-    """Outline polygons within component by layer.
+    device: Device,
+    ext_bbox_distance: dict[LayerSpec, float] = {},
+    kl_tile_size: int | None = None,
+    kl_precision: float = 1e-4,
+) -> Device:
+    """Outline polygons within device by layer.
 
     Args:
-        component (gf.Component): component to invert
-        ext_bbox_layers (dict[tuple, float]): amount to expand bounding box for each layer. If a layer is omitted, it will not be inverted.
+        device (Device): device to invert
+        ext_bbox_distance (dict[LayerSpec, float]): amount to expand bounding box for each layer. If a layer is omitted, it will not be inverted.
+        kl_tile_size (int | None): if not None, size of tile to divide geometry into for multithreaded execution
+        kl_precision (int | None): precision for KLayout operation (equivalently, sets dbu for KLayout)
 
     Returns:
-        gf.Component: the inverted component
+        Device: the inverted device
     """
-    comp_inverted = gf.Component()
-    bbox_layer_str_map = {
-        gf.get_layer(layer): layer for layer in ext_bbox_layers.keys()
-    }
-    for layer in component.layers:
-        layer = gf.get_layer(layer)
-        r = component.get_region(layer=layer)
-        if layer not in bbox_layer_str_map.keys():
-            comp_inverted.add_polygon(r, layer=layer)
+    tile_size = None if kl_tile_size is None else (kl_tile_size, kl_tile_size)
+    dev_inverted = Device()
+    ext_bbox_distance = {qg.get_layer(k).tuple: v for k, v in ext_bbox_distance.items()}
+    polygons = device.get_polygons(by_spec=True)
+    for layer, poly in polygons.items():
+        layer = qg.get_layer(layer).tuple
+        if layer not in ext_bbox_distance:
+            dev_inverted.add_polygon(poly, layer=layer)
         else:
-            ext = ext_bbox_layers[bbox_layer_str_map[layer]]
-            r_expanded = gf.components.shapes.bbox(
-                component, top=ext, bottom=ext, left=ext, right=ext, layer=layer
-            ).get_region(layer=layer)
-            comp_inverted.add_polygon(r_expanded - r, layer=layer)
-    comp_inverted.flatten()
-    return comp_inverted
+            dummy = Device()
+            dummy.add_polygon(poly, layer=layer)
+            bbox = dummy.bbox
+            ext = ext_bbox_distance[layer]
+            bbox[0] -= [ext, ext]
+            bbox[1] += [ext, ext]
+            bloated = pg.bbox(bbox, layer=layer)
+            dummy = Device()
+            dummy.add_polygon(polygons[layer], layer=layer)
+            inverted = pg.kl_boolean(
+                A=bloated,
+                B=dummy,
+                operation="A-B",
+                precision=kl_precision,
+                tile_size=tile_size,
+                layer=layer,
+            )
+            dev_inverted << inverted
+    dev_inverted.flatten()
+    dev_inverted.name = "inv_" + device.name
+    return dev_inverted
+
+
+def keepout(
+    device: Device,
+    outline_layers: dict[LayerSpec, float] | None = None,
+    keepout_layers: dict[LayerSpec, LayerSpecs] | None = None,
+    kl_tile_size: int | None = None,
+    kl_precision: float = 1e-4,
+) -> Device:
+    """Apply keepout layers
+
+    Args:
+        device (Device): device to outline
+        outline_layers (dict[LayerSpec, float]): map of desired outline amount per layer.
+            If a layer is omitted, it will not be outlined
+        keepout_layers (dict[LayerSpec, LayerSpecs]): map of desired layer(s) to keepout. If a keepout
+            layer applies to a positive-tone layer (i.e. layer in outline_layers with non-zero outline),
+            then the keepout regions will be unioned. If keepout layer applies to negative-tone
+            (i.e. layer not in outline_layers), then the keepout region will be subtracted.
+        kl_tile_size (int | None): if not None, size of tile to divide geometry into for multithreaded execution
+        kl_precision (int | None): precision for KLayout operation (equivalently, sets dbu for KLayout)
+
+    Returns:
+        Device: device with keepout applied
+    """
+    tile_size = None if kl_tile_size is None else (kl_tile_size, kl_tile_size)
+    dev_keepout = Device()
+    if keepout_layers is None:
+        return device
+    if outline_layers is None:
+        outline_layers = {}
+
+    outline_layers = {qg.get_layer(k).tuple: v for k, v in outline_layers.items()}
+    keepout_layers = {qg.get_layer(k).tuple: v for k, v in keepout_layers.items()}
+    processed_layers = set([])
+
+    polygons = device.get_polygons(by_spec=True)
+    for keepout_layer, mapped_layers in keepout_layers.keys():
+        keepout_poly = polygons[keepout_layer]
+        for mapped_layer in mapped_layers:
+            mapped_layer = qg.get_layer(mapped_layer).tuple
+            mapped_poly = polygons[mapped_layer]
+            d_keepout = Device()
+            d_keepout.add_polygon(keepout_poly, layer=mapped_layer)
+            d_mapped = Device()
+            d_mapped.add_polygon(mapped_poly, layer=mapped_layer)
+            if mapped_layer not in outline_layers:
+                # neg-tone, subtract
+                dev_keepout << pg.kl_boolean(
+                    A=d_mapped,
+                    B=d_keepout,
+                    operation="A-B",
+                    precision=kl_precision,
+                    tile_size=tile_size,
+                    layer=mapped_layer,
+                )
+            else:
+                # pos-tone, add/union
+                dev_keepout << pg.kl_boolean(
+                    A=d_mapped,
+                    B=d_keepout,
+                    operation="A+B",
+                    precision=kl_precision,
+                    tile_size=tile_size,
+                    layer=mapped_layer,
+                )
+            processed_layers.add(mapped_layer)
+    # add remaining layers
+    for layer in device.layers:
+        if qg.get_layer(layer).tuple in processed_layers:
+            continue
+        if qg.get_layer(layer).tuple in keepout_layers:
+            continue
+        dev_keepout.add_polygon(polygons[layer], layer=layer)
+    # add ports
+    dev_keepout.flatten()
+    dev_keepout.add_ports(device.ports)
+    return dev_keepout
 
 
 def get_cross_section_with_layer(
@@ -252,36 +319,6 @@ def get_cross_section_with_layer(
         xc = gf.get_cross_section(xc)
         if xc.sections[0].layer == layer:
             return xc
-
-
-def flex_grid(
-    components: ComponentSpecsOrComponents,
-    spacing: Spacing | float = (5.0, 5.0),
-    shape: tuple[int, int] | None = None,
-    align_x: Literal["origin", "xmin", "xmax", "center"] = "center",
-    align_y: Literal["origin", "ymin", "ymax", "center"] = "center",
-    rotation: int = 0,
-    mirror: bool = False,
-) -> gf.Component:
-    """Implement gdsfactory grid using kfactory's flex_grid method"""
-    c = gf.Component()
-    instances = kf.flexgrid(
-        c,
-        kcells=[gf.get_component(component) for component in components],
-        shape=shape,
-        spacing=(
-            (float(spacing[0]), float(spacing[1]))
-            if isinstance(spacing, tuple | list)
-            else float(spacing)
-        ),
-        align_x=align_x,
-        align_y=align_y,
-        rotation=rotation,
-        mirror=mirror,
-    )
-    for i, instance in enumerate(instances):
-        c.add_ports(instance.ports, prefix=f"{i}_")
-    return c
 
 
 #########################
@@ -437,20 +474,20 @@ def _get_port_direction(port: Port) -> str:
         return "S"
 
 
-def _get_component_port_direction(component: gf.Component) -> PortsDict:
+def _get_component_port_direction(component: Device) -> PortsDict:
     """Returns ports of a component organized by direction.
 
     Helper method for :py:func:`generate_experiment`.
 
     Args:
-        component (gf.Component): component to get ports from
+        component (Device): component to get ports from
 
     Returns:
         dict[str, Ports]: list of ports for each direction
     """
     ports = {x: [] for x in ["E", "N", "W", "S"]}
     # group by direction
-    for p in component.ports:
+    for p in component.ports.values():
         ports[_get_port_direction(p)].append(p)
     return ports
 
@@ -480,9 +517,9 @@ def _sort_ports(
 
 
 def generate_experiment(
-    dut: ComponentSpecOrComponent,
-    pad_array: ComponentSpecOrComponent,
-    label: ComponentSpecOrComponent | None,
+    dut: DeviceSpec | Device,
+    pad_array: DeviceSpec | Device,
+    label: DeviceSpec | Device | None,
     route_groups: Sequence[RouteGroup] | None,
     dut_offset: tuple[float, float] = (0, 0),
     pad_offset: tuple[float, float] = (0, 0),
@@ -490,15 +527,15 @@ def generate_experiment(
     ignore_port_count_mismatch: bool = False,
     ignore_dut_bbox: bool = False,
     retries: int = 10,
-) -> gf.Component:
-    """Construct an experiment from a device/circuit (gf.Component).
+) -> Device:
+    """Construct an experiment from a device/circuit (Device).
 
     Includes text, pads, and routing to connect pads to devices
 
     Parameters:
-        dut (ComponentSpec or Component): finished device to be connected to pads
-        pad_array (ComponentSpec or Component or None): pad array to connect to device
-        label (ComponentSpecOrComponent or None): text label or factory.
+        dut (DeviceSpec or Device): finished device to be connected to pads
+        pad_array (DeviceSpec or Device or None): pad array to connect to device
+        label (DeviceSpec or Device or None): text label or factory.
         route_groups (Sequence[RouteGroup] or None): how to route DUT to pads
         dut_offset (tuple[float, float]): x,y offset for dut (mostly useful for linear pad arrays)
         pad_offset (tuple[float, float]): x,y offset for pad array (mostly useful for linear pad arrays)
@@ -508,7 +545,7 @@ def generate_experiment(
         ignore_dut_bbox (bool): if True, does not attempt to route around DUT bounding box (bbox)
         retries (int): how many times to try rerouting with s_bend (may need to be larger for many port groupings)
     Returns:
-        (gf.Component): experiment
+        (Device): experiment
 
     Example:
         Using the example qnngds PDK: `<https://github.com/qnngroup/qnngds-pdk/>`_,
@@ -603,7 +640,7 @@ def generate_experiment(
                 "did you remember to add ports to your DUT?"
             )
 
-    experiment = gf.Component()
+    experiment = Device()
 
     # figure out which layers to outline
     outline_layers = get_outline_layers(gf.get_active_pdk().layers)
@@ -620,7 +657,7 @@ def generate_experiment(
     # add pads
     # don't outline, and add to dummy component.
     # after pad port adjustment, perform the outline
-    dummy_pads = gf.Component()
+    dummy_pads = Device()
     pads_ref = dummy_pads.add_ref(pads_i)
     pads_ref.move(pad_offset)
 
@@ -752,7 +789,7 @@ def generate_experiment(
                     if pad_port.x - dw / 2 <= dut_port.x <= pad_port.x + dw / 2:
                         dwidth = -2 * abs(dut_port.x - pad_port.x)
                         center = (dut_port.x, pad_port.y)
-                pad_port = Port(
+                pad_port = qg.Port(
                     name=pad_port.name,
                     width=pad_port.width + dwidth,
                     center=center,
@@ -774,7 +811,7 @@ def generate_experiment(
     # actually do routing
     problem_groups = set([])
     for _ in range((retries + 1) * len(route_groups)):
-        routed = gf.Component()
+        routed = Device()
         routed.add_ref(experiment)
         # for each grouping, try route_bundle, if that fails use route_bundle_sbend
         complete = True

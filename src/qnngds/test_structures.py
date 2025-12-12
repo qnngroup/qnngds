@@ -3,110 +3,105 @@
 # can be removed in python 3.14, see https://peps.python.org/pep-0749/
 from __future__ import annotations
 
-import gdsfactory as gf
-
 import qnngds as qg
+import phidl.geometry as pg
 
-from gdsfactory.typings import LayerSpec, LayerSpecs, ComponentSpecOrComponent
-from typing import Union, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 
 from functools import partial
 
+from qnngds.typing import LayerSpec, LayerSpecs, DeviceSpec
+from qnngds import Device
 
-@gf.cell
+
 def _create_comb(
-    pitch1: Union[int, float] = 0.5,
-    pitch2: Union[int, float] = 0.1,
-    layer1: tuple = (1, 0),
-    layer2: tuple = (2, 0),
-    text_angle: Union[int, float] = 0,
-) -> gf.Component:
+    pitch1: int | float = 0.5,
+    pitch2: int | float = 0.1,
+    layer1: LayerSpec = (1, 0),
+    layer2: LayerSpec = (2, 0),
+    text_angle: int | float = 0,
+) -> Device:
     """Creates vernier caliper comb.
 
     Helper method for alignment_mark
     Args:
         pitch1 (int or float): pitch of top comb
         pitch2 (int or float): pitch of bottom comb
-        layer1 (tuple): center comb GDS layer tuple (layer, type)
-        layer2 (tuple): top/bottom comb GDS layer tuple (layer, type)
+        layer1 (LayerSpec): center comb GDS layer tuple (layer, type)
+        layer2 (LayerSpec): top/bottom comb GDS layer tuple (layer, type)
         text_angle (int or float): angle to rotate text labels
 
     Returns:
-        gf.Component: alignment vernier calipers
+        Device: alignment vernier calipers
     """
 
-    COMB = gf.Component()
+    COMB = Device("comb")
 
     # middle comb (made of layer1), pitch = 10
-    rect1 = qg.geometries.compass(size=(5, 30), layer=layer1)
-    middle_comb = COMB.add_ref(rect1, columns=21, rows=1, column_pitch=10, row_pitch=0)
+    rect1 = pg.rectangle(size=(5, 30), layer=qg.get_layer(layer1).tuple)
+    middle_comb = COMB.add_array(rect1, columns=21, rows=1, spacing=(10, 0))
     middle_comb.move(COMB.center, (0, 0))
 
     # top and bottom combs (made of layer2), pitchs = 10+pitch1, 10+pitch2
-    rect2 = qg.geometries.compass(size=(5, 30), layer=layer2)
-    top_comb = COMB.add_ref(
-        rect2, columns=21, rows=1, column_pitch=10 + pitch1, row_pitch=0
-    )
+    rect2 = pg.rectangle(size=(5, 30), layer=qg.get_layer(layer2).tuple)
+    top_comb = COMB.add_array(rect2, columns=21, rows=1, spacing=(10 + pitch1, 0))
     top_comb.move(top_comb.center, (middle_comb.center[0], middle_comb.center[1] + 30))
     top_text = COMB.add_ref(
-        gf.components.texts.text(f"{round(pitch1 * 1e3)}NM", size=10, layer=layer2)
+        pg.text(f"{round(pitch1 * 1e3)}NM", size=10, layer=qg.get_layer(layer2).tuple)
     )
     top_text.rotate(-text_angle)
     top_text.move(top_text.center, (140, 30))
 
-    bottom_comb = COMB.add_ref(
-        rect2, columns=21, rows=1, column_pitch=10 + pitch2, row_pitch=0
-    )
+    bottom_comb = COMB.add_array(rect2, columns=21, rows=1, spacing=(10 + pitch2, 0))
     bottom_comb.move(
         bottom_comb.center, (middle_comb.center[0], middle_comb.center[1] - 30)
     )
     bottom_text = COMB.add_ref(
-        gf.components.texts.text(f"{round(pitch2 * 1e3)}NM", size=10, layer=layer2)
+        pg.text(f"{round(pitch2 * 1e3)}NM", size=10, layer=qg.get_layer(layer2).tuple)
     )
     bottom_text.rotate(-text_angle)
     bottom_text.move(bottom_text.center, (140, -30))
 
     # additional markers (made of layer1), for clarity
-    rect1a = qg.geometries.compass((5, 20), layer=layer1)
-    marksa = COMB.add_ref(rect1a, columns=3, rows=2, column_pitch=100, row_pitch=110)
+    rect1a = pg.rectangle(size=(5, 20), layer=qg.get_layer(layer1).tuple)
+    marksa = COMB.add_array(rect1a, columns=3, rows=2, spacing=(100, 110))
     marksa.move(marksa.center, middle_comb.center)
 
-    rect1b = qg.geometries.compass((5, 10), layer=layer1)
-    marksb = COMB.add_ref(rect1b, columns=2, rows=2, column_pitch=100, row_pitch=100)
+    rect1b = pg.rectangle(size=(5, 10), layer=qg.get_layer(layer1).tuple)
+    marksb = COMB.add_array(rect1b, columns=2, rows=2, spacing=(100, 100))
     marksb.move(marksb.center, middle_comb.center)
 
     return COMB
 
 
-@gf.cell
-def _create_marker(layer1: tuple = (1, 0), layer2: tuple = (2, 0)) -> gf.Component:
+def _create_marker(layer1: LayerSpec = (1, 0), layer2: LayerSpec = (2, 0)) -> Device:
     """Creates vernier caliper comb
 
     Helper method for alignment_mark
     Args:
-        layer1 (tuple): center comb GDS layer tuple (layer, type)
-        layer2 (tuple): top/bottom comb GDS layer tuple (layer, type)
+        layer1 (LayerSpec): center comb GDS layer tuple (layer, type)
+        layer2 (LayerSpec): top/bottom comb GDS layer tuple (layer, type)
 
     Returns:
-        gf.Component: alignment cross with vernier calipers
+        Device: alignment cross with vernier calipers
     """
 
-    MARK = gf.Component()
+    MARK = Device("interlayer_align")
 
     # central part with cross
 
-    CROSS = gf.Component()
-    cross = CROSS << qg.geometries.cross(length=200, width=2, layer=layer1)
-    rect = qg.geometries.compass(size=(45, 45), layer=layer2)
-    window = CROSS.add_ref(rect, rows=2, columns=2, row_pitch=155, column_pitch=155)
+    CROSS = Device()
+    cross = CROSS << pg.cross(length=200, width=2, layer=qg.get_layer(layer1).tuple)
+    rect = pg.rectangle(size=(45, 45), layer=qg.get_layer(layer2).tuple)
+    window = CROSS.add_array(rect, rows=2, columns=2, spacing=(155, 155))
     window.move(window.center, cross.center)
     CROSS.flatten()
 
     MARK << CROSS
 
-    VERNIER = gf.Component()
+    VERNIER = Device()
     for n, pitches in enumerate(((0.5, 0.1), (0.2, 0.05))):
         p1, p2 = pitches
         for i in range(2):
@@ -135,9 +130,9 @@ def _create_marker(layer1: tuple = (1, 0), layer2: tuple = (2, 0)) -> gf.Compone
     MARK.move(MARK.center, (0, 0))
 
     # text
-    TEXT = gf.Component()
-    layer1_str = str(gf.get_layer(layer1)).split("_")[0]
-    layer2_str = str(gf.get_layer(layer2)).split("_")[0]
+    TEXT = Device()
+    layer1_str = qg.get_layer(layer1).name.split("_")[0]
+    layer2_str = qg.get_layer(layer2).name.split("_")[0]
     bg_label = (
         layer2_str[:3] if len(layer2_str) < 4 else layer2_str[:2] + layer2_str[-1]
     )
@@ -152,24 +147,24 @@ def _create_marker(layer1: tuple = (1, 0), layer2: tuple = (2, 0)) -> gf.Compone
     else:
         sm_label += f"{layer1_str[:4]}{layer1_str[-1]}"
     for layer in (layer1, layer2):
-        text1 = TEXT << gf.components.texts.text(bg_label, size=50, layer=layer)
+        text1 = TEXT << pg.text(bg_label, size=50, layer=qg.get_layer(layer).tuple)
         text1.move(text1.center, (-200, 190))
-    text2 = TEXT << gf.components.texts.text(sm_label, size=10, layer=layer2)
+    text2 = TEXT << pg.text(sm_label, size=10, layer=qg.get_layer(layer2).tuple)
     text2.move(text2.center, (-200, 250))
     if isinstance(layer1, tuple):
         layer1_numeric = f"{layer1[0]}/{layer1[1]}"
     else:
-        layer1_enum = gf.get_layer(layer1)
+        layer1_enum = qg.get_layer(layer1).tuple
         layer1_numeric = f"{layer1_enum[0]}/{layer1_enum[1]}"
     if isinstance(layer2, tuple):
         layer2_numeric = f"{layer2[0]}/{layer2[1]}"
     else:
-        layer2_enum = gf.get_layer(layer2)
+        layer2_enum = qg.get_layer(layer2).tuple
         layer2_numeric = f"{layer2_enum[0]}/{layer2_enum[1]}"
-    text3 = TEXT << gf.components.texts.text(
+    text3 = TEXT << pg.text(
         layer2_numeric + " ON " + layer1_numeric,
         size=10,
-        layer=layer2,
+        layer=qg.get_layer(layer2).tuple,
     )
     text3.move(text3.center, (-200, 235))
     TEXT.flatten()
@@ -178,20 +173,19 @@ def _create_marker(layer1: tuple = (1, 0), layer2: tuple = (2, 0)) -> gf.Compone
     return MARK
 
 
-@gf.cell
 def alignment_mark(
-    layers: LayerSpecs = ["EBEAM_COARSE", "PHOTO1", "PHOTO2"],
-) -> gf.Component:
+    layers: LayerSpecs = ["PHOTO1", "PHOTO2"],
+) -> Device:
     """Creates an alignment mark for each lithography layer.
 
     Args:
         layers (LayerSpecs): A list of GDS layers
 
     Returns:
-        gf.Component: alignment marks between each layer pair
+        Device: alignment marks between each layer pair
     """
 
-    ALIGN = gf.Component()
+    ALIGN = Device("alignment_marks")
     markers_pitch = 600
     for i, layer1 in enumerate(layers):
         n = len(layers) - i - 1
@@ -206,10 +200,7 @@ def alignment_mark(
     return ALIGN
 
 
-@gf.cell
-def _create_waffle(
-    res: Union[float, int] = 1, layer: LayerSpec = (1, 0)
-) -> gf.Component:
+def _create_waffle(res: float | int = 1, layer: LayerSpec = (1, 0)) -> Device:
     """Creates waffle test structures for determining process resolution.
 
     Helper method for resolution_test
@@ -218,34 +209,32 @@ def _create_waffle(
         layer (LayerSpec): GDS layer tuple (layer, type)
 
     Returns:
-        gf.Component: the resolution test structure
+        Device: the resolution test structure
     """
 
-    WAFFLE = gf.Component()
-    W = qg.geometries.compass(size=(res * 80, res * 80), layer=layer)
+    WAFFLE = Device("waffle")
+    W = pg.rectangle(size=(res * 80, res * 80), layer=layer)
 
     pattern = [(res * x, res * 80) for x in [2, 1, 1, 2, 3, 5, 8, 13, 21, 15]]
-    DUMMY = gf.Component()
-    WOut = DUMMY << qg.utilities.flex_grid(
-        tuple(qg.geometries.compass(size=p, layer=layer) for p in pattern),
-        spacing=res,
+    DUMMY = Device()
+    WOut = DUMMY << pg.gridsweep(
+        function=pg.rectangle, param_x={"size": pattern}, param_y={}, spacing=res
     )
     WOut.move(WOut.center, W.center)
-    WAFFLE << gf.boolean(W, WOut, "-", layer=layer)
+    WAFFLE << pg.kl_boolean(A=W, B=WOut, operation="A-B", layer=layer)
     WOut.rotate(90, center=WOut.center)
-    WAFFLE << gf.boolean(W, WOut, "-", layer=layer)
+    WAFFLE << pg.kl_boolean(A=W, B=WOut, operation="A-B", layer=layer)
 
-    text = WAFFLE << gf.components.texts.text(str(res), size=20, layer=layer)
-    text.move((text.xmin, text.ymax), (W.xmin, W.ymin - min(20, 20 * res)))
+    text = WAFFLE << pg.text(str(res), size=20, layer=layer)
+    text.move((text.xmin, text.ymax), (W.xmin, W.ymin - min(10, 10 * res)))
 
-    WAFFLEu = gf.Component()
-    WAFFLEu << qg.utilities.union(WAFFLE)
+    WAFFLEu = Device()
+    WAFFLEu << pg.union(WAFFLE, by_layer=True)
     WAFFLEu.flatten()
     return WAFFLEu
 
 
-@gf.cell
-def _create_3L(res: Union[float, int] = 1, layer: LayerSpec = (1, 0)) -> gf.Component:
+def _create_3L(res: float | int = 1, layer: LayerSpec = (1, 0)) -> Device:
     """Creates L-shaped test structures for determining process resolution.
 
     Helper method for resolution_test
@@ -254,42 +243,41 @@ def _create_3L(res: Union[float, int] = 1, layer: LayerSpec = (1, 0)) -> gf.Comp
         layer (LayerSpec): GDS layer tuple (layer, type)
 
     Returns:
-        gf.Component: the resolution test structure
+        Device: the resolution test structure
     """
 
-    LLL = gf.Component()
+    LLL = Device("LLL")
     grid_spacing = (15 * res, 15 * res)
 
     deviation = [0.8, 1, 1.2]
     for i, percent in enumerate(deviation):
-        bars = gf.Component()
+        bars = Device()
         w = percent * res
         spacing = 2 * res
-        bar = qg.geometries.compass(size=(min(100 * res, 100), w), layer=layer)
-        h_bars = bars.add_ref(bar, columns=1, rows=5, column_pitch=0, row_pitch=spacing)
-        v_bars = bars.add_ref(bar, columns=1, rows=5, column_pitch=0, row_pitch=spacing)
+        bar = pg.rectangle(size=(min(100 * res, 100), w), layer=layer)
+        h_bars = bars.add_array(bar, columns=1, rows=5, spacing=(0, spacing))
+        v_bars = bars.add_array(bar, columns=1, rows=5, spacing=(0, spacing))
         h_bars.rotate(90)
         h_bars.move((h_bars.xmin, h_bars.ymin), (0, 0))
         v_bars.move((v_bars.xmin, v_bars.ymin), (0, 0))
         lll = LLL << bars
         lll.move([i * offset for offset in grid_spacing])
 
-    text = LLL << gf.components.texts.text(str(res), size=20, layer=layer)
+    text = LLL << pg.text(str(res), size=20, layer=layer)
     start = (text.xmin, text.ymin)
     text.move(start, [(len(deviation) + 0.5) * offset for offset in grid_spacing])
-    LLLu = gf.Component()
-    LLLu << qg.utilities.union(LLL)
+    LLLu = Device()
+    LLLu << pg.union(LLL, by_layer=True)
     LLLu.flatten()
     return LLLu
 
 
-@gf.cell
 def resolution_test(
-    resolutions: List[float] = [0.8, 1.2, 1.6],
+    resolutions: List[float] = [0.6, 0.8, 1.0],
     outline: Optional[float] = None,
     layer: LayerSpec = (2, 0),
-) -> gf.Component:
-    """Creates test structures for determining a process resolution.
+) -> Device:
+    """Creates L and waffle structures for determining process resolution.
 
     Args:
         resolutions (List[float]): List of resolutions (in µm) to be tested.
@@ -297,22 +285,16 @@ def resolution_test(
         layer (LayerSpec): GDS layer tuple (layer, type)
 
     Returns:
-        gf.Component: the resolution test structures
+        Device: the resolution test structures
     """
 
-    tests = []
-    for test_fn in (_create_3L, _create_waffle):
-        tests.append(
-            gf.grid(
-                tuple(test_fn(res, layer) for res in resolutions),
-                spacing=10,
-                shape=(1, len(resolutions)),
-                align_y="ymin",
-            )
-        )
-    RES_TEST = gf.Component()
-    rt = RES_TEST << gf.grid(tests, spacing=20, align_x="xmin")
-    rt.move(rt.center, (0, 0))
+    RES_TEST = Device("resolution_test")
+    for test_fn in [_create_3L, _create_waffle]:
+        for res in resolutions:
+            RES_TEST << test_fn(res, layer)
+    RES_TEST.distribute(direction="y", spacing=0, separation=False, edge="ymin")
+    RES_TEST.distribute(direction="x", spacing=10, edge="ymin")
+    RES_TEST.move(RES_TEST.center, (0, 0))
 
     if outline is not None:
         if outline > 0:
@@ -320,22 +302,21 @@ def resolution_test(
         else:
             RES_TEST = qg.utilities.invert(RES_TEST, {layer: 5})
 
-    RES_TESTu = gf.Component()
-    RES_TESTu << qg.utilities.union(RES_TEST)
+    RES_TESTu = Device()
+    RES_TESTu << pg.union(RES_TEST, by_layer=True)
     RES_TESTu.flatten()
     return RES_TESTu
 
 
-@gf.cell
 def _litho_steps(
     resolutions: List[float] = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8],
     width: float = 5,
     spacing: float = 5,
     layer: LayerSpec = (2, 0),
-) -> gf.Component:
+) -> Device:
     """Creates step pattern for lithographic resolution test
 
-    Copied from PHIDL
+    Adapted from PHIDL
 
     Args:
         resolutions (List[float]): List of resolutions (in µm) to be tested.
@@ -344,19 +325,19 @@ def _litho_steps(
         layer (LayerSpec): GDS layer tuple (layer, type)
 
     Returns:
-        gf.Component: the test structure
+        Device: the test structure
     """
 
-    D = gf.Component()
+    D = Device()
 
-    R1 = qg.geometries.rectangle(size=(width, spacing), layer=layer)
+    R1 = pg.rectangle(size=(width, spacing), layer=layer)
     r = D << R1
     r.xmin = -width
     r.ymin = 0
     offset = 0.0
     for resolution in reversed(resolutions):
         offset += spacing + resolution
-        R2 = qg.geometries.rectangle(size=(width, resolution), layer=layer)
+        R2 = pg.rectangle(size=(width, resolution), layer=layer)
         r = D << R1
         r.xmin = 0
         r.ymin = 0
@@ -370,13 +351,12 @@ def _litho_steps(
     return D
 
 
-@gf.cell
 def litho_checkerboard(
     resolutions: List[float] = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
     layer: LayerSpec = (2, 0),
     label_interval: int = 5,
     label_size: float = 10,
-) -> gf.Component:
+) -> Device:
     """Creates crossed lith_steps pattern for lithographic resolution test
 
     Args:
@@ -386,10 +366,10 @@ def litho_checkerboard(
         label_size (float): size of text label
 
     Returns:
-        gf.Component: the litho test structure
+        Device: the litho test structure
     """
 
-    D = gf.Component()
+    D = Device("litho_checkerboard")
     max_res = np.max(resolutions)
     widths = list(resolutions) + list(max_res * np.linspace(2, 10, 9)) + [100 * max_res]
     xmax = 0
@@ -411,17 +391,17 @@ def litho_checkerboard(
         if label_interval == 0:
             continue
         if n % label_interval == 0:
-            label = D << gf.components.texts.text(
+            label = D << pg.text(
                 f"{round(resolution * 10) / 10}UM", size=label_size, layer=layer
             )
             label.move((label.xmin, label.y), (2 * label_size, offset - resolution / 2))
             # add wider rectangle
-            tick = D << qg.geometries.rectangle(
+            tick = D << pg.rectangle(
                 size=(label_size, max(spacing / 2, 1.5)), layer=layer
             )
         else:
             # add narrower rectangle
-            tick = D << qg.geometries.rectangle(
+            tick = D << pg.rectangle(
                 size=(label_size / 2, max(spacing / 2, 1.5)), layer=layer
             )
         tick.move((tick.xmin, tick.y), (label_size / 2, offset - resolution / 2))
@@ -429,45 +409,12 @@ def litho_checkerboard(
     return D
 
 
-@gf.cell
-def litho_star(
-    num_lines: int = 20,
-    line_width: float = 2,
-    diameter: float = 200,
-    layer: LayerSpec = (1, 0),
-) -> gf.Component:
-    """Creates circular-star shape from lines, used as a lithographic resolution
-    test pattern.
-
-    Copied from PHIDL
-
-    Args:
-        num_lines (int): number of lines to make
-        line_width (float): width of each line
-        diameter (float): diameter of circle
-        layer (LayerSpec): GDS layer specification
-
-    Returns:
-        gf.Component: the litho test structure
-    """
-    D = gf.Component()
-    degree = 180 / num_lines
-    R1 = qg.geometries.rectangle(size=(line_width, diameter), layer=layer)
-    for i in range(num_lines):
-        r1 = D.add_ref(R1).rotate(degree * i)
-        r1.center = (0, 0)
-    # GDSfactory doesn't like non-integer dbu, which happens when rotating rectangles
-    D.flatten()
-    return D
-
-
-@gf.cell
 def vdp(
     diagonal: float = 400,
     contact_width: float = 40,
     layer: LayerSpec = (1, 0),
     port_type: str = "electrical",
-) -> gf.Component:
+) -> Device:
     """Creates a Van der Pauw (VDP) device with specified dimensions.
 
     Args:
@@ -477,9 +424,9 @@ def vdp(
         port_type (string): gdsfactory port type. default "electrical"
 
     Returns:
-        gf.Component: Van der Pauw cell
+        Device: Van der Pauw cell
     """
-    VDP = gf.Component()
+    VDP = Device("vdp")
 
     xpts = [
         -contact_width / 2,
@@ -502,24 +449,18 @@ def vdp(
         contact_width / 2,
     ]
 
-    VDP.add_polygon(zip(xpts, ypts), layer=layer)
+    polygon = pg.polygon_ports(xpts=xpts, ypts=ypts, layer=layer)
+    VDP << polygon
+    VDP.flatten()
 
-    for i in range(4):
-        x = -((-1) ** (i // 2)) * diagonal / 2 if i % 2 == 0 else 0
-        y = (-1) ** (i // 2) * diagonal / 2 if i % 2 == 1 else 0
-        VDP.add_port(
-            name=f"e{i + 1}",
-            center=[x, y],
-            width=contact_width,
-            orientation=180 - 90 * i,
-            layer=layer,
-            port_type=port_type,
-        )
+    VDP.add_port(port=polygon.ports["1"], name="N1", layer=layer)
+    VDP.add_port(port=polygon.ports["3"], name="E1", layer=layer)
+    VDP.add_port(port=polygon.ports["5"], name="S1", layer=layer)
+    VDP.add_port(port=polygon.ports["7"], name="W1", layer=layer)
 
     return VDP
 
 
-@gf.cell
 def rect_tlm(
     contact_l: float = 10,
     spacings: List[float] = [10, 10, 20, 50, 80, 100, 200],
@@ -529,7 +470,7 @@ def rect_tlm(
     pad_layer: LayerSpec | None = (3, 0),
     mesa_layer: LayerSpec = (4, 0),
     pad_size: Tuple[float, float] = (80, 80),
-) -> gf.Component:
+) -> Device:
     """Creates rectangular transfer-length-method test structures.
 
     Args:
@@ -544,15 +485,15 @@ def rect_tlm(
         pad_size (tuple(float,float)): width, height of pad
 
     Returns:
-        gf.Component: TLM structure
+        Device: TLM structure
     """
-    TLM = gf.Component()
+    TLM = Device("rect_tlm")
     xoff = 0
     for n, space in enumerate(spacings):
         fp_w = space + 2 * contact_l
         w = contact_w * 1.2 + 10
         for i in range(2):
-            fp = TLM << qg.geometries.flagpole(
+            fp = TLM << pg.flagpole(
                 size=(fp_w, pad_size[1]),
                 stub_size=(contact_l, w),
                 shape=("d" if i % 2 else "p"),
@@ -567,7 +508,7 @@ def rect_tlm(
                 fp.movex(xoff - fp.xmin + 50)
             xoff = fp.xmax
             if via_layer is not None:
-                via = TLM << qg.geometries.compass(
+                via = TLM << pg.rectangle(
                     size=(contact_l, contact_w + 10), layer=via_layer
                 )
                 if i % 2:
@@ -575,37 +516,32 @@ def rect_tlm(
                 else:
                     via.move((fp.xmin + contact_l / 2 - via.x, -via.y))
                 # add vias to lower metal pads
-                pad_via = TLM << qg.geometries.compass(
-                    size=(fp_w, pad_size[1]), layer=via_layer
-                )
+                pad_via = TLM << pg.rectangle(size=(fp_w, pad_size[1]), layer=via_layer)
                 pad_via.movex(fp.xmax - pad_via.xmax)
                 if i % 2:
                     pad_via.movey(fp.ymin - pad_via.ymin)
                 else:
                     pad_via.movey(fp.ymax - pad_via.ymax)
-                top_pad = TLM << qg.geometries.compass(
+                top_pad = TLM << pg.rectangle(
                     size=(fp_w + 2, pad_size[1] + 2), layer=pad_layer
                 )
                 top_pad.move(top_pad.center, pad_via.center)
-        text = TLM << gf.components.texts.text(str(space), layer=finger_layer)
+        text = TLM << pg.text(str(space), layer=finger_layer)
         text.move((xoff - text.xmin + 5, -w / 2 - pad_size[1] + 10 - text.ymin))
     # add mesa
     center = (TLM.x, 0)
-    mesa = TLM << qg.geometries.compass(
-        size=(TLM.xsize + 50, contact_w), layer=mesa_layer
-    )
+    mesa = TLM << pg.rectangle(size=(TLM.xsize + 50, contact_w), layer=mesa_layer)
     mesa.move(mesa.center, center)
     return TLM
 
 
-@gf.cell
 def circ_tlm(
     ext_radius: float = 100,
     int_radius: List[float] = [50, 70, 80, 90, 95, 98, 99],
     pad_layer: LayerSpec = (3, 0),
     mesa_layers: LayerSpecs = [(1, 0), (2, 0)],
     text_size: float = 10,
-) -> gf.Component:
+) -> Device:
     """Creates rectangular transfer-length-method test structures.
 
     Args:
@@ -616,81 +552,68 @@ def circ_tlm(
         text_size (float): size of text label
 
     Returns:
-        gf.Component: TLM structure
+        Device: TLM structure
     """
-    TLM = gf.Component()
+    TLM = Device("circ_tlm")
 
     cuts = []
     for r_i in int_radius:
         d = ext_radius - r_i
         r = (ext_radius + r_i) / 2
-        CUT = gf.Component()
-        r = CUT << gf.components.ring(
-            radius=r, width=d, angle_resolution=2.5, layer=pad_layer, angle=360
-        )
-        t = CUT << gf.components.text(
+        CUT = Device()
+        r = CUT << pg.ring(radius=r, width=d, angle_resolution=2.5, layer=pad_layer)
+        t = CUT << pg.text(
             text=f"{ext_radius}/{r_i}", size=text_size, justify="right", layer=pad_layer
         )
         t.move((t.xmax, t.ymax), (r.xmax, r.ymax))
         cuts.append(CUT)
-    c = qg.utilities.flex_grid(
+    c = pg.grid(
         cuts,
         spacing=(10, 10),
-        shape=(1, len(cuts)),
-        align_x="center",
-        align_y="center",
-        rotation=0,
-        mirror=False,
+        shape=(len(cuts), 1),
+        align_x="x",
+        align_y="y",
     )
     # make the mesa
     for layer in mesa_layers:
-        m = TLM << qg.geometries.rectangle(
-            size=(c.xsize + 10, c.ysize + 10), layer=layer
-        )
+        m = TLM << pg.rectangle(size=(c.xsize + 10, c.ysize + 10), layer=layer)
         m.move(m.center, c.center)
-    DUMMY = gf.Component()
-    p = DUMMY << qg.geometries.rectangle(
-        size=(c.xsize + 10, c.ysize + 10), layer=pad_layer
-    )
+    DUMMY = Device()
+    p = DUMMY << pg.rectangle(size=(c.xsize + 10, c.ysize + 10), layer=pad_layer)
     p.move(p.center, c.center)
-    TLM << gf.boolean(
+    TLM << pg.kl_boolean(
         A=p,
         B=c,
         operation="A-B",
-        layer1=pad_layer,
-        layer2=pad_layer,
         layer=pad_layer,
     )
     return TLM
 
 
-@gf.cell
 def via_chain(
-    via_spec: ComponentSpecOrComponent = qg.geometries.via,
+    via_spec: DeviceSpec | Device = qg.geometries.via,
     num_vias: int = 5,
     spacing: float = 10,
     tap_period: int = 1,
-    port_type: str = "electrical",
-) -> gf.Component:
+) -> Device:
     """Makes a chain of vias, with optional taps along the length of the chain
 
     Args:
-        via_spec (ComponentSpec | Component): function, component name, or component for the via
+        via_spec (DeviceSpec | Device): function, component name, or component for the via
         num_vias (int): number of vias to include in chain
         spacing (float): spacing between vias
         tap_period (int): number of vias between each tap. If zero, doesn't place any taps.
-        port_type (str): "electrical" or "optical"
 
     Returns:
-        gf.Component: the via chain
+        Device: the via chain
     """
     if tap_period < 0:
         raise ValueError(f"{tap_period=} must be positive")
     if tap_period > 1:
         raise ValueError("tap_period > 1 has not been implemented yet")
 
-    VC = gf.Component()
-    via = gf.get_component(via_spec)
+    VC = Device("via_chain")
+    via = qg.get_active_pdk().get_device(via_spec)
     # get layers
     port_dict = qg.utilities._get_component_port_direction(via)
     east_layers = set(port.layer for port in port_dict["E"])
@@ -718,8 +641,7 @@ def via_chain(
 
     width = east_port.width
     if tap_period == 0:
-        p = gf.path.straight(length=spacing, npoints=2)
-        connector = partial(gf.path.extrude, p=p, width=width)
+        connector = partial(pg.straight, size=(spacing, width))
     else:
         connector = partial(
             qg.geometries.tee,
@@ -727,23 +649,23 @@ def via_chain(
             stub_size=(width, width),
             taper_type="fillet",
             taper_radius=width / 2,
-            port_type="optical",
         )
 
-    vias = VC.add_ref(
-        via, columns=num_vias, rows=1, column_pitch=via.xsize + spacing, row_pitch=1
+    vias = VC.add_array(
+        via,
+        columns=num_vias,
+        rows=1,
+        spacing=(via.xsize + spacing, 0),
     )
+
     east_end_port_layer = west_layer if num_vias % 2 == 0 else east_layer
     east_end_port_name = [
         port for port in port_dict["E"] if port.layer == east_end_port_layer
     ][0].name
-    if num_vias > 1:
-        end_ports = [
-            vias.ports[west_port.name, 0, 0],
-            vias.ports[east_end_port_name, num_vias - 1, 0],
-        ]
-    else:
-        end_ports = [vias.ports[west_port.name], vias.ports[east_end_port_name]]
+    end_ports = [
+        vias.ports[0, 0][west_port.name],
+        vias.ports[0, num_vias - 1][east_end_port_name],
+    ]
     conn_ports = []
     for i in range(2):
         layer = east_layer if i == 0 else west_layer
@@ -751,33 +673,20 @@ def via_chain(
         odd = i
         n_conn = (num_vias - odd) // 2
         if n_conn > 0:
-            conn = VC.add_ref(
+            conn = VC.add_array(
                 connector(layer=layer),
                 columns=n_conn,
                 rows=1,
-                column_pitch=2 * (via.xsize + spacing),
-                row_pitch=1,
+                spacing=(2 * (via.xsize + spacing), 1),
             )
-            conn.connect(
-                conn.ports["o1"],
-                vias.ports[port.name, 2 if odd else 0, 0],
-                allow_type_mismatch=True,
-            )
+            conn.movey(-width / 2)
+            if odd:
+                conn.rotate(180)
+                conn.movex(vias.xmin + 2 * via.xsize + spacing - conn.xmin)
+            else:
+                conn.movex(vias.xmin + via.xsize - conn.xmin)
             if tap_period > 0:
-                if odd:
-                    conn_ports.append(
-                        [
-                            conn.ports["o3", n, 0] if n_conn > 1 else conn.ports["o3"]
-                            for n in range(n_conn - 1, -1, -1)
-                        ]
-                    )
-                else:
-                    conn_ports.append(
-                        [
-                            conn.ports["o3", n, 0] if n_conn > 1 else conn.ports["o3"]
-                            for n in range(n_conn)
-                        ]
-                    )
+                conn_ports.append([conn.ports[0, n][3] for n in range(n_conn)])
         else:
             conn_ports.append([])
     ports = [end_ports[0]]
@@ -787,21 +696,17 @@ def via_chain(
     if len(conn_ports) > 1:
         ports += conn_ports[1]
 
-    prefix = "e" if port_type == "electrical" else "o"
     for n, port in enumerate(ports):
-        VC.add_port(name=f"{prefix}{n + 1}", port=port)
-    for port in VC.ports:
-        port.port_type = port_type
+        VC.add_port(name=f"{n + 1}", port=port)
 
     return VC
 
 
-@gf.cell
 def etch_test(
-    layer: LayerSpec = "EBEAM_FINE",
+    layer: LayerSpec = (1, 0),
     pad_size: tuple[float, float] = (2000, 2000),
-    trench_width: float = 10,
-) -> gf.Component:
+    trench_width: float = 20,
+) -> Device:
     """Construct side-by-side pads for performing electrical etch tests
 
     Args:
@@ -810,30 +715,24 @@ def etch_test(
         trench_width (float): width of trench around each pad
 
     Returns:
-        gf.Component: etch test structure
+        Device: etch test structure
     """
-    TRENCHES = gf.Component()
+    TRENCHES = Device("etch_trench")
     # create trench
+    rect = pg.rectangle(size=pad_size, layer=layer)
+    qg.utilities._create_layered_ports(rect, layer)
     pad_outlined = qg.utilities.outline(
-        component=qg.geometries.rectangle(size=pad_size, layer=layer),
+        device=rect,
         outline_layers={layer: trench_width},
+        kl_tile_size=max(pad_size[0], pad_size[1]),
     )
-    t = TRENCHES.add_ref(
-        pad_outlined, columns=2, column_pitch=pad_size[0] + 5 * trench_width
+    t = TRENCHES.add_array(
+        pad_outlined, columns=2, rows=1, spacing=(pad_size[0] + 5 * trench_width, 0)
     )
     t.move(t.center, (0, 0))
-    outline_layers = qg.utilities.get_outline_layers(gf.get_active_pdk().layers)
-    pos_tone = str(gf.get_layer(layer)) in outline_layers
-    if pos_tone:
-        return TRENCHES
-    TRENCHES_INV = gf.Component()
-    TRENCHES_INV << qg.utilities.invert(
-        component=TRENCHES, ext_bbox_layers={layer: 5 * trench_width}
-    )
-    return TRENCHES_INV
+    return TRENCHES
 
 
-@gf.cell
 def cross_bridge_kelvin_resistor(
     size: float = 50,
     lead_length: float = 50,
@@ -841,7 +740,7 @@ def cross_bridge_kelvin_resistor(
     layer_bot: LayerSpec = "EBEAM_COARSE",
     layer_via: LayerSpec | None = None,
     port_type: str = "electrical",
-) -> gf.Component:
+) -> Device:
     """Generate a cross-bridge Kelvin resistor
 
     See `this paper <http://ieeexplore.ieee.org/document/913141/>`_.
@@ -855,9 +754,9 @@ def cross_bridge_kelvin_resistor(
         port_type (string): gdsfactory port type. default "electrical"
 
     Returns:
-        gf.Component: cross-bridge Kelvin resistor
+        Device: cross-bridge Kelvin resistor
     """
-    CBKR = gf.Component()
+    CBKR = Device("cbkr")
     if layer_via is not None:
         center = qg.geometries.via(
             size=(size, size),
@@ -867,15 +766,15 @@ def cross_bridge_kelvin_resistor(
             layer_top=layer_top,
         )
     else:
-        center = gf.Component()
-        cbot = center << qg.geometries.compass(size=(size, size), layer=layer_bot)
-        ctop = center << qg.geometries.compass(size=(size, size), layer=layer_top)
+        center = Device()
+        cbot = center << pg.compass(size=(size, size), layer=layer_bot)
+        ctop = center << pg.compass(size=(size, size), layer=layer_top)
         for n, port in enumerate(cbot.ports):
             center.add_port(name=f"e2{n + 1}", port=port)
         for n, port in enumerate(ctop.ports):
             center.add_port(name=f"e1{n + 1}", port=port)
-    top_ext = qg.geometries.compass(size=(lead_length, size), layer=layer_top)
-    bot_ext = qg.geometries.compass(size=(lead_length, size), layer=layer_bot)
+    top_ext = pg.compass(size=(lead_length, size), layer=layer_top)
+    bot_ext = pg.compass(size=(lead_length, size), layer=layer_bot)
     center_i = CBKR << center
     ports = []
     for layer_i in range(2):
