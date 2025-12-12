@@ -21,20 +21,26 @@
           p.numpy
           p.klayout
           p.ruff
+          p.pyqt6
         ]);
       in
       {
         devShells.default =
-          with pkgs;
-          mkShell {
-            buildInputs = [
+          pkgs.mkShell {
+            buildInputs = with pkgs; [
               uv
               python
               pythonEnv
               stdenv.cc.cc.libgcc
             ];
 
-            nativeBuildInputs = [ autoPatchelfHook ];
+            LD_LIBRARY_PATH = "${
+              pkgs.lib.makeLibraryPath (with pkgs; [
+                xorg.libX11
+              ])
+            }:$LD_LIBRARY_PATH";
+
+            nativeBuildInputs = [ pkgs.autoPatchelfHook ];
 
             shellHook = ''
               pre-commit install
