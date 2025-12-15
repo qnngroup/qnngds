@@ -20,7 +20,7 @@ def _create_comb(
     pitch1: int | float = 0.5,
     pitch2: int | float = 0.1,
     layer1: LayerSpec = (1, 0),
-    layer2: LayerSpec = (2, 0),
+    layer2: LayerSpec = (10, 0),
     text_angle: int | float = 0,
 ) -> Device:
     """Creates vernier caliper comb.
@@ -76,7 +76,7 @@ def _create_comb(
     return COMB
 
 
-def _create_marker(layer1: LayerSpec = (1, 0), layer2: LayerSpec = (2, 0)) -> Device:
+def _create_marker(layer1: LayerSpec = (1, 0), layer2: LayerSpec = (10, 0)) -> Device:
     """Creates vernier caliper comb
 
     Helper method for alignment_mark
@@ -213,7 +213,7 @@ def _create_waffle(res: float | int = 1, layer: LayerSpec = (1, 0)) -> Device:
     """
 
     WAFFLE = Device("waffle")
-    W = pg.rectangle(size=(res * 80, res * 80), layer=layer)
+    W = pg.rectangle(size=(res * 80, res * 80), layer=qg.get_layer(layer))
 
     pattern = [(res * x, res * 80) for x in [2, 1, 1, 2, 3, 5, 8, 13, 21, 15]]
     DUMMY = Device()
@@ -221,11 +221,11 @@ def _create_waffle(res: float | int = 1, layer: LayerSpec = (1, 0)) -> Device:
         function=pg.rectangle, param_x={"size": pattern}, param_y={}, spacing=res
     )
     WOut.move(WOut.center, W.center)
-    WAFFLE << pg.kl_boolean(A=W, B=WOut, operation="A-B", layer=layer)
+    WAFFLE << pg.kl_boolean(A=W, B=WOut, operation="A-B", layer=qg.get_layer(layer))
     WOut.rotate(90, center=WOut.center)
-    WAFFLE << pg.kl_boolean(A=W, B=WOut, operation="A-B", layer=layer)
+    WAFFLE << pg.kl_boolean(A=W, B=WOut, operation="A-B", layer=qg.get_layer(layer))
 
-    text = WAFFLE << pg.text(str(res), size=20, layer=layer)
+    text = WAFFLE << pg.text(str(res), size=20, layer=qg.get_layer(layer))
     text.move((text.xmin, text.ymax), (W.xmin, W.ymin - min(10, 10 * res)))
 
     WAFFLEu = Device()
@@ -254,7 +254,7 @@ def _create_3L(res: float | int = 1, layer: LayerSpec = (1, 0)) -> Device:
         bars = Device()
         w = percent * res
         spacing = 2 * res
-        bar = pg.rectangle(size=(min(100 * res, 100), w), layer=layer)
+        bar = pg.rectangle(size=(min(100 * res, 100), w), layer=qg.get_layer(layer))
         h_bars = bars.add_array(bar, columns=1, rows=5, spacing=(0, spacing))
         v_bars = bars.add_array(bar, columns=1, rows=5, spacing=(0, spacing))
         h_bars.rotate(90)
@@ -263,7 +263,7 @@ def _create_3L(res: float | int = 1, layer: LayerSpec = (1, 0)) -> Device:
         lll = LLL << bars
         lll.move([i * offset for offset in grid_spacing])
 
-    text = LLL << pg.text(str(res), size=20, layer=layer)
+    text = LLL << pg.text(str(res), size=20, layer=qg.get_layer(layer))
     start = (text.xmin, text.ymin)
     text.move(start, [(len(deviation) + 0.5) * offset for offset in grid_spacing])
     LLLu = Device()
@@ -275,7 +275,7 @@ def _create_3L(res: float | int = 1, layer: LayerSpec = (1, 0)) -> Device:
 def resolution_test(
     resolutions: List[float] = [0.6, 0.8, 1.0],
     outline: Optional[float] = None,
-    layer: LayerSpec = (2, 0),
+    layer: LayerSpec = (1, 0),
 ) -> Device:
     """Creates L and waffle structures for determining process resolution.
 
@@ -312,7 +312,7 @@ def _litho_steps(
     resolutions: List[float] = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8],
     width: float = 5,
     spacing: float = 5,
-    layer: LayerSpec = (2, 0),
+    layer: LayerSpec = (1, 0),
 ) -> Device:
     """Creates step pattern for lithographic resolution test
 
@@ -330,14 +330,14 @@ def _litho_steps(
 
     D = Device()
 
-    R1 = pg.rectangle(size=(width, spacing), layer=layer)
+    R1 = pg.rectangle(size=(width, spacing), layer=qg.get_layer(layer))
     r = D << R1
     r.xmin = -width
     r.ymin = 0
     offset = 0.0
     for resolution in reversed(resolutions):
         offset += spacing + resolution
-        R2 = pg.rectangle(size=(width, resolution), layer=layer)
+        R2 = pg.rectangle(size=(width, resolution), layer=qg.get_layer(layer))
         r = D << R1
         r.xmin = 0
         r.ymin = 0
@@ -353,7 +353,7 @@ def _litho_steps(
 
 def litho_checkerboard(
     resolutions: List[float] = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
-    layer: LayerSpec = (2, 0),
+    layer: LayerSpec = (1, 0),
     label_interval: int = 5,
     label_size: float = 10,
 ) -> Device:
@@ -379,7 +379,7 @@ def litho_checkerboard(
             resolutions=resolutions,
             spacing=spacing,
             width=width,
-            layer=layer,
+            layer=qg.get_layer(layer),
         )
         steps.movex(xmax - steps.xmax)
         xmax = steps.xmin
@@ -392,17 +392,19 @@ def litho_checkerboard(
             continue
         if n % label_interval == 0:
             label = D << pg.text(
-                f"{round(resolution * 10) / 10}UM", size=label_size, layer=layer
+                f"{round(resolution * 10) / 10}UM",
+                size=label_size,
+                layer=qg.get_layer(layer),
             )
             label.move((label.xmin, label.y), (2 * label_size, offset - resolution / 2))
             # add wider rectangle
             tick = D << pg.rectangle(
-                size=(label_size, max(spacing / 2, 1.5)), layer=layer
+                size=(label_size, max(spacing / 2, 1.5)), layer=qg.get_layer(layer)
             )
         else:
             # add narrower rectangle
             tick = D << pg.rectangle(
-                size=(label_size / 2, max(spacing / 2, 1.5)), layer=layer
+                size=(label_size / 2, max(spacing / 2, 1.5)), layer=qg.get_layer(layer)
             )
         tick.move((tick.xmin, tick.y), (label_size / 2, offset - resolution / 2))
 
@@ -449,14 +451,14 @@ def vdp(
         contact_width / 2,
     ]
 
-    polygon = pg.polygon_ports(xpts=xpts, ypts=ypts, layer=layer)
+    polygon = pg.polygon_ports(xpts=xpts, ypts=ypts, layer=qg.get_layer(layer))
     VDP << polygon
     VDP.flatten()
 
-    VDP.add_port(port=polygon.ports["1"], name="N1", layer=layer)
-    VDP.add_port(port=polygon.ports["3"], name="E1", layer=layer)
-    VDP.add_port(port=polygon.ports["5"], name="S1", layer=layer)
-    VDP.add_port(port=polygon.ports["7"], name="W1", layer=layer)
+    VDP.add_port(port=polygon.ports["1"], name="N1", layer=qg.get_layer(layer))
+    VDP.add_port(port=polygon.ports["3"], name="E1", layer=qg.get_layer(layer))
+    VDP.add_port(port=polygon.ports["5"], name="S1", layer=qg.get_layer(layer))
+    VDP.add_port(port=polygon.ports["7"], name="W1", layer=qg.get_layer(layer))
 
     return VDP
 
@@ -465,10 +467,10 @@ def rect_tlm(
     contact_l: float = 10,
     spacings: List[float] = [10, 10, 20, 50, 80, 100, 200],
     contact_w: float = 100,
-    via_layer: LayerSpec | None = (2, 0),
-    finger_layer: LayerSpec = (3, 0),
-    pad_layer: LayerSpec | None = (3, 0),
-    mesa_layer: LayerSpec = (4, 0),
+    via_layer: LayerSpec | None = (1, 0),
+    finger_layer: LayerSpec = (10, 0),
+    pad_layer: LayerSpec | None = (10, 0),
+    mesa_layer: LayerSpec = (20, 0),
     pad_size: Tuple[float, float] = (80, 80),
 ) -> Device:
     """Creates rectangular transfer-length-method test structures.
@@ -498,7 +500,7 @@ def rect_tlm(
                 stub_size=(contact_l, w),
                 shape=("d" if i % 2 else "p"),
                 taper_type=None,
-                layer=finger_layer,
+                layer=qg.get_layer(finger_layer),
             )
             if i % 2:
                 fp.movey(-fp.ymax + contact_w / 2 + 5)
@@ -509,28 +511,32 @@ def rect_tlm(
             xoff = fp.xmax
             if via_layer is not None:
                 via = TLM << pg.rectangle(
-                    size=(contact_l, contact_w + 10), layer=via_layer
+                    size=(contact_l, contact_w + 10), layer=qg.get_layer(via_layer)
                 )
                 if i % 2:
                     via.move((fp.xmax - contact_l / 2 - via.x, -via.y))
                 else:
                     via.move((fp.xmin + contact_l / 2 - via.x, -via.y))
                 # add vias to lower metal pads
-                pad_via = TLM << pg.rectangle(size=(fp_w, pad_size[1]), layer=via_layer)
+                pad_via = TLM << pg.rectangle(
+                    size=(fp_w, pad_size[1]), layer=qg.get_layer(via_layer)
+                )
                 pad_via.movex(fp.xmax - pad_via.xmax)
                 if i % 2:
                     pad_via.movey(fp.ymin - pad_via.ymin)
                 else:
                     pad_via.movey(fp.ymax - pad_via.ymax)
                 top_pad = TLM << pg.rectangle(
-                    size=(fp_w + 2, pad_size[1] + 2), layer=pad_layer
+                    size=(fp_w + 2, pad_size[1] + 2), layer=qg.get_layer(pad_layer)
                 )
                 top_pad.move(top_pad.center, pad_via.center)
-        text = TLM << pg.text(str(space), layer=finger_layer)
+        text = TLM << pg.text(str(space), layer=qg.get_layer(finger_layer))
         text.move((xoff - text.xmin + 5, -w / 2 - pad_size[1] + 10 - text.ymin))
     # add mesa
     center = (TLM.x, 0)
-    mesa = TLM << pg.rectangle(size=(TLM.xsize + 50, contact_w), layer=mesa_layer)
+    mesa = TLM << pg.rectangle(
+        size=(TLM.xsize + 50, contact_w), layer=qg.get_layer(mesa_layer)
+    )
     mesa.move(mesa.center, center)
     return TLM
 
@@ -538,8 +544,8 @@ def rect_tlm(
 def circ_tlm(
     ext_radius: float = 100,
     int_radius: List[float] = [50, 70, 80, 90, 95, 98, 99],
-    pad_layer: LayerSpec = (3, 0),
-    mesa_layers: LayerSpecs = [(1, 0), (2, 0)],
+    pad_layer: LayerSpec = (20, 0),
+    mesa_layers: LayerSpecs = [(1, 0), (10, 0)],
     text_size: float = 10,
 ) -> Device:
     """Creates rectangular transfer-length-method test structures.
@@ -561,9 +567,14 @@ def circ_tlm(
         d = ext_radius - r_i
         r = (ext_radius + r_i) / 2
         CUT = Device()
-        r = CUT << pg.ring(radius=r, width=d, angle_resolution=2.5, layer=pad_layer)
+        r = CUT << pg.ring(
+            radius=r, width=d, angle_resolution=2.5, layer=qg.get_layer(pad_layer)
+        )
         t = CUT << pg.text(
-            text=f"{ext_radius}/{r_i}", size=text_size, justify="right", layer=pad_layer
+            text=f"{ext_radius}/{r_i}",
+            size=text_size,
+            justify="right",
+            layer=qg.get_layer(pad_layer),
         )
         t.move((t.xmax, t.ymax), (r.xmax, r.ymax))
         cuts.append(CUT)
@@ -576,16 +587,20 @@ def circ_tlm(
     )
     # make the mesa
     for layer in mesa_layers:
-        m = TLM << pg.rectangle(size=(c.xsize + 10, c.ysize + 10), layer=layer)
+        m = TLM << pg.rectangle(
+            size=(c.xsize + 10, c.ysize + 10), layer=qg.get_layer(layer)
+        )
         m.move(m.center, c.center)
     DUMMY = Device()
-    p = DUMMY << pg.rectangle(size=(c.xsize + 10, c.ysize + 10), layer=pad_layer)
+    p = DUMMY << pg.rectangle(
+        size=(c.xsize + 10, c.ysize + 10), layer=qg.get_layer(pad_layer)
+    )
     p.move(p.center, c.center)
     TLM << pg.kl_boolean(
         A=p,
         B=c,
         operation="A-B",
-        layer=pad_layer,
+        layer=qg.get_layer(pad_layer),
     )
     return TLM
 
@@ -613,9 +628,9 @@ def via_chain(
         raise ValueError("tap_period > 1 has not been implemented yet")
 
     VC = Device("via_chain")
-    via = qg.get_active_pdk().get_device(via_spec)
+    via = qg.get_device(via_spec)
     # get layers
-    port_dict = qg.utilities._get_component_port_direction(via)
+    port_dict = qg.utilities._get_device_port_direction(via)
     east_layers = set(port.layer for port in port_dict["E"])
     west_layers = set(port.layer for port in port_dict["W"])
     if len(east_layers) == 1 and len(west_layers) == 1:
@@ -674,7 +689,7 @@ def via_chain(
         n_conn = (num_vias - odd) // 2
         if n_conn > 0:
             conn = VC.add_array(
-                connector(layer=layer),
+                connector(layer=qg.get_layer(layer)),
                 columns=n_conn,
                 rows=1,
                 spacing=(2 * (via.xsize + spacing), 1),
@@ -719,7 +734,7 @@ def etch_test(
     """
     TRENCHES = Device("etch_trench")
     # create trench
-    rect = pg.rectangle(size=pad_size, layer=layer)
+    rect = pg.rectangle(size=pad_size, layer=qg.get_layer(layer))
     qg.utilities._create_layered_ports(rect, layer)
     pad_outlined = qg.utilities.outline(
         device=rect,
@@ -767,14 +782,14 @@ def cross_bridge_kelvin_resistor(
         )
     else:
         center = Device()
-        cbot = center << pg.compass(size=(size, size), layer=layer_bot)
-        ctop = center << pg.compass(size=(size, size), layer=layer_top)
+        cbot = center << pg.compass(size=(size, size), layer=qg.get_layer(layer_bot))
+        ctop = center << pg.compass(size=(size, size), layer=qg.get_layer(layer_top))
         for n, port in enumerate(cbot.ports):
             center.add_port(name=f"e2{n + 1}", port=port)
         for n, port in enumerate(ctop.ports):
             center.add_port(name=f"e1{n + 1}", port=port)
-    top_ext = pg.compass(size=(lead_length, size), layer=layer_top)
-    bot_ext = pg.compass(size=(lead_length, size), layer=layer_bot)
+    top_ext = pg.compass(size=(lead_length, size), layer=qg.get_layer(layer_top))
+    bot_ext = pg.compass(size=(lead_length, size), layer=qg.get_layer(layer_bot))
     center_i = CBKR << center
     ports = []
     for layer_i in range(2):

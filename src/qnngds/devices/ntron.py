@@ -3,13 +3,14 @@
 # can be removed in python 3.14, see https://peps.python.org/pep-0749/
 from __future__ import annotations
 
-import gdsfactory as gf
-from gdsfactory.typings import ComponentSpec, LayerSpec
-
 import qnngds as qg
+import phidl.geometry as pg
 
 
-@gf.cell
+from qnngds.typing import LayerSpec, DeviceSpec
+from qnngds import Device
+
+
 def smooth(
     choke_w: float = 0.03,
     gate_w: float = 0.2,
@@ -19,8 +20,7 @@ def smooth(
     choke_shift: float = -0.3,
     num_pts: int = 100,
     layer: LayerSpec = (1, 0),
-    port_type: str = "electrical",
-) -> gf.Component:
+) -> Device:
     """Creates a ntron device.
 
     Args:
@@ -32,53 +32,59 @@ def smooth(
         choke_shift (float): Shift of the choke region.
         num_pts (int): number of points to use for optimal steps
         layer (LayerSpec): GDS layer
-        port_type (string): gdsfactory port type. default "electrical"
 
     Returns:
-        gf.Component: The ntron device.
+        Device: The ntron device.
     """
 
-    D = gf.Component()
+    D = Device("ntron_smooth")
 
-    choke = qg.geometries.optimal_step(
-        gate_w, choke_w, symmetric=True, num_pts=num_pts, layer=layer
+    choke = pg.optimal_step(
+        start_width=gate_w,
+        end_width=choke_w,
+        symmetric=True,
+        num_pts=num_pts,
+        layer=qg.get_layer(layer),
     )
     k = D << choke
 
-    channel = qg.geometries.compass(size=(channel_w, choke_w), layer=layer)
+    channel = pg.compass(size=(channel_w, choke_w), layer=layer)
     c = D << channel
-    c.connect(port=c.ports["e1"], other=k.ports["e2"], allow_width_mismatch=True)
+    c.connect(port=c.ports["W"], destination=k.ports[2])
     c.move(c.center, (0, 0))
 
-    drain = qg.geometries.optimal_step(
-        drain_w, channel_w, symmetric=False, num_pts=num_pts, layer=layer
+    drain = pg.optimal_step(
+        start_width=drain_w,
+        end_width=channel_w,
+        symmetric=False,
+        num_pts=num_pts,
+        layer=qg.get_layer(layer),
     )
     d = D << drain
-    d.connect(port=d.ports["e2"], other=c.ports["e2"])
+    d.connect(port=d.ports[2], destination=c.ports["N"])
 
-    source = qg.geometries.optimal_step(
-        channel_w, source_w, symmetric=False, num_pts=num_pts, layer=layer
+    source = pg.optimal_step(
+        start_width=channel_w,
+        end_width=source_w,
+        symmetric=False,
+        num_pts=num_pts,
+        layer=qg.get_layer(layer),
     )
     s = D << source
-    s.connect(port=s.ports["e1"], other=c.ports["e4"])
+    s.connect(port=s.ports[1], destination=c.ports["S"])
 
     k.move((c.xmin - k.xmax, choke_shift))
 
-    Du = gf.Component()
-    Du << qg.utilities.union(D)
+    Du = Device("ntron_smooth")
+    Du << pg.union(D, layer=qg.get_layer(layer))
     Du.flatten()
 
-    for name, port in zip(
-        ("g", "s", "d"), (k.ports["e1"], s.ports["e2"], d.ports["e1"])
-    ):
+    for name, port in zip(("g", "s", "d"), (k.ports[1], s.ports[2], d.ports[1])):
         Du.add_port(name=name, port=port)
-    for port in Du.ports:
-        port.port_type = port_type
 
     return Du
 
 
-@gf.cell
 def sharp(
     choke_w: float = 0.03,
     gate_w: float = 0.2,
@@ -90,8 +96,7 @@ def sharp(
     source_sq: float = 5,
     drain_sq: float = 5,
     layer: LayerSpec = (1, 0),
-    port_type: str = "electrical",
-) -> gf.Component:
+) -> Device:
     """Creates a sharp ntron device.
 
     Args:
@@ -105,13 +110,12 @@ def sharp(
         drain_w (float): Width of the drain region.
         drain_sq (float): Length of the drain region in squares.
         layer (LayerSpec): GDS layer
-        port_type (string): gdsfactory port type. default "electrical"
 
     Returns:
         Device: The sharp ntron device.
     """
 
-    D = gf.Component()
+    D = Device("ntron_sharp")
 
     gate_l = gate_sq * gate_w
     channel_l = channel_sq * channel_w
@@ -123,15 +127,12 @@ def sharp(
         start_width=gate_w,
         end_width=choke_w,
         layer=layer,
-        port_type="electrical",
     )
     k = D << choke
 
-    channel = qg.geometries.compass(
-        size=(channel_w, channel_l), layer=layer, port_type="electrical"
-    )
+    channel = pg.compass(size=(channel_w, channel_l), layer=qg.get_layer(layer))
     c = D << channel
-    c.connect(port=c.ports["e1"], other=k.ports["e2"], allow_width_mismatch=True)
+    c.connect(port=c.ports["W"], destination=k.ports[2])
     D.move(c.center, (0, 0))
 
     drain = qg.geometries.taper(
@@ -139,50 +140,43 @@ def sharp(
         start_width=channel_w,
         end_width=drain_w,
         layer=layer,
-        port_type="electrical",
     )
     d = D << drain
-    d.connect(port=d.ports["e1"], other=c.ports["e2"])
+    d.connect(port=d.ports[1], destination=c.ports["N"])
 
     source = qg.geometries.taper(
         length=source_l,
         start_width=channel_w,
         end_width=source_w,
         layer=layer,
-        port_type="electrical",
     )
     s = D << source
-    s.connect(port=s.ports["e1"], other=c.ports["e4"])
+    s.connect(port=s.ports[1], destination=c.ports["S"])
 
-    Du = gf.Component()
-    Du << qg.utilities.union(D)
+    Du = Device("ntron_sharp")
+    Du << pg.union(D, layer=qg.get_layer(layer))
     Du.flatten()
 
-    for name, port in zip(
-        ("g", "s", "d"), (k.ports["e1"], s.ports["e2"], d.ports["e2"])
-    ):
+    for name, port in zip(("g", "s", "d"), (k.ports[1], s.ports[2], d.ports[2])):
         Du.add_port(name=name, port=port)
-    for port in Du.ports:
-        port.port_type = port_type
 
     return Du
 
 
-@gf.cell
 def slotted(
-    base_spec: ComponentSpec = smooth,
+    base_spec: DeviceSpec = smooth,
     slot_width: int | float = 0.04,
     slot_length: int | float = 1.5,
     slot_pitch: int | float = 0.08,
     n_slot: int = 2,
     num_pts: int = 100,
-) -> gf.Component:
+) -> Device:
     """Parallel-channel nanocryotron
 
     See `[1] <https://doi.org/10.1063/5.0180709>`_
 
     Args:
-        base_spec (ComponentSpec): callable function that generates a gf.Component for the base nTron
+        base_spec (DeviceSpec): callable function that generates a Device for the base nTron
         slot_width (int or float): width of each slot
         slot_length (int or float): length of each slot
         slot_pitch (int or float): pitch of slots
@@ -190,13 +184,15 @@ def slotted(
         num_pts (int): number of points to use for hairpin
 
     Returns:
-        (gf.Component): nTron with slots
+        (Device): nTron with slots
 
     """
-    D = gf.Component()
-    base = gf.get_component(base_spec)
+    D = Device("ntron_slotted")
+    base = qg.get_device(base_spec)
     if n_slot == 0:
         return base
+
+    base_layer = base.layers.copy().pop()
 
     # use optimal hairpin as template for slot
     hairpin = qg.geometries.optimal_hairpin(
@@ -207,29 +203,27 @@ def slotted(
         num_pts=num_pts,
         layer=(1, 0),
     )
-    slot_inv = gf.Component()
+    slot_inv = Device()
     hp1 = slot_inv.add_ref(hairpin)
     hp2 = slot_inv.add_ref(hairpin)
     hp2.mirror()
-    hp2.connect(port=hp2.ports["e1"], other=hp1.ports["e1"])
+    hp2.connect(port=hp2.ports[1], destination=hp1.ports[1])
     slot_inv.rotate(90)
     slot_inv.move(slot_inv.center, (0, 0))
-    box = gf.components.shapes.bbox(slot_inv, layer=(1, 0))
-    slot = gf.Component()
-    slot.add_ref(gf.boolean(box, slot_inv, "-", layer=(1, 0)))
+    box = pg.bbox(slot_inv.bbox, layer=(1, 0))
+    slot = Device()
+    slot.add_ref(pg.kl_boolean(A=box, B=slot_inv, operation="A-B", layer=(1, 0)))
 
     # array slots
-    slots = gf.Component()
-    slots.add_ref(slot, columns=n_slot, rows=1, column_pitch=slot_pitch, row_pitch=0)
+    slots = Device()
+    slots.add_array(slot, columns=n_slot, rows=1, spacing=(slot_pitch, 0))
     slots.move(slots.center, (0, 0))
     D.add_ref(
-        gf.boolean(
+        pg.kl_boolean(
             A=base,
             B=slots,
             operation="A-B",
-            layer1=base.layers[0],
-            layer2=(1, 0),
-            layer=base.layers[0],
+            layer=qg.get_layer(base_layer),
         )
     )
 

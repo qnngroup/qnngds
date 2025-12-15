@@ -3,21 +3,20 @@
 # can be removed in python 3.14, see https://peps.python.org/pep-0749/
 from __future__ import annotations
 
-import numpy as np
-import scipy.constants
-
-import gdsfactory as gf
 import qnngds as qg
 
-from gdsfactory.typings import (
-    ComponentSpec,
-    CrossSectionSpec,
+import numpy as np
+import scipy.constants
+from functools import partial
+
+from qnngds.typing import (
     LayerSpec,
     LayerSpecs,
-    ComponentFactory,
+    DeviceSpec,
+    DeviceFactory,
+    CrossSectionSpec,
 )
-
-from functools import partial
+from qnngds import Device, CrossSection
 
 
 def compute_veff(n_eff: float) -> float:
@@ -52,7 +51,7 @@ def cpw(
     radius: float = 50,
     gap: float = 5,
     layer: LayerSpec = "PHOTO1",
-) -> gf.CrossSection:
+) -> CrossSection:
     """Creates a coplanar waveguide (CPW) cross section.
 
     NB resulting cross section is inverted: gaps will be filled and
@@ -63,23 +62,31 @@ def cpw(
         gap (float): width of gaps on either side of conductor
 
     Returns:
-        gf.CrossSection: CPW cross section
+        CrossSection: CPW cross section
     """
-    inner = gf.Section(
-        width=width,
-        offset=0,
-        layer=layer,
-        hidden=True,
-        port_names=("e1", "e2"),
-        port_types=("electrical", "electrical"),
-        name="center",
-    )
+    inner = Section()
     gaps = partial(
         gf.Section,
         width=gap,
         layer=layer,
     )
-    return gf.CrossSection(
+    CPW = CrossSection()
+    CPW.add(
+        width=width,
+        offset=0,
+        layer=layer,
+        hidden=True,
+        port_names=(1, 2),
+        name="center",
+    )
+    for i in range(2):
+        CPW.add(
+            width=gap,
+            layer=layer,
+            offset=(-1) ** i * (width + gap) / 2,
+            name="gap_" + ("u" if i == 0 else "l"),
+        )
+    return CrossSection(
         sections=(
             inner,
             gaps(offset=-(width + gap) / 2, name="gap_l"),
@@ -94,7 +101,7 @@ def microstrip(
     width: float = 5,
     radius: float = 50,
     layer: LayerSpec = "PHOTO1",
-) -> gf.CrossSection:
+) -> CrossSection:
     """Creates a microstrip cross section
 
     NB unlike :py:func:`cpw`, conductor is filled
@@ -103,28 +110,26 @@ def microstrip(
         width (float): width of center conductor
 
     Returns:
-        gf.CrossSection: microstrip cross section
+        CrossSection: microstrip cross section
     """
-    inner = gf.Section(
+    inner = Section(
         width=width,
         offset=0,
         layer=layer,
-        port_names=("e1", "e2"),
-        port_types=("electrical", "electrical"),
+        port_names=(1, 2),
         name="center",
     )
-    return gf.CrossSection(
+    return CrossSection(
         sections=(inner,),
         radius=radius,
         radius_min=radius,
     )
 
 
-@gf.cell
 def transmission_line(
     cross_section: CrossSectionSpec = cpw,
     length: float = 100,
-) -> gf.Component:
+) -> Device:
     """Construct a straight transmission line by extruding a cross section
 
     Args:
@@ -132,21 +137,20 @@ def transmission_line(
         cross_section (CrossSectionSpec): cross section to extrude
 
     Returns:
-        gf.Component: straight transmission line
+        Device: straight transmission line
     """
     return gf.path.extrude(
         gf.path.straight(length=length, npoints=2),
-        cross_section=gf.get_cross_section(cross_section),
+        cross_section=qg.get_cross_section(cross_section),
     )
 
 
-@gf.cell
 def resonator_meandered(
     cross_section: CrossSectionSpec = cpw,
     n_eff: float = 10,
     resonant_freq: float = 5e9,
     meander_width: float = 500,
-) -> gf.Component:
+) -> Device:
     """Construct meandered half-wave resonator
 
     Args:
@@ -156,7 +160,7 @@ def resonator_meandered(
         cross_section (CrossSectionSpec): cross section to use (e.g. CPW)
 
     Returns:
-        gf.Component: meandered half-wave resonator
+        Device: meandered half-wave resonator
     """
     xc = gf.get_cross_section(cross_section)
     desired_length = compute_res_wavelength(n_eff=n_eff, res_freq=resonant_freq) / 2
@@ -201,7 +205,6 @@ def resonator_meandered(
     return gf.path.extrude(P, xc)
 
 
-@gf.cell
 def resonator_straight(
     cross_section: CrossSectionSpec = cpw,
     n_eff: float = 100,
@@ -215,7 +218,7 @@ def resonator_straight(
         resonant_freq (float): resonant frequeny in Hz
 
     Returns:
-        gf.Component: meandered half-wave resonator
+        Device: meandered half-wave resonator
     """
     desired_length = compute_res_wavelength(n_eff=n_eff, res_freq=resonant_freq) / 2
     return gf.path.extrude(
@@ -223,14 +226,13 @@ def resonator_straight(
     )
 
 
-@gf.cell
 def pad(
     width: float = 100,
     length: float = 200,
     edge_exclusion: float = 10,
     sc_layer: LayerSpec = "PHOTO1",
     metal_layers: LayerSpecs = ("PHOTO2",),
-) -> gf.Component:
+) -> Device:
     """Construct a pad for resonator with a metal layer for bonding on top of superconductor.
 
     Args:
@@ -240,9 +242,9 @@ def pad(
         metal_layers (LayerSpecs): layer(s) for metal
 
     Returns:
-        gf.Component: pad
+        Device: pad
     """
-    PAD = gf.Component()
+    PAD = Device()
     sc = PAD << qg.geometries.compass(size=(width, length), layer=sc_layer)
     sc.move(sc.center, (0, 0))
     for metal_layer in metal_layers:
@@ -255,42 +257,41 @@ def pad(
     return PAD
 
 
-@gf.cell
 def transmission_line_resonator(
-    transmission_line_specs: tuple[ComponentSpec | None, ComponentSpec | None] = (
+    transmission_line_specs: tuple[DeviceSpec | None, DeviceSpec | None] = (
         transmission_line,
         None,
     ),
-    resonator_spec: ComponentSpec = resonator_meandered,
+    resonator_spec: DeviceSpec = resonator_meandered,
     tl_cross_section: CrossSectionSpec = partial(cpw, width=75, gap=24),
     res_cross_section: CrossSectionSpec = cpw,
-    taper: ComponentFactory = qg.geometries.hyper_taper,
-    pads: tuple[ComponentSpec | None, ComponentSpec | None] = (pad, None),
+    taper: DeviceFactory = qg.geometries.hyper_taper,
+    pads: tuple[DeviceSpec | None, DeviceSpec | None] = (pad, None),
     bbox_extension: float = 500,
-) -> gf.Component:
+) -> Device:
     """Construct a resonator embedded between two transmission lines
 
     Inverts final design based on layer choice and PDK Layer class's outline function
 
     Args:
-        transmission_line_specs (tuple[ComponentSpec | None, ComponentSpec | None]): Desired component spec for
-            transmission line on either end of resonator. If ComponentSpec, take a single argument
+        transmission_line_specs (tuple[DeviceSpec | None, DeviceSpec | None]): Desired component spec for
+            transmission line on either end of resonator. If DeviceSpec, take a single argument
             ``cross_section``. If None, no transmission line will be created (although the resonator will
             taper out to the width of the ``tl_cross_section``.
-        resonator_spec (ComponentSpec): Desired component spec for embedded resonator.
+        resonator_spec (DeviceSpec): Desired component spec for embedded resonator.
             Must take a single argument ``cross_section``.
         tl_cross_section (CrossSectionSpec): CPW or microstrip cross section for transmission line.
         res_cross_section (CrossSectionSpec): CPW or microstrip cross section for resonator.
-        taper (ComponentFactory): Callable which produces a Component, used to generate a filled taper
+        taper (DeviceFactory): Callable which produces a Component, used to generate a filled taper
             between resonator and transmission line. Port widths must match. Should be solid (i.e. not outlined);
             will be automatically outlined for CPW.
-        pads (tuple[ComponentSpec | None, ComponentSpec | None]): Component spec or None for each pad.
-            If ComponentSpec, must take a single argument ``width``. If None, no pad will be created
+        pads (tuple[DeviceSpec | None, DeviceSpec | None]): Component spec or None for each pad.
+            If DeviceSpec, must take a single argument ``width``. If None, no pad will be created
         bbox_extension (float): amount to extend ground plane for negative tone layout CPW, or positive
             tone microstrip
 
     Returns:
-        gf.Component: resonator embedded between transmission lines
+        Device: resonator embedded between transmission lines
 
     Example:
 
@@ -356,12 +357,12 @@ def transmission_line_resonator(
     is_cpw = res_cpw
     layers = res_layers
 
-    R = gf.Component()
+    R = Device()
     res = resonator_spec(res_xc)
     R << res
     R.add_ports(res.ports)
     # create new cross-section for taper using transitions
-    T = gf.Component()
+    T = Device()
     trans_length = sum(section.width for section in tl_xc.sections)
     trans_layer = res_xc.sections[0].layer
     transition = taper(
@@ -431,7 +432,7 @@ def transmission_line_resonator(
         if is_cpw and layer not in outline_layers
     }
     inverted = qg.utilities.invert(R, ext_bbox_layers=ext_bbox_layers)
-    R = gf.Component()
+    R = Device()
     R << inverted
     R.add_ports(inverted.ports)
     return R

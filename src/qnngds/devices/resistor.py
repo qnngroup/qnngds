@@ -3,27 +3,26 @@
 # can be removed in python 3.14, see https://peps.python.org/pep-0749/
 from __future__ import annotations
 
-import gdsfactory as gf
+import qnngds as qg
+import phidl.geometry as pg
+
 import numpy as np
 
-import qnngds as qg
+from qnngds.typing import LayerSpec, LayerSpecs
+from qnngds import Device
 
-from gdsfactory.typings import LayerSpec, LayerSpecs
 
-
-@gf.cell
 def meander(
     width: float = 2,
     pitch: float = 4,
     squares: float = 100,
     max_length: float | None = 20,
     layer: LayerSpec = (1, 0),
-    port_type: str = "electrical",
-) -> gf.Component:
+) -> Device:
     """Create resistor meander with specified number of squares.
 
     If squares*width > max_length or max_length is None, meander the resistor,
-    otherwise just return a straight line.
+    destinationwise just return a straight line.
 
     Args:
         width (float): wire width in microns
@@ -31,31 +30,32 @@ def meander(
         squares (float or None): desired number of squares
         max_length (float): desired length of device
         layer (LayerSpec): GDS layer
-        port_type (string): gdsfactory port type. default "electrical"
 
     Returns:
-        gf.Component: the resistor meander
+        Device: the resistor meander
     """
-    D = gf.Component()
+    D = Device()
 
     meander_spacing = (pitch - width) / width
 
     if max_length is None or width * squares < max_length:
         # just make a straight
-        straight = D << qg.geometries.compass(
-            size=(width, width * squares), layer=layer, port_type="electrical"
+        straight = D << pg.straight(
+            size=(width, width * squares), layer=qg.get_layer(layer)
         )
-        D.add_port(name="e1", port=straight.ports["e2"])
-        D.add_port(name="e2", port=straight.ports["e4"])
+        D.add_port(name=1, port=straight.ports[1], layer=layer)
+        D.add_port(name=2, port=straight.ports[2], layer=layer)
         return D
 
     # make meander
     def hairpin(hp_length):
         """Create hairpin used in meander."""
-        H = gf.Component()
-        straight = qg.geometries.compass(size=(hp_length - width, width), layer=layer)
-        conn = qg.geometries.compass(
-            size=(width, (2 + meander_spacing) * width), layer=layer
+        H = Device()
+        straight = pg.rectangle(
+            size=(hp_length - width, width), layer=qg.get_layer(layer)
+        )
+        conn = pg.rectangle(
+            size=(width, (2 + meander_spacing) * width), layer=qg.get_layer(layer)
         )
         for i in range(2):
             s = H << straight
@@ -63,43 +63,39 @@ def meander(
         c = H << conn
         c.move((-c.xmin, -c.ymin))
         H.add_port(
-            name="e1",
-            center=(-hp_length + width, width / 2),
+            name=1,
+            midpoint=(-hp_length + width, width / 2),
             width=width,
             orientation=180,
-            port_type="electrical",
             layer=layer,
         )
         H.add_port(
-            name="e2",
-            center=(-hp_length + width, (1 + meander_spacing) * width + width / 2),
+            name=2,
+            midpoint=(-hp_length + width, (1 + meander_spacing) * width + width / 2),
             width=width,
             orientation=180,
-            port_type="electrical",
             layer=layer,
         )
         return H
 
     def stub(orientation):
         """Create stub to connect to meander ends."""
-        S = gf.Component()
-        straight = qg.geometries.compass(size=(width, 2 * width), layer=layer)
+        S = Device()
+        straight = pg.rectangle(size=(width, 2 * width), layer=qg.get_layer(layer))
         s = S << straight
         s.move((-s.x, -s.ymin))
         S.add_port(
-            name="e1",
-            center=(0, width / 2),
+            name=1,
+            midpoint=(0, width / 2),
             width=width,
             orientation=orientation,
-            port_type="electrical",
             layer=layer,
         )
         S.add_port(
-            name="e2",
-            center=(0, 2 * width),
+            name=2,
+            midpoint=(0, 2 * width),
             width=width,
             orientation=90,
-            port_type="electrical",
             layer=layer,
         )
         return S
@@ -127,43 +123,35 @@ def meander(
         (squares - 3.09) / n_turn - 1.09 - (pitch - width) / width
     ) * width / 2 + width
     # round to nearest 2nm, since gdsfactory rounds to nearest 1nm which can cause gaps between each hairpin
-    hp_length = np.round(hp_length / (2 * gf.kcl.dbu)) * (gf.kcl.dbu * 2)
-    hp_length = max(hp_length, width + 2 * gf.kcl.dbu)
+    hp_length = max(hp_length, width)
     hp = hairpin(hp_length)
     hp_prev = None
     for i in range(n_turn):
         hp_i = D << hp
         if hp_prev is not None:
             hp_i.connect(
-                port=hp_i.ports[f"e{2 - (i % 2)}"],
-                other=hp_prev.ports[f"e{2 - (i % 2)}"],
+                port=hp_i.ports[2 - (i % 2)],
+                destination=hp_prev.ports[2 - (i % 2)],
             )
         else:
             stub_top = D << stub(0)
             stub_top.connect(
-                port=stub_top.ports["e1"],
-                other=hp_i.ports["e2"],
-                allow_width_mismatch=True,
+                port=stub_top.ports[1],
+                destination=hp_i.ports[2],
             )
         hp_prev = hp_i
     stub_bot = D << stub(180 * (n_turn % 2))
     stub_bot.connect(
-        port=stub_bot.ports["e1"], other=hp_prev.ports[f"e{2 - (n_turn % 2)}"]
+        port=stub_bot.ports[1], destination=hp_prev.ports[2 - (n_turn % 2)]
     )
-    Du = gf.Component()
-    Du << qg.utilities.union(D)
+    Du = Device("resistor")
+    Du << pg.union(D, layer=qg.get_layer(layer))
     Du.flatten()
-    for name, port in zip(("e1", "e2"), (stub_top.ports["e2"], stub_bot.ports["e2"])):
-        Du.add_port(
-            name=name,
-            port=port,
-        )
-    for port in Du.ports:
-        port.port_type = port_type
+    for name, port in zip((1, 2), (stub_top.ports[2], stub_bot.ports[2])):
+        Du.add_port(name=name, port=port)
     return Du
 
 
-@gf.cell
 def meander_sc_contacts(
     width: float = 1,
     squares: float = 60,
@@ -174,8 +162,7 @@ def meander_sc_contacts(
     layer_res: LayerSpec = "PHOTO1",
     layer_contacts: LayerSpecs = ["EBEAM_FINE", "PHOTO2"],
     layer_keepout: LayerSpecs = ["EBEAM_KEEPOUT"],
-    port_type: str = "electrical",
-) -> gf.Component:
+) -> Device:
     """Create resistor meander with superconducting contacts.
 
     If squares*width > max_length or if max_length is None, meander the resistor.
@@ -190,12 +177,11 @@ def meander_sc_contacts(
         layer_res (LayerSpec): resistor GDS layer
         layer_contacts (LayerSpecs): layer(s) for contact to superconductor (first will define port layer)
         layer_keepout (LayerSpecs): layer(s) to do keepout on
-        port_type (string): gdsfactory port type. default "electrical"
 
     Returns:
-        gf.Component: the resistor meander
+        Device: the resistor meander
     """
-    D = gf.Component()
+    D = Device()
 
     if meander_pitch is None:
         meander_pitch = np.inf
@@ -211,48 +197,46 @@ def meander_sc_contacts(
         max_length=max_length,
     )
     for layer in layer_keepout:
-        res_ko = D << qg.geometries.rectangle(
-            size=(res.xsize + 2 * width, res.ysize), layer=layer
+        res_ko = D << pg.rectangle(
+            size=(res.xsize + 2 * width, res.ysize),
+            layer=qg.get_layer(layer),
         )
         res_ko.move(res_ko.center, res.center)
-    stub = qg.geometries.compass(
-        size=(width, outline_contacts), layer=layer_res, port_type="electrical"
+    stub = pg.compass(
+        size=(width, outline_contacts),
+        layer=qg.get_layer(layer_res),
     )
-    contact = qg.geometries.compass(
-        size=contact_size, layer=layer_res, port_type="electrical"
+    contact = pg.compass(
+        size=contact_size,
+        layer=qg.get_layer(layer_res),
     )
     contacts = []
     for layer in layer_contacts:
         contacts.append(
-            qg.geometries.compass(
+            pg.compass(
                 size=(
                     contact_size[0] + 2 * outline_contacts,
                     contact_size[1] + 2 * outline_contacts,
                 ),
-                layer=layer,
-                port_type="electrical",
+                layer=qg.get_layer(layer),
             )
         )
     ports = []
+    dir_lut = {1: "W", 2: "N", 3: "E", 4: "S"}
     for p, port in enumerate(res.ports):
         s = D << stub
-        s.connect(port=s.ports["e4"], other=port)
+        s.connect(port=s.ports["S"], destination=res.ports[port])
         c = D << contact
-        c.connect(port=c.ports["e4"], other=s.ports["e2"], allow_width_mismatch=True)
+        c.connect(port=c.ports["S"], destination=s.ports["N"])
         for i, con_sc in enumerate(contacts):
             c_sc = D << con_sc
             c_sc.center = c.center
             if i == 0:
-                ports.append(c_sc.ports[f"e{2 + 2 * (p % 2)}"])
+                ports.append(c_sc.ports[dir_lut[2 + 2 * (p % 2)]])
 
-    Du = gf.Component()
-    Du << qg.utilities.union(D)
+    Du = Device("resistor_contacts")
+    Du << pg.union(D, by_layer=True)
     Du.flatten()
-    for name, port in zip(("e1", "e2"), ports):
-        Du.add_port(
-            name=name,
-            port=port,
-        )
-    for port in Du.ports:
-        port.port_type = port_type
+    for name, port in zip((1, 2), ports):
+        Du.add_port(name=name, port=port)
     return Du

@@ -40,7 +40,7 @@ def taper(
         (length, end_width / 2),
         (0, start_width / 2),
     ]
-    T.add_polygon(pts, layer=layer)
+    T.add_polygon(pts, layer=qg.get_layer(layer))
     T.add_port(
         name=1,
         midpoint=[0, 0],
@@ -82,7 +82,7 @@ def hyper_taper(
     xc.add(
         width=lambda t: qg.utilities.hyper_taper_fn(t, start_width, end_width),
         offset=0,
-        layer=layer,
+        layer=qg.get_layer(layer),
         ports=(1, 2),
     )
     taper = path.extrude(xc)
@@ -128,7 +128,7 @@ def euler_taper(
     # create a polygon
     points = np.concatenate((upper, lower))
     points = np.array([(length - x if swapped else x, y) for x, y in points])
-    D.add_polygon(points, layer=layer)
+    D.add_polygon(points, layer=qg.get_layer(layer))
 
     if swapped:
         start_width, end_width = end_width, start_width
@@ -211,7 +211,7 @@ def angled_taper(
 
     # create a polygon
     points = np.concatenate((P_upper.points, P_lower.points[::-1]))
-    D.add_polygon(points, layer=layer)
+    D.add_polygon(points, layer=qg.get_layer(layer))
 
     # port 1: narrow/start_width end, port 2: wide/end_width end
     D.add_port(
@@ -267,14 +267,14 @@ def tee(
     ypts = [f[1], 0, 0, -p[1], -p[1], 0, 0, f[1]]
 
     D = Device("tee")
-    tee = D.add_polygon([xpts, ypts], layer=layer)
+    tee = D.add_polygon([xpts, ypts], layer=qg.get_layer(layer))
     if taper_type == "fillet":
         if taper_radius is None:
             taper_radius = min([abs(f[0] - p[0]), abs(p[1])])
         tee.fillet([0, 0, taper_radius, 0, 0, taper_radius, 0, 0])
     elif taper_type == "straight":
-        D.add_polygon([xpts[1:4], ypts[1:4]], layer=layer)
-        D.add_polygon([xpts[4:7], ypts[4:7]], layer=layer)
+        D.add_polygon([xpts[1:4], ypts[1:4]], layer=qg.get_layer(layer))
+        D.add_polygon([xpts[4:7], ypts[4:7]], layer=qg.get_layer(layer))
 
     D.add_port(
         name=1,
@@ -304,8 +304,8 @@ def via(
     size: tuple[float, float] = (5, 5),
     via_undersize: float = 0.5,
     layer_bottom: LayerSpec = (1, 0),
-    layer_via: LayerSpec = (2, 0),
-    layer_top: LayerSpec = (3, 0),
+    layer_via: LayerSpec = (10, 0),
+    layer_top: LayerSpec = (20, 0),
 ) -> Device:
     """Creates a via between two layers
 
@@ -322,12 +322,13 @@ def via(
     VIA = Device("via")
     if 2 * via_undersize > min(size[0], size[1]):
         raise ValueError(f"{via_undersize=} is too small for a pad with {size=}.")
-    bot_pad = VIA << pg.compass(size=size, layer=layer_bottom)
+    bot_pad = VIA << pg.compass(size=size, layer=qg.get_layer(layer_bottom))
     qg.utilities._create_layered_ports(bot_pad, layer_bottom)
     via = VIA << pg.compass(
-        size=(size[0] - 2 * via_undersize, size[1] - 2 * via_undersize), layer=layer_via
+        size=(size[0] - 2 * via_undersize, size[1] - 2 * via_undersize),
+        layer=qg.get_layer(layer_via),
     )
-    top_pad = VIA << pg.compass(size=size, layer=layer_top)
+    top_pad = VIA << pg.compass(size=size, layer=qg.get_layer(layer_top))
     qg.utilities._create_layered_ports(top_pad, layer_top)
     bot_pad.move(bot_pad.center, (0, 0))
     via.move(via.center, (0, 0))
@@ -336,6 +337,116 @@ def via(
         for k, port in comp.ports.items():
             VIA.add_port(name=f"{n + 1}{k}", port=port)
     return VIA
+
+
+def optimal_hairpin(
+    width: float | int = 0.2,
+    pitch: float | int = 0.6,
+    length: float | int = 10,
+    turn_ratio: float | int = 4,
+    num_pts: float | int = 50,
+    layer: LayerSpec = (1, 0),
+) -> qg.Device:
+    """Returns an optimally-rounded hairpin geometry, with a 180 degree turn.
+
+    based on phidl.geometry. Used instead of phidl implementation to
+    center the apex of the hairpin at (0, 0).
+
+    Args:
+        width: Width of the hairpin leads.
+        pitch: Distance between the two hairpin leads. Must be greater than width.
+        length: Length of the hairpin from the connectors to the opposite end of the curve.
+        turn_ratio: int or float
+            Specifies how much of the hairpin is dedicated to the 180 degree turn.
+            A turn_ratio of 10 will result in 20% of the hairpin being comprised of the turn.
+        num_pts: Number of points constituting the 180 degree turn.
+        layer: Specific layer(s) to put polygon geometry on.
+
+    Notes:
+        Hairpin pitch must be greater than width.
+
+        Optimal structure from https://doi.org/10.1103/PhysRevB.84.174510
+        Clem, J., & Berggren, K. (2011). Geometry-dependent critical currents in
+        superconducting nanocircuits. Physical Review B, 84(17), 1-27.
+    """
+    # ==========================================================================
+    #  Create the basic geometry
+    # ==========================================================================
+    if pitch < width:
+        raise Warning("[qnngds] Hairpin pitch must be greater than width")
+    a = (pitch + width) / 2
+    y = -(pitch - width) / 2
+    x = -pitch
+    dl = width / (num_pts * 2)
+    n = 0
+
+    # Get points of ideal curve from conformal mapping
+    # TODO This is an inefficient way of finding points that you need
+    xpts = [x]
+    ypts = [y]
+    while (y < 0) & (n < 1e6):
+        s = x + 1j * y
+        w = np.sqrt(1 - np.exp(np.pi * s / a))
+        wx = np.real(w)
+        wy = np.imag(w)
+        wx = wx / np.sqrt(wx**2 + wy**2)
+        wy = wy / np.sqrt(wx**2 + wy**2)
+        x = x + wx * dl
+        y = y + wy * dl
+        xpts.append(x)
+        ypts.append(y)
+        n += 1
+    ypts[-1] = 0  # Set last point be on the x=0 axis for sake of cleanliness
+    ds_factor = len(xpts) // num_pts
+    xpts = xpts[::-ds_factor]
+    xpts = xpts[::-1]  # This looks confusing, but it's just flipping the arrays around
+    ypts = ypts[::-ds_factor]
+    ypts = ypts[::-1]  # so the last point is guaranteed to be included when downsampled
+
+    apex = (xpts[-1], 0)
+
+    # Add points for the rest of meander
+    xpts.append(xpts[-1] + turn_ratio * width)
+    ypts.append(0)
+    xpts.append(xpts[-1])
+    ypts.append(-a)
+    xpts.append(xpts[0])
+    ypts.append(-a)
+    xpts.append(max(xpts) - length)
+    ypts.append(-a)
+    xpts.append(xpts[-1])
+    ypts.append(-a + width)
+    xpts.append(xpts[0])
+    ypts.append(ypts[0])
+
+    xpts = np.array(xpts)
+    ypts = np.array(ypts)
+
+    # ==========================================================================
+    #  Create a blank device, add the geometry, and define the ports
+    # ==========================================================================
+    HP = qg.Device("optimal_hairpin")
+    HP.add_polygon([xpts, +ypts], layer=layer)
+    HP.add_polygon([xpts, -ypts], layer=layer)
+
+    xports = float(np.min(xpts))
+    yports = -a + width / 2
+    HP.add_port(
+        name=1,
+        midpoint=(xports, -yports),
+        width=width,
+        orientation=180,
+        layer=layer,
+    )
+    HP.add_port(
+        name=2,
+        midpoint=(xports, yports),
+        width=width,
+        orientation=180,
+        layer=layer,
+    )
+    HP.move(apex, (0, 0))
+    return HP
 
 
 def fine_to_coarse(

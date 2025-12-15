@@ -3,25 +3,25 @@
 # can be removed in python 3.14, see https://peps.python.org/pep-0749/
 from __future__ import annotations
 
-import gdsfactory as gf
-from gdsfactory.typings import LayerSpec, ComponentSpec
 import qnngds as qg
+
 
 import numpy as np
 
 from functools import partial
 
+from qnngds.typing import LayerSpec, DeviceSpec
+from qnngds import Device
 
-@gf.cell
+
 def basic(
     width: float = 2,
     notch_depth: float = 1,
     notch_angle: float = 90,
     length: float = 5,
     mirror: bool = False,
-    layer: LayerSpec = "EBEAM_FINE",
-    port_type: str = "electrical",
-) -> gf.Component:
+    layer: LayerSpec = (1, 0),
+) -> Device:
     """Create notched vortex diode on single layer
 
     Args:
@@ -31,12 +31,11 @@ def basic(
         length (float): length of device
         mirror (bool): if True, place notch on left side
         layer (LayerSpec): GDS layer
-        port_type (string): gdsfactory port type. default "electrical"
 
     Returns:
-        gf.Component: the diode
+        Device: the diode
     """
-    DIODE = gf.Component()
+    DIODE = Device("diode_basic")
     points = [
         (-width, -length / 2),
         (0, -length / 2),
@@ -51,50 +50,54 @@ def basic(
     DIODE.move((DIODE.x + width / 2 - notch_depth, DIODE.y), (0, 0))
 
     DIODE.add_port(
-        name="e1",
-        center=(DIODE.x, length / 2),
+        name=1,
+        midpoint=(DIODE.x, length / 2),
         width=width,
         orientation=90,
         layer=layer,
-        port_type=port_type,
     )
 
     DIODE.add_port(
-        name="e2",
-        center=(DIODE.x, -length / 2),
+        name=2,
+        midpoint=(DIODE.x, -length / 2),
         width=width,
         orientation=270,
         layer=layer,
-        port_type=port_type,
     )
 
     return DIODE
 
 
-@gf.cell
 def gated(
-    channel_spec: ComponentSpec = basic,
-    gate_spec: ComponentSpec = partial(
-        qg.geometries.optimal_hairpin, width=2, pitch=4, turn_ratio=2, layer="PHOTO1"
+    channel_spec: DeviceSpec = basic,
+    gate_spec: DeviceSpec = partial(
+        qg.geometries.optimal_hairpin,
+        width=2,
+        pitch=4,
+        turn_ratio=2,
+        layer=(10, 0),
     ),
-) -> gf.Component:
-    """Create notched vortex diode on single layer
+) -> Device:
+    """Create notched vortex diode with a gate.
+
+    Lateral offset of the gate can be done by first offsetting the gate before
+    passing it as an argument to this function.
 
     Args:
-        channel_spec (ComponentSpec): what to use for diode channel (e.g. diode.basic)
-        gate_spec (ComponentSpec): what to use for top gate (e.g. geometries.optimal_hairpin)
+        channel_spec (DeviceSpec): what to use for diode channel (e.g. diode.basic)
+        gate_spec (DeviceSpec): what to use for top gate (e.g. geometries.optimal_hairpin)
 
     Returns:
-        gf.Component: the gated diode
+        Device: the gated diode
     """
-    DIODE = gf.Component()
+    DIODE = Device("diode_gated")
 
-    channel = DIODE << gf.get_component(channel_spec)
-    gate = DIODE << gf.get_component(gate_spec)
-    gate.movex(channel.ports["e1"].width / 2)
-    for n, port in enumerate(channel.ports):
-        DIODE.add_port(name=f"c{n + 1}", port=port)
-    for n, port in enumerate(gate.ports):
-        DIODE.add_port(name=f"g{n + 1}", port=port)
+    channel = DIODE << qg.get_device(channel_spec)
+    gate = DIODE << qg.get_device(gate_spec)
+    gate.movex(channel.ports[1].width / 2)
+    for n, port_name in enumerate(channel.ports):
+        DIODE.add_port(name=f"c{n + 1}", port=channel.ports[port_name])
+    for n, port_name in enumerate(gate.ports):
+        DIODE.add_port(name=f"g{n + 1}", port=gate.ports[port_name])
 
     return DIODE

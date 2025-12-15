@@ -6,6 +6,7 @@ from phidl import Port as phPort
 from phidl import Device as phDevice
 from phidl import Layer as phLayer
 from phidl import LayerSet as phLayerSet
+from phidl import CrossSection as phCrossSection
 from phidl.device_layout import CellArray as phCellArray
 from phidl.device_layout import _parse_move
 from phidl.device_layout import _rotate_points
@@ -88,7 +89,7 @@ class Device(phDevice):
         midpoint: ArrayLike = (0, 0),
         width: float = 1,
         orientation: float = 0,
-        layer: tuple | str = (1, 0),
+        layer: tuple | str = None,
         port: Port | None = None,
     ):
         """Adds a Port to the Device.
@@ -136,6 +137,8 @@ class Device(phDevice):
             )
         if name is not None:
             p.name = name
+        if layer is not None:
+            p.layer = layer
         if p.name in self.ports:
             raise ValueError(
                 '[DEVICE] add_port() error: Port name "%s" already exists in this Device (name "%s", uid %s)'
@@ -150,8 +153,12 @@ class Device(phDevice):
         Parameters
             ports (Sequence[Port]): multiple Port objects to be added
         """
-        for port in ports:
-            self.add_port(port)
+        if isinstance(ports, dict):
+            for name, port in ports.items():
+                self.add_port(name=name, port=port)
+        else:
+            for port in ports:
+                self.add_port(port)
 
     def add_array(self, device, columns=2, rows=2, spacing=(100, 100), alias=None):
         """Creates a DeviceArray reference.
@@ -307,3 +314,50 @@ class LayerSet(phLayerSet):
         """Iter method, looping over LayerSet will return an iterator of the layer names"""
         for name in self._layers:
             yield name
+
+
+class CrossSection(phCrossSection):
+    """Augment PHIDL CrossSection to allow for hidden layers and radius specification"""
+
+    def __init__(self, radius: int | float = 0):
+        """Constructor for CrossSection
+
+        Parameters
+            radius (float | int): nominal radius used when autogenerating paths.
+                NB explicitly providing a radius (e.g. when manually creating paths) will override this setting
+        """
+        super().__init__()
+        self.radius = radius
+
+    def add(
+        self,
+        width: float | int = 1,
+        offset: float | int = 0,
+        layer: int | tuple[int, int] = 0,
+        ports: tuple[int | str | None] = (None, None),
+        name: str | None = None,
+        hidden: bool = False,
+        min_radius: float | int = 0,
+    ):
+        """Calls phidl.CrossSection.add() method, and also updates hidden variable
+
+        Parameters
+            width (float | int | callable ): Width of the segment
+            offset (float | int | callable ): Offset of the segment (positive values = right hand side)
+            layer (int | tuple[int, int]): The polygon layer to put the segment on
+            ports (array-like[2] of str | int | None): If not None, specifies the names for the ports at the
+                ends of the cross-sectional element.
+            name (str | int | None): Name of the cross-sectional element for later access
+            hidden (bool): if True, does not add polygon during extrusion
+        """
+        super().add(width=width, offset=offset, layer=layer, ports=ports, name=name)
+        self.sections[-1]["hidden"] = hidden
+        self.sections[-1]["layer"] = (-1, -1)
+        return self
+
+    def extrude(self, path, simplify=None):
+        """Calls phidl.CrossSection.extrude() method and removes any polygons corresponding
+        to hidden layers"""
+        D = super().extrude(path, simplify)
+        D.remove(D.get_polygons(by_spec=(-1, -1)))
+        return D

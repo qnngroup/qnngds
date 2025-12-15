@@ -474,7 +474,7 @@ def _get_port_direction(port: Port) -> str:
         return "S"
 
 
-def _get_component_port_direction(component: Device) -> PortsDict:
+def _get_device_port_direction(component: Device) -> PortsDict:
     """Returns ports of a component organized by direction.
 
     Helper method for :py:func:`generate_experiment`.
@@ -682,11 +682,11 @@ def generate_experiment(
 
     # sort dut cw
     dut_ports = _sort_ports(
-        _get_component_port_direction(dut_ref), sort_cw, ("W", "N", "E", "S")
+        _get_device_port_direction(dut_ref), sort_cw, ("W", "N", "E", "S")
     )
     # sort pads ccw
     pad_ports = _sort_ports(
-        _get_component_port_direction(pads_ref), sort_ccw, ("E", "S", "W", "N")
+        _get_device_port_direction(pads_ref), sort_ccw, ("E", "S", "W", "N")
     )
 
     # create mapping from dut ports to pad ports
