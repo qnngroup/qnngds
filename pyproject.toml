@@ -33,6 +33,7 @@ classifiers = [
 
 dependencies = [
   "phidl",
+  "klayout",
   "scipy"
 ]
 
