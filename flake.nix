@@ -31,6 +31,7 @@
               uv
               python
               pythonEnv
+              pre-commit
               stdenv.cc.cc.libgcc
             ];
 

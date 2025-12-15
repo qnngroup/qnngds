@@ -1,3 +1,4 @@
 phidl
+klayout
 PyQt6
 pre-commit
