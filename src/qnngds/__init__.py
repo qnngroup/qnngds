@@ -18,9 +18,8 @@ from .pdk import (
     get_cross_section,  # noqa: F401
 )
 from . import devices as devices
-
-# from . import sample as sample
-# from . import pads as pads
+from . import sample as sample
+from . import pads as pads
 
 
 def help():

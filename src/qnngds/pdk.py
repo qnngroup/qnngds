@@ -58,9 +58,7 @@ class Pdk:
         """
         if isinstance(layer, str):
             if layer not in self.layers:
-                raise ValueError(
-                    f"[qnngds] Pdk.get_layer(): could not find layer {layer} in Pdk {self.name}"
-                )
+                raise ValueError(f"Could not find layer {layer} in Pdk {self.name}")
             return self.layers[layer]
         # convert to tuple
         if isinstance(layer, int):
@@ -74,9 +72,7 @@ class Pdk:
                 _layer = self.layers[_layer]
                 if layer == (_layer.gds_layer, _layer.gds_datatype):
                     return _layer
-        raise ValueError(
-            f"[qnngds] Pdk.get_layer(): could not find layer {layer} in Pdk {self.name}"
-        )
+        raise ValueError(f"could not find layer {layer} in Pdk {self.name}")
 
     def get_device(self, spec: DeviceSpec) -> phidl.Device:
         """Get a specific layer within the PDK
@@ -93,7 +89,7 @@ class Pdk:
                 # allow both phidl and qnngds Devices
                 # (qnngds device has layer-assigned ports)
                 raise ValueError(
-                    "[qnngds] get_device() error: Callable argument `spec` did not return a phidl.Device or Device."
+                    f"Callable argument `spec` did not return a phidl.Device or Device, got {type(d)}"
                 )
             return d
         if isinstance(spec, phidl.Device):
@@ -106,7 +102,7 @@ class Pdk:
                 )
             return self.devices[spec]
         raise ValueError(
-            "[qnngds] get_device() error: Argument `spec` is invalid, must be a device, function that returns a device, or string name for device registered with active PDK"
+            f"Argument `spec` is invalid, must be a device, function that returns a device, or string name for device registered with active PDK, got {type(spec)}"
         )
 
     def get_cross_section(self, spec: CrossSectionSpec) -> phidl.CrossSection:
@@ -124,7 +120,7 @@ class Pdk:
                 # allow both phidl and qnngds CrossSections
                 # (qnngds device has layer-assigned ports)
                 raise ValueError(
-                    "[qnngds] get_cross_section() error: Callable argument `spec` did not return a phidl.CrossSection"
+                    f"Callable argument `spec` did not return a phidl.CrossSection, got {type(d)}"
                 )
             return d
         if isinstance(spec, phidl.CrossSection):
@@ -139,7 +135,7 @@ class Pdk:
             # recurse once to get a CrossSection
             return self.get_cross_section(self.cross_sections[spec])
         raise ValueError(
-            "[qnngds] get_cross_section() error: Argument `spec` is invalid, must be a cross section, function that returns a cross section, or string name for cross section registered with active PDK"
+            f"Argument `spec` is invalid, must be a cross section, function that returns a cross section, or string name for cross section registered with active PDK, got {type(spec)}"
         )
 
 

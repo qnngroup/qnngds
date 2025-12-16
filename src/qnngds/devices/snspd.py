@@ -63,7 +63,7 @@ def basic(
         num_squares = None
     if [size[0], size[1], num_squares].count(None) != 1:
         raise ValueError(
-            "[qnngds] snspd() requires that exactly ONE value of "
+            "SNSPD requires that exactly ONE value of "
             "the arguments ``num_squares`` and ``size`` be None "
             "to prevent overconstraining, for example:\n"
             ">>> snspd(size = (3, None), num_squares = 2000)"

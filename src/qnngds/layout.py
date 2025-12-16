@@ -120,7 +120,7 @@ class Device(phDevice):
         if port is not None:
             if not (isinstance(port, phPort) or isinstance(port, Port)):
                 raise ValueError(
-                    "[qnngds] add_port() error: Argument `port` must be a Port or phidl.Port for copying"
+                    f"Argument `port` must be a Port or phidl.Port for copying, got {type(port)}"
                 )
             if not isinstance(port, Port):
                 p = Port(
@@ -183,13 +183,13 @@ class Device(phDevice):
         """
         if not isinstance(device, phDevice):
             raise TypeError(
-                """[qnngds] add_array() was passed something that
+                """add_array() was passed something that
             was not a Device object. """
             )
 
         if np.size(spacing) != 2:
             raise ValueError(
-                """[qnngds] add_array() The spacing argument must
+                """add_array() The spacing argument must
             have exactly 2 elements, e.g. (150,80) """
             )
         a = DeviceArray(
@@ -314,7 +314,7 @@ class LayerSet(phLayerSet):
         """
         if layer.name in self._layers:
             raise ValueError(
-                f"[qnngds] LayerSet: Tried to add layer with name {layer.name}, but it already exists"
+                f"Tried to add layer with name {layer.name}, but it already exists in LayerSet"
             )
         self._layers[layer.name] = layer
 

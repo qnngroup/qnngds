@@ -373,7 +373,7 @@ def optimal_hairpin(
     #  Create the basic geometry
     # ==========================================================================
     if pitch < width:
-        raise Warning("[qnngds] Hairpin pitch must be greater than width")
+        raise Warning("Hairpin pitch must be greater than width")
     a = (pitch + width) / 2
     y = -(pitch - width) / 2
     x = -pitch
