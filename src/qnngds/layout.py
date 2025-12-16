@@ -1,5 +1,13 @@
-"""Extend phidl's Port to add layer information, augment CellArray with ports"""
+"""Extend phidl's Layout classes:
 
+Modifications:
+    - `Port`: add layer information
+    - `CellArray`: add ports
+    - `Layer`: add outline/keepout info
+    - `CrossSection`: allow "hidden" sections
+"""
+
+# can be removed in python 3.14, see https://peps.python.org/pep-0749/
 from __future__ import annotations
 
 from phidl import Port as phPort
@@ -158,7 +166,7 @@ class Device(phDevice):
                 self.add_port(name=name, port=port)
         else:
             for port in ports:
-                self.add_port(port)
+                self.add_port(name=port.name, port=port)
 
     def add_array(self, device, columns=2, rows=2, spacing=(100, 100), alias=None):
         """Creates a DeviceArray reference.
@@ -352,12 +360,19 @@ class CrossSection(phCrossSection):
         """
         super().add(width=width, offset=offset, layer=layer, ports=ports, name=name)
         self.sections[-1]["hidden"] = hidden
-        self.sections[-1]["layer"] = (-1, -1)
         return self
 
     def extrude(self, path, simplify=None):
         """Calls phidl.CrossSection.extrude() method and removes any polygons corresponding
         to hidden layers"""
+        hidden_layers = {}
+        for n, section in enumerate(self.sections):
+            if section["hidden"]:
+                hidden_layers[n] = section["layer"]
+                section["layer"] = (-1, 0)
         D = super().extrude(path, simplify)
-        D.remove(D.get_polygons(by_spec=(-1, -1)))
+        D.remove_layers(layers=(-1,))
+        for n, section in enumerate(self.sections):
+            if section["hidden"]:
+                section["layer"] = hidden_layers[n]
         return D

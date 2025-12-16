@@ -1,8 +1,9 @@
 """Pdk functions for layer and device management, mostly taken from gdsfactory"""
 
+# can be removed in python 3.14, see https://peps.python.org/pep-0749/
 from __future__ import annotations
 
-from qnngds import Layer, LayerSet, CrossSection, Device
+from qnngds import Layer, LayerSet, CrossSection
 import phidl
 from qnngds.typing import (
     LayerSpec,
@@ -134,7 +135,9 @@ class Pdk:
                 raise ValueError(
                     f"{spec} from PDK {self.name} not in self.cross_sections: did you mean {approx_match}"
                 )
-            return self.cross_sections[spec]
+            # cross_sections[spec] could be a CrossSectionFactory (i.e. callable) or CrossSection.
+            # recurse once to get a CrossSection
+            return self.get_cross_section(self.cross_sections[spec])
         raise ValueError(
             "[qnngds] get_cross_section() error: Argument `spec` is invalid, must be a cross section, function that returns a cross section, or string name for cross section registered with active PDK"
         )

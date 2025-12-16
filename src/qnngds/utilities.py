@@ -1,9 +1,4 @@
-"""Utilies is used for building cells in design.
-
-Cells are made of devices
-(found in utilities) and a die_cell border, wich contains pads, text etc... The
-device and its die are linked thanks to functions present in this module.
-"""
+"""Utilities for modifying/combining devices into more complex devices or constructing experiments."""
 
 # can be removed in python 3.14, see https://peps.python.org/pep-0749/
 from __future__ import annotations
@@ -15,11 +10,40 @@ from functools import partial
 import numpy as np
 
 from numpy.typing import ArrayLike
-from qnngds.typing import LayerSpec, LayerSpecs, DeviceSpec
+from qnngds.typing import LayerSpec, LayerSpecs, DeviceSpec, CrossSectionSpec
 from qnngds import Device, LayerSet
 
 import qnngds as qg
 import phidl.geometry as pg
+
+
+def extend_ports(
+    device: Device, port_names: Sequence[int | str], extension: DeviceSpec
+) -> Device:
+    """Adds the DeviceSpec extension to the named ports of Device device
+
+    Parameters:
+        device (Device): device to add extensions to
+        port_names (Sequence[int | str]): names of ports on device which should be extended
+        extension (DeviceSpec): specification for extension
+
+    Returns:
+        Device: the original device with ports extended
+    """
+    dev_extended = Device()
+    dev_i = dev_extended << device
+    ext = qg.get_device(extension)
+    if 1 not in ext.ports:
+        raise ValueError(f"port '1' not found in extension.ports: {ext.ports.keys()}")
+    for port_name in port_names:
+        ext_i = dev_extended << ext
+        ext_i.connect(port=ext_i.ports[1], destination=dev_i.ports[port_name])
+        if 2 in ext.ports:
+            dev_extended.add_port(
+                port=ext_i.ports[2], name=port_name, layer=dev_i.ports[port_name].layer
+            )
+    dev_extended.name = "ext_port_" + device.name
+    return dev_extended
 
 
 def _create_layered_ports(device: Device, layer: LayerSpec):
@@ -121,26 +145,30 @@ def outline(
     for k, v in outline_layers.items():
         if v <= 0:
             raise ValueError(f"outline must be greater than zero, got {outline_layers}")
+    outline_layers = {qg.get_layer(k).tuple: v for k, v in outline_layers.items()}
     new_ports = []
     processed_ports = []
     for layer in outline_layers.keys():
+        layer = qg.get_layer(layer).tuple
         for port in dev.ports:
-            if port.layer != layer:
+            port = dev.ports[port]
+            if qg.get_layer(port.layer).tuple != layer:
                 continue
             ext = dev_extended.add_ref(
                 pg.straight(
-                    size=(outline_layers[layer], port.width),
-                    layer=port.layer,
+                    size=(port.width, outline_layers[layer]),
+                    layer=qg.get_layer(port.layer).tuple,
                 )
             )
-            ext.connect(port=ext.ports[1], other=port)
+            _create_layered_ports(ext, layer)
+            ext.connect(port=ext.ports[1], destination=port)
             p = ext.ports[2]
             p.name = port.name
-            _create_layered_ports(ext, layer)
             new_ports.append(p)
             processed_ports.append(port)
-    new_ports += [p for p in dev.ports if p not in processed_ports]
-    outline_layers = {qg.get_layer(k).tuple: v for k, v in outline_layers.items()}
+    new_ports += [
+        dev.ports[p] for p in dev.ports if dev.ports[p] not in processed_ports
+    ]
     polygons = device.get_polygons(by_spec=True)
     extended_polygons = dev_extended.get_polygons(by_spec=True)
     for layer, poly in polygons.items():
@@ -315,9 +343,9 @@ def get_cross_section_with_layer(
     Returns:
         CrossSectionSpec | None: found cross section or default
     """
-    for xc in gf.get_active_pdk().cross_sections:
-        xc = gf.get_cross_section(xc)
-        if xc.sections[0].layer == layer:
+    for xc in qg.get_active_pdk().cross_sections:
+        xc = qg.get_cross_section(xc)
+        if qg.get_layer(xc.sections[0]["layer"]).tuple == qg.get_layer(layer).tuple:
             return xc
 
 

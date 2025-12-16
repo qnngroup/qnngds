@@ -1,5 +1,8 @@
 """Custom types for Layers and Devices"""
 
+# can be removed in python 3.14, see https://peps.python.org/pep-0749/
+from __future__ import annotations
+
 import phidl
 
 from functools import partial

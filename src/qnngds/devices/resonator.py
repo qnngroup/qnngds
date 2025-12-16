@@ -18,6 +18,10 @@ from qnngds.typing import (
 )
 from qnngds import Device, CrossSection
 
+import phidl.path as pp
+import phidl.geometry as pg
+from phidl import Path
+
 
 def compute_veff(n_eff: float) -> float:
     """Computes effective light speed from effective index
@@ -64,37 +68,23 @@ def cpw(
     Returns:
         CrossSection: CPW cross section
     """
-    inner = Section()
-    gaps = partial(
-        gf.Section,
-        width=gap,
-        layer=layer,
-    )
-    CPW = CrossSection()
+    CPW = CrossSection(radius=radius)
     CPW.add(
         width=width,
         offset=0,
-        layer=layer,
+        layer=qg.get_layer(layer).tuple,
         hidden=True,
-        port_names=(1, 2),
+        ports=(1, 2),
         name="center",
     )
     for i in range(2):
         CPW.add(
             width=gap,
-            layer=layer,
+            layer=qg.get_layer(layer).tuple,
             offset=(-1) ** i * (width + gap) / 2,
             name="gap_" + ("u" if i == 0 else "l"),
         )
-    return CrossSection(
-        sections=(
-            inner,
-            gaps(offset=-(width + gap) / 2, name="gap_l"),
-            gaps(offset=(width + gap) / 2, name="gap_u"),
-        ),
-        radius=radius,
-        radius_min=radius,
-    )
+    return CPW
 
 
 def microstrip(
@@ -112,18 +102,15 @@ def microstrip(
     Returns:
         CrossSection: microstrip cross section
     """
-    inner = Section(
+    USTRIP = CrossSection(radius=radius)
+    USTRIP.add(
         width=width,
         offset=0,
-        layer=layer,
-        port_names=(1, 2),
+        layer=qg.get_layer(layer).tuple,
+        ports=(1, 2),
         name="center",
     )
-    return CrossSection(
-        sections=(inner,),
-        radius=radius,
-        radius_min=radius,
-    )
+    return USTRIP
 
 
 def transmission_line(
@@ -139,13 +126,11 @@ def transmission_line(
     Returns:
         Device: straight transmission line
     """
-    return gf.path.extrude(
-        gf.path.straight(length=length, npoints=2),
-        cross_section=qg.get_cross_section(cross_section),
-    )
+    xc = qg.get_cross_section(cross_section)
+    return xc.extrude(pp.straight(length=length))
 
 
-def resonator_meandered(
+def meandered(
     cross_section: CrossSectionSpec = cpw,
     n_eff: float = 10,
     resonant_freq: float = 5e9,
@@ -162,10 +147,10 @@ def resonator_meandered(
     Returns:
         Device: meandered half-wave resonator
     """
-    xc = gf.get_cross_section(cross_section)
+    xc = qg.get_cross_section(cross_section)
     desired_length = compute_res_wavelength(n_eff=n_eff, res_freq=resonant_freq) / 2
-    left_bend = gf.path.euler(radius=xc.radius, angle=90, use_eff=False, p=1)
-    right_bend = gf.path.euler(radius=xc.radius, angle=-90, use_eff=False, p=1)
+    left_bend = pp.euler(radius=xc.radius, angle=90, use_eff=False, p=1)
+    right_bend = pp.euler(radius=xc.radius, angle=-90, use_eff=False, p=1)
     L_bend = left_bend.length()
     x_bend = left_bend.xsize
     # compute number of lines
@@ -181,8 +166,8 @@ def resonator_meandered(
         1 + n_rows
     )
     L_half = L_straight / 2 - x_bend
-    half = gf.path.straight(length=L_half)
-    straight = gf.path.straight(length=L_straight)
+    half = pp.straight(length=L_half)
+    straight = pp.straight(length=L_straight)
     # start, left, right, and end segments
     start = [left_bend, half, right_bend]
     right = [right_bend, straight, left_bend]
@@ -192,7 +177,7 @@ def resonator_meandered(
     else:
         end = [left_bend, half, right_bend]
     # construct the path
-    P = gf.Path()
+    P = Path()
     P.append(start)
     rows = 0
     for _ in range(int(np.ceil(n_rows / 2))):
@@ -202,10 +187,10 @@ def resonator_meandered(
             P.append(left)
             rows += 1
     P.append(end)
-    return gf.path.extrude(P, xc)
+    return xc.extrude(P)
 
 
-def resonator_straight(
+def straight(
     cross_section: CrossSectionSpec = cpw,
     n_eff: float = 100,
     resonant_freq: float = 1e9,
@@ -221,9 +206,8 @@ def resonator_straight(
         Device: meandered half-wave resonator
     """
     desired_length = compute_res_wavelength(n_eff=n_eff, res_freq=resonant_freq) / 2
-    return gf.path.extrude(
-        gf.path.straight(length=desired_length), gf.get_cross_section(cross_section)
-    )
+    xc = qg.get_cross_section(cross_section)
+    return xc.extrude(pp.straight(length=desired_length))
 
 
 def pad(
@@ -245,15 +229,15 @@ def pad(
         Device: pad
     """
     PAD = Device()
-    sc = PAD << qg.geometries.compass(size=(width, length), layer=sc_layer)
+    sc = PAD << pg.straight(size=(width, length), layer=qg.get_layer(sc_layer))
     sc.move(sc.center, (0, 0))
     for metal_layer in metal_layers:
-        metal = PAD << qg.geometries.compass(
+        metal = PAD << pg.rectangle(
             size=(width - 2 * edge_exclusion, length - 2 * edge_exclusion),
-            layer=metal_layer,
+            layer=qg.get_layer(metal_layer),
         )
         metal.move(metal.center, (0, 0))
-    PAD.add_port(name="e1", port=sc.ports["e4"])
+    PAD.add_port(name=1, port=sc.ports[2], layer=sc_layer)
     return PAD
 
 
@@ -262,7 +246,7 @@ def transmission_line_resonator(
         transmission_line,
         None,
     ),
-    resonator_spec: DeviceSpec = resonator_meandered,
+    resonator_spec: DeviceSpec = meandered,
     tl_cross_section: CrossSectionSpec = partial(cpw, width=75, gap=24),
     res_cross_section: CrossSectionSpec = cpw,
     taper: DeviceFactory = qg.geometries.hyper_taper,
@@ -274,18 +258,18 @@ def transmission_line_resonator(
     Inverts final design based on layer choice and PDK Layer class's outline function
 
     Args:
-        transmission_line_specs (tuple[DeviceSpec | None, DeviceSpec | None]): Desired component spec for
+        transmission_line_specs (tuple[DeviceSpec | None, DeviceSpec | None]): Desired DeviceSpec for
             transmission line on either end of resonator. If DeviceSpec, take a single argument
             ``cross_section``. If None, no transmission line will be created (although the resonator will
             taper out to the width of the ``tl_cross_section``.
-        resonator_spec (DeviceSpec): Desired component spec for embedded resonator.
+        resonator_spec (DeviceSpec): Desired DeviceSpec for embedded resonator.
             Must take a single argument ``cross_section``.
         tl_cross_section (CrossSectionSpec): CPW or microstrip cross section for transmission line.
         res_cross_section (CrossSectionSpec): CPW or microstrip cross section for resonator.
-        taper (DeviceFactory): Callable which produces a Component, used to generate a filled taper
+        taper (DeviceFactory): Callable which produces a Device, used to generate a filled taper
             between resonator and transmission line. Port widths must match. Should be solid (i.e. not outlined);
             will be automatically outlined for CPW.
-        pads (tuple[DeviceSpec | None, DeviceSpec | None]): Component spec or None for each pad.
+        pads (tuple[DeviceSpec | None, DeviceSpec | None]): DeviceSpec or None for each pad.
             If DeviceSpec, must take a single argument ``width``. If None, no pad will be created
         bbox_extension (float): amount to extend ground plane for negative tone layout CPW, or positive
             tone microstrip
@@ -301,7 +285,7 @@ def transmission_line_resonator(
     >>>     length=100,
     >>> )
     >>> res_spec = partial(
-    >>>     qg.devices.resonator.resonator_meandered,
+    >>>     qg.devices.resonator.meandered,
     >>>     n_eff=100,
     >>>     resonant_freq=1e9,
     >>>     meander_width=300,
@@ -330,13 +314,13 @@ def transmission_line_resonator(
     >>> )
 
     """
-    res_xc = gf.get_cross_section(res_cross_section)
-    tl_xc = gf.get_cross_section(tl_cross_section)
+    res_xc = qg.get_cross_section(res_cross_section)
+    tl_xc = qg.get_cross_section(tl_cross_section)
     # if section[0] (the main section) is hidden, then assume we're using a CPW
-    res_cpw = res_xc.sections[0].hidden
-    tl_cpw = tl_xc.sections[0].hidden
-    res_layers = set(sect.layer for sect in res_xc.sections)
-    tl_layers = set(sect.layer for sect in tl_xc.sections)
+    res_cpw = res_xc.sections[0]["hidden"]
+    tl_cpw = tl_xc.sections[0]["hidden"]
+    res_layers = set(section["layer"] for section in res_xc.sections)
+    tl_layers = set(section["layer"] for section in tl_xc.sections)
     # check inputs
     if res_cpw ^ tl_cpw:
         raise ValueError(
@@ -363,76 +347,72 @@ def transmission_line_resonator(
     R.add_ports(res.ports)
     # create new cross-section for taper using transitions
     T = Device()
-    trans_length = sum(section.width for section in tl_xc.sections)
-    trans_layer = res_xc.sections[0].layer
+    trans_length = sum(section["width"] for section in tl_xc.sections)
+    trans_layer = res_xc.sections[0]["layer"]
     transition = taper(
-        start_width=res_xc.sections[0].width,
-        end_width=tl_xc.sections[0].width,
+        start_width=res_xc.sections[0]["width"],
+        end_width=tl_xc.sections[0]["width"],
         length=trans_length,
         layer=trans_layer,
     )
     if is_cpw:
         # outline transition
-        start_w = sum(section.width for section in res_xc.sections)
-        end_w = sum(section.width for section in tl_xc.sections)
+        start_w = sum(section["width"] for section in res_xc.sections)
+        end_w = sum(section["width"] for section in tl_xc.sections)
         wide_transition = taper(
             start_width=start_w, end_width=end_w, length=trans_length, layer=trans_layer
         )
-        T << gf.boolean(
+        T << pg.kl_boolean(
             A=wide_transition,
             B=transition,
             operation="A-B",
-            layer1=trans_layer,
-            layer2=trans_layer,
-            layer=res_xc.sections[1].layer,
+            layer=res_xc.sections[1]["layer"],
         )
     else:
         T << transition
     T.add_ports(transition.ports)
     # add tapers
-    R = gf.components.extend_ports(
-        component=R,
-        port_names=["e1", "e2"],
+    R = qg.utilities.extend_ports(
+        device=R,
+        port_names=[1, 2],
         extension=T,
     )
     for n, tl_spec in enumerate(transmission_line_specs):
         if tl_spec is None:
             continue
-        # attach tl to component
-        R = gf.components.extend_ports(
-            component=R,
-            port_names=[f"e{n + 1}"],
+        # attach tl to device
+        R = qg.utilities.extend_ports(
+            device=R,
+            port_names=[n + 1],
             extension=tl_spec(tl_xc),
         )
     for n, pad in enumerate(pads):
         if pad is None:
             continue
         # create the pad
-        pad_i = pad(tl_xc.sections[0].width)
+        pad_i = pad(tl_xc.sections[0]["width"])
         if is_cpw:
             # outline the pad
             pad_i = qg.utilities.outline(
-                component=pad_i,
-                outline_layers={str(tl_xc.sections[1].layer): tl_xc.sections[1].width},
+                device=pad_i,
+                outline_layers={tl_xc.sections[1]["layer"]: tl_xc.sections[1]["width"]},
             )
-        # attach pad to component
-        R = gf.components.extend_ports(
-            component=R, port_names=[f"e{n + 1}"], extension=pad_i
-        )
+        # attach pad to device
+        R = qg.utilities.extend_ports(device=R, port_names=[n + 1], extension=pad_i)
     # invert if needed
-    outline_layers = qg.utilities.get_outline_layers(gf.get_active_pdk().layers)
+    outline_layers = qg.utilities.get_outline_layers(qg.get_active_pdk().layers)
     # if not CPW and layer is positive-tone, invert
-    ext_bbox_layers = {
-        str(layer): bbox_extension for layer in outline_layers if not is_cpw
+    ext_bbox_distance = {
+        layer: bbox_extension for layer in outline_layers if not is_cpw
     }
     # if CPW and layer is negative-tone, invert
-    ext_bbox_layers |= {
-        str(layer): bbox_extension
+    ext_bbox_distance |= {
+        layer: bbox_extension
         for layer in layers
         if is_cpw and layer not in outline_layers
     }
-    inverted = qg.utilities.invert(R, ext_bbox_layers=ext_bbox_layers)
-    R = Device()
+    inverted = qg.utilities.invert(R, ext_bbox_distance=ext_bbox_distance)
+    R = Device("resonator")
     R << inverted
     R.add_ports(inverted.ports)
     return R

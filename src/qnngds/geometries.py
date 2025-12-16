@@ -11,7 +11,7 @@ from qnngds import Device
 
 from qnngds.typing import LayerSpec
 
-from phidl import CrossSection
+from qnngds import CrossSection
 import phidl.path as pp
 import phidl.geometry as pg
 
@@ -449,12 +449,57 @@ def optimal_hairpin(
     return HP
 
 
+def default_cross_section(
+    width: float = 25,
+    layer: LayerSpec = (1, 0),
+    radius: float = 30.0,
+    force_no_outline: bool = False,
+) -> CrossSection:
+    """Return a default cross_section.
+
+    Args:
+        width (float): width of cross section
+        layer (LayerSpec): desired layer for cross section
+        radius (float): bend radius
+        force_no_outline (bool): if True, ignores if layer is positive tone.
+
+    Returns:
+        CrossSection
+    """
+    outline = qg.get_layer(layer).outline
+    XC = CrossSection(radius=radius)
+    if (outline > 0) and not (force_no_outline):
+        # if outline is greater than zero, then do a positive tone cross section
+        # with the center of the cross section missing (hidden=True)
+        XC.add(
+            width=width,
+            offset=0,
+            layer=qg.get_layer(layer).tuple,
+            hidden=True,
+            ports=(1, 2),
+        )
+        for i in range(2):
+            XC.add(
+                width=outline,
+                layer=qg.get_layer(layer).tuple,
+                offset=(-1) ** i * (width + outline) / 2,
+            )
+    else:
+        # just do a normal cross section
+        XC.add(
+            width=width,
+            offset=0,
+            layer=qg.get_layer(layer).tuple,
+            ports=(1, 2),
+        )
+    return XC
+
+
 def fine_to_coarse(
     width1: float = 2.0,
     width2: float = 20.0,
     layer1: LayerSpec = "EBEAM_FINE",
     layer2: LayerSpec = "EBEAM_COARSE",
-    port_type: str = "electrical",
 ) -> Device:
     """Create transition between fine and coarse layers
 
@@ -464,7 +509,6 @@ def fine_to_coarse(
         width2 (float): ending width on second layer
         layer1 (LayerSpec): layer specification (string or tuple) for first layer
         layer2 (LayerSpec): layer specification (string or tuple) for second layer
-        port_type (str): "electrical" or "optical"
 
     Returns:
         Device: transition between fine and coarse layers
@@ -481,11 +525,8 @@ def fine_to_coarse(
     if pos_tone:
         outline = outline_layers[qg.get_layer(layer2).name]
         # positive tone
-        t2 = gf.components.straight(
-            length=2 * outline,
-            npoints=2,
-            cross_section=qg.utilities.get_cross_section_with_layer(layer2),
-            width=None,
+        t2 = qg.utilities.get_cross_section_with_layer(layer2).extrude(
+            pp.straight(length=2 * outline)
         )
         wide = 2 * outline + width2
         if wide < width1:
@@ -501,21 +542,19 @@ def fine_to_coarse(
         t2_i = taper.add_ref(t2)
         t1_i = taper.add_ref(t1)
         t1_i.connect(
-            t1_i.ports["e1"],
-            t2_i.ports["e2"],
-            allow_width_mismatch=True,
-            allow_layer_mismatch=True,
+            port=t1_i.ports[1],
+            destination=t2_i.ports[2],
         )
-        t1_i.movex(-outline_layers[str(gf.get_layer(layer2))] * 2)
-        ports = [t1_i.ports["e2"], t2_i.ports["e1"]]
+        t1_i.movex(-outline_layers[qg.get_layer(layer2).name] * 2)
+        ports = [t1_i.ports[2], t2_i.ports[1]]
     else:
-        t2 = gf.components.superconductors.optimal_step(
+        t2 = pg.optimal_step(
             start_width=0.7 * width1,
             end_width=width2,
             num_pts=500,
             anticrowding_factor=0.6,
             symmetric=True,
-            layer=layer2,
+            layer=qg.get_layer(layer2),
         )
         t1 = qg.geometries.hyper_taper(
             length=t2.xsize * 0.7,
@@ -526,17 +565,15 @@ def fine_to_coarse(
         t2_i = taper.add_ref(t2)
         t1_i = taper.add_ref(t1)
         t1_i.connect(
-            t1_i.ports["e1"],
-            t2_i.ports["e1"],
-            allow_width_mismatch=True,
-            allow_layer_mismatch=True,
+            port=t1_i.ports[1],
+            destination=t2_i.ports[1],
         )
         t1_i.movex(0.8 * t1_i.xsize)
-        ports = [t1_i.ports["e2"], t2_i.ports["e2"]]
+        ports = [t1_i.ports[2], t2_i.ports[2]]
 
     for n, port in enumerate(ports):
         taper.add_port(
-            name=f"e{n + 1}",
+            name=n + 1,
             midpoint=port.midpoint,
             orientation=port.orientation,
             width=port.width,
