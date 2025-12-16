@@ -630,7 +630,7 @@ def via_chain(
     VC = Device("via_chain")
     via = qg.get_device(via_spec)
     # get layers
-    port_dict = qg.utilities._get_device_port_direction(via)
+    port_dict = qg.utilities.get_device_port_direction(via)
     east_layers = set(port.layer for port in port_dict["E"])
     west_layers = set(port.layer for port in port_dict["W"])
     if len(east_layers) == 1 and len(west_layers) == 1:

@@ -20,6 +20,7 @@ from .pdk import (
 from . import devices as devices
 from . import sample as sample
 from . import pads as pads
+from . import experiment as experiment
 
 
 def help():
