@@ -38,7 +38,7 @@ def planar(
         layer (LayerSpec): GDS layer specification
 
     Returns:
-        Device: a single planar hTron
+        (Device): a single planar hTron
     """
 
     HTRON = Device("htron_planar")
@@ -88,7 +88,7 @@ def heater(
         pad_layer (LayerSpec): layer specification for top pads
 
     Returns:
-        Device: a heater
+        (Device): a heater
     """
     if pad_size[1] - 2 * pad_outline < constr_width:
         raise ValueError(
@@ -146,7 +146,7 @@ def multilayer(
         gate_spec (DeviceSpec): callable function that generates a Device for the gate nanowire
 
     Returns:
-        Device: a multilayer hTron
+        (Device): a multilayer hTron
     """
 
     HTRON = Device("htron_multilayer")

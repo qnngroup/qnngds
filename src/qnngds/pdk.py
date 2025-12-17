@@ -31,10 +31,10 @@ class Pdk:
             LayerSpec | tuple[LayerSpec, LayerSpec], DeviceSpec
         ] = {},
         devices: DeviceSpecs = [],
-    ):
+    ) -> None:
         """Constructor
 
-        Parameters
+        Args:
             name (str): name of PDK
             layers (LayerSet): LayerSet to use for PDK
             cross_sections (dict[str, CrossSection]): map of named cross sections
@@ -43,6 +43,9 @@ class Pdk:
                 map of LayerSpec (or pair of LayerSpecs) to a DeviceSpec which
                 will transition between layers.
             devices (DeviceSpecs): devices to register with PDK
+
+        Returns:
+            None
         """
         self.name = name
         self.layers = layers
@@ -72,18 +75,18 @@ class Pdk:
                 )
         self.devices = devices
 
-    def activate(self):
+    def activate(self) -> None:
         """Enable the PDK and allow it to be accessed globally"""
         _set_active_pdk(self)
 
     def get_layer(self, layer: LayerSpec) -> Layer:
         """Get a specific layer within the PDK
 
-        Parameters
+        Args:
             layer (LayerSpec): string, int, or tuple that identifies the desired layer
 
-        Returns
-            Layer: instance of layer matching the queried LayerSpec
+        Returns:
+            (Layer): instance of layer matching the queried LayerSpec
         """
         value_error_msg = (
             f"Could not find layer {layer} in Pdk {self.name}. "
@@ -111,11 +114,11 @@ class Pdk:
     def get_device(self, spec: DeviceSpec) -> phidl.Device:
         """Get a specific layer within the PDK
 
-        Parameters
+        Args:
             spec (DeviceSpec): device instance, name (string), or callable function that identifies desired device
 
-        Returns
-            Device: instance of device matching the queried DeviceSpec
+        Returns:
+            (Device): instance of device matching the queried DeviceSpec
         """
         if callable(spec):
             d = spec()
@@ -142,11 +145,11 @@ class Pdk:
     def get_cross_section(self, spec: CrossSectionSpec) -> phidl.CrossSection:
         """Get a specific layer within the PDK
 
-        Parameters
+        Args:
             spec (CrossSectionSpec): device instance, name (string), or callable function that identifies desired device
 
-        Returns
-            CrossSection: instance of device matching the queried CrossSectionSpec
+        Returns:
+            (CrossSection): instance of device matching the queried CrossSectionSpec
         """
         if callable(spec):
             d = spec()
@@ -184,7 +187,29 @@ def get_active_pdk() -> Pdk:
 
 
 def get_generic_pdk() -> Pdk:
-    """Get a generic PDK"""
+    """Get a generic PDK
+
+    Includes the following layers:
+    - EBEAM_FINE (1, 0), outline=0.1
+    - EBEAM_COARSE (2, 0), outline=10
+    - EBEAM_KEEPOUT (3, 0), keepout=(EBEAM_FINE,)
+    - PHOTO1 (10, 0)
+    - PHOTO2 (20, 0)
+    - PHOTO3 (30, 0)
+    - PHOTO4 (40, 0)
+
+    Includes the following cross-sections for routing:
+    - ebeam (EBEAM_COARSE)
+    - photo1 (PHOTO1)
+    - photo2 (PHOTO2)
+    - photo3 (PHOTO3)
+    - photo4 (PHOTO4)
+
+    Includes the following layer transitions:
+    - EBEAM_FINE <-> EBEAM_COARSE
+    - all transitions within the same layer
+
+    """
     layers = LayerSet()
     layers.add_layer(Layer(name="EBEAM_FINE", gds_layer=1, outline=0.1))
     layers.add_layer(Layer(name="EBEAM_COARSE", gds_layer=2, outline=10))
@@ -196,7 +221,7 @@ def get_generic_pdk() -> Pdk:
         Layer(
             name="EBEAM_KEEPOUT",
             gds_layer=3,
-            keepout=["EBEAM_FINE", "EBEAM_COARSE"],
+            keepout=("EBEAM_FINE",),
         )
     )
     cross_sections = dict(
@@ -232,11 +257,11 @@ def _set_active_pdk(pdk: Pdk):
 def get_layer(layer: LayerSpec) -> Layer:
     """Get a specific layer within the globally-activated PDK
 
-    Parameters
+    Args:
         layer (LayerSpec): string, int, or tuple that identifies the desired layer
 
-    Returns
-        Layer: instance of layer matching the queried LayerSpec
+    Returns:
+        (Layer): instance of layer matching the queried LayerSpec
     """
     return get_active_pdk().get_layer(layer)
 
@@ -244,11 +269,11 @@ def get_layer(layer: LayerSpec) -> Layer:
 def get_device(device: DeviceSpec) -> phidl.Device:
     """Get a specific layer within the globally-activated PDK
 
-    Parameters
+    Parameters:
         device (DeviceSpec): device instance, name (string), or callable function that identifies desired device
 
-    Returns
-        Device: instance of device matching the queried DeviceSpec
+    Returns:
+        (Device): instance of device matching the queried DeviceSpec
     """
     return get_active_pdk().get_device(device)
 
@@ -256,11 +281,11 @@ def get_device(device: DeviceSpec) -> phidl.Device:
 def get_cross_section(cross_section: CrossSectionSpec) -> phidl.CrossSection:
     """Get a specific layer within the globally-activated PDK
 
-    Parameters
+    Parameters:
         cross_section (CrossSectionSpec): cross_section instance, name (string), or callable function that identifies desired cross_section
 
-    Returns
-        CrossSection: instance of cross_section matching the queried CrossSectionSpec
+    Returns:
+        (CrossSection): instance of cross_section matching the queried CrossSectionSpec
     """
     return get_active_pdk().get_cross_section(cross_section)
 
@@ -268,11 +293,11 @@ def get_cross_section(cross_section: CrossSectionSpec) -> phidl.CrossSection:
 def layer_auto_transitions(layer_set: LayerSet) -> dict[LayerSpec, DeviceSpec]:
     """Generate layer_transitions dictionary for auto tapers within the same layer
 
-    Parameters
+    Parameters:
         layer_set (LayerSet): layers in PDK for which the auto transitions should be generated
 
     Returns:
-        dict[Layer, DeviceSpec] mapping the appropriate taper for each layer auto transitions
+        (dict[Layer, DeviceSpec]): mapping the appropriate taper for each layer auto transitions
     """
     outline_layers = get_outline_layers(layer_set)
     auto_transitions = {
