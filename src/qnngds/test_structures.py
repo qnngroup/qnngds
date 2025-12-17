@@ -179,7 +179,7 @@ def alignment_mark(layer1: LayerSpec = (1, 0), layer2: LayerSpec = (10, 0)) -> D
 
 @qg.device
 def multilayer_alignment(
-    layers: LayerSpecs = ["PHOTO1", "PHOTO2"],
+    layers: LayerSpecs = ["PHOTO1", "PHOTO2", "PHOTO3"],
 ) -> Device:
     """Creates an alignment mark for each lithography layer.
 

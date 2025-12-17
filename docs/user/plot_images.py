@@ -18,7 +18,7 @@ def plot_and_save_functions():
     script_dir = os.path.dirname(__file__)
     save_dir = os.path.join(script_dir, "images")
     set_quickplot_options(blocking=False, show_subports=False)
-    for name, attr in qg._devices.items():
+    for name, attr in qg.decorator._devices.items():
         if not (
             callable(attr) and hasattr(attr, "__call__") and not isinstance(attr, type)
         ):

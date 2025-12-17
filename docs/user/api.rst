@@ -3,6 +3,17 @@
 API
 ===
 
+.. _Decorator:
+Decorator
+---------
+
+.. automodule:: qnngds.decorator
+    :members:
+    :exclude-members:
+    :undoc-members:
+    :show-inheritance:
+    :special-members: __init__
+
 .. _Devices:
 Devices
 -------
