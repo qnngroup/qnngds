@@ -190,24 +190,24 @@ def get_generic_pdk() -> Pdk:
     """Get a generic PDK
 
     Includes the following layers:
-    - EBEAM_FINE (1, 0), outline=0.1
-    - EBEAM_COARSE (2, 0), outline=10
-    - EBEAM_KEEPOUT (3, 0), keepout=(EBEAM_FINE,)
-    - PHOTO1 (10, 0)
-    - PHOTO2 (20, 0)
-    - PHOTO3 (30, 0)
-    - PHOTO4 (40, 0)
+    * EBEAM_FINE (1, 0), outline=0.1
+    * EBEAM_COARSE (2, 0), outline=10
+    * EBEAM_KEEPOUT (3, 0), keepout=(EBEAM_FINE,)
+    * PHOTO1 (10, 0)
+    * PHOTO2 (20, 0)
+    * PHOTO3 (30, 0)
+    * PHOTO4 (40, 0)
 
     Includes the following cross-sections for routing:
-    - ebeam (EBEAM_COARSE)
-    - photo1 (PHOTO1)
-    - photo2 (PHOTO2)
-    - photo3 (PHOTO3)
-    - photo4 (PHOTO4)
+    * ebeam (EBEAM_COARSE)
+    * photo1 (PHOTO1)
+    * photo2 (PHOTO2)
+    * photo3 (PHOTO3)
+    * photo4 (PHOTO4)
 
     Includes the following layer transitions:
-    - EBEAM_FINE <-> EBEAM_COARSE
-    - all transitions within the same layer
+    * EBEAM_FINE <-> EBEAM_COARSE
+    * all transitions within the same layer
 
     """
     layers = LayerSet()
