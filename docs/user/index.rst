@@ -1,13 +1,14 @@
 Welcome to qnngds documentation!
 ===================================
 
-``qnngds`` is a toolbox built on top of phidl for device design in the `QNN
-group <https://qnn-rle.mit.edu/>`_. It is made for helping in the design of gds
-files.
+``qnngds`` is a toolbox built on top of `phidl <https://phidl.readthedocs.io/en/latest/index.html>``_
+for device design in the `QNN group <https://qnn-rle.mit.edu/>`_. It is made to assist
+with production of GDS files and facilitate easier sharing of layout-generation
+code between users with different fabrication processes.
 
 .. note::
 
-   This project is under active development.
+   This project is under active development. Expect large breaking changes with major releases.
 
 General description
 -------------------
