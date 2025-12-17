@@ -26,7 +26,8 @@ def vernier_comb(
 ) -> Device:
     """Creates vernier caliper comb.
 
-    Helper method for alignment_mark
+    Helper method for alignment_mark.
+
     Args:
         pitch1 (int or float): pitch of top comb
         pitch2 (int or float): pitch of bottom comb
@@ -79,9 +80,10 @@ def vernier_comb(
 
 @qg.device
 def alignment_mark(layer1: LayerSpec = (1, 0), layer2: LayerSpec = (10, 0)) -> Device:
-    """Creates vernier caliper comb between two layers
+    """Creates vernier caliper comb between two layers.
 
-    Helper method for alignment_mark
+    Helper method for alignment_mark.
+
     Args:
         layer1 (LayerSpec): center comb GDS layer tuple (layer, type)
         layer2 (LayerSpec): top/bottom comb GDS layer tuple (layer, type)
@@ -207,7 +209,8 @@ def multilayer_alignment(
 def resolution_waffle(res: float | int = 1, layer: LayerSpec = (1, 0)) -> Device:
     """Creates resolution_waffle test structures for determining process resolution.
 
-    Helper method for resolution_test
+    Helper method for resolution_test.
+
     Args:
         res (float or int): Resolution (in µm) to be tested.
         layer (LayerSpec): GDS layer tuple (layer, type)
@@ -242,7 +245,8 @@ def resolution_waffle(res: float | int = 1, layer: LayerSpec = (1, 0)) -> Device
 def resolution_L(res: float | int = 1, layer: LayerSpec = (1, 0)) -> Device:
     """Creates L-shaped test structures for determining process resolution.
 
-    Helper method for resolution_test
+    Helper method for resolution_test.
+
     Args:
         res (float or int): Resolution (in µm) to be tested.
         layer (LayerSpec): GDS layer tuple (layer, type)
@@ -321,9 +325,9 @@ def resolution_steps(
     spacing: float = 5,
     layer: LayerSpec = (1, 0),
 ) -> Device:
-    """Creates step pattern for lithographic resolution test
+    """Creates step pattern for lithographic resolution test.
 
-    Adapted from PHIDL
+    Adapted from PHIDL.
 
     Args:
         resolutions (List[float]): List of resolutions (in µm) to be tested.
@@ -365,7 +369,7 @@ def resolution_checkerboard(
     label_interval: int = 5,
     label_size: float = 10,
 ) -> Device:
-    """Creates crossed lith_steps pattern for lithographic resolution test
+    """Creates crossed lith_steps pattern for lithographic resolution test.
 
     Args:
         resolutions (List[float]): List of resolutions (in µm) to be tested.
@@ -623,7 +627,7 @@ def via_chain(
     spacing: float = 10,
     tap_period: int = 1,
 ) -> Device:
-    """Makes a chain of vias, with optional taps along the length of the chain
+    """Makes a chain of vias, with optional taps along the length of the chain.
 
     Args:
         via_spec (DeviceSpec | Device): function, component name, or component for the via
@@ -735,7 +739,7 @@ def etch_test(
     pad_size: tuple[float, float] = (2000, 2000),
     trench_width: float = 20,
 ) -> Device:
-    """Construct side-by-side pads for performing electrical etch tests
+    """Construct side-by-side pads for performing electrical etch tests.
 
     Args:
         layer (LayerSpec): desired layer specification
@@ -769,7 +773,7 @@ def cross_bridge_kelvin_resistor(
     layer_bot: LayerSpec = "EBEAM_COARSE",
     layer_via: LayerSpec | None = "PHOTO2",
 ) -> Device:
-    """Generate a cross-bridge Kelvin resistor
+    """Generate a cross-bridge Kelvin resistor.
 
     See `this paper <http://ieeexplore.ieee.org/document/913141/>`_.
 
