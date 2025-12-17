@@ -33,7 +33,7 @@ The rest of the code is almost the same as in :ref:`experiment_generate_beginner
 
 
 Reference
-=========
+---------
 
 .. literalinclude:: experiment_generate_beginner3.py
    :language: python

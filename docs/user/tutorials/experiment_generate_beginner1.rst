@@ -50,7 +50,7 @@ And supply these inputs to ``experiment.generate`` and plot the output:
 
 
 Reference
-=========
+---------
 
 .. literalinclude:: experiment_generate_beginner1.py
    :language: python
