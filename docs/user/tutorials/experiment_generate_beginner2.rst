@@ -10,7 +10,7 @@ Imports are the same as in :ref:`experiment_generate_beginner1`:
 .. literalinclude:: experiment_generate_beginner2.py
    :language: python
    :linenos:
-   :linenomatch:
+   :lineno-match:
    :lines: 1-3
 
 When setting up the PDK, we define two layers this time, as well as a new interlayer transition between
@@ -20,7 +20,7 @@ Note the ``outline`` argument being passed to the ``Layer`` constructor.
 .. literalinclude:: experiment_generate_beginner2.py
    :language: python
    :linenos:
-   :linenomatch:
+   :lineno-match:
    :lines: 5-28
 
 The rest of the code is almost the same as in :ref:`experiment_generate_beginner1`:
@@ -28,7 +28,7 @@ The rest of the code is almost the same as in :ref:`experiment_generate_beginner
 .. literalinclude:: experiment_generate_beginner2.py
    :language: python
    :linenos:
-   :linenomatch:
+   :lineno-match:
    :lines: 30-52
 
 .. image:: experiment_generate_beginner2.png
@@ -42,5 +42,5 @@ Reference
 .. literalinclude:: experiment_generate_beginner2.py
    :language: python
    :linenos:
-   :linenomatch:
+   :lineno-match:
    :lines: 1-52

@@ -9,7 +9,7 @@ Imports are the same as in :ref:`experiment_generate_beginner1`:
 .. literalinclude:: experiment_generate_beginner3.py
    :language: python
    :linenos:
-   :linenomatch:
+   :lineno-match:
    :lines: 1-3
 
 When setting up the PDK, we'll define four layers this time, as well as a new interlayer transition between
@@ -23,7 +23,7 @@ hence why the argument is a tuple.
 .. literalinclude:: experiment_generate_beginner3.py
    :language: python
    :linenos:
-   :linenomatch:
+   :lineno-match:
    :lines: 5-30
 
 This time, we'll define a different DUT, using ``resistor.meander_sc_contacts``.
@@ -35,7 +35,7 @@ is placed over the entire meander that blocks out a region on the ``"EBEAM_FINE"
 .. literalinclude:: experiment_generate_beginner3.py
    :language: python
    :linenos:
-   :linenomatch:
+   :lineno-match:
    :lines: 32-57
 
 .. image:: experiment_generate_beginner3.png
@@ -49,5 +49,5 @@ Reference
 .. literalinclude:: experiment_generate_beginner3.py
    :language: python
    :linenos:
-   :linenomatch:
+   :lineno-match:
    :lines: 1-57
