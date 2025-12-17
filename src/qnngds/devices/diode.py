@@ -31,7 +31,7 @@ def basic(
         notch_angle (float): angle of notch opening in degrees
         length (float): length of device
         mirror (bool): if True, place notch on left side
-        layer (LayerSpec): GDS layer
+        layer (LayerSpec): GDS layer specification
 
     Returns:
         Device: the diode

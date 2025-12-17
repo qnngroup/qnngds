@@ -31,8 +31,8 @@ def vernier_comb(
     Args:
         pitch1 (int or float): pitch of top comb
         pitch2 (int or float): pitch of bottom comb
-        layer1 (LayerSpec): center comb GDS layer tuple (layer, type)
-        layer2 (LayerSpec): top/bottom comb GDS layer tuple (layer, type)
+        layer1 (LayerSpec): center comb GDS layer specification
+        layer2 (LayerSpec): top/bottom comb GDS layer specification
         text_angle (int or float): angle to rotate text labels
 
     Returns:
@@ -85,8 +85,8 @@ def alignment_mark(layer1: LayerSpec = (1, 0), layer2: LayerSpec = (10, 0)) -> D
     Helper method for alignment_mark.
 
     Args:
-        layer1 (LayerSpec): center comb GDS layer tuple (layer, type)
-        layer2 (LayerSpec): top/bottom comb GDS layer tuple (layer, type)
+        layer1 (LayerSpec): center comb GDS layer specification
+        layer2 (LayerSpec): top/bottom comb GDS layer specification
 
     Returns:
         Device: alignment cross with vernier calipers
@@ -184,7 +184,7 @@ def multilayer_alignment(
     """Creates an alignment mark for each lithography layer.
 
     Args:
-        layers (LayerSpecs): A list of GDS layers
+        layers (LayerSpecs): A list of GDS layer specifications
 
     Returns:
         Device: alignment marks between each layer pair
@@ -213,7 +213,7 @@ def resolution_waffle(res: float | int = 1, layer: LayerSpec = (1, 0)) -> Device
 
     Args:
         res (float or int): Resolution (in µm) to be tested.
-        layer (LayerSpec): GDS layer tuple (layer, type)
+        layer (LayerSpec): GDS layer specification
 
     Returns:
         Device: the resolution test structure
@@ -249,7 +249,7 @@ def resolution_L(res: float | int = 1, layer: LayerSpec = (1, 0)) -> Device:
 
     Args:
         res (float or int): Resolution (in µm) to be tested.
-        layer (LayerSpec): GDS layer tuple (layer, type)
+        layer (LayerSpec): GDS layer specification
 
     Returns:
         Device: the resolution test structure
@@ -292,7 +292,7 @@ def resolution_test(
     Args:
         resolutions (List[float]): List of resolutions (in µm) to be tested.
         outline (Optional[float]): If none, do not invert. If zero, invert the device, otherwise outline the device by this width.
-        layer (LayerSpec): GDS layer tuple (layer, type)
+        layer (LayerSpec): GDS layer specification
 
     Returns:
         Device: the resolution test structures
@@ -333,7 +333,7 @@ def resolution_steps(
         resolutions (List[float]): List of resolutions (in µm) to be tested.
         width (float): width of stripes
         spacing (float): spacing between stripes
-        layer (LayerSpec): GDS layer tuple (layer, type)
+        layer (LayerSpec): GDS layer specification
 
     Returns:
         Device: the test structure
@@ -373,7 +373,7 @@ def resolution_checkerboard(
 
     Args:
         resolutions (List[float]): List of resolutions (in µm) to be tested.
-        layer (LayerSpec): GDS layer tuple (layer, type)
+        layer (LayerSpec): GDS layer specification
         label_interval (bool): how often to label (set to 0 to disable all labels)
         label_size (float): size of text label
 
@@ -435,7 +435,7 @@ def vdp(
     Args:
         diagonal (float): Length of the VDP device, overall maximum dimension, in µm.
         contact_width (float): Width of the contact points (width of the ports), in µm.
-        layer (LayerSpec): GDS layer tuple (layer, type)
+        layer (LayerSpec): GDS layer specification
         port_type (string): gdsfactory port type. default "electrical"
 
     Returns:
@@ -568,7 +568,7 @@ def circ_tlm(
     Args:
         ext_radius (float): external radius of hole that defines outer pad
         int_radius (List[float]): list of internal radii. The gap is d = ext_radius - int_radius.
-        pad_layer (LayerSpec): layer for probable pads.
+        pad_layer (LayerSpec): layer specification for probable pads.
         mesa_layers (LayerSpecs): layer(s) for bottom metal/semiconductor and/or vias
         text_size (float): size of text label
 
@@ -742,7 +742,7 @@ def etch_test(
     """Construct side-by-side pads for performing electrical etch tests.
 
     Args:
-        layer (LayerSpec): desired layer specification
+        layer (LayerSpec): GDS layer specification
         pad_size (tuple[float, float]): width, height of each pad
         trench_width (float): width of trench around each pad
 
@@ -780,8 +780,8 @@ def cross_bridge_kelvin_resistor(
     Args:
         size (float): side length of square junction
         lead_length (float): length of leads to junction
-        layer_top (LayerSpec): layer of top conductor
-        layer_bot (LayerSpec): layer of bottom conductor
+        layer_top (LayerSpec): layer specification of top conductor
+        layer_bot (LayerSpec): layer specification of bottom conductor
         layer_via (LayerSpec | None): if not None, create via on specified layer
 
     Returns:

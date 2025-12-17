@@ -1,4 +1,4 @@
-"""define a registry for devices"""
+"""Define a registry for devices. Currently this is only used for documentation purposes."""
 
 _devices = {}
 

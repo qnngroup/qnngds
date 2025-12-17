@@ -48,7 +48,7 @@ def _create_layered_ports(device: Device, layer: LayerSpec):
 
     Parameters:
         device (Device): device to modify
-        layer (LayerSpec): GDS layer/datatype or name of layer
+        layer (LayerSpec): GDS layer specification
     """
     for name, port in device.ports.items():
         device.ports[name] = qg.Port(
@@ -351,7 +351,7 @@ def get_cross_section_with_layer(
     """Find the cross section associated with the given layer, or default
 
     Args:
-        layer (LayerSpec): layer to find cross section for
+        layer (LayerSpec): layer specification to find cross section for
         default (CrossSectionSpec | None): default return value if cross section
             is not found
 

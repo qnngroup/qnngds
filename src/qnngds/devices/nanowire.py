@@ -27,7 +27,7 @@ def variable_length(
         wire_width (int or float): The width of connections to source/drain
         length (int or float): The length of the interior constriction.
         num_pts (int): The number of points comprising the optimal_steps geometries.
-        layer (LayerSpec): GDS layer
+        layer (LayerSpec): GDS layer specification
 
     Returns:
         Device: 2 optimal steps to/from a narrow wire.
@@ -96,7 +96,7 @@ def sharp(
         constr_width (int or float): The width of the channel (at the hot-spot location).
         wire_width (int or float): The width of connections to source/drain
         length (int or float): The length of the interior constriction.
-        layer (LayerSpec): GDS layer
+        layer (LayerSpec): GDS layer specification
 
     Returns:
         Device: sharp constriction

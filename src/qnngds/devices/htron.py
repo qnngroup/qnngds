@@ -35,7 +35,7 @@ def planar(
         gap (int or float): Spacing between gate and channel in microns
         gate_length (int or float): Length of superconducting gate in microns
         channel_length (int or float): Length of superconducting channel in microns
-        layer (LayerSpec): GDS layer
+        layer (LayerSpec): GDS layer specification
 
     Returns:
         Device: a single planar hTron
@@ -84,8 +84,8 @@ def heater(
         constr_length (float): length of heater constriction
         constr_width (float): width at narrowest point
         pad_outline (float): amount by which to oversize top pad on each side
-        heater_layer (LayerSpec): layer for heater
-        pad_layer (LayerSpec): layer for top pads
+        heater_layer (LayerSpec): layer specification for heater
+        pad_layer (LayerSpec): layer specification for top pads
 
     Returns:
         Device: a heater

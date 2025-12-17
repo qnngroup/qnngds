@@ -351,7 +351,7 @@ class Sample(object):
 
         Args:
             width (float): width of corner marker
-            layer (LayerSpec): layer to place marker on
+            layer (LayerSpec): marker's layer specification
 
         Returns:
             None
@@ -386,7 +386,7 @@ class Sample(object):
 
         Args:
             size (float): text size
-            layer (LayerSpec): layer to place text on
+            layer (LayerSpec): text's layer specification
             inset_dist (float): distance between label and corner
             location (int): 0 -> NW, 1 -> NE, 2 -> SE, 3 -> SW
 

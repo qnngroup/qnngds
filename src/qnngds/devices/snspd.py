@@ -42,7 +42,7 @@ def basic(
         extend_terminals (bool): If True, bring ports flush to edges of device
         terminals_same_side (bool): If True, both ports will be located on the
             same side of the SNSPD.
-        layer (LayerSpec): GDS layer
+        layer (LayerSpec): GDS layer specification
 
     Returns:
         Device: optimally-rounded SNSPD, as provided by
@@ -163,7 +163,7 @@ def vertical(
         num_squares (int | None): Number of squares in the detector.
         extend (bool | None): Whether or not to extend the ports.
         num_pts (int): number of points to use for optimal hairpin.
-        layer (LayerSpec): GDS layer
+        layer (LayerSpec): GDS layer specification
 
     Returns:
         Device: The vertical SNSPD device.

@@ -30,7 +30,7 @@ def meander(
         pitch (float): desired pitch of meander in microns
         squares (float or None): desired number of squares
         max_length (float): desired length of device
-        layer (LayerSpec): GDS layer
+        layer (LayerSpec): GDS layer specification
 
     Returns:
         Device: the resistor meander
@@ -176,7 +176,7 @@ def meander_sc_contacts(
         meander_pitch (float or None): desired pitch of meander in microns
         contact_size (tuple[float, float]): (width, height) of resistor<->superconductor contact
         outline_contacts (float): superconductor extra width on each side of contact
-        layer_res (LayerSpec): resistor GDS layer
+        layer_res (LayerSpec): resistor GDS layer specification
         layer_contacts (LayerSpecs): layer(s) for contact to superconductor (first will define port layer)
         layer_keepout (LayerSpecs): layer(s) to do keepout on
 

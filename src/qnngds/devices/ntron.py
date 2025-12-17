@@ -32,7 +32,7 @@ def smooth(
         drain_w (float): Width of the drain region.
         choke_shift (float): Shift of the choke region.
         num_pts (int): number of points to use for optimal steps
-        layer (LayerSpec): GDS layer
+        layer (LayerSpec): GDS layer specification
 
     Returns:
         Device: The ntron device.
@@ -111,7 +111,7 @@ def sharp(
         source_sq (float): Length of the source region in squares.
         drain_w (float): Width of the drain region.
         drain_sq (float): Length of the drain region in squares.
-        layer (LayerSpec): GDS layer
+        layer (LayerSpec): GDS layer specification
 
     Returns:
         Device: The sharp ntron device.

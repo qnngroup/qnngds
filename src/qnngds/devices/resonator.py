@@ -52,8 +52,8 @@ def compute_res_wavelength(n_eff: float, res_freq: float) -> float:
 
 def cpw(
     width: float = 10,
-    radius: float = 50,
     gap: float = 5,
+    radius: float = 50,
     layer: LayerSpec = "PHOTO1",
 ) -> CrossSection:
     """Creates a coplanar waveguide (CPW) cross section.
@@ -64,6 +64,8 @@ def cpw(
     Args:
         width (float): width of center conductor
         gap (float): width of gaps on either side of conductor
+        radius (float): bend radius
+        layer (LayerSpec): GDS layer specification
 
     Returns:
         CrossSection: CPW cross section
@@ -98,6 +100,8 @@ def microstrip(
 
     Args:
         width (float): width of center conductor
+        radius (float): bend radius
+        layer (LayerSpec): GDS layer specification
 
     Returns:
         CrossSection: microstrip cross section
@@ -226,7 +230,7 @@ def pad(
     Args:
         width (float): Desired width of superconductor layer
         edge_exclusion (float): Amount on each side to decrease width of top metal bonding pad.
-        sc_layer (LayerSpec): layer for superconductor
+        sc_layer (LayerSpec): layer specification for superconductor
         metal_layers (LayerSpecs): layer(s) for metal
 
     Returns:

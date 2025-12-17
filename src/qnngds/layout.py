@@ -23,7 +23,7 @@ import copy
 from numpy.typing import ArrayLike
 from collections.abc import Sequence
 
-from qnngds.typing import LayerSpecs
+from qnngds.typing import LayerSpecs, LayerSpec
 
 import numpy as np
 
@@ -37,7 +37,7 @@ class Port(phPort):
         midpoint: ArrayLike = (0, 0),
         width: float = 1,
         orientation: float = 0,
-        layer: tuple | str = (1, 0),
+        layer: LayerSpec = (1, 0),
         parent=None,
     ):
         """Constructor for Port.
@@ -47,7 +47,7 @@ class Port(phPort):
             midpoint (np.ArrayLike): midpoint of port location
             width (float): width of float
             orientation (float): rotation of port
-            layer (tuple | tuple): GDS layer/datatype or name of layer
+            layer (LayerSpec): GDS layer specification
             parent:
         """
         super().__init__(
@@ -97,7 +97,7 @@ class Device(phDevice):
         midpoint: ArrayLike = (0, 0),
         width: float = 1,
         orientation: float = 0,
-        layer: tuple | str = None,
+        layer: LayerSpec = None,
         port: Port | None = None,
     ):
         """Adds a Port to the Device.
@@ -107,7 +107,7 @@ class Device(phDevice):
             midpoint (tuple[float,float]): midpoint of port location
             width (float): width of float
             orientation (float): rotation of port
-            layer (tuple | str): GDS layer/datatype or name of layer
+            layer (LayerSpec): GDS layer specification
             port (Port | None): a Port if the added Port is a copy of an existing Port.
 
         Notes

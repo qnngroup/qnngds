@@ -29,7 +29,7 @@ def taper(
         length (int or float): Length of taper
         start_width (int or float): Width of first end of taper
         end_width (int or float): Width of second end of taper
-        layer (LayerSpec): GDS layer tuple (layer, type) or string
+        layer (LayerSpec): GDS layer specification
 
     Returns:
         Device: a single taper
@@ -73,7 +73,7 @@ def hyper_taper(
         length (int or float): Length of taper
         start_width (int or float): Width of start of taper
         end_width (int or float): Width of end of taper
-        layer (LayerSpec): GDS layer tuple (layer, type) or string
+        layer (LayerSpec): GDS layer specification
         num_points (int): number of points to use
 
     Returns:
@@ -105,7 +105,7 @@ def euler_taper(
         length (int | float): Length of taper
         start_width (int | float): Width of start of taper
         end_width (int | float): Width of end of taper
-        layer (LayerSpec): GDS layer specification e.g. tuple (layer, type) or string
+        layer (LayerSpec): GDS layer specification
         num_points (int): number of points to use
 
     Returns:
@@ -167,7 +167,7 @@ def angled_taper(
         end_width (int or float): Width of wide end of taper
         start_width (int or float): Width of narrow end of taper
         angle (int or float): Angle between taper ends in degrees
-        layer (LayerSpec): GDS layer tuple (layer, type) or string
+        layer (LayerSpec): GDS layer specification
 
     Returns:
         Device: a single taper
@@ -256,7 +256,7 @@ def tee(
             Type of taper between the bottom corner of the stub on the side of
             the flag and the corner of the flag closest to the stub.
         taper_radius (float | None) : radius of taper. If None, uses stub_size
-        layer (LayerSpec): Specific layer(s) to put polygon geometry on.
+        layer (LayerSpec): Specification of layer(s) to put polygon geometry on.
     Returns:
         Device: tee
     """
@@ -469,7 +469,7 @@ def default_cross_section(
 
     Args:
         width (float): width of cross section
-        layer (LayerSpec): desired layer for cross section
+        layer (LayerSpec): layer specification for cross section
         radius (float): bend radius
         force_no_outline (bool): if True, ignores if layer is positive tone.
 
@@ -519,8 +519,8 @@ def fine_to_coarse(
     Args:
         width1 (float): starting width on first layer
         width2 (float): ending width on second layer
-        layer1 (LayerSpec): layer specification (string or tuple) for first layer
-        layer2 (LayerSpec): layer specification (string or tuple) for second layer
+        layer1 (LayerSpec): layer specification for first layer
+        layer2 (LayerSpec): layer specification for second layer
 
     Returns:
         Device: transition between fine and coarse layers

@@ -1,4 +1,9 @@
-"""Custom types for Layers and Devices"""
+"""Custom types for Layers and Devices
+
+- LayerSpec: string, int, or tuple. int and tuple are pdk-agnostic, whereas string requires the a registered pdk to have a matching entry in its LayerSet.
+- DeviceSpec: string, callable, Device. Like with LayerSpec, string requires a registered pdk with matching Device name
+- CrossSectionSpec: string, callable, CrossSection. Like with LayerSpec, string requires a registered pdk with matching CrossSection.
+"""
 
 # can be removed in python 3.14, see https://peps.python.org/pep-0749/
 from __future__ import annotations
