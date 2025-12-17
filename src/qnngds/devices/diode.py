@@ -34,7 +34,7 @@ def basic(
         layer (LayerSpec): GDS layer specification
 
     Returns:
-        Device: the diode
+        (Device): the diode
     """
     DIODE = Device("diode_basic")
     points = [
@@ -90,7 +90,7 @@ def gated(
         gate_spec (DeviceSpec): what to use for top gate (e.g. geometries.optimal_hairpin)
 
     Returns:
-        Device: the gated diode
+        (Device): the gated diode
     """
     DIODE = Device("diode_gated")
 

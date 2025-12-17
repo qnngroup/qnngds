@@ -35,7 +35,7 @@ def smooth(
         layer (LayerSpec): GDS layer specification
 
     Returns:
-        Device: The ntron device.
+        (Device): The ntron device.
     """
 
     D = Device("ntron_smooth")
@@ -114,7 +114,7 @@ def sharp(
         layer (LayerSpec): GDS layer specification
 
     Returns:
-        Device: The sharp ntron device.
+        (Device): The sharp ntron device.
     """
 
     D = Device("ntron_sharp")

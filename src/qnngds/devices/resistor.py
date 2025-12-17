@@ -33,7 +33,7 @@ def meander(
         layer (LayerSpec): GDS layer specification
 
     Returns:
-        Device: the resistor meander
+        (Device): the resistor meander
     """
     D = Device()
 
@@ -181,7 +181,7 @@ def meander_sc_contacts(
         layer_keepout (LayerSpecs): layer(s) to do keepout on
 
     Returns:
-        Device: the resistor meander
+        (Device): the resistor meander
     """
     D = Device()
 

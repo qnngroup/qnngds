@@ -25,7 +25,7 @@ def extend_ports(
         extension (DeviceSpec): specification for extension
 
     Returns:
-        Device: the original device with ports extended
+        (Device): the original device with ports extended
     """
     dev_extended = Device()
     dev_i = dev_extended << device
@@ -61,13 +61,16 @@ def _create_layered_ports(device: Device, layer: LayerSpec):
         )
 
 
-def hyper_taper_fn(t: float, start_width: int | float, end_width: int | float):
+def hyper_taper_fn(t: float, start_width: int | float, end_width: int | float) -> float:
     """Used for defining custom cross section widths/offsets
 
     Args:
         t (float): value on [0,1] mapping to position along length of taper
         start_width (float): starting width (t=0)
         end_width (float): ending width (t=1)
+
+    Returns:
+        (float): hyper taper function evaluated at t.
     """
     if start_width > end_width:
         a = np.arccosh(start_width / end_width)
@@ -84,7 +87,7 @@ def get_outline_layers(layer_set: LayerSet) -> dict[str, float]:
         layer_set (LayerSet): LayerSet
 
     Returns:
-        dict[str, float]: mapping of GDS layer name to outline distance. Layers that aren't outlined are omitted.
+        (dict[str, float]): mapping of GDS layer name to outline distance. Layers that aren't outlined are omitted.
     """
     # outline
     outline_layers = {}
@@ -103,7 +106,7 @@ def get_keepout_layers(layer_set: LayerSet) -> dict[str, str]:
         layer_set (LayerSet): LayerSet
 
     Returns:
-        dict[str, str]: mapping of GDS layer name to GDS layer name.
+        (dict[str, str]): mapping of GDS layer name to GDS layer name.
     """
     # keepout
     keepout_layers = {}
@@ -130,7 +133,7 @@ def outline(
         kl_precision (int | None): precision for KLayout operation (equivalently, sets dbu for KLayout)
 
     Returns:
-        Device: the outlined device
+        (Device): the outlined device
     """
     tile_size = None if kl_tile_size is None else (kl_tile_size, kl_tile_size)
     dev_outlined = Device()
@@ -219,7 +222,7 @@ def invert(
         kl_precision (int | None): precision for KLayout operation (equivalently, sets dbu for KLayout)
 
     Returns:
-        Device: the inverted device
+        (Device): the inverted device
     """
     tile_size = None if kl_tile_size is None else (kl_tile_size, kl_tile_size)
     dev_inverted = Device()
@@ -274,7 +277,7 @@ def keepout(
         kl_precision (int | None): precision for KLayout operation (equivalently, sets dbu for KLayout)
 
     Returns:
-        Device: device with keepout applied
+        (Device): device with keepout applied
     """
     tile_size = None if kl_tile_size is None else (kl_tile_size, kl_tile_size)
     dev_keepout = Device()
@@ -356,7 +359,7 @@ def get_cross_section_with_layer(
             is not found
 
     Returns:
-        CrossSectionSpec | None: found cross section or default
+        (CrossSectionSpec | None): found cross section or default
     """
     for xc in qg.get_active_pdk().cross_sections:
         xc = qg.get_cross_section(xc)
@@ -371,7 +374,7 @@ def get_device_port_direction(component: Device) -> dict[str, Sequence[Port]]:
         component (Device): component to get ports from
 
     Returns:
-        dict[str, Ports]: list of ports for each direction
+        (dict[str, Ports]): list of ports for each direction
     """
     ports = {x: [] for x in ["E", "N", "W", "S"]}
     # group by direction
@@ -388,7 +391,7 @@ def _get_port_direction(port: Port, warn_not_90: bool = False) -> str:
         warn_not_90 (bool): warn if orientation is not multiple of 90 deg. default False
 
     Returns:
-        str: string of port orientation
+        (str): string of port orientation
     """
     angle = port.orientation % 360
     if (angle % 90 != 0) and warn_not_90:

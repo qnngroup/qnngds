@@ -32,7 +32,7 @@ def taper(
         layer (LayerSpec): GDS layer specification
 
     Returns:
-        Device: a single taper
+        (Device): a single taper
     """
     T = Device("taper")
     pts = [
@@ -77,7 +77,7 @@ def hyper_taper(
         num_points (int): number of points to use
 
     Returns:
-        Device: a single taper
+        (Device): a single taper
     """
     path = pp.straight(length=length, num_pts=num_points)
     xc = CrossSection()
@@ -109,7 +109,7 @@ def euler_taper(
         num_points (int): number of points to use
 
     Returns:
-        Device: a single taper
+        (Device): a single taper
     """
     swapped = False
     if start_width > end_width:
@@ -170,7 +170,7 @@ def angled_taper(
         layer (LayerSpec): GDS layer specification
 
     Returns:
-        Device: a single taper
+        (Device): a single taper
     """
 
     if start_width > end_width:
@@ -258,7 +258,7 @@ def tee(
         taper_radius (float | None) : radius of taper. If None, uses stub_size
         layer (LayerSpec): Specification of layer(s) to put polygon geometry on.
     Returns:
-        Device: tee
+        (Device): tee
     """
 
     f = np.array(size).astype(np.float64)
@@ -325,7 +325,7 @@ def via(
         layer_top (LayerSpec): top layer specification
 
     Returns:
-        Device: via
+        (Device): via
     """
     VIA = Device("via")
     if 2 * via_undersize > min(size[0], size[1]):
@@ -474,7 +474,7 @@ def default_cross_section(
         force_no_outline (bool): if True, ignores if layer is positive tone.
 
     Returns:
-        CrossSection
+        (CrossSection)
     """
     outline = qg.get_layer(layer).outline
     XC = CrossSection(radius=radius)
@@ -523,7 +523,7 @@ def fine_to_coarse(
         layer2 (LayerSpec): layer specification for second layer
 
     Returns:
-        Device: transition between fine and coarse layers
+        (Device): transition between fine and coarse layers
     """
     taper = Device()
     outline_layers = qg.utilities.get_outline_layers(qg.get_active_pdk().layers)

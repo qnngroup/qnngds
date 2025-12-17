@@ -45,7 +45,7 @@ def basic(
         layer (LayerSpec): GDS layer specification
 
     Returns:
-        Device: optimally-rounded SNSPD, as provided by
+        (Device): optimally-rounded SNSPD, as provided by
         Phidl but renamed and unified.
     """
     # check parameters constrains
@@ -166,7 +166,7 @@ def vertical(
         layer (LayerSpec): GDS layer specification
 
     Returns:
-        Device: The vertical SNSPD device.
+        (Device): The vertical SNSPD device.
     """
     # check parameters constrains
     if wire_pitch <= wire_width:

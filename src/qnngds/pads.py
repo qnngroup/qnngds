@@ -31,7 +31,7 @@ def stack(
 
 
     Returns:
-        Device: pad stack
+        (Device): pad stack
     """
     if port_span[1] <= port_span[0]:
         a, b = port_span
@@ -79,7 +79,7 @@ def array(
         pitch (float): pitch of pads (same for rows/columns)
 
     Returns:
-        Device: linear pad array
+        (Device): linear pad array
     """
     PADS = Device()
     sub_pad = Device()
@@ -122,7 +122,7 @@ def vdp(
         space (float): Spacing between pads (diagonal of VDP cell)
 
     Returns:
-        Device: Van der Pauw pad structure
+        (Device): Van der Pauw pad structure
     """
     pads = Device()
     if len(pad_specs) not in (1, 4):
@@ -159,7 +159,7 @@ def quad_line(
             relative to pad array port center
 
     Returns:
-        Device: pads with intermediate finer ports
+        (Device): pads with intermediate finer ports
     """
     pads = Device()
     array = pads << qg.get_device(array_spec)

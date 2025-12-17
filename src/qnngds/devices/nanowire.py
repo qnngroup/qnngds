@@ -30,7 +30,7 @@ def variable_length(
         layer (LayerSpec): GDS layer specification
 
     Returns:
-        Device: 2 optimal steps to/from a narrow wire.
+        (Device): 2 optimal steps to/from a narrow wire.
 
     Raises:
         ValueError if constr_width > wire_width
@@ -99,7 +99,7 @@ def sharp(
         layer (LayerSpec): GDS layer specification
 
     Returns:
-        Device: sharp constriction
+        (Device): sharp constriction
     """
     NANOWIRE = Device("nw_sharp")
     tap = qg.geometries.taper(

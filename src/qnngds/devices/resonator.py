@@ -68,7 +68,7 @@ def cpw(
         layer (LayerSpec): GDS layer specification
 
     Returns:
-        CrossSection: CPW cross section
+        (CrossSection): CPW cross section
     """
     CPW = CrossSection(radius=radius)
     CPW.add(
@@ -104,7 +104,7 @@ def microstrip(
         layer (LayerSpec): GDS layer specification
 
     Returns:
-        CrossSection: microstrip cross section
+        (CrossSection): microstrip cross section
     """
     USTRIP = CrossSection(radius=radius)
     USTRIP.add(
@@ -129,7 +129,7 @@ def transmission_line(
         cross_section (CrossSectionSpec): cross section to extrude
 
     Returns:
-        Device: straight transmission line
+        (Device): straight transmission line
     """
     xc = qg.get_cross_section(cross_section)
     return xc.extrude(pp.straight(length=length))
@@ -151,7 +151,7 @@ def meandered(
         cross_section (CrossSectionSpec): cross section to use (e.g. CPW)
 
     Returns:
-        Device: meandered half-wave resonator
+        (Device): meandered half-wave resonator
     """
     xc = qg.get_cross_section(cross_section)
     desired_length = compute_res_wavelength(n_eff=n_eff, res_freq=resonant_freq) / 2
@@ -210,7 +210,7 @@ def straight(
         resonant_freq (float): resonant frequeny in Hz
 
     Returns:
-        Device: meandered half-wave resonator
+        (Device): meandered half-wave resonator
     """
     desired_length = compute_res_wavelength(n_eff=n_eff, res_freq=resonant_freq) / 2
     xc = qg.get_cross_section(cross_section)
@@ -234,7 +234,7 @@ def pad(
         metal_layers (LayerSpecs): layer(s) for metal
 
     Returns:
-        Device: pad
+        (Device): pad
     """
     PAD = Device()
     sc = PAD << pg.straight(size=(width, length), layer=qg.get_layer(sc_layer))
@@ -284,7 +284,7 @@ def transmission_line_resonator(
             tone microstrip
 
     Returns:
-        Device: resonator embedded between transmission lines
+        (Device): resonator embedded between transmission lines
 
     Example:
 

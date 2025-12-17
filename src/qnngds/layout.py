@@ -15,6 +15,7 @@ from phidl import Device as phDevice
 from phidl import Layer as phLayer
 from phidl import LayerSet as phLayerSet
 from phidl import CrossSection as phCrossSection
+from phidl import Path
 from phidl.device_layout import CellArray as phCellArray
 from phidl.device_layout import _parse_move
 from phidl.device_layout import _rotate_points
@@ -39,7 +40,7 @@ class Port(phPort):
         orientation: float = 0,
         layer: LayerSpec = (1, 0),
         parent=None,
-    ):
+    ) -> None:
         """Constructor for Port.
 
         Parameters:
@@ -59,18 +60,18 @@ class Port(phPort):
         )
         self.layer = layer
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Augment phidl.Port __repr__ to add layer info"""
         return super().__repr__()[:-1] + f", layer {self.layer})"
 
-    def _copy(self, new_uid: bool = True):
+    def _copy(self, new_uid: bool = True) -> Port:
         """Copies a port
 
         Parameters:
             new_uid (bool): if True (default), use a new uid for the port
 
         Returns:
-            Copied port
+            (Port): Copied port
         """
         new_port = Port(
             name=self.name,
@@ -99,10 +100,10 @@ class Device(phDevice):
         orientation: float = 0,
         layer: LayerSpec = None,
         port: Port | None = None,
-    ):
+    ) -> Port:
         """Adds a Port to the Device.
 
-        Parameters
+        Parameters:
             name (str): name of port
             midpoint (tuple[float,float]): midpoint of port location
             width (float): width of float
@@ -110,12 +111,15 @@ class Device(phDevice):
             layer (LayerSpec): GDS layer specification
             port (Port | None): a Port if the added Port is a copy of an existing Port.
 
-        Notes
+        Notes:
             Can be called to copy an existing port like
             add_port(port = existing_port) or to create a new port
             add_port(myname, mymidpoint, mywidth, myorientation, mylayer).
             Can also be called to copy an existing port with a new name like
             add_port(port = existing_port, name = new_name)
+
+        Returns:
+            (Port): created port
         """
         if port is not None:
             if not (isinstance(port, phPort) or isinstance(port, Port)):
@@ -155,10 +159,10 @@ class Device(phDevice):
         self.ports[p.name] = p
         return p
 
-    def add_ports(self, ports: Sequence[Port]):
+    def add_ports(self, ports: Sequence[Port]) -> None:
         """Add multiple Ports to Device
 
-        Parameters
+        Parameters:
             ports (Sequence[Port]): multiple Port objects to be added
         """
         if isinstance(ports, dict):
@@ -168,18 +172,25 @@ class Device(phDevice):
             for port in ports:
                 self.add_port(name=port.name, port=port)
 
-    def add_array(self, device, columns=2, rows=2, spacing=(100, 100), alias=None):
+    def add_array(
+        self,
+        device: Device,
+        columns: int = 2,
+        rows: int = 2,
+        spacing: tuple[float, float] = (100, 100),
+        alias: str | None = None,
+    ) -> DeviceArray:
         """Creates a DeviceArray reference.
 
-        Parameters
+        Parameters:
             device (Device): the referenced Device.
             columns (int): number of columns in the array.
             rows (int): number of rows in the array.
             spacing (Arraylike): (column spacing, row spacing)
             alias (str | None): Alias of the referenced Device.
 
-        Returns
-            A CellArray containing references to the input Device.
+        Returns:
+            (DeviceArray): array containing references to the input Device.
         """
         if not isinstance(device, phDevice):
             raise TypeError(
@@ -212,7 +223,7 @@ class DeviceArray(phCellArray):
         self,
         *args,
         **kwargs,
-    ):
+    ) -> None:
         """Calls PHIDL constructor for CellArray, then generates ports for each reference in array"""
         super().__init__(*args, **kwargs)
         device = args[0] if len(args) >= 1 else kwargs["device"]
@@ -236,10 +247,10 @@ class DeviceArray(phCellArray):
                         parent=self,  # not sure what exactly this should be
                     )
 
-    def rotate(self, angle=45, center=(0, 0)):
+    def rotate(self, angle=45, center=(0, 0)) -> None:
         """Rotate underlying CellArray and update ports
 
-        Parameters
+        Parameters:
             angle (float): rotation angle
             center (Arraylike): coordinates about which to perform rotation
         """
@@ -250,10 +261,10 @@ class DeviceArray(phCellArray):
                     port.midpoint = _rotate_points(port.midpoint, angle, center)
                     port.orientation = np.mod(port.orientation + angle, 360)
 
-    def move(self, origin=(0, 0), destination=None, axis=None):
+    def move(self, origin=(0, 0), destination=None, axis=None) -> None:
         """Translate underlying CellArray and update ports
 
-        Parameters
+        Parameters:
             origin (tuple): starting location
             destination (Arraylike | None): destination
             axis
@@ -281,10 +292,10 @@ class Layer(phLayer):
         dither: str | None = None,
         keepout: LayerSpecs | Sequence[Layer] | None = None,
         outline: int | float = 0,
-    ):
+    ) -> None:
         """Constructor for qnngds.Layer
 
-        Parameters
+        Parameters:
             keepout (LayerSpecs | Layers | None): if not None, defines one or more Layers for which the current layer defines keepout regions.
             outline (int | float): if non-zero, makes layer positive tone, written with a linewidth of outline.
         """
@@ -306,10 +317,10 @@ class Layer(phLayer):
 class LayerSet(phLayerSet):
     """Augment PHIDL LayerSet to use Layers with outline and keepout information"""
 
-    def add_layer(self, layer: Layer):
+    def add_layer(self, layer: Layer) -> None:
         """Add a layer to the LayerSet
 
-        Parameters
+        Parameters:
             layer (Layer): layer to add
         """
         if layer.name in self._layers:
@@ -327,10 +338,10 @@ class LayerSet(phLayerSet):
 class CrossSection(phCrossSection):
     """Augment PHIDL CrossSection to allow for hidden layers and radius specification"""
 
-    def __init__(self, radius: int | float = 0):
+    def __init__(self, radius: int | float = 0) -> None:
         """Constructor for CrossSection
 
-        Parameters
+        Parameters:
             radius (float | int): nominal radius used when autogenerating paths.
                 NB explicitly providing a radius (e.g. when manually creating paths) will override this setting
         """
@@ -346,10 +357,10 @@ class CrossSection(phCrossSection):
         name: str | None = None,
         hidden: bool = False,
         min_radius: float | int = 0,
-    ):
+    ) -> CrossSection:
         """Calls phidl.CrossSection.add() method, and also updates hidden variable
 
-        Parameters
+        Parameters:
             width (float | int | callable ): Width of the segment
             offset (float | int | callable ): Offset of the segment (positive values = right hand side)
             layer (int | tuple[int, int]): The polygon layer to put the segment on
@@ -357,14 +368,25 @@ class CrossSection(phCrossSection):
                 ends of the cross-sectional element.
             name (str | int | None): Name of the cross-sectional element for later access
             hidden (bool): if True, does not add polygon during extrusion
+
+        Returns:
+            (CrossSection): updated self
         """
         super().add(width=width, offset=offset, layer=layer, ports=ports, name=name)
         self.sections[-1]["hidden"] = hidden
         return self
 
-    def extrude(self, path, simplify=None):
+    def extrude(self, path: Path, simplify=None) -> Device:
         """Calls phidl.CrossSection.extrude() method and removes any polygons corresponding
-        to hidden layers"""
+        to hidden layers
+
+        Parameters:
+            path (Path): path to extrude along
+            simplify (float | None): simplify ratio
+
+        Returns:
+            (Device): extruded cross section
+        """
         hidden_layers = {}
         for n, section in enumerate(self.sections):
             if section["hidden"]:

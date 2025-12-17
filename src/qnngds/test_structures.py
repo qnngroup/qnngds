@@ -36,7 +36,7 @@ def vernier_comb(
         text_angle (int or float): angle to rotate text labels
 
     Returns:
-        Device: alignment vernier calipers
+        (Device): alignment vernier calipers
     """
 
     COMB = Device("comb")
@@ -89,7 +89,7 @@ def alignment_mark(layer1: LayerSpec = (1, 0), layer2: LayerSpec = (10, 0)) -> D
         layer2 (LayerSpec): top/bottom comb GDS layer specification
 
     Returns:
-        Device: alignment cross with vernier calipers
+        (Device): alignment cross with vernier calipers
     """
 
     MARK = Device("interlayer_align")
@@ -187,7 +187,7 @@ def multilayer_alignment(
         layers (LayerSpecs): A list of GDS layer specifications
 
     Returns:
-        Device: alignment marks between each layer pair
+        (Device): alignment marks between each layer pair
     """
 
     ALIGN = Device("alignment_marks")
@@ -216,7 +216,7 @@ def resolution_waffle(res: float | int = 1, layer: LayerSpec = (1, 0)) -> Device
         layer (LayerSpec): GDS layer specification
 
     Returns:
-        Device: the resolution test structure
+        (Device): the resolution test structure
     """
 
     WAFFLE = Device("resolution_waffle")
@@ -252,7 +252,7 @@ def resolution_L(res: float | int = 1, layer: LayerSpec = (1, 0)) -> Device:
         layer (LayerSpec): GDS layer specification
 
     Returns:
-        Device: the resolution test structure
+        (Device): the resolution test structure
     """
 
     LLL = Device("LLL")
@@ -295,7 +295,7 @@ def resolution_test(
         layer (LayerSpec): GDS layer specification
 
     Returns:
-        Device: the resolution test structures
+        (Device): the resolution test structures
     """
 
     RES_TEST = Device("resolution_test")
@@ -336,7 +336,7 @@ def resolution_steps(
         layer (LayerSpec): GDS layer specification
 
     Returns:
-        Device: the test structure
+        (Device): the test structure
     """
 
     D = Device()
@@ -378,7 +378,7 @@ def resolution_checkerboard(
         label_size (float): size of text label
 
     Returns:
-        Device: the litho test structure
+        (Device): the litho test structure
     """
 
     D = Device("resolution_checkerboard")
@@ -439,7 +439,7 @@ def vdp(
         port_type (string): gdsfactory port type. default "electrical"
 
     Returns:
-        Device: Van der Pauw cell
+        (Device): Van der Pauw cell
     """
     VDP = Device("vdp")
 
@@ -501,7 +501,7 @@ def rect_tlm(
         pad_size (tuple(float,float)): width, height of pad
 
     Returns:
-        Device: TLM structure
+        (Device): TLM structure
     """
     TLM = Device("rect_tlm")
     xoff = 0
@@ -573,7 +573,7 @@ def circ_tlm(
         text_size (float): size of text label
 
     Returns:
-        Device: TLM structure
+        (Device): TLM structure
     """
     TLM = Device("circ_tlm")
 
@@ -636,7 +636,7 @@ def via_chain(
         tap_period (int): number of vias between each tap. If zero, doesn't place any taps.
 
     Returns:
-        Device: the via chain
+        (Device): the via chain
     """
     if tap_period < 0:
         raise ValueError(f"{tap_period=} must be positive")
@@ -747,7 +747,7 @@ def etch_test(
         trench_width (float): width of trench around each pad
 
     Returns:
-        Device: etch test structure
+        (Device): etch test structure
     """
     TRENCHES = Device("etch_trench")
     # create trench
@@ -785,7 +785,7 @@ def cross_bridge_kelvin_resistor(
         layer_via (LayerSpec | None): if not None, create via on specified layer
 
     Returns:
-        Device: cross-bridge Kelvin resistor
+        (Device): cross-bridge Kelvin resistor
     """
     CBKR = Device("cbkr")
     if layer_via is not None:

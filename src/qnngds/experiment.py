@@ -78,7 +78,7 @@ def _get_segment_from_path(path: Path, p: int) -> ArrayLike:
         p (int): index of the first point in the line segment
 
     Returns:
-        ArrayLike: line segment defined by two points
+        (ArrayLike): line segment defined by two points
     """
     points = path.points
     return np.array([points[p % len(points)], points[(p + 1) % len(points)]])
@@ -94,7 +94,7 @@ def _segments_overlap(segment_1: ArrayLike, segment_2: ArrayLike) -> bool:
         segment_2 (ArrayLike): second segment
 
     Returns:
-        bool: True if the segments overlap, False otherwise.
+        (bool): True if the segments overlap, False otherwise.
     """
     for i in range(2):
         x_1_min = np.min(segment_1[:, i])
@@ -115,7 +115,7 @@ def _path_self_intersects(path: Path) -> bool:
         path (Path): path to check
 
     Returns:
-        bool: True if the path intersects itself, False otherwise.
+        (bool): True if the path intersects itself, False otherwise.
     """
     # points are on manhattan grid so checking intersection is pretty easy
     for p in range(len(path.points) - 1):
@@ -138,7 +138,7 @@ def _paths_intersect(path_1: Path, path_2: Path) -> bool:
         path_2 (Path): second path to check
 
     Returns:
-        bool: True if the paths intersect, False otherwise.
+        (bool): True if the paths intersect, False otherwise.
     """
     for p in range(len(path_1.points) - 1):
         segment_1 = _get_segment_from_path(path_1, p)
@@ -164,7 +164,7 @@ def _sort_ports(
         direction_order Sequence[str]: order of keys in port dictionary to use when flattening.
 
     Returns:
-        Ports: list of sorted ports
+        (Ports): list of sorted ports
     """
     # sort
     for direction in sort_map.keys():
