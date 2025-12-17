@@ -9,3 +9,4 @@ Tutorials
     /tutorials/experiment_generate_beginner2
     /tutorials/experiment_generate_beginner3
     /tutorials/sample1
+    /tutorials/sample2
