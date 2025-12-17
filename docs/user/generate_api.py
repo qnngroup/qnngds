@@ -83,8 +83,8 @@ def generate_api(src_path):
             api += f"{'-' * len(module[:-3])}\n\n"  # -----------------
             api += automodule(module, image_folder=module[:-3])
         else:
-            api += f".. _{module.capitalize()}:\n"  # For referencing this section
-            api += f"{module.capitalize()}\n"  # The section title
+            api += f".. _{module}:\n"  # For referencing this section
+            api += f"{module}\n"  # The section title
             api += f"{'-' * len(module)}\n\n"  # -----------------
             api += f".. automodule:: qnngds.{module}\n\n"
             module_path = os.path.join(src_path, module)

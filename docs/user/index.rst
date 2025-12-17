@@ -13,31 +13,28 @@ General description
 -------------------
 
 The package is built so that any person wanting to create a new design can do it
-easily and quickly. It offers various devices, circuits, and test structures
-used and designed in the `QNN group <https://qnn-rle.mit.edu/>`_. The package
-hierarchy is though as follow:
+easily and quickly. It offers various devices and test structures used and designed
+in the `QNN group <https://qnn-rle.mit.edu/>`_.
 
-.. image:: images/_home_page/hierarchy.png
+* :ref:`pdk`: Utilities for mapping layouts to a specific fabrication process.
+* :ref:`sample`: Contains utilities for placement of finished experiments on a sample.
+  Composition of samples enables definition of large samples (e.g. wafers) comprised of
+  multiple, smaller samples (e.g. 10 mm pieces) that each may have one or more experiments
+  on them.
 
-* :ref:`Design`: contains classes from which a complete design can be built. The class
-  inputs are the basic parameters of the chip. Its methods are pre-built cells
-  and tools for distributing and managing the cells over the chip.
+   * :ref:`experiment`: Provides utilities for converting a process-agnostic layout into an
+     experiment that can be placed on a sample. Uses process-specific information specified
+     by the :ref:`Pdk`. Can be constructed from circuits or devices.
 
-   * :ref:`Cells`: is a library of cells pre-built, that are called by the Design's
-     classes. Each cell contains a text, border marks and an experiment
-     (circuits, devices, or tests) connected to pads for external connection.
+      * :ref:`devices`: is a library of basic devices like nTron, hTron, nanowires, resistors etc...
 
-      * :ref:`Circuits`: is a library of circuits made of devices.
-
-         * :ref:`Devices`: is a library of basic devices like nTron, hTron, nanowires, resistors etc...
-
-      * :ref:`Tests`: is a library of test structures that help through the fabrication process and
+      * :ref:`test_structures`: is a library of test structures that help through the fabrication process and
         characterization.
 
-      * :ref:`Geometries`: contains useful shapes/geometries that are not available in
+      * :ref:`geometries`: contains useful shapes/geometries that are not available in
         Phidl or has been adapted from it for special use case.
 
-      * :ref:`Utilities`: contains useful tools for building cells and circuits.
+      * :ref:`utilities`: contains useful tools for building cells and circuits.
 
 Below is an example of the modules used to build a design.
 
@@ -50,6 +47,7 @@ Contents
 .. toctree::
    :maxdepth: 2
 
+   index
    api
    tutorials
 

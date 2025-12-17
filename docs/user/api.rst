@@ -14,8 +14,8 @@ Decorator
     :show-inheritance:
     :special-members: __init__
 
-.. _Devices:
-Devices
+.. _devices:
+devices
 -------
 
 .. automodule:: qnngds.devices
@@ -90,10 +90,15 @@ ntron
 
 .. automodule:: qnngds.devices.ntron
     :members:
-    :exclude-members: slotted, smooth
+    :exclude-members: sharp, slotted, smooth
     :undoc-members:
     :show-inheritance:
     :special-members: __init__
+
+    .. autofunction:: sharp
+
+        .. image:: images/devices/ntron/sharp.png
+            :alt: sharp.png
 
     .. autofunction:: slotted
 
@@ -165,10 +170,15 @@ snspd
 
 .. automodule:: qnngds.devices.snspd
     :members:
-    :exclude-members: vertical
+    :exclude-members: basic, vertical
     :undoc-members:
     :show-inheritance:
     :special-members: __init__
+
+    .. autofunction:: basic
+
+        .. image:: images/devices/snspd/basic.png
+            :alt: basic.png
 
     .. autofunction:: vertical
 
@@ -322,7 +332,7 @@ Test_structures
 
 .. automodule:: qnngds.test_structures
     :members:
-    :exclude-members: alignment_mark, circ_tlm, cross_bridge_kelvin_resistor, etch_test, multilayer_alignment, rect_tlm, resolution_L, resolution_checkerboard, resolution_steps, resolution_test, resolution_waffle, vernier_comb, via_chain
+    :exclude-members: alignment_mark, circ_tlm, cross_bridge_kelvin_resistor, etch_test, multilayer_alignment, rect_tlm, resolution_L, resolution_checkerboard, resolution_steps, resolution_test, resolution_waffle, vdp, vernier_comb, via_chain
     :undoc-members:
     :show-inheritance:
     :special-members: __init__
@@ -381,6 +391,11 @@ Test_structures
 
         .. image:: images/test_structures/resolution_waffle.png
             :alt: resolution_waffle.png
+
+    .. autofunction:: vdp
+
+        .. image:: images/test_structures/vdp.png
+            :alt: vdp.png
 
     .. autofunction:: vernier_comb
 

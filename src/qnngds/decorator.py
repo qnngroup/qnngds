@@ -4,9 +4,7 @@ _devices = {}
 
 
 def device(f):
-    """Decorator to register DeviceFactories into the global variable
-
-    qnngds.decorator._devices.
+    """Decorator to register DeviceFactories into the global variable qnngds.decorator._devices.
 
     For example, if we wish to define a new DeviceFactory that can
     be used to generate Devices, we can write the following:
@@ -38,5 +36,5 @@ def device(f):
             ...
     """
     global _devices
-    _devices[f.__name__] = f
+    _devices[(f.__module__, f.__name__)] = f
     return f

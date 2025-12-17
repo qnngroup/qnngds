@@ -27,8 +27,8 @@ def plot_and_save_functions():
             )
             continue
         try:
-            module_name = attr.__module__
-            func_name = attr.__name__
+            module_name = name[0]
+            func_name = name[1]
             device = None
             result = attr()
             if isinstance(result, Device):
