@@ -99,7 +99,7 @@ def euler_taper(
     layer: LayerSpec = (1, 0),
     num_points: int = 200,
 ) -> Device:
-    """Hyperbolic taper (solid). Designed by reedf.
+    """Euler taper (solid). Designed by reedf.
 
     Args:
         length (int | float): Length of taper
@@ -244,8 +244,10 @@ def tee(
     taper_radius: float | None = None,
     layer: LayerSpec = (1, 0),
 ) -> Device:
-    """Creates a T-shaped geometry
-    Adapted from phidl
+    """Creates a T-shaped geometry.
+
+    Adapted from phidl and adds additional argument to specify the radius
+    of fillet tapers.
 
     Args:
         size (array-like): (width, height) of the flag.
@@ -510,9 +512,10 @@ def fine_to_coarse(
     layer1: LayerSpec = "EBEAM_FINE",
     layer2: LayerSpec = "EBEAM_COARSE",
 ) -> Device:
-    """Create transition between fine and coarse layers
+    """Create transition between fine and coarse layers.
 
-    Automatically performs outlining for positive-tone resist
+    Automatically performs outlining for positive-tone resist.
+
     Args:
         width1 (float): starting width on first layer
         width2 (float): ending width on second layer

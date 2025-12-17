@@ -53,6 +53,18 @@ multiproject_projects = {
 }
 
 
+autodoc_type_aliases = (
+    {
+        "DeviceFactory": "ComponentFactory",
+        "DeviceSpec": "DeviceSpec",
+        "CrossSectionFactory": "CrossSectionFactory",
+        "CrossSectionSpec": "CrossSectionSpec",
+        "LayerSpec": "LayerSpec",
+        "LayerSpecs": "LayerSpecs",
+    },
+)
+
+
 current_project = get_project(multiproject_projects)
 
 locale_dirs = [f"{current_project}/locale/"]
