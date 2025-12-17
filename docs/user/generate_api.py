@@ -78,8 +78,8 @@ def generate_api(src_path):
     ]
     for module in sorted(modules):
         if module.endswith(".py"):
-            api += f".. _{module[:-3].capitalize()}:\n"  # For referencing this section
-            api += f"{module[:-3].capitalize()}\n"  # The section title
+            api += f".. _{module[:-3]}:\n"  # For referencing this section
+            api += f"{module[:-3]}\n"  # The section title
             api += f"{'-' * len(module[:-3])}\n\n"  # -----------------
             api += automodule(module, image_folder=module[:-3])
         else:

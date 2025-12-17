@@ -3,8 +3,8 @@
 API
 ===
 
-.. _Decorator:
-Decorator
+.. _decorator:
+decorator
 ---------
 
 .. automodule:: qnngds.decorator
@@ -185,8 +185,8 @@ snspd
         .. image:: images/devices/snspd/vertical.png
             :alt: vertical.png
 
-.. _Experiment:
-Experiment
+.. _experiment:
+experiment
 ----------
 
 .. automodule:: qnngds.experiment
@@ -196,8 +196,8 @@ Experiment
     :show-inheritance:
     :special-members: __init__
 
-.. _Geometries:
-Geometries
+.. _geometries:
+geometries
 ----------
 
 .. automodule:: qnngds.geometries
@@ -247,8 +247,8 @@ Geometries
         .. image:: images/geometries/via.png
             :alt: via.png
 
-.. _Layout:
-Layout
+.. _layout:
+layout
 ------
 
 .. automodule:: qnngds.layout
@@ -258,8 +258,8 @@ Layout
     :show-inheritance:
     :special-members: __init__
 
-.. _Pads:
-Pads
+.. _pads:
+pads
 ----
 
 .. automodule:: qnngds.pads
@@ -289,8 +289,8 @@ Pads
         .. image:: images/pads/vdp.png
             :alt: vdp.png
 
-.. _Pdk:
-Pdk
+.. _pdk:
+pdk
 ---
 
 .. automodule:: qnngds.pdk
@@ -300,8 +300,8 @@ Pdk
     :show-inheritance:
     :special-members: __init__
 
-.. _Sample:
-Sample
+.. _sample:
+sample
 ------
 
 .. automodule:: qnngds.sample
@@ -326,8 +326,8 @@ Sample
         .. image:: images/sample/wafer150mm.png
             :alt: wafer150mm.png
 
-.. _Test_structures:
-Test_structures
+.. _test_structures:
+test_structures
 ---------------
 
 .. automodule:: qnngds.test_structures
@@ -407,8 +407,8 @@ Test_structures
         .. image:: images/test_structures/via_chain.png
             :alt: via_chain.png
 
-.. _Typing:
-Typing
+.. _typing:
+typing
 ------
 
 .. automodule:: qnngds.typing
@@ -418,8 +418,8 @@ Typing
     :show-inheritance:
     :special-members: __init__
 
-.. _Utilities:
-Utilities
+.. _utilities:
+utilities
 ---------
 
 .. automodule:: qnngds.utilities
