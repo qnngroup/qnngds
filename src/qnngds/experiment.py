@@ -19,6 +19,9 @@ import qnngds as qg
 
 from phidl import Path, CrossSection
 
+import phidl.path as pp
+import phidl.routing as pr
+
 
 class RouteGroup:
     """Stores information for routing DUTs to pads.
@@ -212,27 +215,26 @@ def generate(
         However, autoassignment only works in some cases, and in the case of this nTron,
         it would most likely fail.
 
-        >>> c = qg.utilities.experiment.generate(
-        >>>         dut=qg.devices.ntron.sharp,
-        >>>         pad_array=qg.pads.array(
-        >>>             pad_specs=qg.pads.stack(size=(200,200), layers=("EBEAM_COARSE",)),
-        >>>             columns=1,
-        >>>             rows=3,
-        >>>             pitch=250,
+        >>> c = qg.experiment.generate(
+        >>>     dut=qg.devices.ntron.sharp,
+        >>>     pad_array=qg.pads.array(
+        >>>         pad_specs=(qg.pads.stack(size=(200, 200), layers=("EBEAM_COARSE",)),),
+        >>>         columns=1,
+        >>>         rows=3,
+        >>>         pitch=250,
+        >>>     ),
+        >>>     label=None,
+        >>>     route_groups=(
+        >>>         qg.experiment.RouteGroup(
+        >>>             qg.get_cross_section("ebeam"), {"g": 2, "s": 1, "d": 3}
         >>>         ),
-        >>>         label=None,
-        >>>         route_groups=(
-        >>>             qg.utilities.RouteGroup(
-        >>>                 qg.get_cross_section("ebeam"), {"g": "e21", "s": "e11", "d": "e31"}
-        >>>             ),
-        >>>         ),
-        >>>         dut_offset=(250, 250),
-        >>>         pad_offset=(0, 0),
-        >>>         label_offset=(0, 0),
-        >>>         retries=1,
-        >>>     )
+        >>>     ),
+        >>>     dut_offset=(250, 250),
+        >>>     pad_offset=(0, 0),
+        >>>     label_offset=(0, 0),
+        >>>     retries=1,
+        >>> )
         >>> qp(c)
-
     """
     # check if route_groups is complete so we can handle ignore_port_count_mismatch flag
     route_groups_complete = False
@@ -486,57 +488,61 @@ def _add_autotapers(
     device: Device,
     cross_section: CrossSection,
     layer_transitions: dict[tuple, DeviceSpec],
-    dut_ports: Sequence[Port],
-    pad_ports: Sequence[Port],
-) -> tuple[Sequence[Port], Sequence[Port]]:
+    ports: Sequence[Port],
+) -> Sequence[Port]:
     """Helper method for :py:`_route_dut`
 
-    Automatically adds tapers to DUT and ports to adapt to specified routing
+    Automatically adds tapers to DUT or ports to adapt to specified routing
     cross section for the current RouteGroup.
 
     device (Device): device to add autotapers to.
     cross_section (CrossSection): cross section to taper to.
     layer_transitions (dict[tuple, DeviceSpec]): allowed layer transitions for auto tapers
-    dut_ports (Sequence[Port]): DUT ports to autotaper
-    pad_ports (Sequence[Port]): pad ports to autotaper
+    ports (Sequence[Port]): DUT ports to autotaper
 
     Returns:
-        new_dut_ports, new_pad_ports (tuple[Sequence[Port], Sequence[Port]]): updated ports for routing
+        new_ports (Sequence[Port]): updated ports for routing
     """
-    new_ports = [[], []]
-    for i, ports in enumerate((dut_ports, pad_ports)):
-        for p, port in enumerate(ports):
-            # loop over DUT ports
-            port_layer = qg.get_layer(port.layer).tuple
-            xc_layer = qg.get_layer(cross_section.sections[0]["layer"]).tuple
-            key = port_layer
-            if port_layer != xc_layer:
-                key = (port_layer, xc_layer)
-            taper = layer_transitions.get(key)
-            widths = (port.width, cross_section.sections[0]["width"])
-            if taper is None and isinstance(key, tuple):
-                # in case the opposite transition is available,
-                # just go the other direction
-                taper = layer_transitions.get((key[1], key[0]))
-                widths = (cross_section.sections[0]["width"], port.width)
-            if taper is None:
-                raise KeyError(
-                    f"could not find an appropriate auto taper "
-                    f"between {'DUT' if i == 0 else 'PAD'} port "
-                    f"{port} and cross_section {cross_section.sections}"
-                )
-            taper_i = qg.get_device(partial(taper, width1=widths[0], width2=widths[1]))
-            # add taper to DUT and update ports
-            t = device << taper_i
-            if t.ports[1].layer == port_layer:
-                t.connect(port=t.ports[1], destination=port)
-                new_ports[i].append(t.ports[2])
-            else:
-                t.connect(port=t.ports[2], destination=port)
-                new_ports[i].append(t.ports[1])
-    new_dut_ports = new_ports[0]
-    new_pad_ports = new_ports[1]
-    return new_dut_ports, new_pad_ports
+    new_ports = []
+    for p, port in enumerate(ports):
+        # loop over DUT ports
+        port_layer = qg.get_layer(port.layer).tuple
+        xc_layer = qg.get_layer(cross_section.sections[0]["layer"]).tuple
+        key = port_layer
+        if port_layer != xc_layer:
+            key = (port_layer, xc_layer)
+        taper = layer_transitions.get(key)
+        widths = (port.width, cross_section.sections[0]["width"])
+        if taper is None and isinstance(key, tuple):
+            # in case the opposite transition is available,
+            # just go the other direction
+            taper = layer_transitions.get((key[1], key[0]))
+            widths = (cross_section.sections[0]["width"], port.width)
+        if taper is None:
+            raise KeyError(
+                f"could not find an appropriate auto taper "
+                f"between port {port} and cross_section "
+                f"{cross_section.sections}"
+            )
+        taper_i = qg.get_device(partial(taper, width1=widths[0], width2=widths[1]))
+        # add taper to DUT and update ports
+        t = device << taper_i
+        if qg.get_layer(t.ports[1].layer).tuple == port_layer:
+            t.connect(port=t.ports[1], destination=port)
+            new_port = t.ports[2]
+        else:
+            t.connect(port=t.ports[2], destination=port)
+            new_port = t.ports[1]
+        new_ports.append(
+            Port(
+                width=new_port.width,
+                midpoint=new_port.midpoint,
+                orientation=new_port.orientation,
+                layer=port_layer,
+                name=port.name,
+            )
+        )
+    return new_ports
 
 
 def _route_dut(
@@ -565,9 +571,28 @@ def _route_dut(
         (Device): the routed device
     """
     problem_groups = set([])
+    # first add autotapers
+    autotapered = Device()
+    autotapered << experiment
+    for gid, route_group in enumerate(route_groups):
+        if route_group.ground:
+            continue
+        xc = qg.get_cross_section(route_group.cross_section)
+        dut_groups[gid] = _add_autotapers(
+            device=autotapered,
+            cross_section=xc,
+            layer_transitions=layer_transitions,
+            ports=dut_groups[gid],
+        )
+        pad_groups[gid] = _add_autotapers(
+            device=autotapered,
+            cross_section=xc,
+            layer_transitions=layer_transitions,
+            ports=pad_groups[gid],
+        )
     for _ in range((retries + 1) * len(route_groups)):
-        routed = Device(f"experiment_{name}")
-        routed << experiment
+        routed = Device()
+        routed << autotapered
         # for each grouping, try route_bundle, if that fails use route_bundle_sbend
         complete = True
         for gid, route_group in enumerate(route_groups):
@@ -577,6 +602,7 @@ def _route_dut(
             # get list of pad ports
             dut_group = dut_groups[gid]
             pad_group = pad_groups[gid]
+            xc = qg.get_cross_section(route_group.cross_section)
             if gid not in problem_groups:
                 try:
                     # loop over each orientation
@@ -591,99 +617,35 @@ def _route_dut(
                         portmap = ports[direction]
                         if len(portmap[0]) == 0:
                             continue
-                        # do autotapers to DUT/pads and update ports
-                        xc = qg.get_cross_section(route_group.cross_section)
-                        ports[direction] = _add_autotapers(
-                            device=routed,
-                            cross_section=xc,
-                            route_group=route_group,
-                            layer_transitions=layer_transitions,
-                            dut_ports=portmap[0],
-                            pad_ports=portmap[1],
-                        )
-                        # add necessary bends so that ports are facing opposite
-                        separation = 0.8 * sum(
-                            section["width"] for section in xc.sections
-                        )
-                        routes = gf.routing.route_bundle(
-                            component=routed,
-                            ports1=portmap[0],
-                            ports2=portmap[1],
-                            separation=separation,
-                            cross_section=xc,
-                            bboxes=bboxes,
-                            taper=None,
-                            auto_taper=True,
-                            on_collision="error",
-                            router="optical",
-                        )
-                        # check for self-intersecting paths
-                        for r, route in enumerate(routes):
-                            # route.backbone doesn't include tapers, so add the original ports to either end of
-                            # route.backbone and then check for intersection.
-                            # this assumes that all auto_tapers are straight (e.g. no 90 deg bends)
-                            points = [portmap[0][r].center]
-                            points += [
-                                [point.x * gf.kcl.dbu, point.y * gf.kcl.dbu]
-                                for point in route.backbone
-                            ]
-                            points += [portmap[1][r].center]
-                            path = Path(points)
-                            if _path_self_intersects(path):
+                        for port1, port2 in zip(portmap[0], portmap[1]):
+                            route_path = pr.path_manhattan(
+                                port1, port2, radius=xc.radius
+                            )
+                            route_path = pp.smooth(
+                                route_path, radius=xc.radius, use_eff=False, num_pts=50
+                            )
+                            if _path_self_intersects(route_path):
                                 raise RuntimeError(
                                     "After including auto_tapers, routed paths are "
                                     "self-intersecting. Try increasing the spacing "
                                     "between the pads and DUT or using s_bend routing."
                                 )
-                            # add route to route list for checking intersections later
-                            all_paths.append(path)
+                            # extrude path
+                            routed << xc.extrude(route_path)
+                            all_paths.append(route_path)
 
                 except RuntimeError:
                     problem_groups.add(gid)
                     complete = False
                     continue
-                except kf.routing.generic.PlacerError as e:
+                except ValueError as e:
                     raise RuntimeError(
                         "Routing failed, try manually specifying port mapping "
                         "between DUT and pads with route_groups."
                     ) from e
             else:
-                # add autotapers and regenerate port groups
-                dut_group_new = gf.routing.auto_taper.add_auto_tapers(
-                    routed, dut_group, route_group.cross_section
-                )
-                pad_group_new = gf.routing.auto_taper.add_auto_tapers(
-                    routed, pad_group, route_group.cross_section
-                )
-                try:
-                    # check that ports are facing each other
-                    for p1, p2 in zip(pad_group_new, dut_group_new):
-                        if (p1.orientation - p2.orientation) % 360 != 180:
-                            print(p1, p2)
-                            raise RuntimeError(
-                                "Manhattan routing failed and unable to perform "
-                                "sbend routing. Try aligning all DUT ports to "
-                                "face pad ports."
-                            )
-                    gf.routing.route_bundle_sbend(
-                        component=routed,
-                        ports1=pad_group_new,
-                        ports2=dut_group_new,
-                        enforce_port_ordering=True,
-                        port_name="e1",
-                        bend_s=partial(
-                            gf.components.bends.bend_s,
-                            cross_section=route_group.cross_section,
-                        ),
-                    )
-                except ValueError as e:
-                    if "radius" in str(e):
-                        raise ValueError(
-                            f"{e}\nTry increasing spacing between DUT and "
-                            "pads or adjust DUT placement relative to pads."
-                        ) from e
-                    else:
-                        raise
+                # TODO implement s-bend routing
+                pass
             # check for intersections between paths that were routed separately
             for m in range(len(all_paths) - 1):
                 for n in range(m + 1, len(all_paths)):
@@ -696,5 +658,6 @@ def _route_dut(
                             "DUT and pads."
                         )
         if complete:
+            routed.name = f"experiment_{name}"
             return routed
     raise RuntimeError(f"failed to route design after {retries} iterations")

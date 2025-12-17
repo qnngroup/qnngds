@@ -1,9 +1,12 @@
-from phidl import set_quickplot_options
-from phidl import quickplot as qp
+"""Basic test code"""
+
+import phidl
 
 import qnngds as qg
 
 from functools import partial
+
+phidl.set_quickplot_options(blocking=True)
 
 ls = qg.LayerSet()
 ls.add_layer(qg.Layer(name="PHOTO1", gds_layer=10, gds_datatype=0, outline=0))
@@ -26,7 +29,7 @@ cross_sections = dict(
     photo2=partial(qg.geometries.default_cross_section, layer="PHOTO2"),
     photo3=partial(qg.geometries.default_cross_section, layer="PHOTO3"),
     photo4=partial(qg.geometries.default_cross_section, layer="PHOTO4"),
-    ebeam=partial(qg.geometries.default_cross_section, layer="EBEAM_COARSE"),
+    ebeam=partial(qg.geometries.default_cross_section, radius=40, layer="EBEAM_COARSE"),
 )
 
 layer_transitions = {
@@ -47,9 +50,9 @@ PDK = qg.Pdk(
 PDK.activate()
 
 c = qg.experiment.generate(
-    dut=qg.devices.ntron.sharp,
+    dut=partial(qg.devices.ntron.sharp, layer="PHOTO1"),
     pad_array=qg.pads.array(
-        pad_specs=(qg.pads.stack(size=(200, 200), layers=("EBEAM_COARSE",)),),
+        pad_specs=(qg.pads.stack(size=(200, 200), layers=("PHOTO1",)),),
         columns=1,
         rows=3,
         pitch=250,
@@ -57,18 +60,16 @@ c = qg.experiment.generate(
     label=None,
     route_groups=(
         qg.experiment.RouteGroup(
-            qg.get_cross_section("ebeam"), {"g": 2, "s": 1, "d": 3}
+            qg.get_cross_section("photo1"), {"g": 2, "s": 1, "d": 3}
         ),
     ),
-    dut_offset=(250, 250),
+    dut_offset=(350, 250),
     pad_offset=(0, 0),
     label_offset=(0, 0),
     retries=1,
 )
 
-qp(c)
-
-set_quickplot_options(blocking=True)
+phidl.quickplot(c)
 
 
 # sample = qg.sample.Sample(cell_size=10e3, sample=qg.sample.wafer100mm, edge_exclusion=500, allow_cell_span=True)
@@ -111,10 +112,10 @@ dev_list = [
     # qg.devices.resonator.straight(),
     # qg.devices.resonator.pad(),
     # qg.devices.resonator.transmission_line_resonator(),
-    qg.pads.stack(),
-    qg.pads.array(),
-    qg.pads.vdp(),
-    qg.pads.quad_line(),
+    # qg.pads.stack(),
+    # qg.pads.array(),
+    # qg.pads.vdp(),
+    # qg.pads.quad_line(),
 ]
 for dev in dev_list:
-    qp(dev)
+    phidl.quickplot(dev)
