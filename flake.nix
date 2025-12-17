@@ -22,6 +22,7 @@
           p.klayout
           p.ruff
           p.pyqt6
+          p.py
         ]);
       in
       {

@@ -7,11 +7,12 @@ from qnngds import Layer, LayerSet, CrossSection
 import phidl
 from qnngds.typing import (
     LayerSpec,
-    LayerSpecs,
     DeviceSpec,
     DeviceSpecs,
     CrossSectionSpec,
 )
+from .geometries import hyper_taper
+from .utilities import get_outline_layers, outline
 
 _ACTIVE_PDK: Pdk | None = None
 
@@ -24,7 +25,9 @@ class Pdk:
         name: str,
         layers: LayerSet,
         cross_sections: dict[str, CrossSection] = {},
-        layer_transitions: dict[LayerSpec | LayerSpecs, DeviceSpec] = {},
+        layer_transitions: dict[
+            LayerSpec | tuple[LayerSpec, LayerSpec], DeviceSpec
+        ] = {},
         devices: DeviceSpecs = [],
     ):
         """Constructor
@@ -32,15 +35,39 @@ class Pdk:
         Parameters
             name (str): name of PDK
             layers (LayerSet): LayerSet to use for PDK
-            cross_sections (dict[str, CrossSection]): map of named cross sections to their instances
-            layer_transitions (dict[LayerSpec, DeviceSpec]): map of LayerSpec (or pair of LayerSpecs)
-                to a DeviceSpec which will transition between layers
+            cross_sections (dict[str, CrossSection]): map of named cross sections
+                to their instances.
+            layer_transitions (dict[LayerSpec | tuple[LayerSpec, LayerSpec], DeviceSpec]):
+                map of LayerSpec (or pair of LayerSpecs) to a DeviceSpec which
+                will transition between layers.
             devices (DeviceSpecs): devices to register with PDK
         """
         self.name = name
         self.layers = layers
         self.cross_sections = cross_sections
-        self.layer_transitions = layer_transitions
+        self.layer_transitions = {}
+        for key, transition in layer_transitions.items():
+            raise_error = False
+            if isinstance(key, tuple):
+                if isinstance(key[0], tuple) | isinstance(key[0], str):
+                    # transition between two layers
+                    self.layer_transitions[
+                        (self.get_layer(key[0]).tuple, self.get_layer(key[1]).tuple)
+                    ] = transition
+                elif isinstance(key[0], int):
+                    # single layer
+                    self.layer_transitions[self.get_layer(key).tuple] = transition
+                else:
+                    raise_error = True
+            elif isinstance(key, str):
+                self.layer_transitions[self.get_layer(key).tuple] = transition
+            else:
+                raise_error = True
+            if raise_error:
+                raise ValueError(
+                    f"Could not parse layer transition specification {key}, "
+                    "expected LayerSpec | tuple[LayerSpec, LayerSpec]"
+                )
         self.devices = devices
 
     def activate(self):
@@ -57,7 +84,7 @@ class Pdk:
             Layer: instance of layer matching the queried LayerSpec
         """
         if isinstance(layer, str):
-            if layer not in self.layers:
+            if layer not in self.layers._layers:
                 raise ValueError(f"Could not find layer {layer} in Pdk {self.name}")
             return self.layers[layer]
         # convert to tuple
@@ -202,3 +229,25 @@ def get_cross_section(cross_section: CrossSectionSpec) -> phidl.CrossSection:
         CrossSection: instance of cross_section matching the queried CrossSectionSpec
     """
     return get_active_pdk().get_cross_section(cross_section)
+
+
+def layer_auto_transitions(layer_set: LayerSet) -> dict[LayerSpec, DeviceSpec]:
+    """Generate layer_transitions dictionary for auto tapers within the same layer
+
+    Parameters
+        layer_set (LayerSet): layers in PDK for which the auto transitions should be generated
+
+    Returns:
+        dict[Layer, DeviceSpec] mapping the appropriate taper for each layer auto transitions
+    """
+    outline_layers = get_outline_layers(layer_set)
+    auto_transitions = {
+        layer: lambda width1, width2, layer=layer: outline(
+            hyper_taper(
+                length=width2, start_width=width1, end_width=width2, layer=layer
+            ),
+            outline_layers,
+        )
+        for layer in layer_set
+    }
+    return auto_transitions

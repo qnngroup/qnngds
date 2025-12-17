@@ -284,7 +284,9 @@ def keepout(
     processed_layers = set([])
 
     polygons = device.get_polygons(by_spec=True)
-    for keepout_layer, mapped_layers in keepout_layers.keys():
+    for keepout_layer, mapped_layers in keepout_layers.items():
+        if keepout_layer not in polygons:
+            continue
         keepout_poly = polygons[keepout_layer]
         for mapped_layer in mapped_layers:
             mapped_layer = qg.get_layer(mapped_layer).tuple
@@ -316,9 +318,10 @@ def keepout(
             processed_layers.add(mapped_layer)
     # add remaining layers
     for layer in device.layers:
-        if qg.get_layer(layer).tuple in processed_layers:
+        layer = qg.get_layer(layer).tuple
+        if layer in processed_layers:
             continue
-        if qg.get_layer(layer).tuple in keepout_layers:
+        if layer in keepout_layers:
             continue
         dev_keepout.add_polygon(polygons[layer], layer=layer)
     # add ports
@@ -362,16 +365,19 @@ def get_device_port_direction(component: Device) -> dict[str, Sequence[Port]]:
     return ports
 
 
-def _get_port_direction(port: Port) -> str:
+def _get_port_direction(port: Port, warn_not_90: bool = False) -> str:
     """Gets string port direction ("N", "S", "E" or "W") of a port
 
     Args:
-        port (gf.Port): port
+        port (Port): port
+        warn_not_90 (bool): warn if orientation is not multiple of 90 deg. default False
 
     Returns:
         str: string of port orientation
     """
     angle = port.orientation % 360
+    if (angle % 90 != 0) and warn_not_90:
+        raise Warning("non-manhattan port orientation detected")
     if angle <= 45 or angle >= 315:
         return "E"
     elif angle <= 135 and angle >= 45:

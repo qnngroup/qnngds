@@ -26,12 +26,47 @@ cross_sections = dict(
     photo2=partial(qg.geometries.default_cross_section, layer="PHOTO2"),
     photo3=partial(qg.geometries.default_cross_section, layer="PHOTO3"),
     photo4=partial(qg.geometries.default_cross_section, layer="PHOTO4"),
-    ebeam_fine=partial(qg.geometries.default_cross_section, layer="EBEAM_FINE"),
-    ebeam_coarse=partial(qg.geometries.default_cross_section, layer="EBEAM_COARSE"),
+    ebeam=partial(qg.geometries.default_cross_section, layer="EBEAM_COARSE"),
 )
 
-PDK = qg.Pdk("test_pdk", layers=ls, cross_sections=cross_sections)
+layer_transitions = {
+    ("EBEAM_FINE", "EBEAM_COARSE"): partial(
+        qg.geometries.fine_to_coarse,
+        layer1="EBEAM_FINE",
+        layer2="EBEAM_COARSE",
+    )
+}
+layer_transitions |= qg.layer_auto_transitions(ls)
+
+PDK = qg.Pdk(
+    "test_pdk",
+    layers=ls,
+    cross_sections=cross_sections,
+    layer_transitions=layer_transitions,
+)
 PDK.activate()
+
+c = qg.experiment.generate(
+    dut=qg.devices.ntron.sharp,
+    pad_array=qg.pads.array(
+        pad_specs=(qg.pads.stack(size=(200, 200), layers=("EBEAM_COARSE",)),),
+        columns=1,
+        rows=3,
+        pitch=250,
+    ),
+    label=None,
+    route_groups=(
+        qg.experiment.RouteGroup(
+            qg.get_cross_section("ebeam"), {"g": 2, "s": 1, "d": 3}
+        ),
+    ),
+    dut_offset=(250, 250),
+    pad_offset=(0, 0),
+    label_offset=(0, 0),
+    retries=1,
+)
+
+qp(c)
 
 set_quickplot_options(blocking=True)
 
