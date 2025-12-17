@@ -603,10 +603,9 @@ def generate(
     keepout_layers = qg.utilities.get_keepout_layers(qg.get_active_pdk().layers)
 
     # outline and add DUT
+    outlined = qg.utilities.outline(dut_i, outline_layers)
     dut_ref = experiment.add_ref(
-        qg.utilities.keepout(
-            qg.utilities.outline(dut_i, outline_layers), outline_layers, keepout_layers
-        )
+        qg.utilities.keepout(outlined, outline_layers, keepout_layers)
     )
     dut_ref.move(dut_offset)
     if pad_array is None:
@@ -676,7 +675,6 @@ def generate(
     for route_group in route_groups:
         dut_groups.append([dut_ref.ports[p] for p in route_group.port_mapping])
         pad_groups.append([dut_pad_map[p] for p in route_group.port_mapping])
-
     # actually do routing
     routed = _route_dut(
         experiment=experiment,

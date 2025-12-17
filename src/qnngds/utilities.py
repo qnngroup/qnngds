@@ -153,12 +153,14 @@ def outline(
                 continue
             ext = dev_extended.add_ref(
                 pg.straight(
-                    size=(port.width, outline_layers[layer]),
+                    size=(port.width, outline_layers[layer] + 2e-4),
                     layer=qg.get_layer(port.layer).tuple,
                 )
             )
             _create_layered_ports(ext, layer)
             ext.connect(port=ext.ports[1], destination=port)
+            # translate slightly to make sure there's no gap
+            ext.move(1e-4 * np.diff(ext.ports[1].normal, axis=0)[0])
             p = ext.ports[2]
             p.name = port.name
             new_ports.append(p)
@@ -195,7 +197,9 @@ def outline(
             dev_outlined << outlined
     # add ports
     dev_outlined.flatten()
-    dev_outlined.add_ports(new_ports)
+    for port in new_ports:
+        port.midpoint = np.array(port.midpoint) - 1e-4 * np.diff(port.normal, axis=0)[0]
+        dev_outlined.add_port(port=port)
     dev_outlined.name = "ol_" + device.name
     return dev_outlined
 
@@ -290,6 +294,8 @@ def keepout(
         keepout_poly = polygons[keepout_layer]
         for mapped_layer in mapped_layers:
             mapped_layer = qg.get_layer(mapped_layer).tuple
+            if mapped_layer not in polygons:
+                continue
             mapped_poly = polygons[mapped_layer]
             d_keepout = Device()
             d_keepout.add_polygon(keepout_poly, layer=mapped_layer)

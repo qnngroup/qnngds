@@ -240,5 +240,5 @@ def meander_sc_contacts(
     Du << pg.union(D, by_layer=True)
     Du.flatten()
     for name, port in zip((1, 2), ports):
-        Du.add_port(name=name, port=port)
+        Du.add_port(name=name, port=port, layer=layer_contacts[0])
     return Du

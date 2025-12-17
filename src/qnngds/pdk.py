@@ -85,9 +85,14 @@ class Pdk:
         Returns
             Layer: instance of layer matching the queried LayerSpec
         """
+        value_error_msg = (
+            f"Could not find layer {layer} in Pdk {self.name}. "
+            "Double-check for misspelled layer name or a Device "
+            "that uses phidl.Port instead of qnngds.Port for its ports"
+        )
         if isinstance(layer, str):
             if layer not in self.layers._layers:
-                raise ValueError(f"Could not find layer {layer} in Pdk {self.name}")
+                raise ValueError(value_error_msg)
             return self.layers[layer]
         # convert to tuple
         if isinstance(layer, int):
@@ -101,7 +106,7 @@ class Pdk:
                 _layer = self.layers[_layer]
                 if layer == (_layer.gds_layer, _layer.gds_datatype):
                     return _layer
-        raise ValueError(f"could not find layer {layer} in Pdk {self.name}")
+        raise ValueError(value_error_msg)
 
     def get_device(self, spec: DeviceSpec) -> phidl.Device:
         """Get a specific layer within the PDK
