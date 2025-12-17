@@ -1,4 +1,4 @@
-.. _experiment_generate_beginner2
+.. _experiment_generate_beginner2:
 Creation of positive-tone ebeam layouts with ``experiment.generate``
 ====================================================================
 

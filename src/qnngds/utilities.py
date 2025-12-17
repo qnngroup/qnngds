@@ -294,14 +294,23 @@ def keepout(
         keepout_poly = polygons[keepout_layer]
         for mapped_layer in mapped_layers:
             mapped_layer = qg.get_layer(mapped_layer).tuple
-            if mapped_layer not in polygons:
-                continue
-            mapped_poly = polygons[mapped_layer]
+            neg_tone = mapped_layer not in outline_layers
             d_keepout = Device()
             d_keepout.add_polygon(keepout_poly, layer=mapped_layer)
+            if mapped_layer not in polygons:
+                if neg_tone:
+                    continue
+                else:
+                    # pos-tone, add/union
+                    # since mapped_layer not in polygons,
+                    # union mapped+keepout is just keepout
+                    dev_keepout << d_keepout
+                    processed_layers.add(mapped_layer)
+                    continue
+            mapped_poly = polygons[mapped_layer]
             d_mapped = Device()
             d_mapped.add_polygon(mapped_poly, layer=mapped_layer)
-            if mapped_layer not in outline_layers:
+            if neg_tone:
                 # neg-tone, subtract
                 dev_keepout << pg.kl_boolean(
                     A=d_mapped,

@@ -1,4 +1,4 @@
-.. _experiment_generate_beginner1
+.. _experiment_generate_beginner1:
 Basic usage of ``experiment.generate``
 ======================================
 

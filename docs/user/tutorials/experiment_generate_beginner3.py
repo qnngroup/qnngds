@@ -5,9 +5,7 @@ from functools import partial
 ls = qg.LayerSet()
 ls.add_layer(qg.Layer(name="EBEAM_FINE", gds_layer=1, outline=0.1))
 ls.add_layer(qg.Layer(name="EBEAM_COARSE", gds_layer=2, outline=10))
-ls.add_layer(
-    qg.Layer(name="EBEAM_KEEPOUT", gds_layer=3, keepout=("EBEAM_FINE", "EBEAM_COARSE"))
-)
+ls.add_layer(qg.Layer(name="EBEAM_KEEPOUT", gds_layer=3, keepout=("EBEAM_FINE",)))
 ls.add_layer(qg.Layer(name="PHOTO", gds_layer=10))
 
 cross_sections = dict(
