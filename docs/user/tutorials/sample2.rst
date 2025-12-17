@@ -24,7 +24,7 @@ any routing here.
    :language: python
    :linenos:
    :lineno-match:
-   :lines: 5-12
+   :lines: 5-9
 
 Next, we'll define the 10 x 10 piece and place a dummy rectangle on it.
 In practice, one would fill this up with experiments generated
@@ -34,7 +34,7 @@ from devices and circuits.
    :language: python
    :linenos:
    :lineno-match:
-   :lines: 14-19
+   :lines: 11-16
 
 Now, we generate the wafer sample and place a bunch of identical copies
 of the 10 x 10. Again, in practice, one would have several different 10 x 10s.
@@ -43,7 +43,7 @@ of the 10 x 10. Again, in practice, one would have several different 10 x 10s.
    :language: python
    :linenos:
    :lineno-match:
-   :lines: 21-31
+   :lines: 18-28
 
 Now we can write corners for all the occupied cells on the wafer as well as text
 labels so we can keep track of which piece is which after dicing.
@@ -52,7 +52,7 @@ labels so we can keep track of which piece is which after dicing.
    :language: python
    :linenos:
    :lineno-match:
-   :lines: 33-34
+   :lines: 30-31
 
 Finally, we can write alignment marks and plot the device.
 
@@ -60,7 +60,7 @@ Finally, we can write alignment marks and plot the device.
    :language: python
    :linenos:
    :lineno-match:
-   :lines: 36-41
+   :lines: 33-38
 
 .. image:: sample2.png
 

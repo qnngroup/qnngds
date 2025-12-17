@@ -5,10 +5,7 @@ import phidl.geometry as pg
 ls = qg.LayerSet()
 ls.add_layer(qg.Layer(name="PHOTO", gds_layer=1))
 
-PDK = qg.Pdk(
-    "single_layer_pdk",
-    layers=ls,
-)
+PDK = qg.Pdk("single_layer_pdk", layers=ls)
 PDK.activate()
 
 piece = qg.sample.Sample(cell_size=1e3, sample=qg.sample.piece10mm, edge_exclusion=500)
