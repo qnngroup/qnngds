@@ -103,8 +103,8 @@ class Sample(object):
 
     def __init__(
         self,
-        cell_size: float = 1000,
-        sample: DeviceSpec | Device = wafer150mm,
+        cell_size: float = 10000,
+        sample: DeviceSpec | Device = wafer100mm,
         edge_exclusion: float = 10000,
         allow_cell_span: bool = False,
     ) -> None:
@@ -360,7 +360,7 @@ class Sample(object):
             Updates self.devices with the new markers
         """
         corner = pg.L(
-            width=width, size=(5 * width, 5 * width), layer=pg.get_layer(layer).tuple
+            width=width, size=(5 * width, 5 * width), layer=qg.get_layer(layer)
         )
         die_corners = Device("corners")
         for i in range(4):
@@ -408,7 +408,7 @@ class Sample(object):
             label = self.devices << pg.text(
                 text=row_str + col_str,
                 size=size,
-                layer=qg.get_layer(layer).tuple,
+                layer=qg.get_layer(layer),
                 justify="center",
             )
             if ((location + 1) % 4) // 2 > 0:
@@ -448,6 +448,14 @@ class Sample(object):
             spacing=(2 * location[0], 2 * location[1]),
         )
         marker_refs.center = (0, 0)
+
+    def num_full_cells(self) -> int:
+        """Get number of cells in sample that are filled"""
+        return len(self.full_cells)
+
+    def num_open_cells(self) -> int:
+        """Get number of cells in sample that are open"""
+        return len(self.open_cells)
 
     def _check_device_size(self, device: Device) -> bool:
         """Checks device size
