@@ -36,10 +36,6 @@ in the `QNN group <https://qnn-rle.mit.edu/>`_.
 
       * :ref:`utilities`: contains useful tools for building cells and circuits.
 
-Below is an example of the modules used to build a design.
-
-.. image:: images/_home_page/example_hierarchy.png
-
 
 Contents
 --------
@@ -47,7 +43,6 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   index
    api
    tutorials
 

@@ -16,7 +16,9 @@ First, define our imports:
 
 .. note::
    If running non-interactively, e.g. with `$ python ./my_script.py`, add the following lines
+
    .. code-block:: python
+
         from phidl import set_quickplot_options
         set_quickplot_options(blocking=True)
 
