@@ -175,155 +175,26 @@ def _sort_ports(
     return flat_ports
 
 
-def generate(
-    dut: DeviceSpec | Device,
-    pad_array: DeviceSpec | Device,
-    label: DeviceSpec | Device | None,
+def _define_routes(
+    dut_ref: Device,
+    pads_ref: Device,
     route_groups: Sequence[RouteGroup] | None,
-    dut_offset: tuple[float, float] = (0, 0),
-    pad_offset: tuple[float, float] = (0, 0),
-    label_offset: tuple[float, float] | None = (-100, -100),
-    ignore_port_count_mismatch: bool = False,
-    ignore_dut_bbox: bool = False,
-    retries: int = 10,
-) -> Device:
-    """Construct an experiment from a device/circuit (Device).
+) -> tuple[Sequence[RouteGroup], dict[str, tuple[Port, Port]]]:
+    """Automatically fills in missing entries in route_groups
 
-    Includes text, pads, and routing to connect pads to devices
+    based on ports in dut_ref and pads_ref.
 
-    Parameters:
-        dut (DeviceSpec or Device): finished device to be connected to pads
-        pad_array (DeviceSpec or Device or None): pad array to connect to device
-        label (DeviceSpec or Device or None): text label or factory.
-        route_groups (Sequence[RouteGroup] or None): how to route DUT to pads
-        dut_offset (tuple[float, float]): x,y offset for dut (mostly useful for linear pad arrays)
-        pad_offset (tuple[float, float]): x,y offset for pad array (mostly useful for linear pad arrays)
-        label_offset (tuple[float, float] or None): x,y offset of label
-        ignore_port_count_mismatch (bool): if True, ignores mismatched number of DUT and pads ports,
-            only if route_groups defines a mapping to all pad ports, or lists all DUT ports.
-        ignore_dut_bbox (bool): if True, does not attempt to route around DUT bounding box (bbox)
-        retries (int): how many times to try rerouting with s_bend (may need to be larger for many port groupings)
-    Returns:
-        (Device): experiment
+    Parameters
+        dut_ref (DeviceReference): reference to DUT
+        pads_ref (DeviceReference): reference to pads
+        route_groups (Sequence[RouteGroup] | None): partially or fully defined RouteGroup
+            list that specifies routing between DUT and pads
 
-    Example:
-        Using the example qnngds PDK: `<https://github.com/qnngroup/qnngds-pdk/>`_,
-        we can generate an example nTron test layout including pads. The pad array
-        is just a linear array from gdsfactory, although a custom array could be defined.
-        The mapping of nTron device ports to pad ports is defined manually with ``route_groups``,
-        but it's possible to use autoassignment by setting ``route_groups=None``.
-        However, autoassignment only works in some cases, and in the case of this nTron,
-        it would most likely fail.
-
-        >>> c = qg.experiment.generate(
-        >>>     dut=qg.devices.ntron.sharp,
-        >>>     pad_array=qg.pads.array(
-        >>>         pad_specs=(qg.pads.stack(size=(200, 200), layers=("EBEAM_COARSE",)),),
-        >>>         columns=1,
-        >>>         rows=3,
-        >>>         pitch=250,
-        >>>     ),
-        >>>     label=None,
-        >>>     route_groups=(
-        >>>         qg.experiment.RouteGroup(
-        >>>             qg.get_cross_section("ebeam"), {"g": 2, "s": 1, "d": 3}
-        >>>         ),
-        >>>     ),
-        >>>     dut_offset=(250, 250),
-        >>>     pad_offset=(0, 0),
-        >>>     label_offset=(0, 0),
-        >>>     retries=1,
-        >>> )
-        >>> qp(c)
+    Returns
+        tuple[Sequence[RouteGroup], dict[str, tuple[Port, Port]]]: updated route_groups,
+            and dut_pad_map which specifies which dut port goes to which pad port
     """
-    # check if route_groups is complete so we can handle ignore_port_count_mismatch flag
-    route_groups_complete = False
-    if route_groups is not None and pad_array is not None:
-        route_groups_complete = True
-        # first figure out all of the assigned pad ports and dut ports
-        # there are two ways the route group can be complete:
-        #  1. If number of declared (but unassigned) DUT ports is equal to the
-        #     number of unassigned pad ports
-        #  2. If all pad ports are assigned
-        mapped_pad_ports = set([])
-        declared_dut_ports = set([])
-        for route_group in route_groups:
-            if route_group.ground:
-                continue
-            for dut_port, pad_port in route_group.port_mapping.items():
-                mapped_pad_ports.add(pad_port)
-                if pad_port is None:
-                    declared_dut_ports.add(dut_port)
-        # get all unassigned pad ports and check that either total number of unassigned pad ports
-        # is zero, or that it matches the number of declared (but unassigned) DUT ports.
-        pads_i = qg.get_device(pad_array)
-        unassigned_pad_ports = (
-            set(pads_i.ports[port_name].name for port_name in pads_i.ports)
-            - mapped_pad_ports
-        )
-        if len(unassigned_pad_ports) > 0:
-            if len(unassigned_pad_ports) != len(declared_dut_ports):
-                route_groups_complete = False
-
-    allow_port_count_mismatch = route_groups_complete and ignore_port_count_mismatch
-
-    dut_i = qg.get_device(dut)
-    if pad_array is not None:
-        pads_i = qg.get_device(pad_array)
-        # check appropriate number of ports on pad_array and dut
-        if len(dut_i.ports) != len(pads_i.ports):
-            if not (allow_port_count_mismatch):
-                raise ValueError(
-                    f"DUT ({len(dut_i.ports)} ports) and pad array "
-                    f"({len(pads_i.ports)} ports) should have the same number of ports."
-                )
-    # check that number of DUT ports assigned in route_groups is correct
-    if len(dut_i.ports) != 0 and route_groups is not None:
-        num_assigned_ports = sum(
-            len(group.port_mapping.keys()) for group in route_groups
-        )
-        if num_assigned_ports != len(dut_i.ports):
-            if not (allow_port_count_mismatch):
-                raise ValueError(
-                    f"invalid number of port groupings: got {num_assigned_ports}, "
-                    f"expected {len(dut_i.ports)} based on number of ports on DUT"
-                )
-    elif route_groups is not None:
-        if pad_array is not None:
-            raise ValueError(
-                "cannot route pad array to DUT with zero ports, "
-                "did you remember to add ports to your DUT?"
-            )
-
-    experiment = Device()
-
-    # figure out which layers to outline
-    outline_layers = qg.utilities.get_outline_layers(qg.get_active_pdk().layers)
-    keepout_layers = qg.utilities.get_keepout_layers(qg.get_active_pdk().layers)
-
-    # outline and add DUT
-    dut_ref = experiment.add_ref(
-        qg.utilities.keepout(
-            qg.utilities.outline(dut_i, outline_layers), outline_layers, keepout_layers
-        )
-    )
-    dut_ref.move(dut_offset)
-    if pad_array is None:
-        return experiment
-
-    # add pads
-    # don't outline, and add to dummy component.
-    # after pad port adjustment, perform the outline
-    dummy_pads = Device()
-    pads_ref = dummy_pads.add_ref(pads_i)
-    pads_ref.move(pad_offset)
-
-    # add text label (don't outline)
-    if label is not None:
-        label_i = label() if isinstance(label, Callable) else label
-        label_ref = experiment.add_ref(label_i)
-        label_ref.move(label_offset)
-
+    # keys for sorting ports to auto-assign them
     sort_cw = {
         "E": lambda p: -p.y,  # north to south
         "N": lambda p: +p.x,  # west to east
@@ -339,13 +210,16 @@ def generate(
 
     # sort dut cw
     dut_ports = _sort_ports(
-        qg.utilities.get_device_port_direction(dut_ref), sort_cw, ("W", "N", "E", "S")
+        ports=qg.utilities.get_device_port_direction(dut_ref),
+        sort_map=sort_cw,
+        direction_order=("W", "N", "E", "S"),
     )
     # sort pads ccw
     pad_ports = _sort_ports(
-        qg.utilities.get_device_port_direction(pads_ref), sort_ccw, ("E", "S", "W", "N")
+        ports=qg.utilities.get_device_port_direction(pads_ref),
+        sort_map=sort_ccw,
+        direction_order=("E", "S", "W", "N"),
     )
-
     # create mapping from dut ports to pad ports
     # first define route groups if it isn't initialized
     dut_pad_map = {}
@@ -420,68 +294,7 @@ def generate(
                 dut_ports.pop(dut_port_index)
         # add remaining ports
         dut_pad_map |= {dp.name: pp for (dp, pp) in zip(dut_ports, pad_ports)}
-
-    # shift pad ports if it's possible to do a straight route between dut and pad without exceeding pad extent
-    for gid, route_group in enumerate(route_groups):
-        if route_group.ground:
-            continue
-        for dut_port_name in route_group.port_mapping:
-            dut_port = dut_ref.ports[dut_port_name]
-            pad_port = dut_pad_map[dut_port_name]
-            if (dut_port.orientation - pad_port.orientation) % 360 == 180:
-                # ports are facing each other
-                w_route = route_group.cross_section.sections[0]["width"]
-                w_pad = pad_port.width
-                dw = w_pad - w_route
-                dwidth = 0
-                center = (pad_port.x, pad_port.y)
-                if dut_port.orientation % 180 == 0:
-                    # route along x
-                    if pad_port.y - dw / 2 <= dut_port.y <= pad_port.y + dw / 2:
-                        # change port location on pad
-                        dwidth = -2 * abs(dut_port.y - pad_port.y)
-                        center = (pad_port.x, dut_port.y)
-                else:
-                    # route along y
-                    if pad_port.x - dw / 2 <= dut_port.x <= pad_port.x + dw / 2:
-                        dwidth = -2 * abs(dut_port.x - pad_port.x)
-                        center = (dut_port.x, pad_port.y)
-                pad_port = Port(
-                    name=pad_port.name,
-                    width=pad_port.width + dwidth,
-                    midpoint=center,
-                    orientation=pad_port.orientation,
-                    layer=pad_port.layer,
-                )
-                dummy_pads.add_port(port=pad_port)
-                dut_pad_map[dut_port_name] = pad_port
-            else:
-                dummy_pads.add_port(port=pad_port)
-
-    # add pads to actual device
-    experiment.add_ref(qg.utilities.outline(dummy_pads, outline_layers))
-
-    # get layer transitions for computing taper lengths (to allow addition of autotapers)
-    layer_transitions = qg.get_active_pdk().layer_transitions
-
-    dut_groups = []
-    pad_groups = []
-    for route_group in route_groups:
-        dut_groups.append([dut_ref.ports[p] for p in route_group.port_mapping])
-        pad_groups.append([dut_pad_map[p] for p in route_group.port_mapping])
-
-    # actually do routing
-    routed = _route_dut(
-        experiment=experiment,
-        name=dut_i.name,
-        route_groups=route_groups,
-        dut_groups=dut_groups,
-        pad_groups=pad_groups,
-        layer_transitions=layer_transitions,
-        retries=retries,
-        ignore_dut_bbox=ignore_dut_bbox,
-    )
-    return routed
+    return route_groups, dut_pad_map
 
 
 def _add_autotapers(
@@ -661,3 +474,218 @@ def _route_dut(
             routed.name = f"experiment_{name}"
             return routed
     raise RuntimeError(f"failed to route design after {retries} iterations")
+
+
+def generate(
+    dut: DeviceSpec | Device,
+    pad_array: DeviceSpec | Device,
+    label: DeviceSpec | Device | None,
+    route_groups: Sequence[RouteGroup] | None,
+    dut_offset: tuple[float, float] = (0, 0),
+    pad_offset: tuple[float, float] = (0, 0),
+    label_offset: tuple[float, float] | None = (-100, -100),
+    ignore_port_count_mismatch: bool = False,
+    ignore_dut_bbox: bool = False,
+    retries: int = 10,
+) -> Device:
+    """Construct an experiment from a device/circuit (Device).
+
+    Includes text, pads, and routing to connect pads to devices
+
+    Parameters:
+        dut (DeviceSpec or Device): finished device to be connected to pads
+        pad_array (DeviceSpec or Device or None): pad array to connect to device
+        label (DeviceSpec or Device or None): text label or factory.
+        route_groups (Sequence[RouteGroup] or None): how to route DUT to pads
+        dut_offset (tuple[float, float]): x,y offset for dut (mostly useful for linear pad arrays)
+        pad_offset (tuple[float, float]): x,y offset for pad array (mostly useful for linear pad arrays)
+        label_offset (tuple[float, float] or None): x,y offset of label
+        ignore_port_count_mismatch (bool): if True, ignores mismatched number of DUT and pads ports,
+            only if route_groups defines a mapping to all pad ports, or lists all DUT ports.
+        ignore_dut_bbox (bool): if True, does not attempt to route around DUT bounding box (bbox)
+        retries (int): how many times to try rerouting with s_bend (may need to be larger for many port groupings)
+    Returns:
+        (Device): experiment
+
+    Example:
+        Using the example qnngds PDK: `<https://github.com/qnngroup/qnngds-pdk/>`_,
+        we can generate an example nTron test layout including pads. The pad array
+        is just a linear array from gdsfactory, although a custom array could be defined.
+        The mapping of nTron device ports to pad ports is defined manually with ``route_groups``,
+        but it's possible to use autoassignment by setting ``route_groups=None``.
+        However, autoassignment only works in some cases, and in the case of this nTron,
+        it would most likely fail.
+
+        >>> c = qg.experiment.generate(
+        >>>     dut=qg.devices.ntron.sharp,
+        >>>     pad_array=qg.pads.array(
+        >>>         pad_specs=(qg.pads.stack(size=(200, 200), layers=("EBEAM_COARSE",)),),
+        >>>         columns=1,
+        >>>         rows=3,
+        >>>         pitch=250,
+        >>>     ),
+        >>>     label=None,
+        >>>     route_groups=(
+        >>>         qg.experiment.RouteGroup(
+        >>>             qg.get_cross_section("ebeam"), {"g": 2, "s": 1, "d": 3}
+        >>>         ),
+        >>>     ),
+        >>>     dut_offset=(250, 250),
+        >>>     pad_offset=(0, 0),
+        >>>     label_offset=(0, 0),
+        >>>     retries=1,
+        >>> )
+        >>> qp(c)
+    """
+    # check if route_groups is complete so we can handle ignore_port_count_mismatch flag
+    route_groups_complete = False
+    if route_groups is not None and pad_array is not None:
+        route_groups_complete = True
+        # first figure out all of the assigned pad ports and dut ports
+        # there are two ways the route group can be complete:
+        #  1. If number of declared (but unassigned) DUT ports is equal to the
+        #     number of unassigned pad ports
+        #  2. If all pad ports are assigned
+        mapped_pad_ports = set([])
+        declared_dut_ports = set([])
+        for route_group in route_groups:
+            if route_group.ground:
+                continue
+            for dut_port, pad_port in route_group.port_mapping.items():
+                mapped_pad_ports.add(pad_port)
+                if pad_port is None:
+                    declared_dut_ports.add(dut_port)
+        # get all unassigned pad ports and check that either total number of unassigned pad ports
+        # is zero, or that it matches the number of declared (but unassigned) DUT ports.
+        pads_i = qg.get_device(pad_array)
+        unassigned_pad_ports = (
+            set(pads_i.ports[port_name].name for port_name in pads_i.ports)
+            - mapped_pad_ports
+        )
+        if len(unassigned_pad_ports) > 0:
+            if len(unassigned_pad_ports) != len(declared_dut_ports):
+                route_groups_complete = False
+
+    allow_port_count_mismatch = route_groups_complete and ignore_port_count_mismatch
+
+    dut_i = qg.get_device(dut)
+    if pad_array is not None:
+        pads_i = qg.get_device(pad_array)
+        # check appropriate number of ports on pad_array and dut
+        if len(dut_i.ports) != len(pads_i.ports):
+            if not (allow_port_count_mismatch):
+                raise ValueError(
+                    f"DUT ({len(dut_i.ports)} ports) and pad array "
+                    f"({len(pads_i.ports)} ports) should have the same number of ports."
+                )
+    # check that number of DUT ports assigned in route_groups is correct
+    if len(dut_i.ports) != 0 and route_groups is not None:
+        num_assigned_ports = sum(
+            len(group.port_mapping.keys()) for group in route_groups
+        )
+        if num_assigned_ports != len(dut_i.ports):
+            if not (allow_port_count_mismatch):
+                raise ValueError(
+                    f"invalid number of port groupings: got {num_assigned_ports}, "
+                    f"expected {len(dut_i.ports)} based on number of ports on DUT"
+                )
+    elif route_groups is not None:
+        if pad_array is not None:
+            raise ValueError(
+                "cannot route pad array to DUT with zero ports, "
+                "did you remember to add ports to your DUT?"
+            )
+
+    experiment = Device()
+
+    # figure out which layers to outline
+    outline_layers = qg.utilities.get_outline_layers(qg.get_active_pdk().layers)
+    keepout_layers = qg.utilities.get_keepout_layers(qg.get_active_pdk().layers)
+
+    # outline and add DUT
+    dut_ref = experiment.add_ref(
+        qg.utilities.keepout(
+            qg.utilities.outline(dut_i, outline_layers), outline_layers, keepout_layers
+        )
+    )
+    dut_ref.move(dut_offset)
+    if pad_array is None:
+        return experiment
+
+    # add pads
+    # don't outline, and add to dummy component.
+    # after pad port adjustment, perform the outline
+    dummy_pads = Device()
+    pads_ref = dummy_pads.add_ref(pads_i)
+    pads_ref.move(pad_offset)
+
+    # add text label (don't outline)
+    if label is not None:
+        label_i = label() if isinstance(label, Callable) else label
+        label_ref = experiment.add_ref(label_i)
+        label_ref.move(label_offset)
+
+    route_groups, dut_pad_map = _define_routes(
+        dut_ref=dut_ref, pads_ref=pads_ref, route_groups=route_groups
+    )
+    # shift pad ports if it's possible to do a straight route between dut and pad without exceeding pad extent
+    for gid, route_group in enumerate(route_groups):
+        if route_group.ground:
+            continue
+        for dut_port_name in route_group.port_mapping:
+            dut_port = dut_ref.ports[dut_port_name]
+            pad_port = dut_pad_map[dut_port_name]
+            if (dut_port.orientation - pad_port.orientation) % 360 == 180:
+                # ports are facing each other
+                w_route = route_group.cross_section.sections[0]["width"]
+                w_pad = pad_port.width
+                dw = w_pad - w_route
+                dwidth = 0
+                center = (pad_port.x, pad_port.y)
+                if dut_port.orientation % 180 == 0:
+                    # route along x
+                    if pad_port.y - dw / 2 <= dut_port.y <= pad_port.y + dw / 2:
+                        # change port location on pad
+                        dwidth = -2 * abs(dut_port.y - pad_port.y)
+                        center = (pad_port.x, dut_port.y)
+                else:
+                    # route along y
+                    if pad_port.x - dw / 2 <= dut_port.x <= pad_port.x + dw / 2:
+                        dwidth = -2 * abs(dut_port.x - pad_port.x)
+                        center = (dut_port.x, pad_port.y)
+                pad_port = Port(
+                    name=pad_port.name,
+                    width=pad_port.width + dwidth,
+                    midpoint=center,
+                    orientation=pad_port.orientation,
+                    layer=pad_port.layer,
+                )
+                dummy_pads.add_port(port=pad_port)
+                dut_pad_map[dut_port_name] = pad_port
+            else:
+                dummy_pads.add_port(port=pad_port)
+
+    # add pads to actual device
+    experiment.add_ref(qg.utilities.outline(dummy_pads, outline_layers))
+
+    # get layer transitions for computing taper lengths (to allow addition of autotapers)
+    layer_transitions = qg.get_active_pdk().layer_transitions
+
+    dut_groups = []
+    pad_groups = []
+    for route_group in route_groups:
+        dut_groups.append([dut_ref.ports[p] for p in route_group.port_mapping])
+        pad_groups.append([dut_pad_map[p] for p in route_group.port_mapping])
+
+    # actually do routing
+    routed = _route_dut(
+        experiment=experiment,
+        name=dut_i.name,
+        route_groups=route_groups,
+        dut_groups=dut_groups,
+        pad_groups=pad_groups,
+        layer_transitions=layer_transitions,
+        retries=retries,
+        ignore_dut_bbox=ignore_dut_bbox,
+    )
+    return routed
