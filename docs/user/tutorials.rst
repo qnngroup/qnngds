@@ -8,3 +8,4 @@ Tutorials
     /tutorials/experiment_generate_beginner1
     /tutorials/experiment_generate_beginner2
     /tutorials/experiment_generate_beginner3
+    /tutorials/sample1

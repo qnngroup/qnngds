@@ -12,6 +12,7 @@ First, define our imports:
 .. literalinclude:: experiment_generate_beginner1.py
    :language: python
    :linenos:
+   :linenomatch:
    :lines: 1-3
 
 .. note::
@@ -27,6 +28,7 @@ Now, we'll set up our PDK.
 .. literalinclude:: experiment_generate_beginner1.py
    :language: python
    :linenos:
+   :linenomatch:
    :lines: 5-20
 
 We've defined a single layer named ``"PHOTO"`` with GDS layer/datatype ``1/0`` (``gds_datatype = 0`` is the default argument for the ``Layer`` constructor).
@@ -37,6 +39,7 @@ Now, we can set up the inputs to ``experiment.generate``:
 .. literalinclude:: experiment_generate_beginner1.py
    :language: python
    :linenos:
+   :linenomatch:
    :lines: 22-31
 
 And supply these inputs to ``experiment.generate`` and plot the output:
@@ -44,6 +47,7 @@ And supply these inputs to ``experiment.generate`` and plot the output:
 .. literalinclude:: experiment_generate_beginner1.py
    :language: python
    :linenos:
+   :linenomatch:
    :lines: 33-44
 
 .. image:: experiment_generate_beginner1.png
@@ -57,4 +61,5 @@ Reference
 .. literalinclude:: experiment_generate_beginner1.py
    :language: python
    :linenos:
+   :linenomatch:
    :lines: 1-44

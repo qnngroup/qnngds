@@ -51,19 +51,6 @@ c = qg.experiment.generate(
 
 qp(c)
 
-import matplotlib.pyplot as plt  # noqa: E402
-import os  # noqa: E402
-from phidl import set_quickplot_options  # noqa: E402
+from ._save_qp import save_qp  # noqa: E402
 
-set_quickplot_options(show_subports=False)
-qp(c)
-dirname = os.path.dirname(__file__)
-basename = os.path.basename(__file__).split(".")[0]
-save_path = os.path.join(dirname, ".".join((basename, "png")))
-plt.savefig(save_path)
-# zoom
-plt.xlim((300, 400))
-plt.ylim((200, 300))
-save_path = os.path.join(dirname, ".".join((basename + "_zoom", "png")))
-plt.savefig(save_path)
-plt.close()
+save_qp(__file__, c, xlim=(300, 400), ylim=(200, 300))
