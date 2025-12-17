@@ -3,15 +3,17 @@
 # can be removed in python 3.14, see https://peps.python.org/pep-0749/
 from __future__ import annotations
 
-from qnngds import Layer, LayerSet, CrossSection
+from functools import partial
 import phidl
+
+from qnngds import Layer, LayerSet, CrossSection
 from qnngds.typing import (
     LayerSpec,
     DeviceSpec,
     DeviceSpecs,
     CrossSectionSpec,
 )
-from .geometries import hyper_taper
+from .geometries import hyper_taper, default_cross_section, fine_to_coarse
 from .utilities import get_outline_layers, outline
 
 _ACTIVE_PDK: Pdk | None = None
@@ -179,12 +181,39 @@ def get_active_pdk() -> Pdk:
 def get_generic_pdk() -> Pdk:
     """Get a generic PDK"""
     layers = LayerSet()
-    layers.add_layer(Layer(name="default", gds_layer=1, gds_datatype=0))
+    layers.add_layer(Layer(name="EBEAM_FINE", gds_layer=1, outline=0.1))
+    layers.add_layer(Layer(name="EBEAM_COARSE", gds_layer=2, outline=10))
+    layers.add_layer(Layer(name="PHOTO1", gds_layer=10))
+    layers.add_layer(Layer(name="PHOTO2", gds_layer=20))
+    layers.add_layer(Layer(name="PHOTO3", gds_layer=30))
+    layers.add_layer(Layer(name="PHOTO4", gds_layer=40))
+    layers.add_layer(
+        Layer(
+            name="EBEAM_KEEPOUT",
+            gds_layer=3,
+            keepout=["EBEAM_FINE", "EBEAM_COARSE"],
+        )
+    )
+    cross_sections = dict(
+        photo1=partial(default_cross_section, layer="PHOTO1"),
+        photo2=partial(default_cross_section, layer="PHOTO2"),
+        photo3=partial(default_cross_section, layer="PHOTO3"),
+        photo4=partial(default_cross_section, layer="PHOTO4"),
+        ebeam=partial(default_cross_section, radius=40, layer="EBEAM_COARSE"),
+    )
+    layer_transitions = {
+        ("EBEAM_FINE", "EBEAM_COARSE"): partial(
+            fine_to_coarse,
+            layer1="EBEAM_FINE",
+            layer2="EBEAM_COARSE",
+        )
+    }
+    layer_transitions |= layer_auto_transitions(layers)
     return Pdk(
         name="generic",
         layers=layers,
-        cross_sections={},
-        layer_transitions={},
+        cross_sections=cross_sections,
+        layer_transitions=layer_transitions,
         devices=[],
     )
 

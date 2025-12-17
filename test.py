@@ -9,12 +9,12 @@ from functools import partial
 phidl.set_quickplot_options(blocking=True)
 
 ls = qg.LayerSet()
+ls.add_layer(qg.Layer(name="EBEAM_FINE", gds_layer=1, gds_datatype=0, outline=0.1))
+ls.add_layer(qg.Layer(name="EBEAM_COARSE", gds_layer=2, gds_datatype=0, outline=10))
 ls.add_layer(qg.Layer(name="PHOTO1", gds_layer=10, gds_datatype=0, outline=0))
 ls.add_layer(qg.Layer(name="PHOTO2", gds_layer=20, gds_datatype=0, outline=0))
 ls.add_layer(qg.Layer(name="PHOTO3", gds_layer=30, gds_datatype=0, outline=0))
 ls.add_layer(qg.Layer(name="PHOTO4", gds_layer=40, gds_datatype=0, outline=0))
-ls.add_layer(qg.Layer(name="EBEAM_FINE", gds_layer=1, gds_datatype=0, outline=0.1))
-ls.add_layer(qg.Layer(name="EBEAM_COARSE", gds_layer=2, gds_datatype=0, outline=10))
 ls.add_layer(
     qg.Layer(
         name="EBEAM_KEEPOUT",
@@ -93,6 +93,7 @@ dev_list = [
     # qg.test_structures.circ_tlm(),
     # qg.test_structures.via_chain(),
     # qg.test_structures.etch_test(),
+    # qg.test_structures.cross_bridge_kelvin_resistor(),
     # qg.devices.diode.basic(),
     # qg.devices.diode.gated(),
     # qg.devices.nanowire.variable_length(),

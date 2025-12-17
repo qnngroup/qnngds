@@ -12,6 +12,7 @@ from qnngds.typing import LayerSpec, LayerSpecs
 from qnngds import Device
 
 
+@qg.device
 def meander(
     width: float = 2,
     pitch: float = 4,
@@ -152,6 +153,7 @@ def meander(
     return Du
 
 
+@qg.device
 def meander_sc_contacts(
     width: float = 1,
     squares: float = 60,

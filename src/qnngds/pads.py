@@ -13,6 +13,7 @@ import phidl.geometry as pg
 import phidl.routing as pr
 
 
+@qg.device
 def stack(
     size: tuple[float, float] = (200, 100),
     layers: LayerSpecs = ("EBEAM_COARSE",),
@@ -62,6 +63,7 @@ def stack(
     return PAD
 
 
+@qg.device
 def array(
     pad_specs: DeviceSpecs = (stack,),
     columns: int = 1,
@@ -107,6 +109,7 @@ def array(
     return PADS
 
 
+@qg.device
 def vdp(
     pad_specs: DeviceSpecs = (stack,),
     space: float = 500,
@@ -139,6 +142,7 @@ def vdp(
     return pads
 
 
+@qg.device
 def quad_line(
     array_spec: DeviceSpec = array,
     port_width: float = 20,

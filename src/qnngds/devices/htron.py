@@ -10,12 +10,13 @@ import numpy as np
 
 from functools import partial
 
-from qnngds.typing import LayerSpec
+from qnngds.typing import LayerSpec, DeviceSpec
 from qnngds import Device
 
 from . import nanowire as nanowire
 
 
+@qg.device
 def planar(
     wire_width: int | float = 0.3,
     gate_width: int | float = 0.1,
@@ -67,6 +68,7 @@ def planar(
     return HTRON
 
 
+@qg.device
 def heater(
     pad_size: tuple[float, float] = (2, 2),
     constr_length: float = 2,
@@ -128,6 +130,7 @@ def heater(
     return HEATERu
 
 
+@qg.device
 def multilayer(
     rotation: float = 0,
     channel_spec: DeviceSpec = partial(

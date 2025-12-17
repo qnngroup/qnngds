@@ -53,16 +53,19 @@ def _wafer(radius: float, flat: float) -> Device:
     return W
 
 
+@qg.device
 def wafer150mm() -> Device:
     """Template for 150 mm wafer"""
     return _wafer(radius=75e3, flat=57.5e3)
 
 
+@qg.device
 def wafer100mm() -> Device:
     """Template for 100 mm wafer"""
     return _wafer(radius=50e3, flat=32.5e3)
 
 
+@qg.device
 def piece10mm():
     """Template for 10 mm piece"""
     P = Device("piece_10")

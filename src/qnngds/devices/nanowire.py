@@ -11,6 +11,7 @@ from qnngds.typing import LayerSpec
 from qnngds import Device
 
 
+@qg.device
 def variable_length(
     constr_width: float = 0.1,
     wire_width: float = 0.3,
@@ -81,6 +82,7 @@ def variable_length(
     return NANOWIREu
 
 
+@qg.device
 def sharp(
     constr_width: float = 0.1,
     wire_width: float = 0.3,

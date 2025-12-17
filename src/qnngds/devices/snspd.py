@@ -14,6 +14,7 @@ from qnngds import Device
 from typing import Tuple
 
 
+@qg.device
 def basic(
     wire_width: float = 0.2,
     wire_pitch: float = 0.6,
@@ -142,6 +143,7 @@ def basic(
     return SNSPDu
 
 
+@qg.device
 def vertical(
     wire_width: float = 0.2,
     wire_pitch: float = 0.6,

@@ -16,7 +16,8 @@ from qnngds.typing import LayerSpec, LayerSpecs, DeviceSpec
 from qnngds import Device
 
 
-def _create_comb(
+@qg.device
+def vernier_comb(
     pitch1: int | float = 0.5,
     pitch2: int | float = 0.1,
     layer1: LayerSpec = (1, 0),
@@ -76,8 +77,9 @@ def _create_comb(
     return COMB
 
 
-def _create_marker(layer1: LayerSpec = (1, 0), layer2: LayerSpec = (10, 0)) -> Device:
-    """Creates vernier caliper comb
+@qg.device
+def alignment_mark(layer1: LayerSpec = (1, 0), layer2: LayerSpec = (10, 0)) -> Device:
+    """Creates vernier caliper comb between two layers
 
     Helper method for alignment_mark
     Args:
@@ -106,7 +108,7 @@ def _create_marker(layer1: LayerSpec = (1, 0), layer2: LayerSpec = (10, 0)) -> D
         p1, p2 = pitches
         for i in range(2):
             index = n * 2 + i
-            comb = _create_comb(
+            comb = vernier_comb(
                 pitch1=p1,
                 pitch2=p2,
                 layer1=layer1,
@@ -173,7 +175,8 @@ def _create_marker(layer1: LayerSpec = (1, 0), layer2: LayerSpec = (10, 0)) -> D
     return MARK
 
 
-def alignment_mark(
+@qg.device
+def multilayer_alignment(
     layers: LayerSpecs = ["PHOTO1", "PHOTO2"],
 ) -> Device:
     """Creates an alignment mark for each lithography layer.
@@ -191,7 +194,7 @@ def alignment_mark(
         n = len(layers) - i - 1
         if n != 0:
             for j, layer2 in enumerate(layers[-n:]):
-                mark = ALIGN << _create_marker(layer1, layer2)
+                mark = ALIGN << alignment_mark(layer1, layer2)
                 mark.move((j * markers_pitch, i * markers_pitch))
 
     num_layers = len(layers)
@@ -200,8 +203,9 @@ def alignment_mark(
     return ALIGN
 
 
-def _create_waffle(res: float | int = 1, layer: LayerSpec = (1, 0)) -> Device:
-    """Creates waffle test structures for determining process resolution.
+@qg.device
+def resolution_waffle(res: float | int = 1, layer: LayerSpec = (1, 0)) -> Device:
+    """Creates resolution_waffle test structures for determining process resolution.
 
     Helper method for resolution_test
     Args:
@@ -212,7 +216,7 @@ def _create_waffle(res: float | int = 1, layer: LayerSpec = (1, 0)) -> Device:
         Device: the resolution test structure
     """
 
-    WAFFLE = Device("waffle")
+    WAFFLE = Device("resolution_waffle")
     W = pg.rectangle(size=(res * 80, res * 80), layer=qg.get_layer(layer))
 
     pattern = [(res * x, res * 80) for x in [2, 1, 1, 2, 3, 5, 8, 13, 21, 15]]
@@ -234,7 +238,8 @@ def _create_waffle(res: float | int = 1, layer: LayerSpec = (1, 0)) -> Device:
     return WAFFLEu
 
 
-def _create_3L(res: float | int = 1, layer: LayerSpec = (1, 0)) -> Device:
+@qg.device
+def resolution_L(res: float | int = 1, layer: LayerSpec = (1, 0)) -> Device:
     """Creates L-shaped test structures for determining process resolution.
 
     Helper method for resolution_test
@@ -272,6 +277,7 @@ def _create_3L(res: float | int = 1, layer: LayerSpec = (1, 0)) -> Device:
     return LLLu
 
 
+@qg.device
 def resolution_test(
     resolutions: List[float] = [0.6, 0.8, 1.0],
     outline: Optional[float] = None,
@@ -289,7 +295,7 @@ def resolution_test(
     """
 
     RES_TEST = Device("resolution_test")
-    for test_fn in [_create_3L, _create_waffle]:
+    for test_fn in [resolution_L, resolution_waffle]:
         for res in resolutions:
             RES_TEST << test_fn(res, layer)
     RES_TEST.distribute(direction="y", spacing=0, separation=False, edge="ymin")
@@ -308,7 +314,8 @@ def resolution_test(
     return RES_TESTu
 
 
-def _litho_steps(
+@qg.device
+def resolution_steps(
     resolutions: List[float] = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8],
     width: float = 5,
     spacing: float = 5,
@@ -351,7 +358,8 @@ def _litho_steps(
     return D
 
 
-def litho_checkerboard(
+@qg.device
+def resolution_checkerboard(
     resolutions: List[float] = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
     layer: LayerSpec = (1, 0),
     label_interval: int = 5,
@@ -369,13 +377,13 @@ def litho_checkerboard(
         Device: the litho test structure
     """
 
-    D = Device("litho_checkerboard")
+    D = Device("resolution_checkerboard")
     max_res = np.max(resolutions)
     widths = list(resolutions) + list(max_res * np.linspace(2, 10, 9)) + [100 * max_res]
     xmax = 0
     spacing = 2 * max_res
     for width in widths:
-        steps = D << _litho_steps(
+        steps = D << resolution_steps(
             resolutions=resolutions,
             spacing=spacing,
             width=width,
@@ -411,6 +419,7 @@ def litho_checkerboard(
     return D
 
 
+@qg.device
 def vdp(
     diagonal: float = 400,
     contact_width: float = 40,
@@ -463,6 +472,7 @@ def vdp(
     return VDP
 
 
+@qg.device
 def rect_tlm(
     contact_l: float = 10,
     spacings: List[float] = [10, 10, 20, 50, 80, 100, 200],
@@ -541,6 +551,7 @@ def rect_tlm(
     return TLM
 
 
+@qg.device
 def circ_tlm(
     ext_radius: float = 100,
     int_radius: List[float] = [50, 70, 80, 90, 95, 98, 99],
@@ -605,6 +616,7 @@ def circ_tlm(
     return TLM
 
 
+@qg.device
 def via_chain(
     via_spec: DeviceSpec | Device = qg.geometries.via,
     num_vias: int = 5,
@@ -717,6 +729,7 @@ def via_chain(
     return VC
 
 
+@qg.device
 def etch_test(
     layer: LayerSpec = (1, 0),
     pad_size: tuple[float, float] = (2000, 2000),
@@ -748,13 +761,13 @@ def etch_test(
     return TRENCHES
 
 
+@qg.device
 def cross_bridge_kelvin_resistor(
     size: float = 50,
     lead_length: float = 50,
     layer_top: LayerSpec = "PHOTO1",
     layer_bot: LayerSpec = "EBEAM_COARSE",
-    layer_via: LayerSpec | None = None,
-    port_type: str = "electrical",
+    layer_via: LayerSpec | None = "PHOTO2",
 ) -> Device:
     """Generate a cross-bridge Kelvin resistor
 
@@ -766,7 +779,6 @@ def cross_bridge_kelvin_resistor(
         layer_top (LayerSpec): layer of top conductor
         layer_bot (LayerSpec): layer of bottom conductor
         layer_via (LayerSpec | None): if not None, create via on specified layer
-        port_type (string): gdsfactory port type. default "electrical"
 
     Returns:
         Device: cross-bridge Kelvin resistor
@@ -784,23 +796,24 @@ def cross_bridge_kelvin_resistor(
         center = Device()
         cbot = center << pg.compass(size=(size, size), layer=qg.get_layer(layer_bot))
         ctop = center << pg.compass(size=(size, size), layer=qg.get_layer(layer_top))
-        for n, port in enumerate(cbot.ports):
-            center.add_port(name=f"e2{n + 1}", port=port)
-        for n, port in enumerate(ctop.ports):
-            center.add_port(name=f"e1{n + 1}", port=port)
+        for port_name in cbot.ports:
+            center.add_port(name=f"2{port_name}", port=cbot.ports[port_name])
+        for port_name in ctop.ports:
+            center.add_port(name=f"1{port_name}", port=ctop.ports[port_name])
     top_ext = pg.compass(size=(lead_length, size), layer=qg.get_layer(layer_top))
     bot_ext = pg.compass(size=(lead_length, size), layer=qg.get_layer(layer_bot))
     center_i = CBKR << center
     ports = []
+    dir_lut = {1: "W", 2: "N", 3: "E", 4: "S"}
     for layer_i in range(2):
         for lead_i in range(2):
             lead = CBKR << (bot_ext if layer_i == 0 else top_ext)
-            con_port = f"e{2 - layer_i}{lead_i + 1 + 2 * layer_i}"
-            lead.connect(port=lead.ports["e1"], other=center_i.ports[con_port])
-            ports.append(lead.ports["e3"])
-    prefix = "e" if port_type == "electrical" else "o"
+            qg.utilities._create_layered_ports(
+                lead, layer_bot if layer_i == 0 else layer_top
+            )
+            con_port = f"{2 - layer_i}{dir_lut[lead_i + 1 + 2 * layer_i]}"
+            lead.connect(port=lead.ports["W"], destination=center_i.ports[con_port])
+            ports.append(lead.ports["E"])
     for n, port in enumerate(ports):
-        CBKR.add_port(name=f"{prefix}{n + 1}", port=port)
-    for port in CBKR.ports:
-        port.port_type = port_type
+        CBKR.add_port(name=n + 1, port=port)
     return CBKR

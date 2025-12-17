@@ -113,6 +113,7 @@ def microstrip(
     return USTRIP
 
 
+@qg.device
 def transmission_line(
     cross_section: CrossSectionSpec = cpw,
     length: float = 100,
@@ -130,6 +131,7 @@ def transmission_line(
     return xc.extrude(pp.straight(length=length))
 
 
+@qg.device
 def meandered(
     cross_section: CrossSectionSpec = cpw,
     n_eff: float = 10,
@@ -190,11 +192,12 @@ def meandered(
     return xc.extrude(P)
 
 
+@qg.device
 def straight(
     cross_section: CrossSectionSpec = cpw,
     n_eff: float = 100,
     resonant_freq: float = 1e9,
-):
+) -> Device:
     """Construct straight half-wave resonator
 
     Args:
@@ -210,6 +213,7 @@ def straight(
     return xc.extrude(pp.straight(length=desired_length))
 
 
+@qg.device
 def pad(
     width: float = 100,
     length: float = 200,
@@ -241,6 +245,7 @@ def pad(
     return PAD
 
 
+@qg.device
 def transmission_line_resonator(
     transmission_line_specs: tuple[DeviceSpec | None, DeviceSpec | None] = (
         transmission_line,

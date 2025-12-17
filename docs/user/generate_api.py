@@ -26,14 +26,17 @@ def automodule(module, image_folder):
 
     # Add images from the image folder
     image_folder_path = os.path.join(os.path.dirname(__file__), "images", image_folder)
-    images = sorted(
-        [
-            f
-            for f in os.listdir(image_folder_path)
-            if os.path.isfile(os.path.join(image_folder_path, f))
-            and not f.startswith("_")
-        ]
-    )
+    try:
+        images = sorted(
+            [
+                f
+                for f in os.listdir(image_folder_path)
+                if os.path.isfile(os.path.join(image_folder_path, f))
+                and not f.startswith("_")
+            ]
+        )
+    except FileNotFoundError:
+        images = []
     content += "    :members:\n"
     exclude_members = ", ".join(os.path.splitext(i)[0] for i in images)
     if len(exclude_members) > 0:
@@ -105,20 +108,7 @@ def generate_api(src_path):
 
 
 if __name__ == "__main__":
-    qnngds_path = os.path.join("..", "..", "src", "qnngds")
+    qnngds_path = os.path.join(os.path.dirname(__file__), "..", "..", "src", "qnngds")
 
-    try:
-        plot_images.generate_pdk(qnngds_path)
-        plot_images.plot_and_save_functions()
-        generate_api(qnngds_path)
-
-    except FileNotFoundError as e:
-        print(e)
-        print(
-            "\nMake sure you are executing the file in the correct directory. "
-            "To fix this, you can run: \n"
-        )
-        current_file_path = os.path.realpath(__file__)
-        parent_folder = os.path.dirname(current_file_path)
-        print("     cd ", parent_folder)
-        print()
+    plot_images.plot_and_save_functions()
+    generate_api(qnngds_path)

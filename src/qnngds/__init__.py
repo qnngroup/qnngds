@@ -1,22 +1,23 @@
+from .decorator import device as device
 from . import typing as typing
 from .layout import (
-    Port,  # noqa: F401
-    Device,  # noqa: F401
-    DeviceArray,  # noqa: F401
-    Layer,  # noqa: F401
-    LayerSet,  # noqa: F401
-    CrossSection,  # noqa: F401
+    Port as Port,
+    Device as Device,
+    DeviceArray as DeviceArray,
+    Layer as Layer,
+    LayerSet as LayerSet,
+    CrossSection as CrossSection,
 )
 from . import geometries as geometries
 from . import utilities as utilities
 from . import test_structures as test_structures
 from .pdk import (
-    Pdk,  # noqa: F401
-    get_active_pdk,  # noqa: F401
-    get_layer,  # noqa: F401
-    get_device,  # noqa: F401
-    get_cross_section,  # noqa: F401
-    layer_auto_transitions,  # noqa: F401
+    Pdk as Pdk,
+    get_active_pdk as get_active_pdk,
+    get_layer as get_layer,
+    get_device as get_device,
+    get_cross_section as get_cross_section,
+    layer_auto_transitions as layer_auto_transitions,
 )
 from . import devices as devices
 from . import sample as sample

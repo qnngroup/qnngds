@@ -14,6 +14,7 @@ from qnngds.typing import LayerSpec, DeviceSpec
 from qnngds import Device
 
 
+@qg.device
 def basic(
     width: float = 2,
     notch_depth: float = 1,
@@ -68,6 +69,7 @@ def basic(
     return DIODE
 
 
+@qg.device
 def gated(
     channel_spec: DeviceSpec = basic,
     gate_spec: DeviceSpec = partial(

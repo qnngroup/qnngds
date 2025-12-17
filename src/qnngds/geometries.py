@@ -16,6 +16,7 @@ import phidl.path as pp
 import phidl.geometry as pg
 
 
+@qg.device
 def taper(
     length: int | float = 10,
     start_width: int | float = 5,
@@ -58,6 +59,7 @@ def taper(
     return T
 
 
+@qg.device
 def hyper_taper(
     length: int | float = 10,
     start_width: int | float = 5,
@@ -90,6 +92,7 @@ def hyper_taper(
     return taper
 
 
+@qg.device
 def euler_taper(
     start_width: int | float = 5,
     end_width: int | float = 50,
@@ -151,6 +154,7 @@ def euler_taper(
     return D
 
 
+@qg.device
 def angled_taper(
     end_width: int | float = 0.2,
     start_width: int | float = 0.1,
@@ -232,6 +236,7 @@ def angled_taper(
     return D
 
 
+@qg.device
 def tee(
     size: tuple[float, float] = (4, 2),
     stub_size: tuple[float, float] = (2, 1),
@@ -300,6 +305,7 @@ def tee(
     return D
 
 
+@qg.device
 def via(
     size: tuple[float, float] = (5, 5),
     via_undersize: float = 0.5,
@@ -339,6 +345,7 @@ def via(
     return VIA
 
 
+@qg.device
 def optimal_hairpin(
     width: float | int = 0.2,
     pitch: float | int = 0.6,
@@ -449,6 +456,7 @@ def optimal_hairpin(
     return HP
 
 
+@qg.device
 def default_cross_section(
     width: float = 25,
     layer: LayerSpec = (1, 0),
@@ -495,6 +503,7 @@ def default_cross_section(
     return XC
 
 
+@qg.device
 def fine_to_coarse(
     width1: float = 2.0,
     width2: float = 20.0,

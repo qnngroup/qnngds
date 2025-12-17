@@ -11,6 +11,7 @@ from qnngds.typing import LayerSpec, DeviceSpec
 from qnngds import Device
 
 
+@qg.device
 def smooth(
     choke_w: float = 0.03,
     gate_w: float = 0.2,
@@ -85,6 +86,7 @@ def smooth(
     return Du
 
 
+@qg.device
 def sharp(
     choke_w: float = 0.03,
     gate_w: float = 0.2,
@@ -163,6 +165,7 @@ def sharp(
     return Du
 
 
+@qg.device
 def slotted(
     base_spec: DeviceSpec = smooth,
     slot_width: int | float = 0.04,
