@@ -18,22 +18,24 @@ Note the ``outline`` and ``keepout`` arguments being passed to the ``Layer`` con
 .. literalinclude:: experiment_generate_beginner3.py
    :language: python
    :linenos:
-   :lines: 5-30
+   :lines: 5-32
 
 The rest of the code is almost the same as in :ref:`experiment_generate_beginner1`:
 
 .. literalinclude:: experiment_generate_beginner3.py
    :language: python
    :linenos:
-   :lines: 32-61
+   :lines: 34-59
 
 .. image:: experiment_generate_beginner3.png
+
 .. image:: experiment_generate_beginner3_zoom.png
 
 
 Reference
 =========
+
 .. literalinclude:: experiment_generate_beginner3.py
    :language: python
    :linenos:
-   :lines: 1-61
+   :lines: 1-59

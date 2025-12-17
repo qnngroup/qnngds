@@ -35,22 +35,24 @@ Now, we can set up the inputs to ``experiment.generate``:
 .. literalinclude:: experiment_generate_beginner1.py
    :language: python
    :linenos:
-   :lines: 22-33
+   :lines: 22-31
 
 And supply these inputs to ``experiment.generate`` and plot the output:
 
 .. literalinclude:: experiment_generate_beginner1.py
    :language: python
    :linenos:
-   :lines: 35-46
+   :lines: 33-44
 
 .. image:: experiment_generate_beginner1.png
+
 .. image:: experiment_generate_beginner1_zoom.png
 
 
 Reference
 =========
+
 .. literalinclude:: experiment_generate_beginner1.py
    :language: python
    :linenos:
-   :lines: 1-46
+   :lines: 1-44

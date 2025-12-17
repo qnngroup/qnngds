@@ -26,15 +26,17 @@ The rest of the code is almost the same as in :ref:`experiment_generate_beginner
 .. literalinclude:: experiment_generate_beginner2.py
    :language: python
    :linenos:
-   :lines: 30-54
+   :lines: 30-52
 
 .. image:: experiment_generate_beginner2.png
+
 .. image:: experiment_generate_beginner2_zoom.png
 
 
 Reference
 =========
+
 .. literalinclude:: experiment_generate_beginner2.py
    :language: python
    :linenos:
-   :lines: 1-54
+   :lines: 1-52
