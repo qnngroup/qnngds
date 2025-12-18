@@ -20,12 +20,20 @@ for submodule in pkgutil.walk_packages(tutorials.__path__):
                     imgname = submodule.name + "_zoom.png"
                 else:
                     imgname = submodule.name + "_zoom.png"
-                image_rst = "\n\n.. image:: " + imgname + "\n\n"
+                image_rst = "\n.. image:: " + imgname + "\n"
                 if len(blocks) > 0 and blocks[-1][0] == "comment":
                     blocks[-1][1].append(image_rst)
                 else:
+                    # write out code
+                    contents += "\n.. code-block:: python\n   :linenos:\n\n"
+                    contents += "".join(blocks[-1][1])
+                    contents += "\n"
                     blocks.append(["comment", [image_rst]])
             elif line.startswith("## STOP"):
+                if blocks[-1][0] == "code":
+                    contents += "\n.. code-block:: python\n   :linenos:\n\n"
+                contents += "".join(blocks[-1][1])
+                contents += "\n"
                 contents += (
                     "\nReference\n---------\n\n.. code-block:: python\n   :linenos:\n\n"
                 )
