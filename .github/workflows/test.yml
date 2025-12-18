@@ -17,7 +17,7 @@ jobs:
       with:
         python-version: ${{ matrix.python }}
     - name: Test
-      run: python -m unittest
+      run: python -m unittest discover -v -s test
   lint:
     name: Run black/ruff linters
     runs-on: ubuntu-latest
@@ -31,9 +31,10 @@ jobs:
     - name: Ruff lint
       uses: astral-sh/ruff-action@v3
     - name: Black lint
-      uses: psf/black@v25
+      uses: psf/black@stable
       with:
         options: "--check --verbose"
         use_pyproject: true
+        version: "25.12"
 
 
