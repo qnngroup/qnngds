@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.abspath(os.path.join("..", "src")))
 
 extensions = [
     "multiproject",
-    # "sphinx_copybutton",
+    "sphinx_copybutton",
     "sphinx.ext.duration",
     "sphinx.ext.doctest",
     "sphinx.ext.viewcode",
