@@ -7,7 +7,7 @@ jobs:
     name: Run unit tests
     strategy:
       matrix:
-        python: ['3.9', '3.10', '3.11', '3.12']
+        python: ['3.10', '3.11', '3.12']
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
@@ -39,6 +39,3 @@ jobs:
       with:
         options: "--check --verbose"
         use_pyproject: true
-        version: "25.12"
-
-

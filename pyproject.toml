@@ -20,7 +20,7 @@ maintainers = [
 ]
 description = "The QNN library for creating gds files"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = {file = "LICENSE.txt"}
 keywords = ["phidl", "nanowire_electronics", "nanofabrication", "gds"]
 classifiers = [
