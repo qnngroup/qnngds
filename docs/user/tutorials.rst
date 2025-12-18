@@ -5,8 +5,8 @@ Tutorials
     :maxdepth: 2
 
     /tutorials/installation
-    /tutorials/experiment_generate_beginner1
-    /tutorials/experiment_generate_beginner2
-    /tutorials/experiment_generate_beginner3
-    /tutorials/sample1
-    /tutorials/sample2
+    /tutorials/generated/experiment_generate_beginner1
+    /tutorials/generated/experiment_generate_beginner2
+    /tutorials/generated/experiment_generate_beginner3
+    /tutorials/generated/sample1
+    /tutorials/generated/sample2
