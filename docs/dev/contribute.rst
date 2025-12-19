@@ -79,7 +79,7 @@ for more details.
 If your newly-added functions are intended to be used to generate a ``Device``
 instance, make sure to do the following:
 
-1. Register them with the ``@qnngds.device`` decorator.
+1. Register them with the ``@qnngds.device`` `decorator <https://qnngds.readthedocs.io/en/latest/api.html#decorator>`_.
 2. Provide default values for all arguments.
 
 The first requirement ensures that the ``docs/user/generate_api.py`` documentation
@@ -87,14 +87,18 @@ generation script can generate images of the various ``Devices`` that are produc
 In addition, the second requirement ``generate_api.py`` ensures that a default image
 can be generated.
 
-3. Manually build the documentation
------------------------------------
+3. Autodocs
+-----------
 
-The following steps are automated by the read-the-docs CI/CD workflow,
-however if you are having issues with generation of the API and tutorials docs,
-you may wish to run these operations manually.
+.. note:
+   Several scripts are included in the readthedocs CI/CD workflow that automate generation
+   of documentation, including generation of images of Devices, as well as autogeneration
+   of tutorials written as python files in docs/user/tutorials/. Normally, the automated CI/CD
+   workflows are sufficient, however sometimes one may wish to run these manually on their
+   local machine to check the outputs when debugging new functions or tutorials to avoid
+   having to make a lot of commits.
 
-To generate the API, run
+If you need to manually generate the API, run
 
 .. code-block:: bash
 
@@ -105,13 +109,14 @@ script saves ``.png`` images for every function that returns a ``Device`` object
 Then, it generates the updated restructured text file for the API including your
 contribution.  The generated API inlines the plotted images of the devices.
 
-To generate the tutorials, run
+If you need to manually generate the reStructuredText or images for tutorials, run
 
 .. code-block:: bash
 
     python /path/to/qnngds/docs/user/generate_tutorials.py
 
 Executing this file will automatically generate the files necessary for tutorials.
+See the python files in `docs/user/tutorials/` for examples of tutorial scripts.
 
 .. _rtd version in qnngds:
 
