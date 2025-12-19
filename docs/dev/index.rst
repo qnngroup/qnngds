@@ -18,4 +18,12 @@ Contents
    contribute
    develop
 
+QNNGDS library documentation
+----------------------------
 
+Access the `qnngds developer documentation <https://qnngds-dev.readthedocs.io/en/latest/>`_.
+
+.. toctree::
+   :hidden:
+
+   qnngds Documentation <https://qnngds.readthedocs.io/en/latest/>
