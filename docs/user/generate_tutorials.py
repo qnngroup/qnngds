@@ -19,7 +19,7 @@ for submodule in pkgutil.walk_packages(tutorials.__path__):
                 if line.endswith("_ZOOM"):
                     imgname = submodule.name + "_zoom.png"
                 else:
-                    imgname = submodule.name + "_zoom.png"
+                    imgname = submodule.name + ".png"
                 image_rst = "\n.. image:: " + imgname + "\n"
                 if len(blocks) > 0 and blocks[-1][0] == "comment":
                     blocks[-1][1].append(image_rst)
