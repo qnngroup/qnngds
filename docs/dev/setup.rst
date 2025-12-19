@@ -7,7 +7,6 @@ Setup
 -----------------------
 
 In order to contribute to ``qnngds``, you will need to clone the repository.
-It is **strongly** recommended to set up a virtual environment or conda environment so that you can continue to use a stable version of ``qnngds`` for designing layouts.
 
 * Open a terminal where you want the ``qnngds`` folder to be. Clone the
   repository:
@@ -58,7 +57,7 @@ It is **strongly** recommended to set up a virtual environment or conda environm
 .. warning::
   Be careful, if you are contributing to ``src`` (e.g. creating a new device or cell),
   make sure your branch does **not** start with ``dev-``; this prefix is reserved for
-  updates to the documentation or packaging.
+  updates to the documentation or packaging, and CI/CD workflows will not run properly.
 
 You can now modify the package as wanted.
 

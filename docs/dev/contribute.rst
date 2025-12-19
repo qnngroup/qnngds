@@ -12,34 +12,29 @@ However, in some cases, the functionality introduced is very closely intertwined
 Or, it's possible that the design is confidential or otherwise not appropriate for public release.
 In these cases, it is preferred to open a pull request to merge your changes into your private PDK template repo (e.g. ``qnngds-pdk``).
 
-
 .. warning::
-    Be careful, make sure the branch you are working on does **not** start with
-    ``dev-``, this prefix is reserved for developers.
+  Be careful, if you are contributing to ``src`` (e.g. creating a new device or cell),
+  make sure your branch does **not** start with ``dev-``; this prefix is reserved for
+  updates to the documentation or packaging, and CI/CD workflows will not run properly.
 
 0. What and where to add
 ------------------------
 
 Before contributing to the package, make sure its structure and organization are
 clear to you. The contributions should go in the same direction as how the
-package was though in terms of hierarchy. If you are already a user of the
+package was thought in terms of hierarchy. If you are already a user of the
 package, the contribution should be quite straighforward; otherwise, please
 first refer to `qnngds user's documentation
 <https://qnngds.readthedocs.io/en/latest/>`_, you can also check the `tutorials
 <https://qnngds.readthedocs.io/en/latest/tutorials.html>`_.
 
-.. todo::
-    Send the contributors to the tuto ``creating your cell``. This is what
-    every contributor should ideally go through when adding a new circuit
-    to the package.
-
 .. _Comment your functions:
 
-1. Comment your functions
+1. Document your functions
 -------------------------
 
 When adding a new function to the package, it is essential to properly document
-it. This package is meant to be used by everyone, the function docstring should
+it. This package is meant to be used by everyone; the function docstring should
 include a brief (but clear) **description** of what it does, followed by a
 deeper explaination if needed. Every **parameter** should have a type and
 explanation attached, same for the **return**. You can add **examples** of how
@@ -78,23 +73,45 @@ for more details.
         """
         # Implementation of the function
 
-2. Build the documentation
---------------------------
+2. Registering devices
+----------------------
 
-After modifying, adding or deleting any function of the package, you will
-need to update the package's `documentation
-<https://qnngds.readthedocs.io/en/latest/>`_. To do so, open a terminal and
-execute:
+If your newly-added functions are intended to be used to generate a ``Device``
+instance, make sure to do the following:
+
+1. Register them with the ``@qnngds.device`` decorator.
+2. Provide default values for all arguments.
+
+The first requirement ensures that the ``docs/user/generate_api.py`` documentation
+generation script can generate images of the various ``Devices`` that are produced.
+In addition, the second requirement ``generate_api.py`` ensures that a default image
+can be generated.
+
+3. Manually build the documentation
+-----------------------------------
+
+The following steps are automated by the read-the-docs CI/CD workflow,
+however if you are having issues with generation of the API and tutorials docs,
+you may wish to run these operations manually.
+
+To generate the API, run
 
 .. code-block:: bash
 
-    cd /path-to-qnngds/docs/user
-    python generate_api.py
+    python /path/to/qnngds/docs/user/generate_api.py
 
 Executing this file will automatically call the ``plot_images.py`` script. This
 script saves ``.png`` images for every function that returns a ``Device`` object.
-Then, it generates the updated API including your contribution.
-The generated API inlines the plotted images of the devices.
+Then, it generates the updated restructured text file for the API including your
+contribution.  The generated API inlines the plotted images of the devices.
+
+To generate the tutorials, run
+
+.. code-block:: bash
+
+    python /path/to/qnngds/docs/user/generate_tutorials.py
+
+Executing this file will automatically generate the files necessary for tutorials.
 
 .. _rtd version in qnngds:
 

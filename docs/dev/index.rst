@@ -1,5 +1,5 @@
-Welcome to qnngds documentation for developers!
-===============================================
+Welcome to qnngds documentation for developers and contributors!
+================================================================
 
 You will find here every instructions to how to contribute to the **qnngds**
 library.
