@@ -16,7 +16,7 @@ for submodule in pkgutil.walk_packages(tutorials.__path__):
     with open(fname, "r") as f:
         for line in f:
             if line.startswith("## IMAGE"):
-                if line.endswith("_ZOOM"):
+                if "ZOOM" in line:
                     imgname = submodule.name + "_zoom.png"
                 else:
                     imgname = submodule.name + ".png"
