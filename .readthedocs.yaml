@@ -16,8 +16,8 @@ build:
   jobs:
     pre_build:
       # generate api and tutorials
-      - python3 docs/user/generate_api.py
-      - python3 docs/user/generate_tutorials.py
+      - python3 docs/src/generate_api.py
+      - python3 docs/src/generate_tutorials.py
 
 # Build documentation in the "docs/" directory with Sphinx
 sphinx:
