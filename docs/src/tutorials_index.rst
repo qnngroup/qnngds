@@ -1,8 +1,9 @@
 Tutorials
 =========
 
+See the following pages for tutorials for getting started with project setup and generating your first layouts.
+
 .. toctree::
-    :maxdepth: 2
 
     /tutorials/gettingstarted
     /tutorials/generated/experiment_generate_beginner1

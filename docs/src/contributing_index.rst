@@ -1,8 +1,9 @@
 Contributing
 ============
 
+See the following pages for guidelines on contributing to ``qnngds``.
+
 .. toctree::
-    :maxdepth: 2
 
     /contributing/setup
     /contributing/contribute
