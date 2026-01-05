@@ -17,7 +17,7 @@ It is **strongly** recommended to set up a virtual environment or conda environm
       git clone git@github.com/qnngroup/qnngds.git
       cd qnngds
 
-* Create a new virtual environment. Follow the instructions `here <https://qnngds.readthedocs.io/en/latest/tutorials/gettingstarted.html#setup-a-virtual-environment-and-install-qnngds>`_.
+* Create a new virtual environment. Follow the instructions on the :ref:`Getting-Started` page.
 
 * From within the same directory, install ``qnngds`` as an editable package:
 

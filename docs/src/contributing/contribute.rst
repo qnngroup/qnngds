@@ -19,14 +19,7 @@ Before contributing to the package, make sure its structure and organization are
 clear to you. The contributions should go in the same direction as how the
 package was though in terms of hierarchy. If you are already a user of the
 package, the contribution should be quite straighforward; otherwise, please
-first refer to `qnngds user's documentation
-<https://qnngds.readthedocs.io/en/latest/>`_, you can also check the `tutorials
-<https://qnngds.readthedocs.io/en/latest/tutorials.html>`_.
-
-.. todo::
-    Send the contributors to the tuto ``creating your cell``. This is what
-    every contributor should ideally go through when adding a new circuit
-    to the package.
+first refer to the :ref:`API` and :ref:`Tutorials` pages.
 
 .. _Comment your functions:
 

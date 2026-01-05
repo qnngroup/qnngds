@@ -17,7 +17,7 @@ contains source files for generating the documentation.
 Additional tutorials can be added under ``docs/src/tutorials/``.
 A basic parser for literate programming can be found in ``docs/src/generate_tutorials.py``,
 which allows you to write specially-commented code that will be rendered nicely.
-See the `tutorials page <https://qnngds.readthedocs.io/en/latest/tutorials.html>`_ for some
+See :ref:`Tutorials` for some
 examples.
 
 When you are satisfied with the new versions you created, you can go on and
