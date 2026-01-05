@@ -128,10 +128,13 @@ appear in this documentation's version. Check that the API displays properly and
 that your new devices are part of the libraries (if applicable).
 
 .. note:: Cannot see your documentation's version?
-    * Be patient and refresh the page
+
+    * Builds typically take 50-60 seconds.
+
+    * Be patient and refresh the page (try force refreshing with ctrl+F5)
 
     * Check the `Read The Docs <https://readthedocs.org/projects/qnngds/>`_
-      project to make sure your verison is processing
+      project build status to make sure your verison is processing
 
 
 4. Satisfied with your code, ready for a pull request
