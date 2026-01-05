@@ -45,5 +45,5 @@ Contents
    :maxdepth: 2
 
    src/api
-   src/tutorials
-   src/contributing
+   src/tutorials_index
+   src/contributing_index
