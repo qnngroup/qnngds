@@ -42,7 +42,7 @@ Contents
 --------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    src/api
    src/tutorials_index
