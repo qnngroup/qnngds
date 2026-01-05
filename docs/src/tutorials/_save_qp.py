@@ -9,6 +9,7 @@ def save_qp(file, device, xlim=None, ylim=None, zoom=True):
     dirname = os.path.dirname(file)
     basename = os.path.basename(file).split(".")[0]
     save_path = os.path.join(dirname, "generated", ".".join((basename, "png")))
+    print(f"trying to save to path {save_path}")
     plt.savefig(save_path)
     if zoom:
         # zoom
