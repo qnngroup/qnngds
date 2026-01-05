@@ -6,41 +6,19 @@ Documentation for qnngds' developers
 You have deeper modifications to bring to the package, you will find here
 informations relative to the package development.
 
-The :ref:`Setup` is exactly the same than for contributors,
-except for **one** difference: the name of your branch. Indeed, developers will
-have access to platforms that normal contributors don't need. The CICD will not
-work on your branch if they don't have the correct prefix.
-
-* You plan to touch to the ``dev`` folder? Add a ``dev-`` prefix to your branch.
-
-* You need to build test versions of the PyPI package? Use ``dev-pypi`` prefix.
+The :ref:`Setup` is exactly the same than for contributors.
 
 Modifications relative to the documentation
 -------------------------------------------
 
-The **qnngds documentation** is built as follow. The ``docs`` folder contains
-two subfolders ``user`` and ``dev``. Those are two different Read the Docs
-projects. This configuration allows to have two seperate documentations: one for
-the package's users (`qnngds <https://qnngds.readthedocs.io/en/latest/>`_) and one
-for the package's developers/contributors like you (`qnngds-dev
-<https://qnngds.readthedocs.io/projects/qnngds-dev/en/latest/>`_). Both projects
-share the same configuration file.
+The **qnngds documentation** is built as follow. The ``docs`` folder
+contains source files for generating the documentation.
 
-.. seealso::
-    For more details on multiprojects, see `Documentation for
-    sphinx-multiproject <https://sphinx-multiproject.readthedocs.io/en/latest/>`_.
-
-As a **contributor**, you can already preview every modification you bring to the
-qnngds documentation (for users), as described :ref:`above<rtd version in
-qnngds>`. Every new branch will generate a new version of the documentation
-(except a branch that starts with "dev").
-
-As a **developer**, if you have precisions/modifications to bring to the
-qnngds-dev documentation (for contributors and developpers), you will need to
-create a branch which name starts with ``dev``.
-
-Every new dev-branch will generate a new version of the developer's
-documentation, automatically updated when a push is sent on this branch.
+Additional tutorials can be added under ``docs/src/tutorials/``.
+A basic parser for literate programming can be found in ``docs/src/generate_tutorials.py``,
+which allows you to write specially-commented code that will be rendered nicely.
+See the `tutorials page <https://qnngds.readthedocs.io/en/latest/tutorials.html>`_ for some
+examples.
 
 When you are satisfied with the new versions you created, you can go on and
 create a pull request for review.
@@ -59,7 +37,7 @@ have been included.
 
 However, as a **developer**, you may want to update things like the ``README``
 file, the ``LICENSE``, or add more complex features to the package. In each
-case, you will want to test those modifications before reveiling them to the
+case, you will want to test those modifications before revealing them to the
 great world.
 
 When working on your new package, every push on your ``dev-pypi-yourbranch``

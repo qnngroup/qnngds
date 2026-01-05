@@ -33,6 +33,10 @@ It is **strongly** recommended to set up a virtual environment or conda environm
 
             uv pip install -e .
 
+.. note::
+
+    If you use nix, the above steps for creating a virtual environment and installing qnngds to it can be done automatically by runnning ``nix develop`` in the repository root, which will create a devShell with the necessary environment.
+
 2. Start coding
 ---------------
 
@@ -54,11 +58,6 @@ It is **strongly** recommended to set up a virtual environment or conda environm
   .. code-block:: bash
 
     git checkout -b your-branch-name
-
-.. warning::
-  Be careful, if you are contributing to ``src`` (e.g. creating a new device or cell),
-  make sure your branch does **not** start with ``dev-``; this prefix is reserved for
-  updates to the documentation or packaging.
 
 You can now modify the package as wanted.
 

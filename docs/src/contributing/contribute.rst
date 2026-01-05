@@ -12,11 +12,6 @@ However, in some cases, the functionality introduced is very closely intertwined
 Or, it's possible that the design is confidential or otherwise not appropriate for public release.
 In these cases, it is preferred to open a pull request to merge your changes into your private PDK template repo (e.g. ``qnngds-pdk``).
 
-
-.. warning::
-    Be careful, make sure the branch you are working on does **not** start with
-    ``dev-``, this prefix is reserved for developers.
-
 0. What and where to add
 ------------------------
 
