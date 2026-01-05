@@ -44,17 +44,6 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   api
-   tutorials
-
-.. _Want to contribute?:
-
-Want to contribute?
--------------------
-
-Access the `qnngds developer documentation <https://qnngds-dev.readthedocs.io/en/latest/>`_.
-
-.. toctree::
-   :hidden:
-
-   Developer Documentation <https://qnngds-dev.readthedocs.io/en/latest/>
+   src/api
+   src/tutorials
+   src/contributing
