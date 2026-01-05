@@ -103,7 +103,8 @@ def generate_api(src_path):
                     f"{module}.{submodule}", image_folder=f"{module}/{submodule[:-3]}"
                 )
 
-    with open("api.rst", "w") as file:
+    api_rst = os.path.join(os.path.dirname(__file__), "api.rst")
+    with open(api_rst, "w") as file:
         file.write(api)
 
 
