@@ -5,7 +5,8 @@ Getting started
 
 Setup a virtual environment and install ``qnngds``
 --------------------------------------------------
-1. Create a new git repository with `git init`, or follow the instructions at `<https://github.com/qnngroup/qnn-repo-template>`_ to clone a template repository.
+1. Create a new git repository with ``git init``, or follow the instructions at `<https://github.com/qnngroup/qnn-repo-template>`_ to clone a template repository.
+This is where your new project will go.
 
 2. In the same directory as the new git repository, create a new virtual environment:
 
@@ -34,7 +35,7 @@ Setup a virtual environment and install ``qnngds``
 
         * Install ``qnngds`` (see step 3 below)
 
-    * Using ``python`` virtual environment (dispreffered, since one has to manually install separate version of python):
+    * Using ``python`` virtual environment (dispreffered, since one may need to manually install separate version of python if the system python version does not match the requirements for ``qnngds``):
 
         * Open a terminal in the directory you want to put your virtual environment.
 
@@ -53,6 +54,8 @@ Setup a virtual environment and install ``qnngds``
               source .venv/your-env-name/scripts/activate
 
         * Install ``qnngds`` (see step 3 below)
+
+        * If you run into issues using this method, it is recommended to use ``conda`` or ``uv`` instead.
 
 3. Install ``qnngds``.
 

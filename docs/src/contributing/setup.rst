@@ -35,7 +35,7 @@ It is **strongly** recommended to set up a virtual environment or conda environm
 
 .. note::
 
-    If you use nix, the above steps for creating a virtual environment and installing qnngds to it can be done automatically by runnning ``nix develop`` in the repository root, which will create a devShell with the necessary environment.
+    If you use nix, the above steps for creating a virtual environment and installing qnngds to it can be done automatically by runnning ``nix develop`` in the repository root, which will create a ``devShell`` with the necessary environment.
 
 2. Start coding
 ---------------
@@ -53,7 +53,7 @@ It is **strongly** recommended to set up a virtual environment or conda environm
   commit directly to master.
 
 * When you're ready to make changes to the source code, make sure you create a new
-  branch of the git. To do so, open a terminal and execute:
+  git branch. To do so, open a terminal at the repository root or any subdirectory and execute:
 
   .. code-block:: bash
 
