@@ -6,6 +6,10 @@ _devices = {}
 def device(f):
     """Decorator to register DeviceFactories into the global variable qnngds.decorator._devices.
 
+    This is currently used for documentation purposes, however
+    it would be nice to replicate some of the functionality of kfactory
+    to overwrite the device name based on the arguments supplied to the function.
+
     For example, if we wish to define a new DeviceFactory that can
     be used to generate Devices, we can write the following:
 

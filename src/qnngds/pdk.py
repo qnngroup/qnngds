@@ -112,7 +112,7 @@ class Pdk:
         raise ValueError(value_error_msg)
 
     def get_device(self, spec: DeviceSpec) -> phidl.Device:
-        """Get a specific layer within the PDK
+        """Get a specific device within the PDK
 
         Args:
             spec (DeviceSpec): device instance, name (string), or callable function that identifies desired device
