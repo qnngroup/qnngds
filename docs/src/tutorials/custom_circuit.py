@@ -60,7 +60,9 @@ def ntron_meander(
 # ``tee_spec`` and ``ntron_spec``, we pass a ``DeviceFactory``.
 ntron_spec = qg.devices.ntron.smooth
 meander_spec = qg.devices.snspd.basic(wire_width=0.3)
-tee_spec = partial(pg.tee, size=(2, 0.3), stub_size=(0.3, 5), layer=(1, 0))
+tee_spec = partial(
+    pg.tee, size=(2, 0.3), stub_size=(0.3, 5), taper_type="fillet", layer=(1, 0)
+)
 
 # Now we generate and plot the device.
 D = ntron_meander(ntron_spec, meander_spec, tee_spec)
