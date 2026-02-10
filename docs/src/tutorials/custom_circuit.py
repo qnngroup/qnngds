@@ -1,5 +1,5 @@
 # .. _custom_circuit:
-# Tutorial on creating a custom circuit
+# Creating a custom circuit
 # =====================================
 #
 # In this tutorial, we'll demonstrate how to use ``partial``
@@ -59,7 +59,7 @@ def ntron_meander(
 # we actually pass an instance of a ``Device`` whereas for both
 # ``tee_spec`` and ``ntron_spec``, we pass a ``DeviceFactory``.
 ntron_spec = qg.devices.ntron.smooth
-meander_spec = qg.devices.snspd.basic()
+meander_spec = qg.devices.snspd.basic(wire_width=0.3)
 tee_spec = partial(pg.tee, size=(2, 0.3), stub_size=(0.3, 5), layer=(1, 0))
 
 # Now we generate and plot the device.
