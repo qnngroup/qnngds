@@ -26,4 +26,4 @@ jobs:
       run: |
         python docs/src/generate_api.py
         python docs/src/generate_tutorials.py
-        python -m sphinx -T -b html -c docs/ -d _build/doctrees -D language=en . _build/html
+        python -m sphinx -T -b html -d _build/doctrees -D language=en ./docs/ _build/html
