@@ -66,8 +66,7 @@ tee_spec = partial(pg.tee, size=(2, 0.3), stub_size=(0.3, 5), layer=(1, 0))
 D = ntron_meander(ntron_spec, meander_spec, tee_spec)
 qp(D)
 ## IMAGE
-## IMAGE_ZOOM
 ## STOP
 from ._save_qp import save_qp  # noqa: E402
 
-save_qp(__file__, D, xlim=(-400, 400), ylim=(-300, 300))
+save_qp(__file__, D)
