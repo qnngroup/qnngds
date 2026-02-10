@@ -18,7 +18,7 @@ from functools import partial
 # Note it is also possible to pass a string that matches the name
 # of a device registered with the currently active PDK. However,
 # since we haven't specified a PDK or registered any devices with it,
-# we will only be able to use ``Device`` instances or ``DeviceFactory``s
+# we will only be able to use a ``Device`` instance or ``DeviceFactory``
 # (callable functions that produce a ``Device``).
 def ntron_meander(
     ntron_spec: DeviceSpec,
