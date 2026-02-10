@@ -8,3 +8,4 @@ See the following pages for guidelines on contributing to ``qnngds``.
     contributing/setup
     contributing/contribute
     contributing/develop
+    contributing/tutorials
