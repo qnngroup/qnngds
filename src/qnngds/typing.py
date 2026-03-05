@@ -1,0 +1,36 @@
+"""Custom types for Layers and Devices
+
+- LayerSpec: string, int, or tuple. int and tuple are pdk-agnostic, whereas string requires the a registered pdk to have a matching entry in its LayerSet.
+- DeviceSpec: string, callable, Device. Like with LayerSpec, string requires a registered pdk with matching Device name
+- CrossSectionSpec: string, callable, CrossSection. Like with LayerSpec, string requires a registered pdk with matching CrossSection.
+"""
+
+# can be removed in python 3.14, see https://peps.python.org/pep-0749/
+from __future__ import annotations
+
+import phidl
+
+from functools import partial
+
+from typing import TypeAlias
+from collections.abc import Callable, Sequence
+
+LayerSpec: TypeAlias = str | int | tuple[int, int]
+LayerSpecs: TypeAlias = Sequence[LayerSpec]
+DeviceFactory: TypeAlias = Callable[..., phidl.Device]
+DeviceSpec: TypeAlias = str | DeviceFactory | phidl.Device | partial[DeviceFactory]
+DeviceSpecs: TypeAlias = Sequence[DeviceSpec]
+CrossSectionFactory: TypeAlias = Callable[..., phidl.CrossSection]
+CrossSectionSpec: TypeAlias = (
+    str | CrossSectionFactory | phidl.CrossSection | partial[CrossSectionFactory]
+)
+
+__all__ = [
+    "LayerSpec",
+    "LayerSpecs",
+    "DeviceFactory",
+    "DeviceSpec",
+    "DeviceSpecs",
+    "CrossSectionFactory",
+    "CrossSectionSpec",
+]

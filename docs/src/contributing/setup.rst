@@ -1,0 +1,68 @@
+.. _Setup:
+
+Setup
+=====
+
+1. Setup your workspace
+-----------------------
+
+In order to contribute to ``qnngds``, you will need to clone the repository.
+It is **strongly** recommended to set up a virtual environment or conda environment so that you can continue to use a stable version of ``qnngds`` for designing layouts.
+
+* Open a terminal where you want the ``qnngds`` folder to be. Clone the
+  repository:
+
+  .. code-block:: bash
+
+      git clone git@github.com/qnngroup/qnngds.git
+      cd qnngds
+
+* Create a new virtual environment. Follow the instructions on the :ref:`Getting-Started` page.
+
+* From within the same directory, install ``qnngds`` as an editable package:
+
+    * Using ``conda`` or ``python`` ``venv``:
+
+        .. code-block:: bash
+
+            pip install -e .
+
+    * Using ``uv``
+
+        .. code-block:: bash
+
+            uv pip install -e .
+
+.. note::
+
+    If you use nix, the above steps for creating a virtual environment and installing qnngds to it can be done automatically by runnning ``nix develop`` in the repository root, which will create a ``devShell`` with the necessary environment.
+
+2. Start coding
+---------------
+
+* Before you start coding, install `pre-commit <https://pre-commit.com/>`_ and run
+  it in the repository root directory:
+
+  .. code-block:: bash
+
+    [uv] pip install pre-commit
+    pre-commit install
+
+  This will add lint/autoformatting checks that run before each commit, as well as
+  checks to make sure you don't accidentally commit unresolved merge conflicts or
+  commit directly to master.
+
+* When you're ready to make changes to the source code, make sure you create a new
+  git branch. To do so, open a terminal at the repository root or any subdirectory and execute:
+
+  .. code-block:: bash
+
+    git checkout -b your-branch-name
+
+You can now modify the package as wanted.
+
+Continue to the :ref:`documentation for qnngds' contributors<doc for
+contributors>` if you have functions to add to the package (most standard case).
+
+Continue to the :ref:`documentation for qnngds' developers<doc for developers>`
+if you have deeper modifications to make to the package.

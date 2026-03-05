@@ -1,40 +1,51 @@
 """Superconducting nanowire single photon detector geometries."""
 
-from phidl import Device
+# can be removed in python 3.14, see https://peps.python.org/pep-0749/
+from __future__ import annotations
 
+import qnngds as qg
 import phidl.geometry as pg
-from typing import Tuple, Optional, Union
-from qnngds.utilities import PadPlacement, QnnDevice
-import qnngds.utilities as utility
+
+import numpy as np
+
+from qnngds.typing import LayerSpec
+from qnngds import Device
+
+from typing import Tuple
 
 
+@qg.device
 def basic(
     wire_width: float = 0.2,
     wire_pitch: float = 0.6,
-    size: Tuple[Optional[Union[int, float]], Optional[Union[int, float]]] = (50, 100),
-    num_squares: Optional[int] = None,
-    turn_ratio: Union[int, float] = 4,
+    size: Tuple[int | float | None, int | float | None] = (5, 5),
+    num_squares: int | None = None,
+    turn_ratio: int | float = 4,
+    num_pts: int = 50,
+    extend_terminals: bool = True,
     terminals_same_side: bool = False,
-    layer: int = 1,
+    layer: LayerSpec = (1, 0),
 ) -> Device:
     """Creates an optimally-rounded SNSPD.
 
-    Takes Phidl's snspd, perform a union and rename it.
+    Modification of gdsfactory's and phidl's implementations
 
-    Parameters:
+    Args:
         wire_width (float): Width of the nanowire.
         wire_pitch (float): Pitch of the nanowire.
-        size (tuple of Optional[int or float]): Size of the detector in squares (width, height).
-        num_squares (Optional[int]): Number of squares in the detector.
+        size (tuple of Optional[int or float]): Size of the detector.
+        num_squares (int | None): Number of squares in the detector.
         turn_ratio (int or float): Specifies how much of the SNSPD width is
             dedicated to the 180 degree turn. A turn_ratio of 10 will result in 20%
             of the width being comprised of the turn.
+        num_pts (int): number of polygon points to use for turn
+        extend_terminals (bool): If True, bring ports flush to edges of device
         terminals_same_side (bool): If True, both ports will be located on the
             same side of the SNSPD.
-        layer (int): Layer for the device to be created on.
+        layer (LayerSpec): GDS layer specification
 
     Returns:
-        Device: A Device containing an optimally-rounded SNSPD, as provided by
+        (Device): optimally-rounded SNSPD, as provided by
         Phidl but renamed and unified.
     """
     # check parameters constrains
@@ -45,45 +56,117 @@ def basic(
         )
         wire_pitch = 2 * wire_width
 
-    SNSPD = pg.snspd(
-        wire_width=wire_width,
-        wire_pitch=wire_pitch,
-        size=size,
-        num_squares=num_squares,
+    if num_squares is not None and (
+        (size is None) or ((size[0] is None) and (size[1]) is None)
+    ):
+        xy = np.sqrt(num_squares * wire_pitch * wire_width)
+        size = [xy, xy]
+        num_squares = None
+    if [size[0], size[1], num_squares].count(None) != 1:
+        raise ValueError(
+            "SNSPD requires that exactly ONE value of "
+            "the arguments ``num_squares`` and ``size`` be None "
+            "to prevent overconstraining, for example:\n"
+            ">>> snspd(size = (3, None), num_squares = 2000)"
+        )
+    if size[0] is None:
+        ysize = size[1]
+        xsize = num_squares * wire_pitch * wire_width / ysize
+    elif size[1] is None:
+        xsize = size[0]
+        ysize = num_squares * wire_pitch * wire_width / xsize
+    else:
+        xsize = size[0]
+        ysize = size[1]
+
+    num_meanders = int(np.ceil(ysize / wire_pitch))
+
+    half_size = xsize / 2
+
+    SNSPD = Device()
+    hairpin = qg.geometries.optimal_hairpin(
+        width=wire_width,
+        pitch=wire_pitch,
         turn_ratio=turn_ratio,
-        terminals_same_side=terminals_same_side,
+        length=half_size,
+        num_pts=num_pts,
         layer=layer,
     )
-    ports = SNSPD.ports
-    SNSPD = pg.union(SNSPD, layer=layer)
-    SNSPD.ports = ports
-    SNSPD.name = f"SNSPD.BASIC(w={wire_width}, pitch={wire_pitch})"
-    return SNSPD
+
+    if not terminals_same_side and (num_meanders % 2) == 0:
+        num_meanders += 1
+    elif terminals_same_side and (num_meanders % 2) == 1:
+        num_meanders += 1
+
+    if extend_terminals:
+        start_nw = SNSPD.add_ref(
+            pg.straight(size=(wire_width, half_size), layer=qg.get_layer(layer))
+        )
+        hp_prev = SNSPD.add_ref(hairpin)
+        hp_prev.connect(1, start_nw.ports[2])
+    else:
+        start_nw = SNSPD.add_ref(hairpin)
+        hp_prev = start_nw
+    alternate = True
+    last_port = None
+    for _n in range(2, num_meanders):
+        hp = SNSPD.add_ref(hairpin)
+        if alternate:
+            hp.connect(2, hp_prev.ports[2])
+        else:
+            hp.connect(1, hp_prev.ports[1])
+        last_port = hp.ports[2] if terminals_same_side else hp.ports[1]
+        hp_prev = hp
+        alternate = not alternate
+
+    if extend_terminals:
+        finish_se = SNSPD.add_ref(
+            pg.straight(size=(wire_width, half_size), layer=qg.get_layer(layer))
+        )
+        if last_port is not None:
+            finish_se.connect(2, last_port)
+        SNSPD.add_port(port=finish_se.ports[1], name=2, layer=layer)
+    else:
+        SNSPD.add_port(port=last_port, name=2, layer=layer)
+
+    SNSPD.add_port(port=start_nw.ports[1], name=1, layer=layer)
+
+    SNSPD.info["num_squares"] = num_meanders * (xsize / wire_width)
+    SNSPD.info["area"] = xsize * ysize
+    SNSPD.info["xsize"] = xsize
+    SNSPD.info["ysize"] = ysize
+    SNSPD.flatten()
+    SNSPDu = Device("snspd_basic")
+    SNSPDu << pg.union(SNSPD, layer=qg.get_layer(layer))
+    SNSPDu.add_ports(SNSPD.ports)
+    SNSPDu.move(SNSPDu.center, (0, 0))
+    return SNSPDu
 
 
+@qg.device
 def vertical(
     wire_width: float = 0.2,
     wire_pitch: float = 0.6,
-    size: Tuple[Union[int, float], Union[int, float]] = (60, 100),
-    num_squares: Optional[int] = None,
-    extend: Optional[float] = None,
-    layer: int = 1,
-    positive_tone=True,
+    size: Tuple[int | float, int | float] = (5, 5),
+    num_squares: int | None = None,
+    extend: float | None = 1,
+    num_pts: int = 50,
+    layer: LayerSpec = (1, 0),
 ) -> Device:
     """Creates an optimally-rounded SNSPD, with terminals in its center instead
     of the side.
 
-    Parameters:
+    Args:
         wire_width (float): Width of the nanowire.
         wire_pitch (float): Pitch of the nanowire.
-        size (tuple of int or float): Size of the detector in squares (width, height).
-        num_squares (Optional[int]): Number of squares in the detector.
-        extend (Optional[bool]): Whether or not to extend the ports.
-        layer (int): Layer for the device to be created on.
-        positive_tone (bool): if not positive tone, all ports have full pads
+        size (tuple of int or float): Size of the detector.
+        num_squares (int | None): Number of squares in the detector.
+        extend (bool | None): Whether or not to extend the ports.
+        num_pts (int): number of points to use for optimal hairpin.
+        layer (LayerSpec): GDS layer specification
 
     Returns:
-        Device: The vertical SNSPD device.
+        (Device): The vertical SNSPD device.
     """
     # check parameters constrains
     if wire_pitch <= wire_width:
@@ -93,82 +176,49 @@ def vertical(
         )
         wire_pitch = 2 * wire_width
 
-    D = Device("SNSPD VERTICAL")
+    D = Device()
 
-    S = pg.snspd(
+    S = basic(
         wire_width=wire_width,
         wire_pitch=wire_pitch,
         size=size,
         num_squares=num_squares,
+        extend_terminals=False,
         terminals_same_side=False,
         layer=layer,
+        num_pts=num_pts,
     )
-    s1 = D << S
+    D << S
 
-    HP = pg.optimal_hairpin(
-        width=wire_width, pitch=wire_pitch, length=S.xsize / 2, layer=layer
-    )
-    h1 = D << HP
-    h1.connect(h1.ports[1], S.references[0].ports["E"])
-    h1.rotate(180, h1.ports[1])
-
-    h2 = D << HP
-    h2.connect(h2.ports[1], S.references[-1].ports["E"])
-    h2.rotate(180, h2.ports[1])
-
-    T = pg.optimal_90deg(width=wire_width, layer=layer)
+    T = pg.optimal_90deg(width=wire_width, layer=qg.get_layer(layer))
     t1 = D << T
-    T_width = t1.ports[2].midpoint[0]
-    t1.connect(t1.ports[1], h1.ports[2])
-    t1.movex(-T_width + wire_width / 2)
+    t1.move(np.subtract(S.ports[1].center, t1.ports[2].center))
+    t1.movex(T.xsize - wire_width / 2)
 
     t2 = D << T
-    t2.connect(t2.ports[1], h2.ports[2])
-    t2.movex(T_width - wire_width / 2)
+    t2.rotate(180)
+    t2.move(np.subtract(S.ports[2].center, t2.ports[2].center))
+    t2.movex(-T.xsize + wire_width / 2)
 
-    D = pg.union(D, layer=layer)
-    D.flatten()
-    if extend:
-        E = pg.straight(size=(wire_width, extend), layer=layer)
+    ports = []
+    if extend is not None:
+        E = pg.straight(size=(wire_width, extend), layer=qg.get_layer(layer))
         e1 = D << E
-        e1.connect(e1.ports[1], t1.ports[2])
+        e1.connect(port=e1.ports[1], destination=t1.ports[1])
         e2 = D << E
-        e2.connect(e2.ports[1], t2.ports[2])
-        D = pg.union(D, layer=layer)
-        D.add_port(name=1, port=e1.ports[2])
-        D.add_port(name=2, port=e2.ports[2])
+        e2.connect(port=e2.ports[1], destination=t2.ports[1])
+        ports.append(e1.ports[2])
+        ports.append(e2.ports[2])
     else:
-        D.add_port(name=1, port=t1.ports[2])
-        D.add_port(name=2, port=t2.ports[2])
-
-    D.info = S.info
-    D = utility.rename_ports_to_compass(D)
-    D = utility.add_optimalstep_to_dev(D, ratio=10)
-
-    final_SNSPD = QnnDevice('snspd')
-    if positive_tone:
-        ports_gnd = ["S"]
-    else:
-        ports_gnd = []
-    final_SNSPD.set_pads(PadPlacement(
-        cell_scaling_factor_x=2,
-        num_pads_n=1,
-        num_pads_s=1,
-        port_map_x={
-            0:("N", 1),
-            1:("S", 1)
-        },
-        ports_gnd=ports_gnd,
-        tight_y_spacing=True
-    ))
-    final_SNSPD << D
-    for p, port in enumerate(D.ports):
-        final_SNSPD.add_port(name=p, port=D.ports[port])
-    
-    final_SNSPD.info = S.info
-    final_SNSPD.move(final_SNSPD.center, (0, 0))
-    final_SNSPD.name = f"SNSPD.VERTICAL(w={wire_width:0.1}, pitch={wire_pitch:0.1})"
-
-    final_SNSPD.simplify(1e-3)
-
-    return final_SNSPD
+        ports.append(t1.ports[1])
+        ports.append(t2.ports[1])
+    Du = Device("snspd_vert")
+    Du << pg.union(D, layer=qg.get_layer(layer))
+    Du.flatten()
+    for p, port in enumerate(ports):
+        Du.add_port(
+            name=p + 1,
+            port=port,
+            layer=layer,
+        )
+    return Du

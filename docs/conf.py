@@ -1,22 +1,21 @@
 import os
 import sys
-from multiproject.utils import get_project
 from importlib.metadata import version
 
 sys.path.insert(0, os.path.abspath(os.path.join("..", "src")))
-import qnngds
 
 extensions = [
-    "multiproject",
-    # "sphinx_copybutton",
+    "sphinx_copybutton",
     "sphinx.ext.duration",
     "sphinx.ext.doctest",
+    "sphinx.ext.viewcode",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.autosectionlabel",
     "sphinx.ext.extlinks",
     "sphinx.ext.intersphinx",
     "sphinx.ext.todo",
+    "sphinx.ext.napoleon",
 ]
 
 autodoc_member_order = "bysource"
@@ -30,38 +29,20 @@ napoleon_attr_annotations = True
 pygments_style = "sphinx"
 todo_include_todos = True
 
-# multiproject_projects = {
-#     "user": {
-#         "use_config_file": False,
-#         "config": {
-#             "project": "qnngds",
-#             "html_title": "qnngds-user",
-#         },
-#     },
-#     "dev": {
-#         "use_config_file": False,
-#         "config": {
-#             "project": "qnngds",
-#             "html_title": "qnngds-developer",
-#         },
-#     },
-# }
 
-multiproject_projects = {
-    "user": {},
-    "dev": {},
-}
+autodoc_type_aliases = (
+    {
+        "DeviceFactory": "ComponentFactory",
+        "DeviceSpec": "DeviceSpec",
+        "CrossSectionFactory": "CrossSectionFactory",
+        "CrossSectionSpec": "CrossSectionSpec",
+        "LayerSpec": "LayerSpec",
+        "LayerSpecs": "LayerSpecs",
+    },
+)
 
 
-current_project = get_project(multiproject_projects)
-
-locale_dirs = [f"{current_project}/locale/"]
-
-if current_project == "user":
-    extensions += ["sphinx.ext.napoleon"]
-    project = "qnngds"
-elif current_project == "dev":
-    project = "qnngds-dev"
+project = "qnngds"
 
 master_doc = "index"
 copyright = "QNN group"
