@@ -94,7 +94,7 @@ ntron_meander_complicated(
     layer=(1, 0),
 )
 
-# Now we'll do the same using ``DeviceSpec``s and ``partial``
+# Now we'll do the same using ``DeviceSpec`` and ``partial``
 from qnngds.typing import DeviceSpec
 from functools import partial
 
@@ -142,10 +142,11 @@ D = ntron_meander(ntron_spec, meander_spec, tee_spec, layer_spec=(1, 0))
 # This code is a bit more concise, and nicely separates the arguments for the different sub-devices of the circuit: parameters for configuring the ``meander`` are passed in to ``qg.devices.snspd.basic`` when generating the ``meander_spec``.
 # Not only is the code easier to read, but it's also much more maintainable and composable.
 # Imagine we would like to tweak the design a bit to use the ``ntron.sharp`` geometry.
-# With the non ``DeviceSpec``/``functools.partial`` implementation,
-# we would need to write a whole new function or increase the number of arguments even more,
+# With the ``ntron_meander_complicated`` implementation, we would need to write a whole
+# new function or increase the number of arguments even more,
 # or resort to using ``**kwargs``, which makes code difficult to understand and document.
-# Fundamentally the ``**kwargs`` pattern has problems when composing many functions due to the possibility of naming conflicts.
+# Fundamentally the ``**kwargs`` pattern has problems when composing many functions due to the possibility of naming conflicts, and in
+# general should be avoided except in situations where the input arguments to a function are unknown (e.g. in a decorator).
 # By using the ``DeviceSpec`` pattern, to change the ``ntron`` type, we just pass a different ``DeviceSpec`` for the ``ntron_spec`` argument.
 # For example:
 
