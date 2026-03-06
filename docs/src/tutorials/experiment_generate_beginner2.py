@@ -7,6 +7,7 @@
 #
 # Imports are the same as in :ref:`experiment_generate_beginner1`:
 import qnngds as qg
+import phidl.geometry as pg
 from phidl import quickplot as qp
 from functools import partial
 
@@ -35,7 +36,13 @@ PDK = qg.Pdk(
 )
 PDK.activate()
 # The rest of the code is almost the same as in :ref:`experiment_generate_beginner1`:
-dut = partial(qg.devices.ntron.sharp, layer="EBEAM_FINE")
+ntron = qg.devices.ntron.sharp(layer="EBEAM_FINE")
+ext = partial(
+    pg.optimal_step, end_width=1, symmetric=True, layer=qg.get_layer("EBEAM_FINE")
+)
+dut = qg.utilities.extend_ports(
+    device=ntron, port_names=["g", "s", "d"], extension=ext, auto_width=True
+)
 pad_array = qg.pads.array(
     pad_specs=(qg.pads.stack(size=(200, 200), layers=("EBEAM_COARSE",)),),
     columns=1,
@@ -56,9 +63,12 @@ c = qg.experiment.generate(
     retries=1,
 )
 qp(c)
-## IMAGE
-## IMAGE_ZOOM
-## STOP
+## SKIPSTART
 from ._save_qp import save_qp  # noqa: E402
 
-save_qp(__file__, c, xlim=(300, 400), ylim=(200, 300))
+save_qp(__file__, c, xlim=(340, 360), ylim=(240, 260))
+## SKIPSTOP
+## IMAGE
+# Zooming in on the nTron:
+## IMAGE_ZOOM
+## STOP
