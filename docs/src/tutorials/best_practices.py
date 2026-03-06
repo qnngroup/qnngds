@@ -3,11 +3,16 @@
 # Best practices for layouts
 # ======================================
 #
-# In this tutorial, we will cover an example that illustrates why using the ``DeviceSpec`` pattern is essential
+# In this tutorial, we will cover an example that illustrates why using the ``DeviceSpec`` pattern along with
+# `functools.partial <https://docs.python.org/3/library/functools.html#functools.partial>`_ is essential
 # for keeping code **readable, reusable, and maintainable** by comparing two ways to implement the code used in
 # :ref:`_custom_circuit`.
 #
-# First will be the example circuit without using ``DeviceSpec``
+# First will be the example circuit without using ``DeviceSpec`` or ``functools.partial``.
+# This particular example is a canonical example of the type of problem one runs into
+# when trying to compose many simple devices into a circuit.
+# Now imagine the complexity if you are integrating this subcircuit into another, larger circuit
+# and want to change the arguments between different instances of this subcircuit.
 import qnngds as qg
 from qnngds import Device
 from qnngds.typing import LayerSpec
@@ -137,7 +142,8 @@ D = ntron_meander(ntron_spec, meander_spec, tee_spec, layer_spec=(1, 0))
 # This code is a bit more concise, and nicely separates the arguments for the different sub-devices of the circuit: parameters for configuring the ``meander`` are passed in to ``qg.devices.snspd.basic`` when generating the ``meander_spec``.
 # Not only is the code easier to read, but it's also much more maintainable and composable.
 # Imagine we would like to tweak the design a bit to use the ``ntron.sharp`` geometry.
-# With the non ``DeviceSpec`` implementation, we would need to write a whole new function or increase the number of arguments even more,
+# With the non ``DeviceSpec``/``functools.partial`` implementation,
+# we would need to write a whole new function or increase the number of arguments even more,
 # or resort to using ``**kwargs``, which makes code difficult to understand and document.
 # Fundamentally the ``**kwargs`` pattern has problems when composing many functions due to the possibility of naming conflicts.
 # By using the ``DeviceSpec`` pattern, to change the ``ntron`` type, we just pass a different ``DeviceSpec`` for the ``ntron_spec`` argument.
@@ -145,10 +151,3 @@ D = ntron_meander(ntron_spec, meander_spec, tee_spec, layer_spec=(1, 0))
 
 ntron_spec = qg.devices.ntron.sharp
 D = ntron_meander(ntron_spec, meander_spec, tee_spec, layer_spec=(1, 0))
-
-# Usage of ``functools.partial``
-# ==============================
-#
-# As discussed in :ref:`_experiment_generate_beginner1`, usage of
-# `functools.partial <https://docs.python.org/3/library/functools.html#functools.partial>`_ and `DeviceSpec`s where possible
-# helps keep code clean, and in many cases is required when working with ``qnngds``.
