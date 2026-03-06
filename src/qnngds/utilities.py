@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+from functools import partial
+
 import numpy as np
 
 from qnngds.typing import LayerSpec, LayerSpecs, DeviceSpec, CrossSectionSpec
@@ -15,7 +17,10 @@ import phidl.geometry as pg
 
 
 def extend_ports(
-    device: Device, port_names: Sequence[int | str], extension: DeviceSpec
+    device: Device,
+    port_names: Sequence[int | str],
+    extension: DeviceSpec,
+    auto_width: bool = False,
 ) -> Device:
     """Adds the DeviceSpec extension to the named ports of Device device
 
@@ -23,22 +28,40 @@ def extend_ports(
         device (Device): device to add extensions to
         port_names (Sequence[int | str]): names of ports on device which should be extended
         extension (DeviceSpec): specification for extension
+        auto_width (bool): if True, uses the kwarg `start_width` when instantiating the `extension`
+            `DeviceSpec` to generate the tapers. Determines the `start_width` automatically from
+            `device`.
 
     Returns:
         (Device): the original device with ports extended
     """
     dev_extended = Device()
     dev_i = dev_extended << device
-    ext = qg.get_device(extension)
-    if 1 not in ext.ports:
-        raise ValueError(f"port '1' not found in extension.ports: {ext.ports.keys()}")
+
+    def check_ext_ports(ext: Device):
+        """Check extension ports for keys 1 and 2"""
+        for i in range(1, 3):
+            if i not in ext.ports:
+                raise ValueError(
+                    f"port '{i}' not found in extension.ports: {ext.ports.keys()}"
+                )
+
+    if not auto_width:
+        # all widths are the same
+        ext = qg.get_device(extension)
+        check_ext_ports(ext)
     for port_name in port_names:
+        if auto_width:
+            # determine width from dev
+            ext = qg.get_device(
+                partial(extension, start_width=dev_i.ports[port_name].width)
+            )
+            check_ext_ports(ext)
         ext_i = dev_extended << ext
         ext_i.connect(port=ext_i.ports[1], destination=dev_i.ports[port_name])
-        if 2 in ext.ports:
-            dev_extended.add_port(
-                port=ext_i.ports[2], name=port_name, layer=dev_i.ports[port_name].layer
-            )
+        dev_extended.add_port(
+            port=ext_i.ports[2], name=port_name, layer=dev_i.ports[port_name].layer
+        )
     dev_extended.name = "ext_port_" + device.name
     return dev_extended
 

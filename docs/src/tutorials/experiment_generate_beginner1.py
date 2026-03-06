@@ -9,6 +9,7 @@
 #
 # First, define our imports:
 import qnngds as qg
+import phidl.geometry as pg
 from phidl import quickplot as qp
 from functools import partial
 
@@ -37,8 +38,18 @@ PDK.activate()
 # We've defined a single layer named ``"PHOTO"`` with GDS layer/datatype ``1/0`` (``gds_datatype = 0`` is the default argument for the ``Layer`` constructor).
 # We also defined a default routing cross section on the same layer and set up auto layer transitions to be used by the router.
 #
-# Now, we can set up the inputs to ``experiment.generate``:
-dut = partial(qg.devices.ntron.sharp, layer="PHOTO")
+# Now, we can set up the inputs to ``experiment.generate``.
+# We're setting up a ``ntron.sharp`` with default arugments except for the ``layer``, which is ``PHOTO``.
+# In addition, we're using ``utilities.extend_ports`` to add an optimal step taper between the nTron and routing.
+# Here, we're using `functools.partial <https://docs.python.org/3/library/functools.html#functools.partial>`_
+# to specify the ``end_width``, ``symmetric`` and ``layer`` keyword arguments for the extension optimal step taper.
+# the use of ``partial`` here is important, since ``utilities.extend_ports`` will instantiate a
+# different taper for each port to autosize the taper start width so it matches the ``ntron``.
+ntron = qg.devices.ntron.sharp(layer="PHOTO")
+ext = partial(pg.optimal_step, end_width=2, symmetric=True, layer="PHOTO")
+dut = qg.utilities.extend_ports(
+    device=ntron, port_names=["g", "s", "d"], extension=ext, auto_width=True
+)
 pad_array = qg.pads.array(
     pad_specs=(qg.pads.stack(size=(200, 200), layers=("PHOTO",)),),
     columns=1,
