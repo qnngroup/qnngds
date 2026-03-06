@@ -41,10 +41,12 @@ PDK.activate()
 # Now, we can set up the inputs to ``experiment.generate``.
 # We're setting up a ``ntron.sharp`` with default arugments except for the ``layer``, which is ``PHOTO``.
 # In addition, we're using ``utilities.extend_ports`` to add an optimal step taper between the nTron and routing.
-# Here, we're using `functools.partial <https://docs.python.org/3/library/functools.html#functools.partial>`_
-# to specify the ``end_width``, ``symmetric`` and ``layer`` keyword arguments for the extension optimal step taper.
-# the use of ``partial`` here is important, since ``utilities.extend_ports`` will instantiate a
-# different taper for each port to autosize the taper start width so it matches the ``ntron``.
+# .. note::
+#   Here, we're using `functools.partial <https://docs.python.org/3/library/functools.html#functools.partial>`_
+#   to specify the ``end_width``, ``symmetric`` and ``layer`` keyword arguments for the extension optimal step taper.
+#   the use of ``partial`` here is important, since ``utilities.extend_ports`` will instantiate a
+#   different taper for each port to autosize the taper start width so it matches the ``ntron``.
+#   For more on how to use ``partial`` with ``qnngds``, see :ref:`_best_practices`.
 ntron = qg.devices.ntron.sharp(layer="PHOTO")
 ext = partial(pg.optimal_step, end_width=1, symmetric=True, layer=qg.get_layer("PHOTO"))
 dut = qg.utilities.extend_ports(

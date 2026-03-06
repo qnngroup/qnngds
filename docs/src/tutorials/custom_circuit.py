@@ -7,7 +7,7 @@
 # First, imports:
 import qnngds as qg
 from qnngds import Device
-from qnngds.typing import DeviceSpec
+from qnngds.typing import DeviceSpec, LayerSpec
 import phidl.geometry as pg
 from phidl import quickplot as qp
 from functools import partial
@@ -24,6 +24,7 @@ def ntron_meander(
     ntron_spec: DeviceSpec,
     meander_spec: DeviceSpec,
     output_tee_spec: DeviceSpec,
+    layer_spec: LayerSpec,
 ) -> Device:
     """nTron with meander on drain
 
@@ -31,15 +32,16 @@ def ntron_meander(
         ntron_spec (DeviceSpec): device or callable function that returns a device for the nTron
         meander_spec (DeviceSpec): specification for drain meander/inductor
         output_tee_spec (DeviceSpec): specification for tee that connects output, nTron drain, and inductor
+        layer_spec (LayerSpec): layer to put circuit on
 
     Returns:
         (Device): nTron with connected meander and tee
     """
     D = Device("ntron_meander")
 
-    ntron = D << qg.get_device(ntron_spec)
-    meander = D << qg.get_device(meander_spec)
-    tee = D << qg.get_device(tee_spec)
+    ntron = D << qg.get_device(ntron_spec, layer=qg.get_layer(layer_spec))
+    meander = D << qg.get_device(meander_spec, layer=qg.get_layer(layer_spec))
+    tee = D << qg.get_device(tee_spec, layer=qg.get_layer(layer_spec))
 
     tee.connect(port=tee.ports[2], destination=ntron.ports["d"])
     meander.connect(port=meander.ports[1], destination=tee.ports[1])
@@ -60,12 +62,10 @@ def ntron_meander(
 # ``tee_spec`` and ``ntron_spec``, we pass a ``DeviceFactory``.
 ntron_spec = qg.devices.ntron.smooth
 meander_spec = qg.devices.snspd.basic(wire_width=0.3)
-tee_spec = partial(
-    pg.tee, size=(2, 0.3), stub_size=(0.3, 5), taper_type="fillet", layer=(1, 0)
-)
+tee_spec = partial(pg.tee, size=(2, 0.3), stub_size=(0.3, 5), taper_type="fillet")
 
 # Now we generate and plot the device.
-D = ntron_meander(ntron_spec, meander_spec, tee_spec)
+D = ntron_meander(ntron_spec, meander_spec, tee_spec, layer_spec=(1, 0))
 qp(D)
 ## IMAGE
 ## STOP
