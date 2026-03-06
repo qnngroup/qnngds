@@ -77,9 +77,12 @@ c = qg.experiment.generate(
     retries=1,
 )
 qp(c)
-## IMAGE
-## IMAGE_ZOOM
-## STOP
+## SKIPSTART
 from ._save_qp import save_qp  # noqa: E402
 
-save_qp(__file__, c, xlim=(320, 380), ylim=(240, 260))
+save_qp(__file__, c, xlim=(340, 360), ylim=(240, 260))
+## SKIPSTOP
+## IMAGE
+# Zooming in on the nTron:
+## IMAGE_ZOOM
+## STOP
