@@ -35,19 +35,30 @@ This is where your new project will go.
 
         * Install ``qnngds`` (see step 3 below)
 
-    * Using ``python`` virtual environment is dispreffered, since one may need to manually install separate version of python if the system python version does not match the requirements for ``qnngds``.
+    * Using ``python`` virtual environment (dispreffered, since one may need to manually install separate version of python if the system python version does not match the requirements for ``qnngds``):
+
+        * Open a terminal in the directory you want to put your virtual environment.
+
+        * Execute:
+
+          .. code-block:: powershell
+
+              # windows
+              python -m venv .venv/your-env-name
+              .\.venv\your-env-name\Scripts\Activate
+
+          .. code-block:: bash
+
+              # Unix/macOS
+              python -m venv .venv/your-env-name
+              source .venv/your-env-name/scripts/activate
+
+        * Install ``qnngds`` (see step 3 below)
+
+        * If you run into issues using this method, it is recommended to use ``conda`` or ``uv`` instead.
 
 3. Install ``qnngds``.
 
-    .. note::
-
-       If you are on windows, you will need to install gdspy manually before installing qnngds. You will need to download the prebuilt wheel file at [github.com/hetizmann/gdspy/releases](https://github.com/heitzmann/gdspy/releases/tag/v1.6.12).
-       If you've followed the instructions this far, you've installed ``python3.12``, but the wheel was built with ``python3.8``. To disable the version check, replace ``cp38`` with ``cp312`` (or the appropriate version string based on the installed python version) in the filename for the wheel.
-       Then run the following:
-
-       .. code-block:: bash
-
-            pip install path/to/gdspy-1.6.12-cp312-cp312-win_amd64.whl
 
    Now that you've activated your venv, install the package from pypi.
 
@@ -62,6 +73,16 @@ This is where your new project will go.
         .. code-block:: bash
 
             uv pip install qnngds
+
+.. note::
+
+   If you are on windows, you will need to install gdspy manually. You will need to download the prebuilt wheel file at [github.com/hetizmann/gdspy/releases](https://github.com/heitzmann/gdspy/releases/tag/v1.6.12).
+   If you've followed the instructions this far, you've installed ``python3.12``, but the wheel was built with ``python3.8``. To disable the version check, replace ``cp38`` with ``cp312`` (or the appropriate version string based on the installed python version) in the filename for the wheel.
+   Then run the following:
+
+   .. code-block:: bash
+
+        pip install path/to/gdspy-1.6.12-cp312-cp312-win_amd64.whl
 
 Installing unreleased development versions of ``qnngds``
 --------------------------------------------------------

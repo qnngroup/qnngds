@@ -111,18 +111,17 @@ class Pdk:
                     return _layer
         raise ValueError(value_error_msg)
 
-    def get_device(self, spec: DeviceSpec, **kwargs: dict) -> phidl.Device:
+    def get_device(self, spec: DeviceSpec) -> phidl.Device:
         """Get a specific device within the PDK
 
         Args:
             spec (DeviceSpec): device instance, name (string), or callable function that identifies desired device
-            kwargs (dict): keyword arguments to pass to `spec`.
 
         Returns:
             (Device): instance of device matching the queried DeviceSpec
         """
         if callable(spec):
-            d = spec(**kwargs)
+            d = spec()
             if not isinstance(d, phidl.Device):
                 # allow both phidl and qnngds Devices
                 # (qnngds device has layer-assigned ports)
@@ -131,10 +130,6 @@ class Pdk:
                 )
             return d
         if isinstance(spec, phidl.Device):
-            if len(kwargs) > 0:
-                raise ValueError(
-                    "`spec` was passed a phidl.Device, but kwargs were also passed. These kwargs will be ignored"
-                )
             return spec
         if isinstance(spec, str):
             if spec not in self.devices:
@@ -142,7 +137,7 @@ class Pdk:
                 raise ValueError(
                     f"{spec} from PDK {self.name} not in self.devices: did you mean {approx_match}"
                 )
-            return self.devices[spec](**kwargs)
+            return self.devices[spec]
         raise ValueError(
             f"Argument `spec` is invalid, must be a device, function that returns a device, or string name for device registered with active PDK, got {type(spec)}"
         )
@@ -271,17 +266,16 @@ def get_layer(layer: LayerSpec) -> Layer:
     return get_active_pdk().get_layer(layer)
 
 
-def get_device(spec: DeviceSpec, **kwargs: dict) -> phidl.Device:
+def get_device(device: DeviceSpec) -> phidl.Device:
     """Get a specific layer within the globally-activated PDK
 
     Parameters:
-        spec (DeviceSpec): device instance, name (string), or callable function that identifies desired device
-        kwargs (dict): Keyword arguments to pass to `spec`.
+        device (DeviceSpec): device instance, name (string), or callable function that identifies desired device
 
     Returns:
         (Device): instance of device matching the queried DeviceSpec
     """
-    return get_active_pdk().get_device(spec, **kwargs)
+    return get_active_pdk().get_device(device)
 
 
 def get_cross_section(cross_section: CrossSectionSpec) -> phidl.CrossSection:

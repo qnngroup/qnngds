@@ -36,13 +36,13 @@ pad_array = qg.pads.array(
 route_groups = (
     qg.experiment.RouteGroup(qg.get_cross_section("photo"), {"g": 2, "s": 1, "d": 3}),
 )
-ext = partial(pg.optimal_step, end_width=5, symmetric=True, layer=qg.get_layer("PHOTO"))
 for choke_w in np.linspace(0.2, 1.0, 9):
     label_text = f"wg/wc {round(choke_w, 2)}/{round(channel_w, 2)}"
     label = pg.text(
         label_text, size=25, layer=qg.get_layer("PHOTO").tuple, justify="center"
     ).rotate(-90)
-    ntron = qg.devices.ntron.sharp(
+    dut = partial(
+        qg.devices.ntron.sharp,
         choke_w=choke_w,
         gate_w=2 * channel_w,
         channel_w=channel_w,
@@ -50,10 +50,7 @@ for choke_w in np.linspace(0.2, 1.0, 9):
         source_w=2 * channel_w,
         layer="PHOTO",
     )
-    dut = qg.utilities.extend_ports(
-        device=ntron, port_names=["g", "s", "d"], extension=ext, auto_width=True
-    )
-    ntron_experiment = qg.experiment.generate(
+    ntron = qg.experiment.generate(
         dut=dut,
         pad_array=pad_array,
         label=label,
@@ -63,8 +60,8 @@ for choke_w in np.linspace(0.2, 1.0, 9):
         label_offset=(150, 0),
         retries=1,
     )
-    ntron_experiment.rotate(90)
-    ntrons.append(ntron_experiment)
+    ntron.rotate(90)
+    ntrons.append(ntron)
 # We can set up the sample and place the devices on it:
 sample = qg.sample.Sample(
     cell_size=1e3, sample=qg.sample.piece10mm, edge_exclusion=500, allow_cell_span=False

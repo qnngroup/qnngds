@@ -407,11 +407,7 @@ def transmission_line_resonator(
                 outline_layers={tl_xc.sections[1]["layer"]: tl_xc.sections[1]["width"]},
             )
         # attach pad to device
-        # new_ports is False, since we're not really extending the ports, just capping them with pads.
-        # there is not a second port on the pad to propagate to the newly-created device.
-        R = qg.utilities.extend_ports(
-            device=R, port_names=[n + 1], extension=pad_i, new_ports=False
-        )
+        R = qg.utilities.extend_ports(device=R, port_names=[n + 1], extension=pad_i)
     # invert if needed
     outline_layers = qg.utilities.get_outline_layers(qg.get_active_pdk().layers)
     # if not CPW and layer is positive-tone, invert
