@@ -21,6 +21,7 @@ def extend_ports(
     port_names: Sequence[int | str],
     extension: DeviceSpec,
     auto_width: bool = False,
+    new_ports: bool = True,
 ) -> Device:
     """Adds the DeviceSpec extension to the named ports of Device device
 
@@ -31,6 +32,7 @@ def extend_ports(
         auto_width (bool): if True, uses the kwarg `start_width` when instantiating the `extension`
             `DeviceSpec` to generate the tapers. Determines the `start_width` automatically from
             `device`.
+        new_ports (bool): if True, create new ports, using port `2` from `Device` specified by `extension`.
 
     Returns:
         (Device): the original device with ports extended
@@ -39,8 +41,8 @@ def extend_ports(
     dev_i = dev_extended << device
 
     def check_ext_ports(ext: Device):
-        """Check extension ports for keys 1 and 2"""
-        for i in range(1, 3):
+        """Check extension ports for keys 1 and optionally 2"""
+        for i in range(1, 3 if new_ports else 2):
             if i not in ext.ports:
                 raise ValueError(
                     f"port '{i}' not found in extension.ports: {ext.ports.keys()}"
@@ -59,9 +61,10 @@ def extend_ports(
             check_ext_ports(ext)
         ext_i = dev_extended << ext
         ext_i.connect(port=ext_i.ports[1], destination=dev_i.ports[port_name])
-        dev_extended.add_port(
-            port=ext_i.ports[2], name=port_name, layer=dev_i.ports[port_name].layer
-        )
+        if new_ports and (2 in ext_i.ports):
+            dev_extended.add_port(
+                port=ext_i.ports[2], name=port_name, layer=dev_i.ports[port_name].layer
+            )
     dev_extended.name = "ext_port_" + device.name
     return dev_extended
 
