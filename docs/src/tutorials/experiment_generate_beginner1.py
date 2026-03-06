@@ -41,6 +41,7 @@ PDK.activate()
 # Now, we can set up the inputs to ``experiment.generate``.
 # We're setting up a ``ntron.sharp`` with default arugments except for the ``layer``, which is ``PHOTO``.
 # In addition, we're using ``utilities.extend_ports`` to add an optimal step taper between the nTron and routing.
+#
 # .. note::
 #   Here, we're using `functools.partial <https://docs.python.org/3/library/functools.html#functools.partial>`_
 #   to specify the ``end_width``, ``symmetric`` and ``layer`` keyword arguments for the extension optimal step taper.

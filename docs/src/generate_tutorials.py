@@ -17,12 +17,11 @@ for submodule in pkgutil.walk_packages(tutorials.__path__):
     with open(fname, "r") as f:
         for line in f:
             if skip:
+                if line.startswith("## SKIPSTOP"):
+                    skip = False
                 continue
             if line.startswith("## SKIPSTART"):
                 skip = True
-                continue
-            if line.startswith("## SKIPSTOP"):
-                skip = False
                 continue
             if line.startswith("## IMAGE"):
                 if "ZOOM" in line:
