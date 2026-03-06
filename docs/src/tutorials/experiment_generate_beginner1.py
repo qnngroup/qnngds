@@ -46,7 +46,7 @@ PDK.activate()
 # the use of ``partial`` here is important, since ``utilities.extend_ports`` will instantiate a
 # different taper for each port to autosize the taper start width so it matches the ``ntron``.
 ntron = qg.devices.ntron.sharp(layer="PHOTO")
-ext = partial(pg.optimal_step, end_width=2, symmetric=True, layer=qg.get_layer("PHOTO"))
+ext = partial(pg.optimal_step, end_width=1, symmetric=True, layer=qg.get_layer("PHOTO"))
 dut = qg.utilities.extend_ports(
     device=ntron, port_names=["g", "s", "d"], extension=ext, auto_width=True
 )
@@ -59,8 +59,7 @@ pad_array = qg.pads.array(
 route_groups = (
     qg.experiment.RouteGroup(qg.get_cross_section("photo"), {"g": 2, "s": 1, "d": 3}),
 )
-# ..note:
-#
+# .. note::
 #   Note that we have to call ``qg.get_layer()`` when passing a named layer to a ``phidl`` function,
 #   since ``phidl`` expects a tuple or int and has no concept of the PDK used by ``qnngds``.
 #

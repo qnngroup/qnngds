@@ -38,7 +38,7 @@ PDK.activate()
 # The rest of the code is almost the same as in :ref:`experiment_generate_beginner1`:
 ntron = qg.devices.ntron.sharp(layer="EBEAM_FINE")
 ext = partial(
-    pg.optimal_step, end_width=2, symmetric=True, layer=qg.get_layer("EBEAM_FINE")
+    pg.optimal_step, end_width=1, symmetric=True, layer=qg.get_layer("EBEAM_FINE")
 )
 dut = qg.utilities.extend_ports(
     device=ntron, port_names=["g", "s", "d"], extension=ext, auto_width=True
