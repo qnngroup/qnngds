@@ -202,4 +202,9 @@ save_qp(__file__, snspd, plot_name="snspd")
 # This can be useful if the device whose ports you wish to extend has several ports with different widths;
 # you can just specify the desired final width for routing and ``extend_ports`` will automatically create
 # the necessary taper geometries.
+# Lithography test structures
+# ---------------------------
+#
+# ..TODO::
+#   actually write explanation for lithographic test structures
 ## STOPNOREF
