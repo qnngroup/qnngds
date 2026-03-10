@@ -170,15 +170,23 @@ D = ntron_meander(ntron_spec, meander_spec, tee_spec, layer_spec=(1, 0))
 
 import qnngds as qg
 import phidl.geometry as pg
+from phidl import quickplot as qp
 from functools import partial
 
 taper = partial(pg.optimal_step, end_width=1, symmetric=True, layer=(1, 0))
 snspd = qg.utilities.extend_ports(
-    device=qg.devices.snspd.vert(extend=None),
+    device=qg.devices.snspd.vertical(extend=None),
     port_names=(1, 2),
     extension=taper,
     auto_width=True,
 )
+qp(snspd)
+## SKIPSTART
+from ._save_qp import save_qp  # noqa: E402
+
+save_qp(__file__, snspd)
+## SKIPSTOP
+## IMAGE
 
 # the ``auto_width`` argument to ``qg.utilities.extend_ports`` will ensure that the tapers automatically match the
 # starting width of the SNSPD.
