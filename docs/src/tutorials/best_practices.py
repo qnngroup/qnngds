@@ -168,10 +168,8 @@ save_qp(__file__, D)
 # general should be avoided except in situations where the input arguments to a function are unknown (e.g. in a decorator).
 # By using the ``DeviceSpec`` pattern, to change the ``ntron`` type, we just pass a different ``DeviceSpec`` for the ``ntron_spec`` argument.
 # For example:
-
 ntron_spec = qg.devices.ntron.sharp
 D = ntron_meander(ntron_spec, meander_spec, tee_spec, layer_spec=(1, 0))
-
 # Use of ``extend_ports``
 # -----------------------------------------------
 # In order to avoid current crowding, optimal tapers should be used when transitioning from
@@ -180,7 +178,6 @@ D = ntron_meander(ntron_spec, meander_spec, tee_spec, layer_spec=(1, 0))
 # This can be achieved with `phidl.geometry.optimal_step <https://phidl.readthedocs.io/en/latest/API.html#optimal-step>`_.
 # Instead of manually instantiating and connecting these tapers, we can use ``functools.partial``
 # along with the ``extend_ports`` utility provided by ``qnngds`` to do this in a more concise way:
-
 import qnngds as qg
 import phidl.geometry as pg
 from phidl import quickplot as qp
@@ -200,11 +197,9 @@ from ._save_qp import save_qp  # noqa: E402
 save_qp(__file__, snspd)
 ## SKIPSTOP
 ## IMAGE
-
 # the ``auto_width`` argument to ``qg.utilities.extend_ports`` will ensure that the tapers automatically match the
 # starting width of the SNSPD.
 # This can be useful if the device whose ports you wish to extend has several ports with different widths;
 # you can just specify the desired final width for routing and ``extend_ports`` will automatically create
 # the necessary taper geometries.
-
 ## STOPNOREF
