@@ -3,6 +3,12 @@
 # Best practices for layouts
 # ======================================
 #
+# In this set of tutorials, we will cover several techniques that improve code readability and reusability, as well as
+# highlight several functions provided by the ``qnngds.utilities`` module
+#
+# Use of ``DeviceSpec`` and ``functools.partial``
+# -----------------------------------------------
+#
 # In this tutorial, we will cover an example that illustrates why using the ``DeviceSpec`` pattern along with
 # `functools.partial <https://docs.python.org/3/library/functools.html#functools.partial>`_ is essential
 # for keeping code **readable, reusable, and maintainable** by comparing two ways to implement the code used in
@@ -153,4 +159,31 @@ D = ntron_meander(ntron_spec, meander_spec, tee_spec, layer_spec=(1, 0))
 ntron_spec = qg.devices.ntron.sharp
 D = ntron_meander(ntron_spec, meander_spec, tee_spec, layer_spec=(1, 0))
 
-## STOP
+# Use of ``extend_ports``
+# -----------------------------------------------
+# In order to avoid current crowding, optimal tapers should be used when transitioning from
+# a narrow device to a wide routing trace.
+# See `Clem, J. & Berggren, K. "Geometry-dependent critical currents in superconducting nanocircuits." Phys. Rev. B 84, 1-27 (2011). <https://dx.doi.org/10.1103/PhysRevB.84.174510>`_
+# This can be achieved with `phidl.geometry.optimal_step <https://phidl.readthedocs.io/en/latest/API.html#optimal-step>`_.
+# Instead of manually instantiating and connecting these tapers, we can use ``functools.partial``
+# along with the ``extend_ports`` utility provided by ``qnngds`` to do this in a more concise way:
+
+import qnngds as qg
+import phidl.geometry as pg
+from functools import partial
+
+taper = partial(pg.optimal_step, end_width=1, symmetric=True, layer=(1, 0))
+snspd = qg.utilities.extend_ports(
+    device=qg.devices.snspd.vert(extend=None),
+    port_names=(1, 2),
+    extension=taper,
+    auto_width=True,
+)
+
+# the ``auto_width`` argument to ``qg.utilities.extend_ports`` will ensure that the tapers automatically match the
+# starting width of the SNSPD.
+# This can be useful if the device whose ports you wish to extend has several ports with different widths;
+# you can just specify the desired final width for routing and ``extend_ports`` will automatically create
+# the necessary taper geometries.
+
+## STOPNOREF

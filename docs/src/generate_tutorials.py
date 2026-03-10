@@ -41,13 +41,12 @@ for submodule in pkgutil.walk_packages(tutorials.__path__):
                 if blocks[-1][0] == "code":
                     contents += "\n.. code-block:: python\n   :linenos:\n\n"
                 contents += "".join(blocks[-1][1])
-                contents += "\n"
-                contents += (
-                    "\nReference\n---------\n\n.. code-block:: python\n   :linenos:\n\n"
-                )
-                for block in blocks:
-                    if block[0] == "code":
-                        contents += "".join(block[1])
+                if not line.startswith("## STOPNOREF"):
+                    contents += "\n"
+                    contents += "\nReference\n---------\n\n.. code-block:: python\n   :linenos:\n\n"
+                    for block in blocks:
+                        if block[0] == "code":
+                            contents += "".join(block[1])
                 break
             elif line.startswith("##"):
                 continue
