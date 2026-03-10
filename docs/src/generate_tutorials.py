@@ -24,7 +24,11 @@ for submodule in pkgutil.walk_packages(tutorials.__path__):
                 skip = True
                 continue
             if line.startswith("## IMAGE"):
-                plot_name = line.split("_")[-1].strip()
+                plot_name = ""
+                if "_" in line:
+                    plot_name = line.split("_")[-1].strip()
+                    if plot_name == "ZOOM":
+                        plot_name = ""
                 if "ZOOM" in line:
                     imgname = submodule.name + plot_name + "_zoom.png"
                 else:
