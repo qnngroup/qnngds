@@ -23,6 +23,7 @@ import qnngds as qg
 from qnngds import Device
 from qnngds.typing import LayerSpec
 import phidl.geometry as pg
+from phidl import quickplot as qp
 
 
 def ntron_meander_complicated(
@@ -92,14 +93,20 @@ def ntron_meander_complicated(
     return D
 
 
-ntron_meander_complicated(
+D = ntron_meander_complicated(
     meander_width=0.3,
     tee_size=(2, 0.3),
     tee_stub_size=(0.3, 5),
     tee_taper_type="fillet",
     layer=(1, 0),
 )
+qp(D)
+## SKIPSTART
+from ._save_qp import save_qp  # noqa: E402
 
+save_qp(__file__, D)
+## SKIPSTOP
+## IMAGE
 # Now we'll do the same using ``DeviceSpec`` and ``partial``
 from qnngds.typing import DeviceSpec
 from functools import partial
@@ -144,7 +151,13 @@ meander_spec = partial(qg.devices.snspd.basic, wire_width=0.3)
 tee_spec = partial(pg.tee, size=(2, 0.3), stub_size=(0.3, 5), taper_type="fillet")
 
 D = ntron_meander(ntron_spec, meander_spec, tee_spec, layer_spec=(1, 0))
+qp(D)
+## SKIPSTART
+from ._save_qp import save_qp  # noqa: E402
 
+save_qp(__file__, D)
+## SKIPSTOP
+## IMAGE
 # This code is a bit more concise, and nicely separates the arguments for the different sub-devices of the circuit: parameters for configuring the ``meander`` are passed in to ``qg.devices.snspd.basic`` when generating the ``meander_spec``.
 # Not only is the code easier to read, but it's also much more maintainable and composable.
 # Imagine we would like to tweak the design a bit to use the ``ntron.sharp`` geometry.
