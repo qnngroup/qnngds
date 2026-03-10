@@ -33,16 +33,18 @@ for submodule in pkgutil.walk_packages(tutorials.__path__):
                     blocks[-1][1].append(image_rst)
                 else:
                     # write out code
-                    if len(blocks[-1][1]) > 0:
+                    code = "".join(blocks[-1][1])
+                    if len(code) > 0:
                         contents += "\n.. code-block:: python\n   :linenos:\n\n"
-                        contents += "".join(blocks[-1][1])
+                        contents += code
                         contents += "\n"
                     blocks.append(["comment", [image_rst]])
             elif line.startswith("## STOP"):
-                if len(blocks[-1][1]) > 0:
+                code = "".join(blocks[-1][1])
+                if len(code) > 0:
                     if blocks[-1][0] == "code":
                         contents += "\n.. code-block:: python\n   :linenos:\n\n"
-                    contents += "".join(blocks[-1][1])
+                    contents += code
                 if not line.startswith("## STOPNOREF"):
                     contents += "\n"
                     contents += "\nReference\n---------\n\n.. code-block:: python\n   :linenos:\n\n"
@@ -56,9 +58,10 @@ for submodule in pkgutil.walk_packages(tutorials.__path__):
                 block_type = "comment"
                 if len(blocks) == 0 or block_type != blocks[-1][0]:
                     if len(blocks) > 0:
-                        if len(blocks[-1][1]) > 0:
+                        code = "".join(blocks[-1][1])
+                        if len(code) > 0:
                             contents += "\n.. code-block:: python\n   :linenos:\n\n"
-                            contents += "".join(blocks[-1][1])
+                            contents += code
                             contents += "\n"
                     blocks.append(["comment", []])
                 if line.startswith("# "):
