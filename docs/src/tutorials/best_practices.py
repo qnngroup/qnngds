@@ -104,9 +104,9 @@ qp(D)
 ## SKIPSTART
 from ._save_qp import save_qp  # noqa: E402
 
-save_qp(__file__, D)
+save_qp(__file__, D, plot_name="verbose")
 ## SKIPSTOP
-## IMAGE
+## IMAGE_verbose
 # Now we'll do the same using ``DeviceSpec`` and ``partial``
 from qnngds.typing import DeviceSpec
 from functools import partial
@@ -155,9 +155,9 @@ qp(D)
 ## SKIPSTART
 from ._save_qp import save_qp  # noqa: E402
 
-save_qp(__file__, D)
+save_qp(__file__, D, plot_name="concise")
 ## SKIPSTOP
-## IMAGE
+## IMAGE_concise
 # This code is a bit more concise, and nicely separates the arguments for the different sub-devices of the circuit: parameters for configuring the ``meander`` are passed in to ``qg.devices.snspd.basic`` when generating the ``meander_spec``.
 # Not only is the code easier to read, but it's also much more maintainable and composable.
 # Imagine we would like to tweak the design a bit to use the ``ntron.sharp`` geometry.
@@ -194,9 +194,9 @@ qp(snspd)
 ## SKIPSTART
 from ._save_qp import save_qp  # noqa: E402
 
-save_qp(__file__, snspd)
+save_qp(__file__, snspd, plot_name="snspd")
 ## SKIPSTOP
-## IMAGE
+## IMAGE_snspd
 # the ``auto_width`` argument to ``qg.utilities.extend_ports`` will ensure that the tapers automatically match the
 # starting width of the SNSPD.
 # This can be useful if the device whose ports you wish to extend has several ports with different widths;

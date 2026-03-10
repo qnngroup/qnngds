@@ -24,10 +24,11 @@ for submodule in pkgutil.walk_packages(tutorials.__path__):
                 skip = True
                 continue
             if line.startswith("## IMAGE"):
+                plot_name = line.split("_")[-1]
                 if "ZOOM" in line:
-                    imgname = submodule.name + "_zoom.png"
+                    imgname = submodule.name + plot_name + "_zoom.png"
                 else:
-                    imgname = submodule.name + ".png"
+                    imgname = submodule.name + plot_name + ".png"
                 image_rst = "\n.. image:: " + imgname + "\n"
                 if len(blocks) > 0 and blocks[-1][0] == "comment":
                     blocks[-1][1].append(image_rst)
