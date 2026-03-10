@@ -170,6 +170,14 @@ save_qp(__file__, D, plot_name="concise")
 # For example:
 ntron_spec = qg.devices.ntron.sharp
 D = ntron_meander(ntron_spec, meander_spec, tee_spec, layer_spec=(1, 0))
+qp(D)
+## SKIPSTART
+from ._save_qp import save_qp  # noqa: E402
+
+save_qp(__file__, D, plot_name="sharp")
+## SKIPSTOP
+## IMAGE_sharp
+#
 # Use of ``extend_ports``
 # -----------------------------------------------
 # In order to avoid current crowding, optimal tapers should be used when transitioning from
@@ -202,6 +210,7 @@ save_qp(__file__, snspd, plot_name="snspd")
 # This can be useful if the device whose ports you wish to extend has several ports with different widths;
 # you can just specify the desired final width for routing and ``extend_ports`` will automatically create
 # the necessary taper geometries.
+#
 # Lithography test structures
 # ---------------------------
 #
