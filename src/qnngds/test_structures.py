@@ -849,7 +849,7 @@ def dose_defocus(
         rt.movey((rt.ysize + 10) * i)
     D << res_test
     line_widths = tuple(np.linspace(0.1, 1.0, 10))
-    checkerboard = qg.test_structures.litho_checkerboard(
+    checkerboard = qg.test_structures.resolution_checkerboard(
         resolutions=line_widths,
         layer=layer,
         label_interval=5,
