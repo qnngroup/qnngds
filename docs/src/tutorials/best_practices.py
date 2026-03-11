@@ -232,9 +232,9 @@ save_qp(__file__, p, plot_name="calipers")
 ## IMAGE_calipers
 # Usage:
 #
-# 1. Start by locating the caliper that spreads over the first layer.
-# 2. Find the point where the calipers on each layer are aligned.
-# 3. Count the number of calipers between the center caliper and the point at which they are best aligned between the two layers.
+# 1. Start by locating the calipers on the first layer (the central caliper).
+# 2. Find the position where the calipers on each layer are aligned.
+# 3. Count the number of positions between the center of the comb and the position at which the calipers are best aligned between the two layers.
 # 4. Multiply the number from step 3 by the vernier offset (labeled next to the caliper).
 # 5. For best accuracy, pick a caliper with a vernier offset such that best alignment occurs at > 5 positions away from the center.
 # 6. Repeat for both vertical and horizontal calipers to determine the misalignment in each direction.
