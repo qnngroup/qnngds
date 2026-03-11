@@ -830,12 +830,12 @@ def dose_defocus(
 ) -> Device:
     """Generate a test structure for doing dose/defocus tests
 
-    Contains a lithographic caliper, as well as crossed lines and waffles
+    Contains a lithographic checkerboard, stars, crossed lines, and waffles.
 
     Args:
         layer (LayerSpec): layer to put pattern on
-        resolutions (tuple[float]): resolutions to use for crossed lines and waffles.
-            Resolution for litho caliper is automatically determined from this.
+        resolutions (tuple[float]): resolutions to use for star, crossed lines and waffles.
+            Resolution for litho checkerboard is determined automatically from maximum element.
 
     Returns:
         (Device): dose defocus test structure.
@@ -849,7 +849,11 @@ def dose_defocus(
         rt.movey((rt.ysize + 10) * i)
     D << res_test
     # checkerboards
-    line_widths = tuple(np.linspace(0.1, 1.0, 10))
+    maxres = 10 ** np.round(np.log10(np.max(resolutions)))
+    minres = 10 ** np.round(np.log10(np.min(resolutions)))
+    minres = min(minres, 0.1 * maxres)
+    maxres = min(maxres, 10 * minres)
+    line_widths = tuple(np.linspace(minres, maxres, 10))
     checkerboard = qg.test_structures.resolution_checkerboard(
         resolutions=line_widths,
         layer=layer,
@@ -866,7 +870,7 @@ def dose_defocus(
     x = ch_horz.xmax + 20
     y = ch_horz.y
     for i in range(2):
-        for width in np.linspace(0.4, 1.0, 4):
+        for width in np.linspace(0.4 * maxres, maxres, 4):
             star = pg.litho_star(
                 num_lines=20,
                 line_width=width,
