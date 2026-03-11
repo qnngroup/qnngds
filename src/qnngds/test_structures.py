@@ -825,7 +825,7 @@ def cross_bridge_kelvin_resistor(
 
 @qg.device
 def dose_defocus(
-    resolutions: tuple[float] = (0.6, 0.8, 1.0),
+    resolutions: tuple[float] = (0.7, 0.8, 0.9, 1.0),
     layer: LayerSpec = "PHOTO1",
 ) -> Device:
     """Generate a test structure for doing dose/defocus tests
@@ -848,6 +848,7 @@ def dose_defocus(
         )
         rt.movey((rt.ysize + 10) * i)
     D << res_test
+    # checkerboards
     line_widths = tuple(np.linspace(0.1, 1.0, 10))
     checkerboard = qg.test_structures.resolution_checkerboard(
         resolutions=line_widths,
@@ -855,13 +856,15 @@ def dose_defocus(
         label_interval=5,
         label_size=10,
     )
+    y = D.ymin
     ch_horz = D << checkerboard
-    ch_horz.move((ch_horz.xmin, ch_horz.ymax), (res_test.xmin, res_test.ymin - 30))
+    ch_horz.move((ch_horz.xmin, ch_horz.ymax), (res_test.xmin, y - 50))
     ch_vert = D << checkerboard
     ch_vert.rotate(90)
     ch_vert.move((ch_vert.xmax, ch_vert.ymax), (res_test.xmin - 30, res_test.ymax))
-    # add litho stars
+    # litho stars
     x = ch_horz.xmax + 20
+    y = ch_horz.y
     for i in range(2):
         for width in np.linspace(0.4, 1.0, 4):
             star = pg.litho_star(
@@ -873,8 +876,8 @@ def dose_defocus(
             if i == 1:
                 star = qg.utilities.invert(device=star, ext_bbox_distance={layer: 2})
             star_i = D << star
-            star_i.move((star_i.xmin, star_i.y), (x, ch_horz.y))
-            x = star_i.xmax + 5
+            star_i.move((star_i.xmin, star_i.y), (x, y))
+            x = star_i.xmax + 10
             text = D << pg.text(str(width), size=15, layer=qg.get_layer(layer))
             text.move((text.x, text.ymax), (star_i.x, star_i.ymin - 5))
     D.flatten()
