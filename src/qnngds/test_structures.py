@@ -864,11 +864,11 @@ def dose_defocus(
     x = ch_horz.xmax + 20
     for i in range(2):
         for width in np.linspace(0.4, 1.0, 4):
-            star = qg.test_structures.litho_star(
+            star = pg.litho_star(
                 num_lines=20,
                 line_width=width,
                 diameter=40,
-                layer=layer,
+                layer=qg.get_layer(layer),
             )
             if i == 1:
                 star = qg.utilities.invert(device=star, ext_bbox_distance={layer: 2})

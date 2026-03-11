@@ -216,6 +216,16 @@ save_qp(__file__, snspd, plot_name="snspd")
 # The design is written with photolithography in mind, given the large area.
 # However, they can be adapted to be used to measure alignment between high and low-current e-beam exposure if the structures are appropriately outlined to limit the writing time.
 ## SKIPSTART
+ls = qg.LayerSet()
+ls.add_layer(qg.Layer(name="PHOTO1", gds_layer=1))
+ls.add_layer(qg.Layer(name="PHOTO2", gds_layer=10))
+PDK = qg.Pdk(
+    "twolayer",
+    layers=ls,
+    cross_sections={},
+    layer_transitions={},
+)
+PDK.activate()
 p = qg.test_structures.alignment_mark()
 save_qp(__file__, p, plot_name="calipers")
 ## SKIPSTOP
