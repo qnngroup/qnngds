@@ -825,7 +825,7 @@ def cross_bridge_kelvin_resistor(
 
 @qg.device
 def dose_defocus(
-    resolutions: tuple[float] = (0.4, 0.6, 0.8),
+    resolutions: tuple[float] = (0.6, 0.8, 1.0),
     layer: LayerSpec = "PHOTO1",
 ) -> Device:
     """Generate a test structure for doing dose/defocus tests
