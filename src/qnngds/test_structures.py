@@ -821,3 +821,61 @@ def cross_bridge_kelvin_resistor(
     for n, port in enumerate(ports):
         CBKR.add_port(name=n + 1, port=port)
     return CBKR
+
+
+@qg.device
+def dose_defocus(
+    resolutions: tuple[float] = (0.4, 0.6, 0.8),
+    layer: LayerSpec = "PHOTO1",
+) -> Device:
+    """Generate a test structure for doing dose/defocus tests
+
+    Contains a lithographic caliper, as well as crossed lines and waffles
+
+    Args:
+        layer (LayerSpec): layer to put pattern on
+        resolutions (tuple[float]): resolutions to use for crossed lines and waffles.
+            Resolution for litho caliper is automatically determined from this.
+
+    Returns:
+        (Device): dose defocus test structure.
+    """
+    D = Device("dose_defocus")
+    res_test = Device("res_test")
+    for i in range(2):
+        rt = res_test << qg.test_structures.resolution_test(
+            resolutions=resolutions, layer=layer, outline=None if i == 0 else 0
+        )
+        rt.movey((rt.ysize + 10) * i)
+    D << res_test
+    line_widths = tuple(np.linspace(0.1, 1.0, 10))
+    checkerboard = qg.test_structures.litho_checkerboard(
+        resolutions=line_widths,
+        layer=layer,
+        label_interval=5,
+        label_size=10,
+    )
+    ch_horz = D << checkerboard
+    ch_horz.move((ch_horz.xmin, ch_horz.ymax), (res_test.xmin, res_test.ymin - 30))
+    ch_vert = D << checkerboard
+    ch_vert.rotate(90)
+    ch_vert.move((ch_vert.xmax, ch_vert.ymax), (res_test.xmin - 30, res_test.ymax))
+    # add litho stars
+    x = ch_horz.xmax + 20
+    for i in range(2):
+        for width in np.linspace(0.4, 1.0, 4):
+            star = qg.test_structures.litho_star(
+                num_lines=20,
+                line_width=width,
+                diameter=40,
+                layer=layer,
+            )
+            if i == 1:
+                star = qg.utilities.invert(device=star, ext_bbox_distance={layer: 2})
+            star_i = D << star
+            star_i.move((star_i.xmin, star_i.y), (x, ch_horz.y))
+            x = star_i.xmax + 5
+            text = D << pg.text(str(width), size=15, layer=qg.get_layer(layer))
+            text.move((text.x, text.ymax), (star_i.x, star_i.ymin - 5))
+    D.flatten()
+    return D

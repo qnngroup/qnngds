@@ -153,8 +153,6 @@ tee_spec = partial(pg.tee, size=(2, 0.3), stub_size=(0.3, 5), taper_type="fillet
 D = ntron_meander(ntron_spec, meander_spec, tee_spec, layer_spec=(1, 0))
 qp(D)
 ## SKIPSTART
-from ._save_qp import save_qp  # noqa: E402
-
 save_qp(__file__, D, plot_name="concise")
 ## SKIPSTOP
 ## IMAGE_concise
@@ -172,8 +170,6 @@ ntron_spec = qg.devices.ntron.sharp
 D = ntron_meander(ntron_spec, meander_spec, tee_spec, layer_spec=(1, 0))
 qp(D)
 ## SKIPSTART
-from ._save_qp import save_qp  # noqa: E402
-
 save_qp(__file__, D, plot_name="sharp")
 ## SKIPSTOP
 ## IMAGE_sharp
@@ -200,8 +196,6 @@ snspd = qg.utilities.extend_ports(
 )
 qp(snspd)
 ## SKIPSTART
-from ._save_qp import save_qp  # noqa: E402
-
 save_qp(__file__, snspd, plot_name="snspd")
 ## SKIPSTOP
 ## IMAGE_snspd
@@ -214,6 +208,33 @@ save_qp(__file__, snspd, plot_name="snspd")
 # Lithography test structures
 # ---------------------------
 #
-# ..TODO::
-#   actually write explanation for lithographic test structures
+# Alignment markers
+# ^^^^^^^^^^^^^^^^^^^^^^^
+#
+# The alignment marks provided by ``qnngds.test_structures.alignment_mark`` and ``qnngds.test_structures.multilayer_alignment`` create vernier caliper comb(s) between two layers.
+# This allows one to measure with an optical microscope sub-micron alignment errors.
+# The design is written with photolithography in mind, given the large area.
+# However, they can be adapted to be used to measure alignment between high and low-current e-beam exposure if the structures are appropriately outlined to limit the writing time.
+## SKIPSTART
+p = qg.test_structures.alignment_mark()
+save_qp(__file__, p, plot_name="calipers")
+## SKIPSTOP
+## IMAGE_calipers
+# Usage:
+#
+# 1. Start by locating the caliper that spreads over the first layer.
+# 2. Find the point where the calipers on each layer are aligned.
+# 3. Count the number of calipers between the center caliper and the point at which they are best aligned between the two layers.
+# 4. Multiply the number from step 3 by the vernier offset (labeled next to the caliper).
+# 5. For best accuracy, pick a caliper with a vernier offset such that best alignment occurs at > 5 positions away from the center.
+# 6. Repeat for both vertical and horizontal calipers to determine the misalignment in each direction.
+#
+# Resolution structures for dose-defocus tests
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+## SKIPSTART
+p = qg.test_structures.dose_defocus()
+save_qp(__file__, p, plot_name="dosedefoc")
+## SKIPSTOP
+## IMAGE_dosedefoc
 ## STOPNOREF
