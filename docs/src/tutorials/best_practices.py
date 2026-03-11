@@ -242,6 +242,13 @@ save_qp(__file__, p, plot_name="calipers")
 # Resolution structures for dose-defocus tests
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
+# In order to calibrate the correct dose (and defocus for optical lithography), it's useful to have a variety of
+# lithographic test structures for analyzing failure modes for smaller features.
+# The ``qnngds.test_structures.dose_defocus`` test structure provides a fairly comprehensive set of structures.
+# Depending on the particular structure being fabricated, some structures may be more relevant than others.
+# For example, for long wires, ``resolution_L`` and ``resolution_checkerboard`` may be most useful, whereas for dense
+# features, ``resolution_waffle`` and ``resolution_checkerboard`` may be more useful.
+# ``litho_stars`` can be helpful as well for non-manhattan oriented features, as well as for wires joining at a shallow angle.
 ## SKIPSTART
 p = qg.test_structures.dose_defocus()
 save_qp(__file__, p, plot_name="dosedefoc")
