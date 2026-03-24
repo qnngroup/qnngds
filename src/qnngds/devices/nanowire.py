@@ -17,6 +17,7 @@ def variable_length(
     wire_width: float = 0.3,
     length: float = 1,
     num_pts: int = 100,
+    symmetric: bool = True,
     layer: LayerSpec = (1, 0),
 ) -> Device:
     """Creates a single wire, made of two optimal steps from constr_width to
@@ -27,6 +28,7 @@ def variable_length(
         wire_width (int or float): The width of connections to source/drain
         length (int or float): The length of the interior constriction.
         num_pts (int): The number of points comprising the optimal_steps geometries.
+        symmetric (bool): if True, symmetric taper between constr_width and wire_width
         layer (LayerSpec): GDS layer specification
 
     Returns:
@@ -53,7 +55,7 @@ def variable_length(
     step = pg.optimal_step(
         start_width=constr_width,
         end_width=wire_width,
-        symmetric=True,
+        symmetric=symmetric,
         num_pts=num_pts,
         layer=qg.get_layer(layer),
     )
