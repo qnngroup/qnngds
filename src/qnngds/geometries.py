@@ -435,8 +435,8 @@ def optimal_hairpin(
     #  Create a blank device, add the geometry, and define the ports
     # ==========================================================================
     HP = qg.Device("optimal_hairpin")
-    HP.add_polygon([xpts, +ypts], layer=layer)
-    HP.add_polygon([xpts, -ypts], layer=layer)
+    HP.add_polygon([xpts, +ypts], layer=qg.get_layer(layer))
+    HP.add_polygon([xpts, -ypts], layer=qg.get_layer(layer))
 
     xports = float(np.min(xpts))
     yports = -a + width / 2
