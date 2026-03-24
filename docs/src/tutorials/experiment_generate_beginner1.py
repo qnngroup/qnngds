@@ -64,7 +64,8 @@ route_groups = (
 )
 # .. note::
 #   Note that we have to call ``qg.get_layer()`` when passing a named layer to a ``phidl`` function,
-#   since ``phidl`` expects a tuple or int and has no concept of the PDK used by ``qnngds``.
+#   since ``phidl`` expects a tuple, int, or ``phidl`` ``Layer`` and has no concept of the
+#   subclass ``Layer`` used by ``qnngds``.
 #
 # And supply these inputs to ``experiment.generate`` and plot the output:
 c = qg.experiment.generate(

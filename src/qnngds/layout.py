@@ -313,6 +313,30 @@ class Layer(phLayer):
         self.outline = outline
         self.tuple = (gds_layer, gds_datatype)
 
+    def __eq__(self, other: Layer | phLayer):
+        """Check for equality between two Layer instances or a Layer instance and phLayer instance
+
+        Parameters:
+            self (Layer): the current layer
+            other (phLayer | Layer): the layer to compare with
+
+        Returns:
+            True if the layers have the same GDS (layer,type) tuple, False otherwise.
+        """
+        if isinstance(other, Layer):
+            return self.tuple == other.tuple
+        if isinstance(other, phLayer):
+            return self.tuple == (other.gds_layer, other.gds_datatype)
+        return False
+
+    def __hash__(self):
+        """Hash function for layer class for use in sets/dictionaries
+
+        Returns:
+            hash(self.tuple)
+        """
+        return hash(self.tuple)
+
 
 class LayerSet(phLayerSet):
     """Augment PHIDL LayerSet to use Layers with outline and keepout information"""

@@ -41,13 +41,13 @@ def stack(
     PAD = Device()
     pad = PAD << pg.rectangle(
         size=size,
-        layer=qg.get_layer(layers[0]).tuple,
+        layer=qg.get_layer(layers[0]),
     )
     if len(layers) > 1:
         for layer in layers[1:]:
             extra_pad = PAD << pg.rectangle(
                 size=size,
-                layer=layer,
+                layer=qg.get_layer(layer),
             )
             extra_pad.move(extra_pad.center, pad.center)
     port_dcenter = (0, size[1] * ((port_span[0] + port_span[1]) / 2 - 0.5))
@@ -177,6 +177,6 @@ def quad_line(
         pads << pr.route_quad(
             port1=port,
             port2=pads.ports[port.name],
-            layer=qg.get_layer(port.layer).tuple,
+            layer=qg.get_layer(port.layer),
         )
     return pads

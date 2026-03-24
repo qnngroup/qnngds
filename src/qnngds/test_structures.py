@@ -42,16 +42,16 @@ def vernier_comb(
     COMB = Device("comb")
 
     # middle comb (made of layer1), pitch = 10
-    rect1 = pg.rectangle(size=(5, 30), layer=qg.get_layer(layer1).tuple)
+    rect1 = pg.rectangle(size=(5, 30), layer=qg.get_layer(layer1))
     middle_comb = COMB.add_array(rect1, columns=21, rows=1, spacing=(10, 0))
     middle_comb.move(COMB.center, (0, 0))
 
     # top and bottom combs (made of layer2), pitchs = 10+pitch1, 10+pitch2
-    rect2 = pg.rectangle(size=(5, 30), layer=qg.get_layer(layer2).tuple)
+    rect2 = pg.rectangle(size=(5, 30), layer=qg.get_layer(layer2))
     top_comb = COMB.add_array(rect2, columns=21, rows=1, spacing=(10 + pitch1, 0))
     top_comb.move(top_comb.center, (middle_comb.center[0], middle_comb.center[1] + 30))
     top_text = COMB.add_ref(
-        pg.text(f"{round(pitch1 * 1e3)}NM", size=10, layer=qg.get_layer(layer2).tuple)
+        pg.text(f"{round(pitch1 * 1e3)}NM", size=10, layer=qg.get_layer(layer2))
     )
     top_text.rotate(-text_angle)
     top_text.move(top_text.center, (140, 30))
@@ -61,17 +61,17 @@ def vernier_comb(
         bottom_comb.center, (middle_comb.center[0], middle_comb.center[1] - 30)
     )
     bottom_text = COMB.add_ref(
-        pg.text(f"{round(pitch2 * 1e3)}NM", size=10, layer=qg.get_layer(layer2).tuple)
+        pg.text(f"{round(pitch2 * 1e3)}NM", size=10, layer=qg.get_layer(layer2))
     )
     bottom_text.rotate(-text_angle)
     bottom_text.move(bottom_text.center, (140, -30))
 
     # additional markers (made of layer1), for clarity
-    rect1a = pg.rectangle(size=(5, 20), layer=qg.get_layer(layer1).tuple)
+    rect1a = pg.rectangle(size=(5, 20), layer=qg.get_layer(layer1))
     marksa = COMB.add_array(rect1a, columns=3, rows=2, spacing=(100, 110))
     marksa.move(marksa.center, middle_comb.center)
 
-    rect1b = pg.rectangle(size=(5, 10), layer=qg.get_layer(layer1).tuple)
+    rect1b = pg.rectangle(size=(5, 10), layer=qg.get_layer(layer1))
     marksb = COMB.add_array(rect1b, columns=2, rows=2, spacing=(100, 100))
     marksb.move(marksb.center, middle_comb.center)
 
@@ -97,8 +97,8 @@ def alignment_mark(layer1: LayerSpec = (1, 0), layer2: LayerSpec = (10, 0)) -> D
     # central part with cross
 
     CROSS = Device()
-    cross = CROSS << pg.cross(length=200, width=2, layer=qg.get_layer(layer1).tuple)
-    rect = pg.rectangle(size=(45, 45), layer=qg.get_layer(layer2).tuple)
+    cross = CROSS << pg.cross(length=200, width=2, layer=qg.get_layer(layer1))
+    rect = pg.rectangle(size=(45, 45), layer=qg.get_layer(layer2))
     window = CROSS.add_array(rect, rows=2, columns=2, spacing=(155, 155))
     window.move(window.center, cross.center)
     CROSS.flatten()
@@ -151,9 +151,9 @@ def alignment_mark(layer1: LayerSpec = (1, 0), layer2: LayerSpec = (10, 0)) -> D
     else:
         sm_label += f"{layer1_str[:4]}{layer1_str[-1]}"
     for layer in (layer1, layer2):
-        text1 = TEXT << pg.text(bg_label, size=50, layer=qg.get_layer(layer).tuple)
+        text1 = TEXT << pg.text(bg_label, size=50, layer=qg.get_layer(layer))
         text1.move(text1.center, (-200, 190))
-    text2 = TEXT << pg.text(sm_label, size=10, layer=qg.get_layer(layer2).tuple)
+    text2 = TEXT << pg.text(sm_label, size=10, layer=qg.get_layer(layer2))
     text2.move(text2.center, (-200, 250))
     if isinstance(layer1, tuple):
         layer1_numeric = f"{layer1[0]}/{layer1[1]}"
@@ -168,7 +168,7 @@ def alignment_mark(layer1: LayerSpec = (1, 0), layer2: LayerSpec = (10, 0)) -> D
     text3 = TEXT << pg.text(
         layer2_numeric + " ON " + layer1_numeric,
         size=10,
-        layer=qg.get_layer(layer2).tuple,
+        layer=qg.get_layer(layer2),
     )
     text3.move(text3.center, (-200, 235))
     TEXT.flatten()

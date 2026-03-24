@@ -175,7 +175,6 @@ def outline(
     new_ports = []
     processed_ports = []
     for layer in outline_layers.keys():
-        layer = qg.get_layer(layer).tuple
         for port in dev.ports:
             port = dev.ports[port]
             if qg.get_layer(port.layer).tuple != layer:
@@ -389,7 +388,7 @@ def get_cross_section_with_layer(
     """
     for xc in qg.get_active_pdk().cross_sections:
         xc = qg.get_cross_section(xc)
-        if qg.get_layer(xc.sections[0]["layer"]).tuple == qg.get_layer(layer).tuple:
+        if qg.get_layer(xc.sections[0]["layer"]) == qg.get_layer(layer):
             return xc
 
 

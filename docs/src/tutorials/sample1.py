@@ -40,7 +40,7 @@ ext = partial(pg.optimal_step, end_width=5, symmetric=True, layer=qg.get_layer("
 for choke_w in np.linspace(0.2, 1.0, 9):
     label_text = f"wg/wc {round(choke_w, 2)}/{round(channel_w, 2)}"
     label = pg.text(
-        label_text, size=25, layer=qg.get_layer("PHOTO").tuple, justify="center"
+        label_text, size=25, layer=qg.get_layer("PHOTO"), justify="center"
     ).rotate(-90)
     ntron = qg.devices.ntron.sharp(
         choke_w=choke_w,

@@ -484,14 +484,14 @@ def default_cross_section(
         XC.add(
             width=width,
             offset=0,
-            layer=qg.get_layer(layer).tuple,
+            layer=qg.get_layer(layer),
             hidden=True,
             ports=(1, 2),
         )
         for i in range(2):
             XC.add(
                 width=outline,
-                layer=qg.get_layer(layer).tuple,
+                layer=qg.get_layer(layer),
                 offset=(-1) ** i * (width + outline) / 2,
             )
     else:
@@ -499,7 +499,7 @@ def default_cross_section(
         XC.add(
             width=width,
             offset=0,
-            layer=qg.get_layer(layer).tuple,
+            layer=qg.get_layer(layer),
             ports=(1, 2),
         )
     return XC
@@ -529,8 +529,8 @@ def fine_to_coarse(
     outline_layers = qg.utilities.get_outline_layers(qg.get_active_pdk().layers)
     pos_tone = False
     for layer in outline_layers.keys():
-        if (qg.get_layer(layer).tuple == qg.get_layer(layer1).tuple) or (
-            qg.get_layer(layer).tuple == qg.get_layer(layer2).tuple
+        if (qg.get_layer(layer) == qg.get_layer(layer1)) or (
+            qg.get_layer(layer) == qg.get_layer(layer2)
         ):
             pos_tone = True
             break
