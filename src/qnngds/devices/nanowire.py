@@ -17,7 +17,7 @@ def variable_length(
     wire_width: float = 0.3,
     length: float = 1,
     num_pts: int = 100,
-    symmetric: bool = True,
+    symmetric: bool = False,
     layer: LayerSpec = (1, 0),
 ) -> Device:
     """Creates a single wire, made of two optimal steps from constr_width to
@@ -61,6 +61,8 @@ def variable_length(
     )
     top = NANOWIRE << step
     bot = NANOWIRE << step
+    if not symmetric:
+        bot.mirror((0, 0), (1, 0))
     if length > 0:
         constr = NANOWIRE << pg.straight(
             size=(constr_width, length),
