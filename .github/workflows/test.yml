@@ -56,4 +56,6 @@ jobs:
       run: |
         pr_version=$(grep 'version = "[0-9\.]*"' pr/pyproject.toml | sed -n 's/[^0-9]*\([0-9\.]*\).*/v\1/p')
         master_version=$(grep 'version = "[0-9\.]*"' master/pyproject.toml | sed -n 's/[^0-9]*\([0-9\.]*\).*/v\1/p')
-        [[ pr_version == master_version ]] && exit 1 || exit 0
+        echo "pr_version = $pr_version"
+        echo "master_version = $master_version"
+        [[ "$pr_version" == "$master_version" ]] && exit 1 || exit 0
