@@ -65,6 +65,15 @@ def extend_ports(
             dev_extended.add_port(
                 port=ext_i.ports[2], name=port_name, layer=dev_i.ports[port_name].layer
             )
+    if new_ports:
+        for _, port in dev_i.ports.items():
+            if port.name in port_names:
+                continue
+            dev_extended.add_port(
+                port=port,
+                name=port.name,
+                layer=port.layer,
+            )
     dev_extended.name = "ext_port_" + device.name
     return dev_extended
 
