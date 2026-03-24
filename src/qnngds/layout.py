@@ -329,6 +329,14 @@ class Layer(phLayer):
             return self.tuple == (other.gds_layer, other.gds_datatype)
         return False
 
+    def __hash__(self):
+        """Hash function for layer class for use in sets/dictionaries
+
+        Returns:
+            hash(self.tuple)
+        """
+        return hash(self.tuple)
+
 
 class LayerSet(phLayerSet):
     """Augment PHIDL LayerSet to use Layers with outline and keepout information"""
