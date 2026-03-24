@@ -134,7 +134,12 @@ def heater(
 def multilayer(
     rotation: float = 0,
     channel_spec: DeviceSpec = partial(
-        nanowire.variable_length, constr_width=1, wire_width=2, length=4, layer=(1, 0)
+        nanowire.variable_length,
+        constr_width=1,
+        wire_width=2,
+        length=4,
+        symmetric=True,
+        layer=(1, 0),
     ),
     gate_spec: DeviceSpec = heater,
 ) -> Device:
