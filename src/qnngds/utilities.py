@@ -33,6 +33,7 @@ def extend_ports(
             `DeviceSpec` to generate the tapers. Determines the `start_width` automatically from
             `device`.
         new_ports (bool): if True, create new ports, using port `2` from `Device` specified by `extension`.
+            Also passes any non-extended ports through to the new device that is returned.
 
     Returns:
         (Device): the original device with ports extended
