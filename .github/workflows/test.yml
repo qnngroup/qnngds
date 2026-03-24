@@ -51,6 +51,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         path: master
+        ref: master
     - name: Check versions do not match
       id: getversion
       run: |
