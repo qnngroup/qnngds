@@ -74,7 +74,7 @@ def cpw(
     CPW.add(
         width=width,
         offset=0,
-        layer=qg.get_layer(layer).tuple,
+        layer=qg.get_layer(layer),
         hidden=True,
         ports=(1, 2),
         name="center",
@@ -82,7 +82,7 @@ def cpw(
     for i in range(2):
         CPW.add(
             width=gap,
-            layer=qg.get_layer(layer).tuple,
+            layer=qg.get_layer(layer),
             offset=(-1) ** i * (width + gap) / 2,
             name="gap_" + ("u" if i == 0 else "l"),
         )
@@ -110,7 +110,7 @@ def microstrip(
     USTRIP.add(
         width=width,
         offset=0,
-        layer=qg.get_layer(layer).tuple,
+        layer=qg.get_layer(layer),
         ports=(1, 2),
         name="center",
     )
