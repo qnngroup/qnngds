@@ -66,7 +66,7 @@ qp(c)
 ## SKIPSTART
 from ._save_qp import save_qp  # noqa: E402
 
-save_qp(__file__, c, xlim=(340, 360), ylim=(240, 260))
+save_qp(__file__, c, xlim=(345, 355), ylim=(245, 255))
 ## SKIPSTOP
 ## IMAGE
 # Zooming in on the nTron:

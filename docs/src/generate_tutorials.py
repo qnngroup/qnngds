@@ -24,30 +24,38 @@ for submodule in pkgutil.walk_packages(tutorials.__path__):
                 skip = True
                 continue
             if line.startswith("## IMAGE"):
+                plot_name = ""
+                if "_" in line:
+                    plot_name = line.split("_")[-1].strip()
+                    if plot_name == "ZOOM":
+                        plot_name = ""
                 if "ZOOM" in line:
-                    imgname = submodule.name + "_zoom.png"
+                    imgname = submodule.name + plot_name + "_zoom.png"
                 else:
-                    imgname = submodule.name + ".png"
+                    imgname = submodule.name + plot_name + ".png"
                 image_rst = "\n.. image:: " + imgname + "\n"
                 if len(blocks) > 0 and blocks[-1][0] == "comment":
                     blocks[-1][1].append(image_rst)
                 else:
                     # write out code
-                    contents += "\n.. code-block:: python\n   :linenos:\n\n"
-                    contents += "".join(blocks[-1][1])
-                    contents += "\n"
+                    code = "".join(blocks[-1][1])
+                    if len(code) > 0:
+                        contents += "\n.. code-block:: python\n   :linenos:\n\n"
+                        contents += code
+                        contents += "\n"
                     blocks.append(["comment", [image_rst]])
             elif line.startswith("## STOP"):
-                if blocks[-1][0] == "code":
-                    contents += "\n.. code-block:: python\n   :linenos:\n\n"
-                contents += "".join(blocks[-1][1])
-                contents += "\n"
-                contents += (
-                    "\nReference\n---------\n\n.. code-block:: python\n   :linenos:\n\n"
-                )
-                for block in blocks:
-                    if block[0] == "code":
-                        contents += "".join(block[1])
+                code = "".join(blocks[-1][1])
+                if len(code) > 0:
+                    if blocks[-1][0] == "code":
+                        contents += "\n.. code-block:: python\n   :linenos:\n\n"
+                    contents += code
+                if not line.startswith("## STOPNOREF"):
+                    contents += "\n"
+                    contents += "\nReference\n---------\n\n.. code-block:: python\n   :linenos:\n\n"
+                    for block in blocks:
+                        if block[0] == "code":
+                            contents += "".join(block[1])
                 break
             elif line.startswith("##"):
                 continue
@@ -55,9 +63,11 @@ for submodule in pkgutil.walk_packages(tutorials.__path__):
                 block_type = "comment"
                 if len(blocks) == 0 or block_type != blocks[-1][0]:
                     if len(blocks) > 0:
-                        contents += "\n.. code-block:: python\n   :linenos:\n\n"
-                        contents += "".join(blocks[-1][1])
-                        contents += "\n"
+                        code = "".join(blocks[-1][1])
+                        if len(code) > 0:
+                            contents += "\n.. code-block:: python\n   :linenos:\n\n"
+                            contents += code
+                            contents += "\n"
                     blocks.append(["comment", []])
                 if line.startswith("# "):
                     blocks[-1][1].append(line[2:])
