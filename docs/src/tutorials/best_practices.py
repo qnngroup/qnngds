@@ -279,16 +279,20 @@ from qnngds import Device
 D = Device("SNSPD array")
 arr = D.add_array(
     device=snspd,
-    columns=20,
+    columns=5,
     rows=1,
-    spacing=(5, 0),
+    spacing=(10, 0),
 )
+# This leverages the gdspy primitve ``CellArray``, which is an efficient way to store the layout
+# Furthermore, we can access the ports like so:
+for n, port_dict in enumerate(arr.ports[0, :]):
+    for port_name, port in port_dict.items():
+        D.add_port(name=f"{n}{port_name}", port=port)
+# Now, if we plot ``D``, we can see the new ports we've added to it from the ``CellArray``.
 qp(D)
 ## SKIPSTART
 save_qp(__file__, D, plot_name="snspdarray")
 ## SKIPSTOP
 ## IMAGE_snspdarray
-# This leverages the gdspy primitve ``CellArray``, which is an efficient way to store the layout
-# Furthermore, we can access the ports like so:
 arr.ports[0, 0]
 ## STOPNOREF
