@@ -285,7 +285,7 @@ arr = D.add_array(
 )
 qp(D)
 ## SKIPSTART
-save_qp(__file__, snspd, plot_name="snspdarray")
+save_qp(__file__, D, plot_name="snspdarray")
 ## SKIPSTOP
 ## IMAGE_snspdarray
 # This leverages the gdspy primitve ``CellArray``, which is an efficient way to store the layout
