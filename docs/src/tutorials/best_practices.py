@@ -277,7 +277,7 @@ save_qp(__file__, snspd, plot_name="snspdcell")
 from qnngds import Device
 
 D = Device("SNSPD array")
-D.add_array(
+arr = D.add_array(
     device=snspd,
     columns=20,
     rows=1,
@@ -290,5 +290,5 @@ save_qp(__file__, snspd, plot_name="snspdarray")
 ## IMAGE_snspdarray
 # This leverages the gdspy primitve ``CellArray``, which is an efficient way to store the layout
 # Furthermore, we can access the ports like so:
-D.ports[0, 0]
+arr.ports[0, 0]
 ## STOPNOREF
