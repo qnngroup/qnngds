@@ -113,10 +113,10 @@ class Device(phDevice):
 
         Notes:
             Can be called to copy an existing port like
-            add_port(port = existing_port) or to create a new port
-            add_port(myname, mymidpoint, mywidth, myorientation, mylayer).
+            ``add_port(port = existing_port)`` or to create a new port
+            ``add_port(myname, mymidpoint, mywidth, myorientation, mylayer)``.
             Can also be called to copy an existing port with a new name like
-            add_port(port = existing_port, name = new_name)
+            ``add_port(port = existing_port, name = new_name)``
 
         Returns:
             (Port): created port
