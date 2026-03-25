@@ -22,6 +22,7 @@ def extend_ports(
     extension: DeviceSpec,
     auto_width: bool = False,
     new_ports: bool = True,
+    ext_swap_ports: bool = False,
 ) -> Device:
     """Adds the DeviceSpec extension to the named ports of Device device
 
@@ -34,6 +35,7 @@ def extend_ports(
             `device`.
         new_ports (bool): if True, create new ports, using port `2` from `Device` specified by `extension`.
             Also passes any non-extended ports through to the new device that is returned.
+        ext_swap_ports (bool): if True, connects port `2` of the extension to the device instead of port `1`.
 
     Returns:
         (Device): the original device with ports extended
@@ -41,12 +43,18 @@ def extend_ports(
     dev_extended = Device()
     dev_i = dev_extended << device
 
+    ext_ports = [1, 2]
+    if ext_swap_ports:
+        ext_ports.reverse()
+    if not new_ports:
+        ext_ports.pop()
+
     def check_ext_ports(ext: Device):
         """Check extension ports for keys 1 and optionally 2"""
-        for i in range(1, 3 if new_ports else 2):
-            if i not in ext.ports:
+        for p in ext_ports:
+            if p not in ext.ports:
                 raise ValueError(
-                    f"port '{i}' not found in extension.ports: {ext.ports.keys()}"
+                    f"port '{p}' not found in extension.ports: {ext.ports.keys()}"
                 )
 
     if not auto_width:
@@ -61,10 +69,14 @@ def extend_ports(
             )
             check_ext_ports(ext)
         ext_i = dev_extended << ext
-        ext_i.connect(port=ext_i.ports[1], destination=dev_i.ports[port_name])
-        if new_ports and (2 in ext_i.ports):
+        ext_i.connect(
+            port=ext_i.ports[ext_ports[0]], destination=dev_i.ports[port_name]
+        )
+        if new_ports and (ext_ports[1] in ext_i.ports):
             dev_extended.add_port(
-                port=ext_i.ports[2], name=port_name, layer=dev_i.ports[port_name].layer
+                port=ext_i.ports[ext_ports[1]],
+                name=port_name,
+                layer=dev_i.ports[port_name].layer,
             )
     if new_ports:
         for _, port in dev_i.ports.items():

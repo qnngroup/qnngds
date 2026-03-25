@@ -254,4 +254,41 @@ p = qg.test_structures.dose_defocus()
 save_qp(__file__, p, plot_name="dosedefoc")
 ## SKIPSTOP
 ## IMAGE_dosedefoc
+#
+# Device arrays
+# ---------------------------
+#
+# ``phidl`` provides several methods for arraying devices. However, in some cases, one wishes to create a grid of identical devices.
+# ``phidl.geometry.grid`` can achieve this, but it does not store/represent the array in the most efficient way. Furthermore, you
+# lose access to the ports on the device after performing this operation.
+#
+# ``qnngds`` provides a special method for ``qnngds.Device`` instances, :py:func:`qnngds.layout.Device.add_array`.
+# Lets say we want to make a linear array of identical SNSPDs and route them:
+import qnngds as qg
+from phidl import quickplot as qp
+from functools import partial
+
+snspd = qg.devices.snspd.vertical()
+qp(snspd)
+## SKIPSTART
+save_qp(__file__, snspd, plot_name="snspdcell")
+## SKIPSTOP
+## IMAGE_snspdcell
+from qnngds import Device
+
+D = Device("SNSPD array")
+D.add_array(
+    device=snspd,
+    columns=20,
+    rows=1,
+    spacing=(5, 0),
+)
+qp(D)
+## SKIPSTART
+save_qp(__file__, snspd, plot_name="snspdarray")
+## SKIPSTOP
+## IMAGE_snspdarray
+# This leverages the gdspy primitve ``CellArray``, which is an efficient way to store the layout
+# Furthermore, we can access the ports like so:
+D.ports[0, 0]
 ## STOPNOREF

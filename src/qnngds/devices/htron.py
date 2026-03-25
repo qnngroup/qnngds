@@ -70,51 +70,48 @@ def planar(
 
 @qg.device
 def heater(
+    heater_spec: DeviceSpec = nanowire.sharp(
+        constr_width=0.5, wire_width=1, length=2, layer=(10, 0)
+    ),
     pad_size: tuple[float, float] = (2, 2),
-    constr_length: float = 2,
-    constr_width: float = 0.5,
-    pad_outline: float = 0.5,
-    heater_layer: LayerSpec = (10, 0),
     pad_layer: LayerSpec = (20, 0),
 ) -> Device:
-    """Create a heater for use with hTrons.
+    """Create a heater with superconducting leads for use with hTrons.
 
     Args:
+        heater_spec (DeviceSpec): spec for heater
         pad_size (tuple[float, float]): (width, height) of pad
-        constr_length (float): length of heater constriction
-        constr_width (float): width at narrowest point
-        pad_outline (float): amount by which to oversize top pad on each side
-        heater_layer (LayerSpec): layer specification for heater
         pad_layer (LayerSpec): layer specification for top pads
 
     Returns:
-        (Device): a heater
+        (Device): a heater with pads
     """
-    if pad_size[1] - 2 * pad_outline < constr_width:
+    HEATER = Device("heater")
+    heater = qg.get_device(heater_spec)
+    port = next(iter(heater.ports.values()))
+    width = port.width
+    layer = port.layer
+    outline = (pad_size[1] - width) / 2
+    if outline < 0:
         raise ValueError(
-            f"{pad_size=} and {pad_outline=} do not give enough space to "
-            f"make a constriction of width {constr_width=}. "
+            f"{pad_size=} and {heater_spec=} do not give enough space to "
+            f"make a pad that overhangs the heater contacts"
             "Increase pad_size and/or decrease pad_outline"
         )
-    h_pad = pg.compass(
-        size=(pad_size[0] - pad_outline, pad_size[1] - 2 * pad_outline),
-        layer=qg.get_layer(heater_layer),
+    extended = qg.utilities.extend_ports(
+        device=heater,
+        port_names=heater.ports.keys(),
+        extension=pg.straight(
+            size=(width, pad_size[0] - outline), layer=qg.get_layer(layer)
+        ),
+        new_ports=False,
     )
+    HEATER << extended
     t_pad = pg.compass(size=pad_size, layer=qg.get_layer(pad_layer))
-    HEATER = Device("heater")
-    h_pads = []
     t_pads = []
-    heater = HEATER << nanowire.sharp(
-        constr_width=constr_width,
-        wire_width=pad_size[1] - 2 * pad_outline,
-        length=constr_length,
-        layer=heater_layer,
-    )
     for i in range(2):
-        h_pads.append(HEATER << h_pad)
         t_pads.append(HEATER << t_pad)
     for i in range(2):
-        h_pads[i].connect(h_pads[i].ports["W"], heater.ports[i + 1])
         t_pads[i].connect(
             t_pads[i].ports["W"],
             heater.ports[i + 1],

@@ -194,7 +194,7 @@ def meander_sc_contacts(
     res = D << meander(
         layer=layer_res,
         width=width,
-        pitch=max(meander_pitch, width + 1),
+        pitch=max(meander_pitch, width * 2),
         squares=squares,
         max_length=max_length,
     )
