@@ -422,3 +422,24 @@ class CrossSection(phCrossSection):
             if section["hidden"]:
                 section["layer"] = hidden_layers[n]
         return D
+
+
+def to_qg_device(device: phDevice, layer: LayerSpec) -> Device:
+    """Converts a ``phidl.Device`` to a ``qnngds.Device``
+
+    Args:
+        device (phidl.Device): device to convert
+        layer (LayerSpec): layer to use for all ports
+
+    Returns:
+        (qnngds.Device): Device with layer-assigned ports.
+    """
+    D = Device(device.name)
+    d_i = D << device
+    for name, port in d_i.ports.items():
+        D.add_port(
+            name=name,
+            port=port,
+            layer=layer,
+        )
+    return D

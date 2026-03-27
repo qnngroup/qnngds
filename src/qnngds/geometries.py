@@ -88,7 +88,7 @@ def hyper_taper(
         ports=(1, 2),
     )
     taper = path.extrude(xc)
-    qg.utilities._create_layered_ports(taper, layer)
+    qg.utilities.create_layered_ports(taper, layer)
     return taper
 
 
@@ -331,13 +331,13 @@ def via(
     if 2 * via_undersize > min(size[0], size[1]):
         raise ValueError(f"{via_undersize=} is too small for a pad with {size=}.")
     bot_pad = VIA << pg.compass(size=size, layer=qg.get_layer(layer_bottom))
-    qg.utilities._create_layered_ports(bot_pad, layer_bottom)
+    qg.utilities.create_layered_ports(bot_pad, layer_bottom)
     via = VIA << pg.compass(
         size=(size[0] - 2 * via_undersize, size[1] - 2 * via_undersize),
         layer=qg.get_layer(layer_via),
     )
     top_pad = VIA << pg.compass(size=size, layer=qg.get_layer(layer_top))
-    qg.utilities._create_layered_ports(top_pad, layer_top)
+    qg.utilities.create_layered_ports(top_pad, layer_top)
     bot_pad.move(bot_pad.center, (0, 0))
     via.move(via.center, (0, 0))
     top_pad.move(top_pad.center, (0, 0))

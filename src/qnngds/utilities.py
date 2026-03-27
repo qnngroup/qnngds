@@ -91,7 +91,7 @@ def extend_ports(
     return dev_extended
 
 
-def _create_layered_ports(device: Device, layer: LayerSpec):
+def create_layered_ports(device: Device, layer: LayerSpec):
     """Regenerates new ports for device, assigning them all to a layer
 
     Parameters:
@@ -207,7 +207,7 @@ def outline(
                     layer=qg.get_layer(port.layer).tuple,
                 )
             )
-            _create_layered_ports(ext, layer)
+            create_layered_ports(ext, layer)
             ext.connect(port=ext.ports[1], destination=port)
             # translate slightly to make sure there's no gap
             ext.move(1e-4 * np.diff(ext.ports[1].normal, axis=0)[0])

@@ -50,7 +50,7 @@ def variable_length(
         constr.center = (0, 0)
         NANOWIRE.add_port(name=1, port=constr.ports[1])
         NANOWIRE.add_port(name=2, port=constr.ports[2])
-        qg.utilities._create_layered_ports(NANOWIRE, layer)
+        qg.utilities.create_layered_ports(NANOWIRE, layer)
         return NANOWIRE
     # otherwise, create tapers
     step = pg.optimal_step(
@@ -82,7 +82,7 @@ def variable_length(
     NANOWIREu << pg.union(NANOWIRE, layer=qg.get_layer(layer))
     for p, port in enumerate([top.ports[2], bot.ports[2]]):
         NANOWIREu.add_port(name=p + 1, port=port)
-    qg.utilities._create_layered_ports(NANOWIREu, layer)
+    qg.utilities.create_layered_ports(NANOWIREu, layer)
 
     return NANOWIREu
 

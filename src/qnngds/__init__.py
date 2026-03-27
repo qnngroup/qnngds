@@ -7,6 +7,7 @@ from .layout import (
     Layer as Layer,
     LayerSet as LayerSet,
     CrossSection as CrossSection,
+    to_qg_device as to_qg_device,
 )
 from . import geometries as geometries
 from . import utilities as utilities
