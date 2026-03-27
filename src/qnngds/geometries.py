@@ -250,8 +250,8 @@ def tee(
     of fillet tapers.
 
     Args:
-        size (array-like): (width, height) of the flag.
-        stub_size : (array-like): (width, height) of the pole stub.
+        size (array-like): (width, height) of the tee.
+        stub_size : (array-like): (width, height) of the stub.
         taper_type (str | None) : {'straight', 'fillet', None}
             Type of taper between the bottom corner of the stub on the side of
             the flag and the corner of the flag closest to the stub.
@@ -300,6 +300,66 @@ def tee(
     D.add_port(
         name=3,
         midpoint=(0, -p[1]),
+        width=abs(p[0]),
+        orientation=270,
+        layer=layer,
+    )
+    return D
+
+
+@qg.device
+def fillet_90deg(
+    size: tuple[float, float] = (4, 2),
+    stub_size: tuple[float, float] = (2, 1),
+    taper_type: str | None = "fillet",
+    taper_radius: float | None = None,
+    layer: LayerSpec = (1, 0),
+) -> Device:
+    """Creates a 90 degree with fillet bend. Adapted from phidl.flagpole
+
+    Args:
+        size (array-like): (width, height) of the flag.
+        stub_size : (array-like): (width, height) of the pole stub.
+        taper_type (str | None) : {'straight', 'fillet', None}
+            Type of taper between the bottom corner of the stub on the side of
+            the flag and the corner of the flag closest to the stub.
+        taper_radius (float | None) : radius of taper. If None, uses stub_size
+        layer (LayerSpec): Specification of layer(s) to put polygon geometry on.
+    Returns:
+        (Device): tee
+    """
+
+    f = np.array(size).astype(np.float64)
+    p = np.array(stub_size).astype(np.float64)
+
+    assert taper_type in [
+        "straight",
+        "fillet",
+        None,
+    ], 'fillet_90deg() taper_type must "straight"  or "fillet" or None'
+
+    xpts = [0, 0, f[0], f[0], p[0], p[0]]
+    ypts = [-p[1], f[1], f[1], 0, 0, -p[1]]
+
+    D = Device("tee")
+    tee = D.add_polygon([xpts, ypts], layer=qg.get_layer(layer))
+    if taper_type == "fillet":
+        if taper_radius is None:
+            taper_radius = min([abs(f[0] - p[0]), abs(p[1])])
+        tee.fillet([0, 0, 0, 0, taper_radius, 0])
+    elif taper_type == "straight":
+        D.add_polygon([xpts[3:6], ypts[3:6]], layer=qg.get_layer(layer))
+
+    D.add_port(
+        name=1,
+        midpoint=(f[0], f[1] / 2),
+        width=abs(f[1]),
+        orientation=0,
+        layer=layer,
+    )
+    D.add_port(
+        name=2,
+        midpoint=(p[0] / 2, -p[1]),
         width=abs(p[0]),
         orientation=270,
         layer=layer,
