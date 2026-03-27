@@ -23,6 +23,7 @@ def extend_ports(
     auto_width: bool = False,
     new_ports: bool = True,
     ext_swap_ports: bool = False,
+    ext_mirror: tuple[tuple[float, float], tuple[float, float]] | None = None,
 ) -> Device:
     """Adds the DeviceSpec extension to the named ports of Device device
 
@@ -36,6 +37,8 @@ def extend_ports(
         new_ports (bool): if True, create new ports, using port `2` from `Device` specified by `extension`.
             Also passes any non-extended ports through to the new device that is returned.
         ext_swap_ports (bool): if True, connects port `2` of the extension to the device instead of port `1`.
+        ext_mirror (tuple[tuple[float, float], tuple[float,float]] | None): if not None, mirror the extension
+            along the vector ext_mirror.
 
     Returns:
         (Device): the original device with ports extended
@@ -69,6 +72,8 @@ def extend_ports(
             )
             check_ext_ports(ext)
         ext_i = dev_extended << ext
+        if ext_mirror is not None:
+            ext_i.mirror(ext_mirror[0], ext_mirror[1])
         ext_i.connect(
             port=ext_i.ports[ext_ports[0]], destination=dev_i.ports[port_name]
         )
