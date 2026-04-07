@@ -22,7 +22,7 @@ device = make_tdgl_device(
 fig, ax = device.draw()
 plt.show()
 ## SKIPSTART
-from _save_qp import save_fig
+from ._save_qp import save_fig
 
 save_fig(__file__, plot_name="tdgldraw")
 ## SKIPSTOP
