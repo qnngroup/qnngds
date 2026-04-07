@@ -26,6 +26,8 @@ helper_functions = [
     "invert",
     "keepout",
     "outline",
+    "to_qg_device",
+    "create_layered_ports",
 ]
 
 

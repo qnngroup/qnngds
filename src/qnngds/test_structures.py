@@ -752,7 +752,7 @@ def etch_test(
     TRENCHES = Device("etch_trench")
     # create trench
     rect = pg.rectangle(size=pad_size, layer=qg.get_layer(layer))
-    qg.utilities._create_layered_ports(rect, layer)
+    qg.utilities.create_layered_ports(rect, layer)
     pad_outlined = qg.utilities.outline(
         device=rect,
         outline_layers={layer: trench_width},
@@ -812,7 +812,7 @@ def cross_bridge_kelvin_resistor(
     for layer_i in range(2):
         for lead_i in range(2):
             lead = CBKR << (bot_ext if layer_i == 0 else top_ext)
-            qg.utilities._create_layered_ports(
+            qg.utilities.create_layered_ports(
                 lead, layer_bot if layer_i == 0 else layer_top
             )
             con_port = f"{2 - layer_i}{dir_lut[lead_i + 1 + 2 * layer_i]}"
