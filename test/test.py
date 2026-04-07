@@ -26,6 +26,7 @@ helper_functions = [
     "invert",
     "keepout",
     "outline",
+    "to_qg_device",
 ]
 
 
