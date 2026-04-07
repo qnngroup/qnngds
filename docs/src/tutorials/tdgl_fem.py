@@ -22,9 +22,9 @@ device = make_tdgl_device(
 fig, ax = device.draw()
 plt.show()
 ## SKIPSTART
-from ._save_qp import save_fig
+from _save_qp import save_fig
 
-save_fig(__file__, fig, plot_name="tdgldraw")
+save_fig(__file__, plot_name="tdgldraw")
 ## SKIPSTOP
 ## IMAGE_tdgldraw
 
@@ -38,19 +38,17 @@ from qnngds.analysis.fem import (
 
 # we can create a mesh as so:
 mesh = make_mesh(device=snspd, layer=(1, 0), tolerance=0.01)
-fig, ax = plt.subplots()
-ax = visualize_mesh(mesh, ax)
+visualize_mesh(mesh)
 plt.show()
 ## SKIPSTART
-save_fig(__file__, fig, plot_name="femmesh")
+save_fig(__file__, plot_name="femmesh")
 ## SKIPSTOP
 ## IMAGE_femmesh
 # Now, let's analyze the current density by solving the laplace equation
 result = solve_laplace(mesh)
-fig, ax = plt.subplots()
+visualize_current(result, ("1", "2"))
 plt.show()
-ax = visualize_current(result, ("1", "2"), ax)
 ## SKIPSTART
-save_fig(__file__, fig, plot_name="femj")
+save_fig(__file__, plot_name="femj")
 ## SKIPSTOP
 ## IMAGE_femj
