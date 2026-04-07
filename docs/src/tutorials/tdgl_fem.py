@@ -27,7 +27,10 @@ from ._save_qp import save_fig
 save_fig(__file__, plot_name="tdgldraw")
 ## SKIPSTOP
 ## IMAGE_tdgldraw
-
+#
+# We can use this object to do tdgl simulations, check out [the docs](https://py-tdgl.readthedocs.io/en/latest/)
+# for more info.
+#
 # Now, let's analyze the structure with femwell/skfem to visualize the current density.
 from qnngds.analysis.fem import (
     make_mesh,
@@ -52,3 +55,4 @@ plt.show()
 save_fig(__file__, plot_name="femj")
 ## SKIPSTOP
 ## IMAGE_femj
+## STOPNOREF
