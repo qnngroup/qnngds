@@ -3,7 +3,7 @@
 # TDGL and FEM analysis
 # =====================
 #
-# In this set of tutorials, we will cover conversion of ``qnngds.Device`` to ``tdgl.Device`` and ``skfem.mesh.MeshTri1`` for analysis of device properties.
+# In this set of tutorials, we will cover conversion of ``qnngds.Device`` to ``skfem.mesh.MeshTri1``, ``tdgl.Device``, and ``superscreen.Device`` for analysis of device properties.
 #
 # First, we will show how to generate a ``tdgl.Device``
 import qnngds as qg
@@ -31,7 +31,7 @@ save_fig(__file__, plot_name="tdgldraw")
 # We can use this object to do tdgl simulations, check out the `py-tdgl docs<https://py-tdgl.readthedocs.io/en/latest/>`_
 # for more info.
 #
-# Now, let's analyze the structure with femwell/skfem to visualize the current density.
+# Now, let's analyze the structure with femwell/skfem to visualize the current density in the normal state.
 from qnngds.analysis.fem import (
     make_mesh,
     solve_laplace,
