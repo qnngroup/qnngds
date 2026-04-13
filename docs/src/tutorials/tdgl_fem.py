@@ -1,7 +1,7 @@
 ## ruff: noqa: E402
 # .. _tdgl_fem:
-# TDGL and FEM analysis
-# =====================
+# TDGL, London, and FEM normal-state analysis
+# ===========================================
 #
 # In this set of tutorials, we will cover conversion of ``qnngds.Device`` to ``skfem.mesh.MeshTri1``, ``tdgl.Device``, and ``superscreen.Device`` for analysis of device properties.
 #
