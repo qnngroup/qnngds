@@ -65,6 +65,7 @@ save_fig(__file__, plot_name="femj")
 import superscreen as sc
 from qnngds.analysis.superscreen import make_superscreen_device
 
+qg.pdk.get_generic_pdk().activate()
 diode = qg.devices.diode.gated(
     channel_spec=qg.devices.diode.basic(
         layer=(1, 0),
