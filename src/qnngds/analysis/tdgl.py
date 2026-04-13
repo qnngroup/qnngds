@@ -18,7 +18,9 @@ def make_tdgl_device(
     gamma: float,
     layer: LayerSpec,
 ) -> tdgl.Device:
-    """Make a tdgl.Device that can be used for simulation from a gdsfactory Component
+    """Make a tdgl.Device that can be used for simulation from a qnngds Device.
+
+    Cannot currently model structures with holes in them.
 
     Args:
         device (qnngds.Device): input device. Only one layer will be used, supports multiple ports,
