@@ -29,7 +29,7 @@ save_fig(__file__, plot_name="tdgldraw")
 ## IMAGE_tdgldraw
 #
 # We can use this object to do tdgl simulations, check out the `py-tdgl docs<https://py-tdgl.readthedocs.io/en/latest/>`_
-# for more info.
+# for more info and examples.
 #
 # Now, let's analyze the structure with femwell/skfem to visualize the current density in the normal state.
 from qnngds.analysis.fem import (
