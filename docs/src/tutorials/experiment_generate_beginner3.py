@@ -50,7 +50,7 @@ dut = partial(
     layer_contacts=("EBEAM_FINE",),
     layer_keepout=("EBEAM_KEEPOUT",),
 )
-pad_array = qg.pads.array(
+pad_array = qg.pads.array_single(
     pad_specs=(qg.pads.stack(size=(200, 200), layers=("EBEAM_COARSE",)),),
     columns=1,
     rows=2,
