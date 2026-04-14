@@ -38,7 +38,7 @@ def stack(
         error_msg = "Port span must be a tuple (a,b) with both a and "
         error_msg += f"b on the unit interval and a < b. Got {a=} and {b=}."
         raise ValueError(error_msg)
-    PAD = Device()
+    PAD = Device("pad_stack")
     pad = PAD << pg.rectangle(
         size=size,
         layer=qg.get_layer(layers[0]),
@@ -64,13 +64,13 @@ def stack(
 
 
 @qg.device
-def array(
+def array_single(
     pad_specs: DeviceSpecs = (stack,),
     columns: int = 1,
     rows: int = 3,
     pitch: float = 150,
 ) -> Device:
-    """Creates a linear array of pads
+    """Creates a single linear array of pads
 
     Args:
         pad_spec (DeviceSpec): specification for pad or pad stack to use
@@ -81,7 +81,7 @@ def array(
     Returns:
         (Device): linear pad array
     """
-    PADS = Device()
+    PADS = Device("pad_array_single")
     sub_pad = Device()
     offset = 0
     port_i = 0
@@ -110,6 +110,34 @@ def array(
 
 
 @qg.device
+def array_dual(
+    array_spec: DeviceSpec = array_single,
+    space: float = 200,
+) -> Device:
+    """Creates dual linear arrays of pads that face each other
+
+    Args:
+        array_spec (DeviceSpec): specification for a single array
+        space (float): distance between pad ports for each array
+
+    Returns:
+        (Device): dual linear pad array
+    """
+    PADS = Device("pad_array_dual")
+    arr = qg.get_device(array_spec)
+    left = PADS << arr
+    right = PADS << arr
+    right.mirror((0, 0), (0, 1))
+    right.y = left.y
+    right.movex(left.xmax + space - right.xmin)
+    # add ports
+    for offset, dev in zip((0, len(left.ports)), (left, right)):
+        for port_name in dev.ports:
+            PADS.add_port(name=port_name + offset, port=dev.ports[port_name])
+    return PADS
+
+
+@qg.device
 def vdp(
     pad_specs: DeviceSpecs = (stack,),
     space: float = 500,
@@ -124,7 +152,7 @@ def vdp(
     Returns:
         (Device): Van der Pauw pad structure
     """
-    pads = Device()
+    pads = Device("pad_vdp")
     if len(pad_specs) not in (1, 4):
         raise ValueError(
             f"length of pad_specs must be either 1 or 4, got {len(pad_specs)=}"
@@ -144,7 +172,7 @@ def vdp(
 
 @qg.device
 def quad_line(
-    array_spec: DeviceSpec = array,
+    array_spec: DeviceSpec = array_single,
     port_width: float = 20,
     port_pitch: float = 50,
     port_offset: tuple[float, float] = (100, 0),
@@ -161,7 +189,7 @@ def quad_line(
     Returns:
         (Device): pads with intermediate finer ports
     """
-    pads = Device()
+    pads = Device("pad_quad_linear")
     array = pads << qg.get_device(array_spec)
     for p, port_name in enumerate(array.ports):
         port = array.ports[port_name]
