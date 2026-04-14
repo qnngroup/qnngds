@@ -63,8 +63,8 @@ save_fig(__file__, plot_name="tdgldraw")
 # but is limited to a single layer. In order to simulate screening on multiple layers, we can use
 # `superscreen <https://superscreen.readthedocs.io/en/latest/>`_.
 #
-# First, let's create a gated diode device with a 5 nm thick layer having :math:`\lambda = 0.33`μm penetration depth
-# and a 40 nm thick layer having :math:`\lambda = 0.4`μm penetration depth, separated by 45 nm spacer.
+# First, let's create a gated diode device with a 5 nm thick layer having :math:`\lambda = 0.33` μm penetration depth
+# and a 40 nm thick layer having :math:`\lambda = 0.4` μm penetration depth, separated by 45 nm spacer.
 import superscreen as sc
 from qnngds.analysis.superscreen import make_superscreen_device
 
