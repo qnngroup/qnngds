@@ -36,13 +36,8 @@ plt.show()
 save_fig(__file__, plot_name="femj")
 ## SKIPSTOP
 ## IMAGE_femj
-# We can also plot the unnormalized current
-visualize_current(result, ("1", "2"), normalize=False)
-plt.show()
-## SKIPSTART
-save_fig(__file__, plot_name="femjun")
-## SKIPSTOP
-## IMAGE_femjun
+#
+# The current density is normalized to the current density at the excitation ports.
 #
 # Next, we will show how to generate a ``tdgl.Device``
 from qnngds.analysis.tdgl import make_tdgl_device
