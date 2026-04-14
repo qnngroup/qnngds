@@ -58,9 +58,10 @@ save_fig(__file__, plot_name="tdgldraw")
 # We can use this object to do tdgl simulations, check out the `py-tdgl docs<https://py-tdgl.readthedocs.io/en/latest/>`_
 # for more info and examples.
 #
-# In some cases, we may be interested in modeling screening with multi-layer structures.
-# Note that py-tdgl can simulate screening, but is limited to a single layer.
-# In order to simulate screening, we can use `superscreen <https://superscreen.readthedocs.io/en/latest/>`_.
+# In some cases, we may be interested in modeling screening effects and Meissner currents in multi-layer structures.
+# Note that py-tdgl `can simulate screening<https://py-tdgl.readthedocs.io/en/latest/notebooks/screening.html>`_,
+# but is limited to a single layer. In order to simulate screening on multiple layers, we can use
+# `superscreen <https://superscreen.readthedocs.io/en/latest/>`_.
 #
 # First, let's create a gated diode device with a 5 nm thick layer having $\lambda = 0.33$μm penetration depth
 # and a 40 nm thick layer having $\lambda = 0.4$μm penetration depth, separated by 45 nm spacer.
