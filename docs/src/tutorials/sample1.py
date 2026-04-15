@@ -27,7 +27,7 @@ PDK.activate()
 # Now we'll set up an array of devices that we want to place on the sample:
 ntrons = []
 channel_w = 2.0
-pad_array = qg.pads.array(
+pad_array = qg.pads.array_single(
     pad_specs=(qg.pads.stack(size=(200, 100), layers=("PHOTO",)),),
     columns=1,
     rows=3,

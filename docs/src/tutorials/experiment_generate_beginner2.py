@@ -43,7 +43,7 @@ ext = partial(
 dut = qg.utilities.extend_ports(
     device=ntron, port_names=["g", "s", "d"], extension=ext, auto_width=True
 )
-pad_array = qg.pads.array(
+pad_array = qg.pads.array_single(
     pad_specs=(qg.pads.stack(size=(200, 200), layers=("EBEAM_COARSE",)),),
     columns=1,
     rows=3,

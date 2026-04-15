@@ -53,7 +53,7 @@ ext = partial(pg.optimal_step, end_width=1, symmetric=True, layer=qg.get_layer("
 dut = qg.utilities.extend_ports(
     device=ntron, port_names=["g", "s", "d"], extension=ext, auto_width=True
 )
-pad_array = qg.pads.array(
+pad_array = qg.pads.array_single(
     pad_specs=(qg.pads.stack(size=(200, 200), layers=("PHOTO",)),),
     columns=1,
     rows=3,
