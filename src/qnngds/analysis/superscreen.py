@@ -1,5 +1,6 @@
 """Functions for interfacing with superscreen"""
 
+import numpy as np
 import qnngds as qg
 from qnngds.typing import LayerSpec
 import phidl.geometry as pg
@@ -17,6 +18,7 @@ def make_superscreen_device(
     london_lambda: dict[LayerSpec, float] | float,
     thickness: dict[LayerSpec, float] | float,
     z0: dict[LayerSpec, float] | None = None,
+    min_refine_points: int = 100,
 ) -> sc.Device:
     """Make a superscreen.Device that can be used for simulation from a qnngds Device.
 
@@ -32,6 +34,7 @@ def make_superscreen_device(
             (if dict), or same thickness for all layers
         z0 (dict[LayerSpec, float] | None): optional, z height of each layer. Required for multiple layer device.
             Default None.
+        min_refine_points (int): default 100, minimum number of points for polygon.refine()
 
     Returns:
         (superscreen.Device): a superscreen.Device instance that can be used with the superscreen modeling
@@ -77,7 +80,14 @@ def make_superscreen_device(
             )
         ):
             poly = sc.Polygon(f"{layer.tuple}_{n}", layer=layer.tuple, points=pp)
-            new_polygons.append(poly.buffer(0))
+            resample_points = int(
+                np.max(poly.extents) / get_layer_attr(london_lambda, layer) * 10
+            )
+            if min_refine_points is None:
+                new_polygons.append(poly.buffer(0))
+            else:
+                resample_points = max(resample_points, min_refine_points)
+                new_polygons.append(poly.resample(resample_points).buffer(0))
         polygons += new_polygons
         # add ports
         for port_name in device.ports:

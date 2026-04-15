@@ -86,6 +86,7 @@ scdev = make_superscreen_device(
     london_lambda={(1, 0): 0.33, (10, 0): 0.4},
     thickness={(1, 0): 0.005, (10, 0): 0.04},
     z0={(1, 0): 0, (10, 0): 0.05},
+    min_refine_points=1000,
 )
 fig, ax = scdev.draw(figsize=(6, 4))
 _ = scdev.plot_polygons(ax=ax, legend=True)
@@ -128,8 +129,9 @@ save_fig(__file__, plot_name="superscreenhz")
 # Let's reuse the same ``snspd`` device from earlier that we analyzed with femwell:
 scdev = make_superscreen_device(
     device=snspd,
-    london_lambda=0.3,
+    london_lambda=0.33,
     thickness=0.005,
+    min_refine_points=1000,
 )
 scdev.make_mesh(max_edge_length=0.25)
 Ibias = f"{snspd.ports[1].width} uA"
