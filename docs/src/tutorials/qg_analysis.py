@@ -16,7 +16,7 @@ from qnngds.analysis.fem import (
     visualize_current,
 )
 
-snspd = qg.devices.snspd.basic()
+snspd = qg.devices.snspd.basic(size=(3, 3))
 
 # we can create a mesh as so:
 mesh = make_mesh(device=snspd, layer=(1, 0), tolerance=0.01)
