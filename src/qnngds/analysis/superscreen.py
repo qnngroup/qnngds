@@ -1,6 +1,5 @@
 """Functions for interfacing with superscreen"""
 
-import numpy as np
 import qnngds as qg
 from qnngds.typing import LayerSpec
 import phidl.geometry as pg
@@ -68,7 +67,7 @@ def make_superscreen_device(
             layer.tuple,
             london_lambda=get_layer_attr(london_lambda, layer),
             thickness=get_layer_attr(thickness, layer),
-            z0=get_layer_attr(z0, layer),
+            z0=0 if z0 is None else get_layer_attr(z0, layer),
         )
         # create the polygons
         new_polygons = []
@@ -78,10 +77,7 @@ def make_superscreen_device(
             )
         ):
             poly = sc.Polygon(f"{layer.tuple}_{n}", layer=layer.tuple, points=pp)
-            resample_points = int(
-                np.max(poly.extents) / get_layer_attr(london_lambda, layer) * 10
-            )
-            new_polygons.append(poly.resample(resample_points).buffer(0))
+            new_polygons.append(poly.buffer(0))
         polygons += new_polygons
         # add ports
         for port_name in device.ports:
@@ -92,7 +88,8 @@ def make_superscreen_device(
                         f"port_{layer.tuple}_{port_name}",
                         points=sc.geometry.box(
                             get_layer_attr(london_lambda, layer),
-                            device.ports[port_name].width,
+                            device.ports[port_name].width
+                            + get_layer_attr(london_lambda, layer),
                         ),
                         layer=layer.tuple,
                     )

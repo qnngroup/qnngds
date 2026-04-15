@@ -34,6 +34,10 @@
               pythonEnv
               pre-commit
               stdenv.cc.cc.libgcc
+              gmp
+              libffi
+              elfutils
+              numactl
             ];
 
             LD_LIBRARY_PATH = "${

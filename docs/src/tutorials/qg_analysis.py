@@ -123,4 +123,29 @@ plt.show()
 save_fig(__file__, plot_name="superscreenhz")
 ## SKIPSTOP
 ## IMAGE_superscreenhz
+#
+# We can also use superscreen to compute the current density in a wire.
+# Let's reuse the same ``snspd`` device from earlier that we analyzed with femwell:
+scdev = make_superscreen_device(
+    device=snspd,
+    london_lambda=0.3,
+    thickness=0.005,
+)
+scdev.make_mesh(max_edge_length=0.25)
+Ibias = f"{snspd.ports[1].width} uA"
+solutions = sc.solve(
+    scdev,
+    terminal_currents={
+        "(1, 0)_0": {"port_(1, 0)_1": Ibias, "port_(1, 0)_2": f"-{Ibias}"}
+    },
+    iterations=10,
+    progress_bar=True,
+)
+fig, ax = solutions[-1].plot_currents(films=["(1, 0)_0"])
+_ = scdev.plot_polygons(ax=ax[0], color="w", ls="--", lw=1)
+plt.show()
+## SKIPSTART
+save_fig(__file__, plot_name="superscreenj")
+## SKIPSTOP
+## IMAGE_superscreenj
 ## STOPNOREF
