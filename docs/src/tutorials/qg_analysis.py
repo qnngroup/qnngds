@@ -16,7 +16,7 @@ from qnngds.analysis.fem import (
     visualize_current,
 )
 
-snspd = qg.devices.snspd.basic()
+snspd = qg.devices.snspd.basic(size=(3, 3))
 
 # we can create a mesh as so:
 mesh = make_mesh(device=snspd, layer=(1, 0), tolerance=0.01)
@@ -86,6 +86,7 @@ scdev = make_superscreen_device(
     london_lambda={(1, 0): 0.33, (10, 0): 0.4},
     thickness={(1, 0): 0.005, (10, 0): 0.04},
     z0={(1, 0): 0, (10, 0): 0.05},
+    min_refine_points=1000,
 )
 fig, ax = scdev.draw(figsize=(6, 4))
 _ = scdev.plot_polygons(ax=ax, legend=True)
@@ -123,4 +124,30 @@ plt.show()
 save_fig(__file__, plot_name="superscreenhz")
 ## SKIPSTOP
 ## IMAGE_superscreenhz
+#
+# We can also use superscreen to compute the current density in a wire.
+# Let's reuse the same ``snspd`` device from earlier that we analyzed with femwell:
+scdev = make_superscreen_device(
+    device=snspd,
+    london_lambda=0.33,
+    thickness=0.005,
+    min_refine_points=1000,
+)
+scdev.make_mesh(max_edge_length=0.25)
+Ibias = f"{snspd.ports[1].width} uA"
+solutions = sc.solve(
+    scdev,
+    terminal_currents={
+        "(1, 0)_0": {"port_(1, 0)_1": Ibias, "port_(1, 0)_2": f"-{Ibias}"}
+    },
+    iterations=10,
+    progress_bar=True,
+)
+fig, ax = solutions[-1].plot_currents(films=["(1, 0)_0"])
+_ = scdev.plot_polygons(ax=ax[0], color="w", ls="--", lw=1)
+plt.show()
+## SKIPSTART
+save_fig(__file__, plot_name="superscreenj")
+## SKIPSTOP
+## IMAGE_superscreenj
 ## STOPNOREF

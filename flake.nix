@@ -32,19 +32,42 @@
               uv
               python
               pythonEnv
-              pre-commit
               stdenv.cc.cc.libgcc
+              gmp
+              libffi
+              elfutils
+              numactl
+              gmsh
             ];
 
             LD_LIBRARY_PATH = "${
               pkgs.lib.makeLibraryPath (with pkgs; [
-                xorg.libX11
+                libX11
+                stdenv.cc.cc.lib
+                zlib
+                expat
+                libGLU
+                libGL
+                # femwell deps
+                libXrender
+                libXcursor
+                libXfixes
+                libXext
+                libXft
+                fontconfig
+                libXinerama
               ])
             }:$LD_LIBRARY_PATH";
 
             nativeBuildInputs = [ pkgs.autoPatchelfHook ];
 
             shellHook = ''
+              rm -rf .venv
+              uv venv --python=3.12
+              source .venv/bin/activate
+              uv pip install pre-commit
+              uv pip install -r requirements.txt
+              uv pip install -e .
               pre-commit install
               pre-commit run
               patch=$(autoPatchelf ~/.cache/pre-commit/)
@@ -54,11 +77,6 @@
               else
                 echo "patched ~/.cache/pre-commit"
               fi
-              rm -rf .venv
-              uv venv --python=3.12
-              source .venv/bin/activate
-              uv pip install -r requirements.txt
-              uv pip install -e .
             '';
           };
       }
