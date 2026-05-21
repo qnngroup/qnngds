@@ -636,7 +636,9 @@ def generate(
             pad_port = dut_pad_map[dut_port_name]
             if (dut_port.orientation - pad_port.orientation) % 360 == 180:
                 # ports are facing each other
-                w_route = route_group.cross_section.sections[0]["width"]
+                w_route = qg.get_cross_section(route_group.cross_section).sections[0][
+                    "width"
+                ]
                 w_pad = pad_port.width
                 dw = w_pad - w_route
                 dwidth = 0
