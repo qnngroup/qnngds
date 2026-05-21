@@ -28,7 +28,7 @@ class RouteGroup:
 
     Stores a cross section and mapping of DUT ports to optional pad
     ports. If a DUT port is mapped to None, then a pad port
-    will be automatically assigned in :py:func:`generate_experiment`
+    will be automatically assigned in :py:func:`generate`
     """
 
     def __init__(
@@ -71,7 +71,7 @@ class RouteGroup:
 def _get_segment_from_path(path: Path, p: int) -> ArrayLike:
     """Gets the segment starting from the p'th point in path.
 
-    Helper method for :py:func:`generate_experiment`.
+    Helper method for :py:func:`generate`.
 
     Args:
         path (Path): path to get segment from
@@ -87,7 +87,7 @@ def _get_segment_from_path(path: Path, p: int) -> ArrayLike:
 def _segments_overlap(segment_1: ArrayLike, segment_2: ArrayLike) -> bool:
     """Determines if two line segments on a manhattan grid overlap.
 
-    Helper method for :py:func:`generate_experiment`.
+    Helper method for :py:func:`generate`.
 
     Args:
         segment_1 (ArrayLike): first segment
@@ -109,7 +109,7 @@ def _segments_overlap(segment_1: ArrayLike, segment_2: ArrayLike) -> bool:
 def _path_self_intersects(path: Path) -> bool:
     """Determines if a manhattan path has any self-intersections
 
-    Helper method for :py:func:`generate_experiment`.
+    Helper method for :py:func:`generate`.
 
     Args:
         path (Path): path to check
@@ -131,7 +131,7 @@ def _path_self_intersects(path: Path) -> bool:
 def _paths_intersect(path_1: Path, path_2: Path) -> bool:
     """Determines if two manhattan paths intersect
 
-    Helper method for :py:func:`generate_experiment`.
+    Helper method for :py:func:`generate`.
 
     Args:
         path_1 (Path): first path to check
@@ -156,7 +156,7 @@ def _sort_ports(
 ) -> Sequence[Port]:
     """Sorts collections of ports all facing the same direction.
 
-    Helper method for :py:func:`generate_experiment`.
+    Helper method for :py:func:`generate`.
 
     Args:
         ports (dict[str, Sequence[Port]): dictionary of ports.
@@ -367,6 +367,7 @@ def _route_dut(
     layer_transitions: dict[tuple, DeviceSpec],
     retries: int,
     ignore_dut_bbox: bool,
+    debug: bool,
 ) -> Device:
     """Helper method for :py:`generate`
 
@@ -379,6 +380,7 @@ def _route_dut(
         layer_transitions (dict[tuple, DeviceSpec]): transitions between layers
         retries (int): max number of retries
         ignore_dut_bbox (bool): whether or not to ignore the dut bounding box when routing
+        debug (bool): if True, generate quickplot before throwing error
 
     Returns:
         (Device): the routed device
@@ -431,6 +433,7 @@ def _route_dut(
                         if len(portmap[0]) == 0:
                             continue
                         for port1, port2 in zip(portmap[0], portmap[1]):
+                            print(port1, port2)
                             route_path = pr.path_manhattan(
                                 port1, port2, radius=xc.radius
                             )
@@ -452,6 +455,10 @@ def _route_dut(
                     complete = False
                     continue
                 except ValueError as e:
+                    if debug:
+                        from phidl import quickplot as qp
+
+                        qp(routed)
                     raise RuntimeError(
                         "Routing failed, try manually specifying port mapping "
                         "between DUT and pads with route_groups."
@@ -480,13 +487,14 @@ def generate(
     dut: DeviceSpec | Device,
     pad_array: DeviceSpec | Device,
     label: DeviceSpec | Device | None,
-    route_groups: Sequence[RouteGroup] | None,
+    route_groups: Sequence[RouteGroup],
     dut_offset: tuple[float, float] = (0, 0),
     pad_offset: tuple[float, float] = (0, 0),
     label_offset: tuple[float, float] | None = (-100, -100),
     ignore_port_count_mismatch: bool = False,
     ignore_dut_bbox: bool = False,
     retries: int = 10,
+    debug: bool = False,
 ) -> Device:
     """Construct an experiment from a device/circuit (Device).
 
@@ -496,7 +504,7 @@ def generate(
         dut (DeviceSpec or Device): finished device to be connected to pads
         pad_array (DeviceSpec or Device or None): pad array to connect to device
         label (DeviceSpec or Device or None): text label or factory.
-        route_groups (Sequence[RouteGroup] or None): how to route DUT to pads
+        route_groups (Sequence[RouteGroup]): how to route DUT to pads
         dut_offset (tuple[float, float]): x,y offset for dut (mostly useful for linear pad arrays)
         pad_offset (tuple[float, float]): x,y offset for pad array (mostly useful for linear pad arrays)
         label_offset (tuple[float, float] or None): x,y offset of label
@@ -504,6 +512,8 @@ def generate(
             only if route_groups defines a mapping to all pad ports, or lists all DUT ports.
         ignore_dut_bbox (bool): if True, does not attempt to route around DUT bounding box (bbox)
         retries (int): how many times to try rerouting with s_bend (may need to be larger for many port groupings)
+        debug (bool): if True, quickplot DUT + pads before throwing error when routing fails
+
     Returns:
         (Device): experiment
 
@@ -687,5 +697,6 @@ def generate(
         layer_transitions=layer_transitions,
         retries=retries,
         ignore_dut_bbox=ignore_dut_bbox,
+        debug=debug,
     )
     return routed
