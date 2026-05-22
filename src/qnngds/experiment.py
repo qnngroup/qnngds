@@ -433,7 +433,6 @@ def _route_dut(
                         if len(portmap[0]) == 0:
                             continue
                         for port1, port2 in zip(portmap[0], portmap[1]):
-                            print(port1, port2)
                             route_path = pr.path_manhattan(
                                 port1, port2, radius=xc.radius
                             )
