@@ -369,7 +369,7 @@ def fillet_90deg(
         taper_radius (float | None) : radius of taper. If None, uses stub_size
         layer (LayerSpec): Specification of layer(s) to put polygon geometry on.
     Returns:
-        (Device): tee
+        (Device): fillet_90deg
     """
 
     f = np.array(size).astype(np.float64)
