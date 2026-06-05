@@ -434,7 +434,7 @@ def _route_dut(
                             continue
                         for port1, port2 in zip(portmap[0], portmap[1]):
                             route_path = pr.path_manhattan(
-                                port1, port2, radius=xc.radius
+                                port1, port2, radius=1.5 * xc.radius
                             )
                             route_path = pp.smooth(
                                 route_path, radius=xc.radius, use_eff=False, num_pts=50
