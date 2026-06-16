@@ -40,6 +40,7 @@ def basic(
             of the width being comprised of the turn.
         num_pts (int): number of polygon points to use for turn
         extend_terminals (bool): If True, bring ports flush to edges of device
+            also allows shorter device by overlapping hairpins.
         terminals_same_side (bool): If True, both ports will be located on the
             same side of the SNSPD.
         layer (LayerSpec): GDS layer specification
@@ -81,14 +82,17 @@ def basic(
 
     num_meanders = int(np.ceil(ysize / wire_pitch))
 
-    half_size = xsize / 2
+    if extend_terminals:
+        hairpin_length = xsize
+    else:
+        hairpin_length = xsize / 2
 
     SNSPD = Device()
     hairpin = qg.geometries.optimal_hairpin(
         width=wire_width,
         pitch=wire_pitch,
         turn_ratio=turn_ratio,
-        length=half_size,
+        length=hairpin_length,
         num_pts=num_pts,
         layer=layer,
     )
@@ -98,15 +102,8 @@ def basic(
     elif terminals_same_side and (num_meanders % 2) == 1:
         num_meanders += 1
 
-    if extend_terminals:
-        start_nw = SNSPD.add_ref(
-            pg.straight(size=(wire_width, half_size), layer=qg.get_layer(layer))
-        )
-        hp_prev = SNSPD.add_ref(hairpin)
-        hp_prev.connect(1, start_nw.ports[2])
-    else:
-        start_nw = SNSPD.add_ref(hairpin)
-        hp_prev = start_nw
+    start_nw = SNSPD.add_ref(hairpin)
+    hp_prev = start_nw
     alternate = True
     last_port = None
     for _n in range(2, num_meanders):
@@ -115,19 +112,14 @@ def basic(
             hp.connect(2, hp_prev.ports[2])
         else:
             hp.connect(1, hp_prev.ports[1])
+        if extend_terminals:
+            # inset
+            hp.movex(hp_prev.xmin - hp.xmin)
         last_port = hp.ports[2] if terminals_same_side else hp.ports[1]
         hp_prev = hp
         alternate = not alternate
 
-    if extend_terminals:
-        finish_se = SNSPD.add_ref(
-            pg.straight(size=(wire_width, half_size), layer=qg.get_layer(layer))
-        )
-        if last_port is not None:
-            finish_se.connect(2, last_port)
-        SNSPD.add_port(port=finish_se.ports[1], name=2, layer=layer)
-    else:
-        SNSPD.add_port(port=last_port, name=2, layer=layer)
+    SNSPD.add_port(port=last_port, name=2, layer=layer)
 
     SNSPD.add_port(port=start_nw.ports[1], name=1, layer=layer)
 

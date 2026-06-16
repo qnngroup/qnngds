@@ -428,7 +428,6 @@ def vdp(
     diagonal: float = 400,
     contact_width: float = 40,
     layer: LayerSpec = (1, 0),
-    port_type: str = "electrical",
 ) -> Device:
     """Creates a Van der Pauw (VDP) device with specified dimensions.
 
@@ -436,7 +435,6 @@ def vdp(
         diagonal (float): Length of the VDP device, overall maximum dimension, in µm.
         contact_width (float): Width of the contact points (width of the ports), in µm.
         layer (LayerSpec): GDS layer specification
-        port_type (string): gdsfactory port type. default "electrical"
 
     Returns:
         (Device): Van der Pauw cell

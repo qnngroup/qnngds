@@ -97,6 +97,7 @@ def sharp(
     channel_sq: float = 1,
     source_sq: float = 5,
     drain_sq: float = 5,
+    symmetric: bool = True,
     layer: LayerSpec = (1, 0),
 ) -> Device:
     """Creates a sharp ntron device.
@@ -111,6 +112,8 @@ def sharp(
         source_sq (float): Length of the source region in squares.
         drain_w (float): Width of the drain region.
         drain_sq (float): Length of the drain region in squares.
+        symmetric (bool): symmetrically taper from source/drain width to channel.
+            default True.
         layer (LayerSpec): GDS layer specification
 
     Returns:
@@ -137,7 +140,8 @@ def sharp(
     c.connect(port=c.ports["W"], destination=k.ports[2])
     D.move(c.center, (0, 0))
 
-    drain = qg.geometries.taper(
+    taper_fun = qg.geometries.taper if symmetric else qg.geometries.ramp
+    drain = taper_fun(
         length=drain_l,
         start_width=channel_w,
         end_width=drain_w,
@@ -146,12 +150,13 @@ def sharp(
     d = D << drain
     d.connect(port=d.ports[1], destination=c.ports["N"])
 
-    source = qg.geometries.taper(
+    source = taper_fun(
         length=source_l,
         start_width=channel_w,
         end_width=source_w,
         layer=layer,
     )
+    source.mirror((0, 0), (0, 1))
     s = D << source
     s.connect(port=s.ports[1], destination=c.ports["S"])
 

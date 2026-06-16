@@ -60,6 +60,49 @@ def taper(
 
 
 @qg.device
+def ramp(
+    length: int | float = 10,
+    start_width: int | float = 5,
+    end_width: int | float = 2,
+    layer: LayerSpec = (1, 0),
+) -> Device:
+    """Linear ramp (solid). Asymmetric version of taper.
+
+    Args:
+        length (int or float): Length of ramp
+        start_width (int or float): Width of first end of ramp
+        end_width (int or float): Width of second end of ramp
+        layer (LayerSpec): GDS layer specification
+
+    Returns:
+        (Device): a single taper
+    """
+    T = Device("taper")
+    pts = [
+        (0, 0),
+        (length, 0),
+        (length, end_width),
+        (0, start_width),
+    ]
+    T.add_polygon(pts, layer=qg.get_layer(layer))
+    T.add_port(
+        name=1,
+        midpoint=[0, start_width / 2],
+        width=start_width,
+        orientation=180,
+        layer=layer,
+    )
+    T.add_port(
+        name=2,
+        midpoint=[length, end_width / 2],
+        width=end_width,
+        orientation=0,
+        layer=layer,
+    )
+    return T
+
+
+@qg.device
 def hyper_taper(
     length: int | float = 10,
     start_width: int | float = 5,
@@ -326,7 +369,7 @@ def fillet_90deg(
         taper_radius (float | None) : radius of taper. If None, uses stub_size
         layer (LayerSpec): Specification of layer(s) to put polygon geometry on.
     Returns:
-        (Device): tee
+        (Device): fillet_90deg
     """
 
     f = np.array(size).astype(np.float64)
