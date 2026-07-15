@@ -447,6 +447,7 @@ def vdp(
         raise ValueError(f"diagonal {diagonal} must be less than diameter {diameter}")
 
     rect = pg.rectangle(size=(diagonal, diagonal), layer=qg.get_layer(layer))
+    rect.center = (0, 0)
     cross = pg.cross(length=diameter, width=cut_width, layer=qg.get_layer(layer))
     cut = pg.kl_boolean(A=cross, B=rect, operation="A-B", layer=qg.get_layer(layer))
 
