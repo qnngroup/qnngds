@@ -138,11 +138,11 @@ def array_dual(
 
 
 @qg.device
-def vdp(
+def vdp_rect(
     pad_specs: DeviceSpecs = (stack,),
     space: float = 500,
 ) -> Device:
-    """Create pads for Van der Pauw probing
+    """Create pads for probing rectangular Van der Pauw
 
     Args:
         pad_specs (DeviceSpecs): specification for pad or pad stack to use.
@@ -152,7 +152,7 @@ def vdp(
     Returns:
         (Device): Van der Pauw pad structure
     """
-    pads = Device("pad_vdp")
+    pads = Device("pad_vdp_rect")
     if len(pad_specs) not in (1, 4):
         raise ValueError(
             f"length of pad_specs must be either 1 or 4, got {len(pad_specs)=}"

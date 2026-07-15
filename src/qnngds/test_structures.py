@@ -425,11 +425,46 @@ def resolution_checkerboard(
 
 @qg.device
 def vdp(
+    diagonal: float = 100,
+    diameter: float = 500,
+    cut_width: float = 5,
+    layer: LayerSpec = (1, 0),
+) -> Device:
+    """Creates a clover leaf Van der Pauw (VDP) device with specified dimensions.
+
+    Args:
+        diagonal (float): distance between cuts on opposite sides of structure. inner diameter
+        diameter (float): diameter of test structure
+        cut_width (float): width of cuts
+        layer (LayerSpec): GDS layer specification
+
+    Returns:
+        (Device): Van der Pauw cell
+    """
+    VDP = Device("vdp")
+
+    if diagonal >= diameter:
+        raise ValueError(f"diagonal {diagonal} must be less than diameter {diameter}")
+
+    rect = pg.rectangle(size=(diagonal, diagonal), layer=qg.get_layer(layer))
+    rect.center = (0, 0)
+    cross = pg.cross(length=diameter, width=cut_width, layer=qg.get_layer(layer))
+    cut = pg.kl_boolean(A=cross, B=rect, operation="A-B", layer=qg.get_layer(layer))
+
+    circ = pg.circle(radius=diameter / 2, layer=qg.get_layer(layer))
+
+    VDP << pg.kl_boolean(A=circ, B=cut, operation="A-B", layer=qg.get_layer(layer))
+
+    return VDP
+
+
+@qg.device
+def vdp_rect(
     diagonal: float = 400,
     contact_width: float = 40,
     layer: LayerSpec = (1, 0),
 ) -> Device:
-    """Creates a Van der Pauw (VDP) device with specified dimensions.
+    """Creates a rectangular Van der Pauw (VDP) device with specified dimensions.
 
     Args:
         diagonal (float): Length of the VDP device, overall maximum dimension, in µm.
@@ -439,7 +474,7 @@ def vdp(
     Returns:
         (Device): Van der Pauw cell
     """
-    VDP = Device("vdp")
+    VDP = Device("vdp_rect")
 
     xpts = [
         -contact_width / 2,
