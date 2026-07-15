@@ -35,7 +35,8 @@ It is **strongly** recommended to set up a virtual environment or conda environm
 
 .. note::
 
-    If you use nix, the above steps for creating a virtual environment and installing qnngds to it can be done automatically by runnning ``nix develop`` in the repository root, which will create a ``devShell`` with the necessary environment.
+    If you use nix, the above steps for creating a virtual environment and installing qnngds to it can be done automatically by runnning ``nix develop`` in the repository root, which will create a ``devShell`` with the necessary environment. If in addition, you use direnv, you can automatically spawn the dev shell by running ``direnv allow`` in the repository root to allow your shell to automatically set up the environment whenever entering the repository or any of its subdirectories.
+
 
 2. Start coding
 ---------------
