@@ -93,8 +93,9 @@ def sharp(
     channel_w: float = 0.1,
     source_w: float = 0.3,
     drain_w: float = 0.3,
+    choke_shift: float = -0.1,
     gate_sq: float = 2,
-    channel_sq: float = 1,
+    channel_sq: float = 2,
     source_sq: float = 5,
     drain_sq: float = 5,
     symmetric: bool = True,
@@ -105,12 +106,13 @@ def sharp(
     Args:
         choke_w (float): Width of the choke region.
         gate_w (float): Width of the gate region.
-        gate_sq (float): Length of the gate region in squares.
         channel_w (float): Width of the channel region.
-        channel_sq (float): Length of channel region in squares.
         source_w (float): Width of the source region.
-        source_sq (float): Length of the source region in squares.
         drain_w (float): Width of the drain region.
+        choke_shift (float): Offset of choke relative to channel
+        gate_sq (float): Length of the gate region in squares.
+        channel_sq (float): Length of channel region in squares.
+        source_sq (float): Length of the source region in squares.
         drain_sq (float): Length of the drain region in squares.
         symmetric (bool): symmetrically taper from source/drain width to channel.
             default True.
@@ -139,6 +141,7 @@ def sharp(
     c = D << channel
     c.connect(port=c.ports["W"], destination=k.ports[2])
     D.move(c.center, (0, 0))
+    k.movey(choke_shift)
 
     taper_fun = qg.geometries.taper if symmetric else qg.geometries.ramp
     drain = taper_fun(
