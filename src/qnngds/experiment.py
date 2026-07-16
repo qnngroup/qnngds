@@ -358,21 +358,65 @@ def _add_autotapers(
     return new_ports
 
 
+def _extend_port_to_bbox(port: Port, bbox: tuple, space: float):
+    """Helper method for :py:`_route_dut`
+
+    Parameters
+        port (Port): port to route to outside of bounding box
+        bbox (tuple): ((xmin, ymin), (xmax, ymax)) bounding box
+        space (float): extra space to add
+
+    Returns:
+        (Port): new port that is outside of bounding box
+    """
+    midpoint = [port.x, port.y]
+    if space < 0:
+        raise ValueError("extra space cannot be less than zero")
+    if port.orientation == 0:
+        # go to xmax
+        midpoint[0] = max(midpoint[0], bbox[1][0] + space)
+    elif port.orientation == 90:
+        # go to ymax
+        midpoint[1] = max(midpoint[1], bbox[1][1] + space)
+    elif port.orientation == 180:
+        # go to xmin
+        midpoint[0] = min(midpoint[0], bbox[0][0] - space)
+    elif port.orientation == 270:
+        # go to ymin
+        midpoint[1] = min(midpoint[1], bbox[0][1] - space)
+    else:
+        print(
+            "WARNING, unable to extend port beyond bounding box if port is not aligned to manhattan grid"
+        )
+        return port
+    return Port(
+        name=port.name,
+        midpoint=midpoint,
+        width=port.width,
+        orientation=port.orientation,
+        layer=port.layer,
+    )
+
+
 def _route_dut(
     experiment: Device,
+    dut_bbox: tuple | None,
+    dut_bbox_keepout: float,
     name: str,
     route_groups: Sequence[RouteGroup] | None,
     dut_groups: Sequence[Sequence[Port]],
     pad_groups: Sequence[Sequence[Port]],
     layer_transitions: dict[tuple, DeviceSpec],
     retries: int,
-    ignore_dut_bbox: bool,
     debug: bool,
 ) -> Device:
     """Helper method for :py:`generate`
 
     Parameters
         experiment (Device): DUT (and pads) Device that will be routed
+        dut_bbox (tuple | None): if not None, all DUT ports will first be routed to the
+            outside of the bbox before additional routing is performed
+        dut_bbox_keepout (float): distance to route outside of bounding box of DUT
         name (str): original name of DUT
         route_groups (Sequence[RouteGroup] | None): route groups between DUT and pads
         dut_groups (Sequence[Sequence[Port]]): DUT-only ports from route_groups
@@ -433,8 +477,24 @@ def _route_dut(
                         if len(portmap[0]) == 0:
                             continue
                         for port1, port2 in zip(portmap[0], portmap[1]):
-                            route_path = pr.path_manhattan(
-                                port1, port2, radius=1.5 * xc.radius
+                            route_path = Path()
+                            route_path.center = port1.midpoint
+                            if dut_bbox is not None:
+                                # first route to edge of bbox
+                                # get cardinal direction
+                                port1_new = _extend_port_to_bbox(
+                                    port=port1, bbox=dut_bbox, space=dut_bbox_keepout
+                                )
+                                if (
+                                    np.sum(np.abs(port1_new.midpoint - port1.midpoint))
+                                    > 1e-6
+                                ):
+                                    route_path.append(
+                                        pr.path_straight(port1, port1_new)
+                                    )
+                                port1 = port1_new
+                            route_path.append(
+                                pr.path_manhattan(port1, port2, radius=2 * xc.radius)
                             )
                             route_path = pp.smooth(
                                 route_path, radius=xc.radius, use_eff=False, num_pts=50
@@ -446,7 +506,8 @@ def _route_dut(
                                     "between the pads and DUT or using s_bend routing."
                                 )
                             # extrude path
-                            routed << xc.extrude(route_path)
+                            extruded = routed << xc.extrude(route_path)
+                            extruded.connect(extruded.ports[2], port2)
                             all_paths.append(route_path)
 
                 except RuntimeError:
@@ -470,6 +531,10 @@ def _route_dut(
                 for n in range(m + 1, len(all_paths)):
                     # check that all_paths[p] and all_paths[q] do not intersect
                     if _paths_intersect(all_paths[m], all_paths[n]):
+                        if debug:
+                            from phidl import quickplot as qp
+
+                            qp(routed)
                         raise Warning(
                             "Could not route without intersections. Try manually "
                             "specifying port mapping between DUT and pads with "
@@ -492,6 +557,7 @@ def generate(
     label_offset: tuple[float, float] | None = (-100, -100),
     ignore_port_count_mismatch: bool = False,
     ignore_dut_bbox: bool = False,
+    dut_bbox_keepout: float = 10,
     retries: int = 10,
     debug: bool = False,
 ) -> Device:
@@ -510,6 +576,8 @@ def generate(
         ignore_port_count_mismatch (bool): if True, ignores mismatched number of DUT and pads ports,
             only if route_groups defines a mapping to all pad ports, or lists all DUT ports.
         ignore_dut_bbox (bool): if True, does not attempt to route around DUT bounding box (bbox)
+        dut_bbox_keepout (float): if ignore_dut_bbox is False, distance to extend ports
+            outside of DUT bounding box before performing routing.
         retries (int): how many times to try rerouting with s_bend (may need to be larger for many port groupings)
         debug (bool): if True, quickplot DUT + pads before throwing error when routing fails
 
@@ -549,31 +617,17 @@ def generate(
     # check if route_groups is complete so we can handle ignore_port_count_mismatch flag
     route_groups_complete = False
     if route_groups is not None and pad_array is not None:
-        route_groups_complete = True
-        # first figure out all of the assigned pad ports and dut ports
-        # there are two ways the route group can be complete:
-        #  1. If number of declared (but unassigned) DUT ports is equal to the
-        #     number of unassigned pad ports
-        #  2. If all pad ports are assigned
-        mapped_pad_ports = set([])
-        declared_dut_ports = set([])
+        # make sure all dut ports are assigned to a pad port
+        dut_i = qg.get_device(dut)
+        all_dut_ports = set(dut_i.ports[port_name].name for port_name in dut_i.ports)
+        mapped_dut_ports = set([])
         for route_group in route_groups:
             if route_group.ground:
                 continue
             for dut_port, pad_port in route_group.port_mapping.items():
-                mapped_pad_ports.add(pad_port)
-                if pad_port is None:
-                    declared_dut_ports.add(dut_port)
-        # get all unassigned pad ports and check that either total number of unassigned pad ports
-        # is zero, or that it matches the number of declared (but unassigned) DUT ports.
-        pads_i = qg.get_device(pad_array)
-        unassigned_pad_ports = (
-            set(pads_i.ports[port_name].name for port_name in pads_i.ports)
-            - mapped_pad_ports
-        )
-        if len(unassigned_pad_ports) > 0:
-            if len(unassigned_pad_ports) != len(declared_dut_ports):
-                route_groups_complete = False
+                mapped_dut_ports.add(dut_port)
+        if len(all_dut_ports - mapped_dut_ports) == 0:
+            route_groups_complete = True
 
     allow_port_count_mismatch = route_groups_complete and ignore_port_count_mismatch
 
@@ -689,13 +743,14 @@ def generate(
     # actually do routing
     routed = _route_dut(
         experiment=experiment,
+        dut_bbox=None if ignore_dut_bbox else dut_ref.bbox,
+        dut_bbox_keepout=dut_bbox_keepout,
         name=dut_i.name,
         route_groups=route_groups,
         dut_groups=dut_groups,
         pad_groups=pad_groups,
         layer_transitions=layer_transitions,
         retries=retries,
-        ignore_dut_bbox=ignore_dut_bbox,
         debug=debug,
     )
     return routed
