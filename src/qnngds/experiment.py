@@ -132,7 +132,7 @@ def _path_self_intersects(path: Path) -> bool:
     return False
 
 
-def _paths_intersect(path_1: Path, path_2: Path) -> bool:
+def _paths_intersect(path_1: Path, path_2: Path) -> tuple[bool, tuple[Path, Path]]:
     """Determines if two manhattan paths intersect
 
     Helper method for :py:func:`generate`.
@@ -142,16 +142,17 @@ def _paths_intersect(path_1: Path, path_2: Path) -> bool:
         path_2 (Path): second path to check
 
     Returns:
-        (bool): True if the paths intersect, False otherwise.
+        (tuple[bool, tuple[Path, Path] | None]): True if the paths intersect,
+            False otherwise. Also returns which segments intersected if an
+            intersection is found.
     """
     for p in range(len(path_1.points) - 1):
         segment_1 = _get_segment_from_path(path_1, p)
         for q in range(len(path_2.points) - 1):
             segment_2 = _get_segment_from_path(path_2, q)
             if _segments_overlap(segment_1, segment_2):
-                print(segment_1, segment_2)
-                return True
-    return False
+                return True, (segment_1, segment_2)
+    return False, None
 
 
 def _sort_ports(
@@ -546,9 +547,12 @@ def _route_dut(
             for m in range(len(all_paths) - 1):
                 for n in range(m + 1, len(all_paths)):
                     # check that all_paths[p] and all_paths[q] do not intersect
-                    if _paths_intersect(all_paths[m], all_paths[n]):
+                    intersection, pair = _paths_intersect(all_paths[m], all_paths[n])
+                    if intersection:
                         message = (
-                            "Could not route without intersections. Try manually "
+                            "Could not route without intersections. Found "
+                            f"intersection between paths {pair} "
+                            "Try manually "
                             "specifying port mapping between DUT and pads with "
                             "route_groups. Also try increasing the spacing between "
                             "DUT and pads."
