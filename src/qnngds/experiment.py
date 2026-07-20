@@ -289,7 +289,9 @@ def _define_routes(
                             )
                         except StopIteration as e:
                             raise ValueError(
-                                f"Port {pad_port_name} not found in pad ports {pad_ports}"
+                                f"Port {pad_port_name} not found in pad ports. Either the port "
+                                "doesn't exist, or has already been assigned. pad_ports = "
+                                f"{[p.name for p in pad_ports]}"
                             ) from e
                         dut_pad_map[dut_port_name] = pad_ports[pad_port_index]
                         pad_ports.pop(pad_port_index)
@@ -325,6 +327,11 @@ def _add_autotapers(
     new_ports = []
     for p, port in enumerate(ports):
         # loop over DUT ports
+        if port.layer is None:
+            raise ValueError(
+                f"Cannot autogenerate tapers on device {device} with port {port}. "
+                f"Got port layer: {port.layer}."
+            )
         port_layer = qg.get_layer(port.layer).tuple
         xc_layer = qg.get_layer(cross_section.sections[0]["layer"]).tuple
         key = port_layer

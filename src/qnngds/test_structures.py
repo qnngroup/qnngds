@@ -577,7 +577,8 @@ def rect_tlm(
                     size=(fp_w + 2, pad_size[1] + 2), layer=qg.get_layer(pad_layer)
                 )
                 top_pad.move(top_pad.center, pad_via.center)
-        text = TLM << pg.text(str(space), layer=qg.get_layer(finger_layer))
+        text = TLM << pg.text(str(space), size=20, layer=qg.get_layer(finger_layer))
+        text.rotate(-90)
         text.move((xoff - text.xmin + 5, -w / 2 - pad_size[1] + 10 - text.ymin))
     # add mesa
     center = (TLM.x, 0)
