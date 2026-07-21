@@ -36,6 +36,7 @@ class RouteGroup:
         cross_section: CrossSectionSpec,
         port_mapping: dict | tuple,
         ground: bool = False,
+        ignore_dut_bbox: bool = False,
     ):
         """Initialize route group
 
@@ -44,6 +45,8 @@ class RouteGroup:
             port_mapping (dict | tuple): either dictionary manually specifying mapping of DUT port names
                 to pad port names or a tuple of DUT port names that should be mapped automatically to
                 pad ports.
+            ignore_dut_bbox (bool): if False, then routes DUT ports to edge of bounding box before attempting
+                to route to pad ports.
             ground (bool): If True, then all dut ports will not be connected to a pad port. This allows
                 connection to ground plane for positive-tone layouts.
         Returns:
@@ -51,6 +54,7 @@ class RouteGroup:
         """
         self.cross_section = cross_section
         self.ground = ground
+        self.ignore_dut_bbox = ignore_dut_bbox
         if isinstance(port_mapping, dict):
             self.port_mapping = port_mapping
             if ground:
@@ -128,7 +132,7 @@ def _path_self_intersects(path: Path) -> bool:
     return False
 
 
-def _paths_intersect(path_1: Path, path_2: Path) -> bool:
+def _paths_intersect(path_1: Path, path_2: Path) -> tuple[bool, tuple[Path, Path]]:
     """Determines if two manhattan paths intersect
 
     Helper method for :py:func:`generate`.
@@ -138,15 +142,17 @@ def _paths_intersect(path_1: Path, path_2: Path) -> bool:
         path_2 (Path): second path to check
 
     Returns:
-        (bool): True if the paths intersect, False otherwise.
+        (tuple[bool, tuple[Path, Path] | None]): True if the paths intersect,
+            False otherwise. Also returns which segments intersected if an
+            intersection is found.
     """
     for p in range(len(path_1.points) - 1):
         segment_1 = _get_segment_from_path(path_1, p)
         for q in range(len(path_2.points) - 1):
             segment_2 = _get_segment_from_path(path_2, q)
             if _segments_overlap(segment_1, segment_2):
-                return True
-    return False
+                return True, (segment_1, segment_2)
+    return False, None
 
 
 def _sort_ports(
@@ -283,7 +289,9 @@ def _define_routes(
                             )
                         except StopIteration as e:
                             raise ValueError(
-                                f"Port {pad_port_name} not found in pad ports {pad_ports}"
+                                f"Port {pad_port_name} not found in pad ports. Either the port "
+                                "doesn't exist, or has already been assigned. pad_ports = "
+                                f"{[p.name for p in pad_ports]}"
                             ) from e
                         dut_pad_map[dut_port_name] = pad_ports[pad_port_index]
                         pad_ports.pop(pad_port_index)
@@ -319,6 +327,11 @@ def _add_autotapers(
     new_ports = []
     for p, port in enumerate(ports):
         # loop over DUT ports
+        if port.layer is None:
+            raise ValueError(
+                f"Cannot autogenerate tapers on device {device} with port {port}. "
+                f"Got port layer: {port.layer}."
+            )
         port_layer = qg.get_layer(port.layer).tuple
         xc_layer = qg.get_layer(cross_section.sections[0]["layer"]).tuple
         key = port_layer
@@ -358,21 +371,66 @@ def _add_autotapers(
     return new_ports
 
 
+def _extend_port_to_bbox(port: Port, bbox: tuple, space: float):
+    """Helper method for :py:`_route_dut`
+
+    Parameters
+        port (Port): port to route to outside of bounding box
+        bbox (tuple): ((xmin, ymin), (xmax, ymax)) bounding box
+        space (float): extra space to add
+
+    Returns:
+        (Port): new port that is outside of bounding box
+    """
+    midpoint = [port.x, port.y]
+    if space < 0:
+        raise ValueError("extra space cannot be less than zero")
+    if port.orientation == 0:
+        # go to xmax
+        midpoint[0] = max(midpoint[0], bbox[1][0] + space)
+    elif port.orientation == 90:
+        # go to ymax
+        midpoint[1] = max(midpoint[1], bbox[1][1] + space)
+    elif port.orientation == 180:
+        # go to xmin
+        midpoint[0] = min(midpoint[0], bbox[0][0] - space)
+    elif port.orientation == 270:
+        # go to ymin
+        midpoint[1] = min(midpoint[1], bbox[0][1] - space)
+    else:
+        print(
+            "WARNING, unable to extend port beyond bounding box if port is not aligned to manhattan grid"
+        )
+        return port
+    return Port(
+        name=port.name,
+        midpoint=midpoint,
+        width=port.width,
+        orientation=port.orientation,
+        layer=port.layer,
+    )
+
+
 def _route_dut(
     experiment: Device,
+    dut_bbox: tuple,
+    dut_bbox_keepout: float,
     name: str,
     route_groups: Sequence[RouteGroup] | None,
     dut_groups: Sequence[Sequence[Port]],
     pad_groups: Sequence[Sequence[Port]],
     layer_transitions: dict[tuple, DeviceSpec],
     retries: int,
-    ignore_dut_bbox: bool,
     debug: bool,
 ) -> Device:
     """Helper method for :py:`generate`
 
     Parameters
         experiment (Device): DUT (and pads) Device that will be routed
+        dut_bbox (tuple): for route_groups which have ignore_dut_bbox set to False,
+            all DUT ports will first be routed to the outside of the bbox before additional
+            routing is performed
+        dut_bbox_keepout (float): distance to route outside of bounding box of DUT
         name (str): original name of DUT
         route_groups (Sequence[RouteGroup] | None): route groups between DUT and pads
         dut_groups (Sequence[Sequence[Port]]): DUT-only ports from route_groups
@@ -433,8 +491,24 @@ def _route_dut(
                         if len(portmap[0]) == 0:
                             continue
                         for port1, port2 in zip(portmap[0], portmap[1]):
-                            route_path = pr.path_manhattan(
-                                port1, port2, radius=1.5 * xc.radius
+                            route_path = Path()
+                            route_path.center = port1.midpoint
+                            if not route_group.ignore_dut_bbox:
+                                # first route to edge of bbox
+                                # get cardinal direction
+                                port1_new = _extend_port_to_bbox(
+                                    port=port1, bbox=dut_bbox, space=dut_bbox_keepout
+                                )
+                                if (
+                                    np.sum(np.abs(port1_new.midpoint - port1.midpoint))
+                                    > 1e-6
+                                ):
+                                    route_path.append(
+                                        pr.path_straight(port1, port1_new)
+                                    )
+                                port1 = port1_new
+                            route_path.append(
+                                pr.path_manhattan(port1, port2, radius=2 * xc.radius)
                             )
                             route_path = pp.smooth(
                                 route_path, radius=xc.radius, use_eff=False, num_pts=50
@@ -445,8 +519,17 @@ def _route_dut(
                                     "self-intersecting. Try increasing the spacing "
                                     "between the pads and DUT or using s_bend routing."
                                 )
+                            # move end of route path to port2
                             # extrude path
-                            routed << xc.extrude(route_path)
+                            extruded = routed << xc.extrude(route_path)
+                            dorientation = (
+                                port2.orientation - extruded.ports[2].orientation + 180
+                            ) % 360
+                            extruded.rotate(dorientation)
+                            dcenter = port2.midpoint - extruded.ports[2].midpoint
+                            extruded.move(dcenter)
+                            route_path.rotate(dorientation)
+                            route_path.move(dcenter)
                             all_paths.append(route_path)
 
                 except RuntimeError:
@@ -454,14 +537,16 @@ def _route_dut(
                     complete = False
                     continue
                 except ValueError as e:
+                    message = (
+                        "Routing failed, try manually specifying port mapping "
+                        "between DUT and pads with route_groups."
+                    )
                     if debug:
+                        print(message)
                         from phidl import quickplot as qp
 
                         qp(routed)
-                    raise RuntimeError(
-                        "Routing failed, try manually specifying port mapping "
-                        "between DUT and pads with route_groups."
-                    ) from e
+                    raise RuntimeError(message) from e
             else:
                 # TODO implement s-bend routing
                 pass
@@ -469,13 +554,22 @@ def _route_dut(
             for m in range(len(all_paths) - 1):
                 for n in range(m + 1, len(all_paths)):
                     # check that all_paths[p] and all_paths[q] do not intersect
-                    if _paths_intersect(all_paths[m], all_paths[n]):
-                        raise Warning(
-                            "Could not route without intersections. Try manually "
+                    intersection, pair = _paths_intersect(all_paths[m], all_paths[n])
+                    if intersection:
+                        message = (
+                            "Could not route without intersections. Found "
+                            f"intersection between paths {pair} "
+                            "Try manually "
                             "specifying port mapping between DUT and pads with "
                             "route_groups. Also try increasing the spacing between "
                             "DUT and pads."
                         )
+                        if debug:
+                            print(message)
+                            from phidl import quickplot as qp
+
+                            qp(routed)
+                        raise Warning(message)
         if complete:
             routed.name = f"experiment_{name}"
             return routed
@@ -491,7 +585,7 @@ def generate(
     pad_offset: tuple[float, float] = (0, 0),
     label_offset: tuple[float, float] | None = (-100, -100),
     ignore_port_count_mismatch: bool = False,
-    ignore_dut_bbox: bool = False,
+    dut_bbox_keepout: float = 10,
     retries: int = 10,
     debug: bool = False,
 ) -> Device:
@@ -509,7 +603,8 @@ def generate(
         label_offset (tuple[float, float] or None): x,y offset of label
         ignore_port_count_mismatch (bool): if True, ignores mismatched number of DUT and pads ports,
             only if route_groups defines a mapping to all pad ports, or lists all DUT ports.
-        ignore_dut_bbox (bool): if True, does not attempt to route around DUT bounding box (bbox)
+        dut_bbox_keepout (float): if ignore_dut_bbox is False, distance to extend ports
+            outside of DUT bounding box before performing routing.
         retries (int): how many times to try rerouting with s_bend (may need to be larger for many port groupings)
         debug (bool): if True, quickplot DUT + pads before throwing error when routing fails
 
@@ -549,31 +644,17 @@ def generate(
     # check if route_groups is complete so we can handle ignore_port_count_mismatch flag
     route_groups_complete = False
     if route_groups is not None and pad_array is not None:
-        route_groups_complete = True
-        # first figure out all of the assigned pad ports and dut ports
-        # there are two ways the route group can be complete:
-        #  1. If number of declared (but unassigned) DUT ports is equal to the
-        #     number of unassigned pad ports
-        #  2. If all pad ports are assigned
-        mapped_pad_ports = set([])
-        declared_dut_ports = set([])
+        # make sure all dut ports are assigned to a pad port
+        dut_i = qg.get_device(dut)
+        all_dut_ports = set(dut_i.ports[port_name].name for port_name in dut_i.ports)
+        mapped_dut_ports = set([])
         for route_group in route_groups:
             if route_group.ground:
                 continue
             for dut_port, pad_port in route_group.port_mapping.items():
-                mapped_pad_ports.add(pad_port)
-                if pad_port is None:
-                    declared_dut_ports.add(dut_port)
-        # get all unassigned pad ports and check that either total number of unassigned pad ports
-        # is zero, or that it matches the number of declared (but unassigned) DUT ports.
-        pads_i = qg.get_device(pad_array)
-        unassigned_pad_ports = (
-            set(pads_i.ports[port_name].name for port_name in pads_i.ports)
-            - mapped_pad_ports
-        )
-        if len(unassigned_pad_ports) > 0:
-            if len(unassigned_pad_ports) != len(declared_dut_ports):
-                route_groups_complete = False
+                mapped_dut_ports.add(dut_port)
+        if len(all_dut_ports - mapped_dut_ports) == 0:
+            route_groups_complete = True
 
     allow_port_count_mismatch = route_groups_complete and ignore_port_count_mismatch
 
@@ -689,13 +770,14 @@ def generate(
     # actually do routing
     routed = _route_dut(
         experiment=experiment,
+        dut_bbox=dut_ref.bbox,
+        dut_bbox_keepout=dut_bbox_keepout,
         name=dut_i.name,
         route_groups=route_groups,
         dut_groups=dut_groups,
         pad_groups=pad_groups,
         layer_transitions=layer_transitions,
         retries=retries,
-        ignore_dut_bbox=ignore_dut_bbox,
         debug=debug,
     )
     return routed
