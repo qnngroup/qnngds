@@ -75,9 +75,7 @@ def variable_length(
     else:
         bot.rotate(90)
         bot.move(bot.ports[1].center, (0, 0))
-        top.connect(
-            port=top.ports[1], destination=bot.ports[1], allow_type_mismatch=True
-        )
+        top.connect(port=top.ports[1], destination=bot.ports[1])
     NANOWIREu = Device("nw_smooth")
     NANOWIREu << pg.union(NANOWIRE, layer=qg.get_layer(layer))
     for p, port in enumerate([top.ports[2], bot.ports[2]]):
