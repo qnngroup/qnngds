@@ -18,6 +18,7 @@ def variable_length(
     length: float = 1,
     num_pts: int = 100,
     symmetric: bool = False,
+    anticrowding_factor: float = 1.2,
     layer: LayerSpec = (1, 0),
 ) -> Device:
     """Creates a single wire, made of two optimal steps from constr_width to
@@ -29,6 +30,7 @@ def variable_length(
         length (int or float): The length of the interior constriction.
         num_pts (int): The number of points comprising the optimal_steps geometries.
         symmetric (bool): if True, symmetric taper between constr_width and wire_width
+        anticrowding_factor (float): factor to reduce current crowding by elongating the structure
         layer (LayerSpec): GDS layer specification
 
     Returns:
@@ -57,6 +59,7 @@ def variable_length(
         start_width=constr_width,
         end_width=wire_width,
         symmetric=symmetric,
+        anticrowding_factor=anticrowding_factor,
         num_pts=num_pts,
         layer=qg.get_layer(layer),
     )
