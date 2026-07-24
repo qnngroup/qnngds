@@ -28,6 +28,8 @@ helper_functions = [
     "outline",
     "to_qg_device",
     "create_layered_ports",
+    "fill_grid",
+    "fill_solid",
 ]
 
 
