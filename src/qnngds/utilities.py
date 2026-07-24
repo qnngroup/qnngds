@@ -10,10 +10,112 @@ from functools import partial
 import numpy as np
 
 from qnngds.typing import LayerSpec, LayerSpecs, DeviceSpec, CrossSectionSpec
-from qnngds import Device, LayerSet, Port
+from qnngds import Device, LayerSet, Port, Layer
 
 import qnngds as qg
 import phidl.geometry as pg
+
+
+def fill_grid(
+    device: Device,
+    avoid_layers: LayerSpecs,
+    include_layers: None | LayerSpecs,
+    margin: float,
+    fill_layers: LayerSpecs,
+    fill_size: tuple,
+    fill_densities: Sequence[float],
+    fill_inverted: bool,
+    bbox: tuple,
+) -> Device:
+    """Creates rectangularly-gridded fill, similar to pg.fill_rectangle
+
+    Parameters
+        device (Device): device to outline
+        avoid_layers (LayerSpecs): layers to avoid
+        include_layers (LayerSpecs): layers to connect to
+        margin (float): distance from avoid_layers
+        fill_layers (LayerSpecs): layers to add fill to
+        fill_size (tuple): (width, height) of grid
+        fill_densities (Sequence[float]) density for each fill layer
+        fill_inverted (bool): if True, produces a connected mesh, if False, a grid of rectangles
+        bbox (tuple): bounding box to extend fill to
+
+    Returns:
+        (Device): fill
+    """
+    MASK = fill_solid(
+        device=device,
+        avoid_layers=avoid_layers,
+        include_layers=include_layers,
+        margin=margin,
+        fill_layers=(0,),
+        bbox=bbox,
+    )
+    D = Device("fill_grid")
+    for fill_density, layer in zip(fill_densities, fill_layers):
+        GRID = Device("grid")
+        rect = pg.rectangle(size=np.array(fill_size) * fill_densities, layer=0)
+        GRID.add_array(
+            rect,
+            columns=int(np.ceil(MASK.xsize / fill_size[0])),
+            rows=int(np.ceil(MASK.ysize / fill_size[1])),
+            spacing=fill_size,
+        )
+        GRID.center = MASK.center
+        D << pg.kl_boolean(
+            MASK,
+            GRID,
+            operation="-" if fill_inverted else "and",
+            layer=qg.get_layer(layer),
+        )
+    return D
+
+
+def fill_solid(
+    device: Device,
+    avoid_layers: LayerSpecs,
+    include_layers: None | LayerSpecs,
+    margin: float,
+    fill_layers: LayerSpecs,
+    bbox: tuple,
+) -> Device:
+    """Fill around a device.
+
+    Parameters:
+        device (Device): device to outline
+        avoid_layers (LayerSpecs): layers to avoid
+        include_layers (LayerSpecs): layers to connect to
+        margin (float): distance from avoid_layers
+        fill_layers (LayerSpecs): layers to add fill to
+        bbox (tuple): bounding box to extend fill to
+
+    Returns:
+        (Device): fill
+    """
+    BBOX = pg.bbox(bbox)
+    AVOID = Device("avoid")
+    INCLUDE = Device("include")
+    polygons = device.get_polygons(by_spec=True)
+    for device, layerset in zip((AVOID, INCLUDE), (avoid_layers, include_layers)):
+        for layer in layerset:
+            if isinstance(layer, int):
+                layer = (layer, 0)
+            if isinstance(layer, str):
+                layer = qg.get_layer(layer).tuple
+            if isinstance(layer, Layer):
+                layer = layer.tuple
+            device.add_polygon(polygons[layer])
+    AVOID_MASKED = pg.kl_boolean(AVOID, INCLUDE, operation="A-B")
+    AVOID_SIZED = pg.offset(AVOID_MASKED, distance=margin, join="bevel")
+    FILL = Device("fill")
+    fill_poly = pg.kl_boolean(
+        BBOX, AVOID_SIZED, operation="A-B", layer=0
+    ).get_polygons()
+    for layer in fill_layers:
+        if isinstance(layer, str):
+            layer = qg.get_layer(layer)
+        FILL.add_polygon(fill_poly, layer=layer)
+    return FILL
 
 
 def extend_ports(
