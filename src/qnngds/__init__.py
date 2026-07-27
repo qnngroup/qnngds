@@ -16,6 +16,7 @@ from .pdk import (
     Pdk as Pdk,
     get_active_pdk as get_active_pdk,
     get_layer as get_layer,
+    get_layer_tuple as get_layer_tuple,
     get_device as get_device,
     get_cross_section as get_cross_section,
     layer_auto_transitions as layer_auto_transitions,
