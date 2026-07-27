@@ -15,6 +15,7 @@ helper_functions = [
     "get_cross_section",
     "get_device",
     "get_layer",
+    "get_layer_tuple",
     "get_outline_layers",
     "layer_auto_transitions",
     "outline",
