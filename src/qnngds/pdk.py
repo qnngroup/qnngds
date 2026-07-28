@@ -79,11 +79,13 @@ class Pdk:
         """Enable the PDK and allow it to be accessed globally"""
         _set_active_pdk(self)
 
-    def get_layer(self, layer: LayerSpec) -> Layer:
+    def get_layer(self, layer: LayerSpec, allow_unknown: bool = False) -> Layer:
         """Get a specific layer within the PDK
 
         Args:
             layer (LayerSpec): string, int, or tuple that identifies the desired layer
+            allow_unknown (bool): if True, will return the a provided tuple layerspec if
+                it does not match any layers registered in the active PDK.
 
         Returns:
             (Layer): instance of layer matching the queried LayerSpec
@@ -109,6 +111,8 @@ class Pdk:
                 _layer = self.layers[_layer]
                 if layer == (_layer.gds_layer, _layer.gds_datatype):
                     return _layer
+            if allow_unknown:
+                return layer
         raise ValueError(value_error_msg)
 
     def get_device(self, spec: DeviceSpec, **kwargs: dict) -> phidl.Device:
@@ -268,7 +272,27 @@ def get_layer(layer: LayerSpec) -> Layer:
     Returns:
         (Layer): instance of layer matching the queried LayerSpec
     """
-    return get_active_pdk().get_layer(layer)
+    return get_active_pdk().get_layer(layer, allow_unknown=False)
+
+
+def get_layer_tuple(layer: LayerSpec) -> tuple:
+    """Convert a LayerSpec to a tuple.
+
+    The LayerSpec need not correspond to an existing layer in the PDK.
+
+    Args:
+        layer (LayerSpec): string, int, or tuple that identifies the desried layer
+
+    Returns:
+        (tuple[int, int]): gds layer, datatype tuple
+    """
+    layer_parsed = get_active_pdk().get_layer(layer, allow_unknown=True)
+    if isinstance(layer_parsed, Layer):
+        return layer_parsed.tuple
+    elif isinstance(layer_parsed, tuple):
+        return layer_parsed
+    else:
+        raise ValueError(f"could not get tuple form of layer {layer}")
 
 
 def get_device(spec: DeviceSpec, **kwargs: dict) -> phidl.Device:

@@ -15,6 +15,7 @@ helper_functions = [
     "get_cross_section",
     "get_device",
     "get_layer",
+    "get_layer_tuple",
     "get_outline_layers",
     "layer_auto_transitions",
     "outline",
@@ -28,6 +29,8 @@ helper_functions = [
     "outline",
     "to_qg_device",
     "create_layered_ports",
+    "fill_grid",
+    "fill_solid",
 ]
 
 

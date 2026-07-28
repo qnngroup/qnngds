@@ -16,6 +16,106 @@ import qnngds as qg
 import phidl.geometry as pg
 
 
+def fill_grid(
+    device: Device,
+    avoid_layers: LayerSpecs,
+    include_layers: None | LayerSpecs,
+    margin: float,
+    fill_layers: LayerSpecs,
+    fill_size: tuple,
+    fill_densities: Sequence[float],
+    fill_inverted: bool,
+    bbox: tuple,
+) -> Device:
+    """Creates rectangularly-gridded fill, similar to pg.fill_rectangle
+
+    Parameters
+        device (Device): device to outline
+        avoid_layers (LayerSpecs): layers to avoid
+        include_layers (LayerSpecs): layers to connect to
+        margin (float): distance from avoid_layers
+        fill_layers (LayerSpecs): layers to add fill to
+        fill_size (tuple): (width, height) of grid
+        fill_densities (Sequence[float]) density for each fill layer
+        fill_inverted (bool): if True, produces a connected mesh, if False, a grid of rectangles
+        bbox (tuple): bounding box to extend fill to
+
+    Returns:
+        (Device): fill
+    """
+    MASK = fill_solid(
+        device=device,
+        avoid_layers=avoid_layers,
+        include_layers=include_layers,
+        margin=margin,
+        fill_layers=(0,),
+        bbox=bbox,
+    )
+    D = Device("fill_grid")
+    for fill_density, layer in zip(fill_densities, fill_layers):
+        GRID = Device("grid")
+        rect = pg.rectangle(size=np.array(fill_size) * fill_densities, layer=0)
+        GRID.add_array(
+            rect,
+            columns=int(np.ceil(MASK.xsize / fill_size[0])),
+            rows=int(np.ceil(MASK.ysize / fill_size[1])),
+            spacing=fill_size,
+        )
+        GRID.center = MASK.center
+        D << pg.kl_boolean(
+            MASK,
+            GRID,
+            operation="-" if fill_inverted else "and",
+            layer=qg.get_layer(layer),
+        )
+    return D
+
+
+def fill_solid(
+    device: Device,
+    avoid_layers: LayerSpecs,
+    include_layers: None | LayerSpecs,
+    margin: float,
+    fill_layers: LayerSpecs,
+    bbox: tuple,
+) -> Device:
+    """Fill around a device.
+
+    Parameters:
+        device (Device): device to outline
+        avoid_layers (LayerSpecs): layers to avoid
+        include_layers (LayerSpecs): layers to connect to
+        margin (float): distance from avoid_layers
+        fill_layers (LayerSpecs): layers to add fill to
+        bbox (tuple): bounding box to extend fill to
+
+    Returns:
+        (Device): fill
+    """
+    BBOX = pg.bbox(bbox)
+    AVOID = Device("avoid")
+    INCLUDE = Device("include")
+    polygons = device.get_polygons(by_spec=True)
+    for device, layerset in zip((AVOID, INCLUDE), (avoid_layers, include_layers)):
+        for layer in layerset:
+            layer = qg.get_layer_tuple(layer)
+            if layer in polygons:
+                device.add_polygon(polygons[layer])
+    INCLUDE_SIZED = pg.offset(INCLUDE, distance=1e-2, join="bevel")
+    AVOID_MASKED = pg.kl_boolean(AVOID, INCLUDE_SIZED, operation="A-B")
+    AVOID_SIZED = pg.offset(AVOID_MASKED, distance=margin, join="bevel")
+    FILL = Device("fill")
+    fill_poly = pg.kl_boolean(
+        BBOX, AVOID_SIZED, operation="A-B", layer=0
+    ).get_polygons()
+    if len(fill_poly) > 0:
+        for layer in fill_layers:
+            if isinstance(layer, str):
+                layer = qg.get_layer(layer)
+            FILL.add_polygon(fill_poly, layer=layer)
+    return FILL
+
+
 def extend_ports(
     device: Device,
     port_names: Sequence[int | str],
@@ -226,7 +326,7 @@ def outline(
     polygons = device.get_polygons(by_spec=True)
     extended_polygons = dev_extended.get_polygons(by_spec=True)
     for layer, poly in polygons.items():
-        layer = qg.get_layer(layer).tuple
+        qg.get_layer_tuple(layer)
         if layer not in outline_layers:
             dev_outlined.add_polygon(poly, layer=layer)
         else:
@@ -278,10 +378,10 @@ def invert(
     """
     tile_size = None if kl_tile_size is None else (kl_tile_size, kl_tile_size)
     dev_inverted = Device()
-    ext_bbox_distance = {qg.get_layer(k).tuple: v for k, v in ext_bbox_distance.items()}
+    ext_bbox_distance = {qg.get_layer_tuple(k): v for k, v in ext_bbox_distance.items()}
     polygons = device.get_polygons(by_spec=True)
     for layer, poly in polygons.items():
-        layer = qg.get_layer(layer).tuple
+        layer = qg.get_layer_tuple(layer)
         if layer not in ext_bbox_distance:
             dev_inverted.add_polygon(poly, layer=layer)
         else:
@@ -338,8 +438,8 @@ def keepout(
     if outline_layers is None:
         outline_layers = {}
 
-    outline_layers = {qg.get_layer(k).tuple: v for k, v in outline_layers.items()}
-    keepout_layers = {qg.get_layer(k).tuple: v for k, v in keepout_layers.items()}
+    outline_layers = {qg.get_layer_tuple(k): v for k, v in outline_layers.items()}
+    keepout_layers = {qg.get_layer_tuple(k): v for k, v in keepout_layers.items()}
     processed_layers = set([])
 
     polygons = device.get_polygons(by_spec=True)
@@ -348,7 +448,7 @@ def keepout(
             continue
         keepout_poly = polygons[keepout_layer]
         for mapped_layer in mapped_layers:
-            mapped_layer = qg.get_layer(mapped_layer).tuple
+            mapped_layer = qg.get_layer_tuple(mapped_layer)
             neg_tone = mapped_layer not in outline_layers
             d_keepout = Device()
             d_keepout.add_polygon(keepout_poly, layer=mapped_layer)
@@ -388,7 +488,7 @@ def keepout(
             processed_layers.add(mapped_layer)
     # add remaining layers
     for layer in device.layers:
-        layer = qg.get_layer(layer).tuple
+        layer = qg.get_layer_tuple(layer)
         if layer in processed_layers:
             continue
         if layer in keepout_layers:

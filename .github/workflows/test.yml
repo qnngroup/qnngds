@@ -34,11 +34,13 @@ jobs:
         python-version: 3.12
     - name: Ruff lint
       uses: astral-sh/ruff-action@v3
+      with:
+        version: "0.11.7"
     - name: Black lint
       uses: psf/black@stable
       with:
         options: "--check --verbose"
-        version: "25.12"
+        version: "25.12.0"
   verify-version:
     name: Check pyproject.toml version is updated
     runs-on: ubuntu-latest
