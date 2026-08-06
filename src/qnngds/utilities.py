@@ -49,6 +49,7 @@ def fill_grid(
         include_layers=include_layers,
         margin=margin,
         fill_layers=(0,),
+        merge_polygons=True,
         bbox=bbox,
     )
     D = Device("fill_grid")
