@@ -461,7 +461,12 @@ class Sample(object):
             marks.move(marks.center, np.array(self.origin) + dcenter)
 
     def write_cell_labels(
-        self, size: float, layer: LayerSpec, inset_dist: float, location: int
+        self,
+        size: float,
+        layer: LayerSpec,
+        inset_dist: float,
+        location: int,
+        separator: str = "",
     ) -> None:
         """Adds text label to all cells
 
@@ -470,6 +475,7 @@ class Sample(object):
             layer (LayerSpec): text's layer specification
             inset_dist (float): distance between label and corner
             location (int): 0 -> NW, 1 -> NE, 2 -> SE, 3 -> SW
+            separator (str): text to go between row and column string. Default "".
 
         Returns:
             None
@@ -487,7 +493,7 @@ class Sample(object):
                 row_str = chr(65 + (row % 26)) + row_str
                 row = row // 26
             label = self.devices << pg.text(
-                text=row_str + col_str,
+                text=row_str + separator + col_str,
                 size=size,
                 layer=qg.get_layer(layer),
                 justify="center",
