@@ -32,42 +32,64 @@ class PlaceError(Exception):
         super().__init__(self.message)
 
 
-def _wafer(radius: float, flat: float) -> Device:
+def _wafer(radius: float, flat: float, layer: LayerSpec = (1, 0)) -> Device:
     """Generic template for wafers
 
     Args:
         radius (float): radius of wafer
         flat (float): length of primary flat
+        layer (LayerSpec): layer to put wafer on
 
     Returns:
         (Device): wafer template
     """
     flat_dist = (radius**2 - (flat / 2) ** 2) ** 0.5
-    circ = pg.circle(radius=radius, angle_resolution=2.5, layer=(1, 0))
+    circ = pg.circle(radius=radius, angle_resolution=2.5)
     FLAT = Device()
-    flat = FLAT << pg.rectangle(size=(flat, radius - flat_dist), layer=(1, 0))
+    flat = FLAT << pg.rectangle(size=(flat, radius - flat_dist))
     flat.move((flat.x, flat.ymin), (circ.x, circ.ymin))
     W = Device(f"wafer_{round(radius / 1e3)}")
-    w_i = W << pg.kl_boolean(A=circ, B=FLAT, operation="A-B", layer=(1, 0))
+    w_i = W << pg.kl_boolean(A=circ, B=FLAT, operation="A-B", layer=layer)
     w_i.move(w_i.center, (0, 0))
     return W
 
 
 @qg.device
-def wafer150mm() -> Device:
-    """Template for 150 mm wafer"""
-    return _wafer(radius=75e3, flat=57.5e3)
+def wafer150mm(layer: LayerSpec = (1, 0)) -> Device:
+    """Template for 150 mm wafer
+
+    Args:
+        layer (LayerSpec): layer to put device on
+
+    Returns:
+        (Device): 150mm wafer
+    """
+    return _wafer(radius=75e3, flat=57.5e3, layer=layer)
 
 
 @qg.device
-def wafer100mm() -> Device:
-    """Template for 100 mm wafer"""
-    return _wafer(radius=50e3, flat=32.5e3)
+def wafer100mm(layer: LayerSpec = (1, 0)) -> Device:
+    """Template for 100 mm wafer
+
+    Args:
+        layer (LayerSpec): layer to put device on
+
+    Returns:
+        (Device): 100mm wafer
+    """
+    return _wafer(radius=50e3, flat=32.5e3, layer=layer)
 
 
 @qg.device
-def piece10mm():
-    """Template for 10 mm piece"""
+def piece10mm(layer: LayerSpec = (1, 0)) -> Device:
+    """Template for 10 mm piece
+
+    Args:
+        layer (LayerSpec): layer to put device on
+
+    Returns:
+        (Device): 10x10 mm piece
+    """
     P = Device("piece_10")
     p_i = P << pg.rectangle(size=(10e3, 10e3), layer=(1, 0))
     p_i.move(p_i.center, (0, 0))
@@ -171,8 +193,11 @@ class Sample(object):
                     self.open_cells.add((row, col))
         self.bounds = self.open_cells.copy()
 
-    def visualize_open_cells(self) -> Device:
+    def visualize_open_cells(self, quickplot: bool = True) -> Device:
         """Visualize open cells
+
+        Args:
+            quickplot (bool): if True, plot the device before returning it
 
         Returns:
             (Device): device used for visualization
@@ -184,7 +209,8 @@ class Sample(object):
             d.move((d.xmin, d.ymax), self.origin).movex(cell[1] * self.cell_size).movey(
                 -cell[0] * self.cell_size
             )
-        qp(dies)
+        if quickplot:
+            qp(dies)
         return dies
 
     @staticmethod
@@ -203,6 +229,61 @@ class Sample(object):
         row_span = range(ymin, ymax + 1)
         col_span = range(xmin, xmax + 1)
         return xmin, ymin, xmax, ymax, row_span, col_span
+
+    def get_next_open_cell(
+        self, column_major: bool = True, origin: str = "topleft"
+    ) -> tuple[int, int]:
+        """Gets the next free cell
+
+        Args:
+            column_major (bool): if True, use column major ordering.
+            origin (str): one of "topleft", "topright", "bottomleft", "bottomright".
+
+        Returns:
+            (tuple): row, column of next open cell
+        """
+        allowed_origins = ("topleft", "topright", "bottomleft", "bottomright")
+        if origin not in allowed_origins:
+            raise ValueError(f"origin = {origin} must be one of {allowed_origins}")
+        row_list = range(self.n_rows)
+        if "bottom" in origin:
+            row_list = reversed(row_list)
+        col_list = range(self.n_cols)
+        if "right" in origin:
+            col_list = reversed(col_list)
+        outer_range, inner_range = (
+            (col_list, row_list) if column_major else (row_list, col_list)
+        )
+        for outer in outer_range:
+            for inner in inner_range:
+                # if column major: outer = col, inner = row
+                # if row major: outer = row, inner = col
+                location = (inner, outer) if column_major else (outer, inner)
+                if location in self.bounds and location in self.open_cells:
+                    return location
+        return None
+
+    def open_cell_spiral(self) -> list[tuple[int, int]]:
+        """Starting from the center, follow a counter-clockwise spiral
+
+        Returns:
+            (list[tuple]): list of (row, column) of open cells
+        """
+        length = 1
+        position = np.array((self.n_cols // 2, self.n_rows // 2), dtype=int)
+        direction = np.array((1, 0), dtype=int)
+        yield tuple(position)
+        while 0 <= position[0] < self.n_cols and 0 <= position[1] < self.n_rows:
+            for i in range(length):
+                # go forward
+                position += direction
+                pos = tuple(position)
+                if pos in self.open_cells:
+                    yield pos
+            # turn left
+            direction = (-direction[1], direction[0])
+            if direction[1] == 0:
+                length += 1
 
     def place_on_sample(
         self,
