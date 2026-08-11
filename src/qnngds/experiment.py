@@ -584,6 +584,7 @@ def generate(
     dut_offset: tuple[float, float] = (0, 0),
     pad_offset: tuple[float, float] = (0, 0),
     label_offset: tuple[float, float] | None = (-100, -100),
+    label_pads: bool = True,
     ignore_port_count_mismatch: bool = False,
     dut_bbox_keepout: float = 10,
     retries: int = 10,
@@ -601,6 +602,7 @@ def generate(
         dut_offset (tuple[float, float]): x,y offset for dut (mostly useful for linear pad arrays)
         pad_offset (tuple[float, float]): x,y offset for pad array (mostly useful for linear pad arrays)
         label_offset (tuple[float, float] or None): x,y offset of label
+        label_pads (bool): if True, add Labels to pads
         ignore_port_count_mismatch (bool): if True, ignores mismatched number of DUT and pads ports,
             only if route_groups defines a mapping to all pad ports, or lists all DUT ports.
         dut_bbox_keepout (float): if ignore_dut_bbox is False, distance to extend ports
@@ -758,6 +760,17 @@ def generate(
 
     # add pads to actual device
     experiment.add_ref(qg.utilities.outline(dummy_pads, outline_layers))
+
+    # add labels to pads
+    for route_group in route_groups:
+        for dut_port_name in route_group.port_mapping:
+            pad_port = dut_pad_map[dut_port_name]
+            normal = pad_port.normal[1] - pad_port.normal[0]
+            center = pad_port.midpoint - normal * (pad_port.width / 2)
+            orientation = (180 / np.pi) * np.atan2(normal[1], normal[0]) % 180
+            label = experiment.add_label(
+                text=dut_port_name, position=center, rotation=orientation, layer=32767
+            )
 
     # get layer transitions for computing taper lengths (to allow addition of autotapers)
     layer_transitions = qg.get_active_pdk().layer_transitions
