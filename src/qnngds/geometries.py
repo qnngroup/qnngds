@@ -453,7 +453,7 @@ def via(
     bot_pad.move(bot_pad.center, (0, 0))
     via.move(via.center, (0, 0))
     top_pad.move(top_pad.center, (0, 0))
-    for n, comp in enumerate([top_pad, bot_pad]):
+    for n, comp in enumerate([bot_pad, top_pad]):
         for k, port in comp.ports.items():
             VIA.add_port(name=f"{n + 1}{k}", port=port)
     return VIA
