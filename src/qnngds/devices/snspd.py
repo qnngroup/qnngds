@@ -105,7 +105,7 @@ def basic(
     start_nw = SNSPD.add_ref(hairpin)
     hp_prev = start_nw
     alternate = True
-    last_port = None
+    last_port = start_nw.ports[2]
     for _n in range(2, num_meanders):
         hp = SNSPD.add_ref(hairpin)
         if alternate:

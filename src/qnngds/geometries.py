@@ -366,7 +366,8 @@ def fillet_90deg(
         taper_type (str | None) : {'straight', 'fillet', None}
             Type of taper between the bottom corner of the stub on the side of
             the flag and the corner of the flag closest to the stub.
-        taper_radius (float | None) : radius of taper. If None, uses stub_size
+        taper_radius (float | None) : radius of taper. If None, uses stub_size.
+            Only affects behavior when `taper_type = 'fillet'`.
         layer (LayerSpec): Specification of layer(s) to put polygon geometry on.
     Returns:
         (Device): fillet_90deg
@@ -377,9 +378,10 @@ def fillet_90deg(
 
     assert taper_type in [
         "straight",
+        "hyper",
         "fillet",
         None,
-    ], 'fillet_90deg() taper_type must "straight"  or "fillet" or None'
+    ], 'fillet_90deg() taper_type must "straight", "hyper", "fillet", or None'
 
     xpts = [0, 0, f[0], f[0], p[0], p[0]]
     ypts = [-p[1], f[1], f[1], 0, 0, -p[1]]
@@ -392,6 +394,13 @@ def fillet_90deg(
         tee.fillet([0, 0, 0, 0, taper_radius, 0])
     elif taper_type == "straight":
         D.add_polygon([xpts[3:6], ypts[3:6]], layer=qg.get_layer(layer))
+    elif taper_type == "hyper":
+        xpts = [p[0]]
+        ypts = [0]
+        for t in np.linspace(0, 1, 20):
+            xpts.append(t * (f[0] - p[0]) + p[0])
+            ypts.append(f[1] - qg.utilities.hyper_taper_fn(t, p[1] + f[1], f[1]))
+        D.add_polygon([xpts, ypts], layer=qg.get_layer(layer))
 
     D.add_port(
         name=1,
@@ -444,7 +453,7 @@ def via(
     bot_pad.move(bot_pad.center, (0, 0))
     via.move(via.center, (0, 0))
     top_pad.move(top_pad.center, (0, 0))
-    for n, comp in enumerate([top_pad, bot_pad]):
+    for n, comp in enumerate([bot_pad, top_pad]):
         for k, port in comp.ports.items():
             VIA.add_port(name=f"{n + 1}{k}", port=port)
     return VIA
