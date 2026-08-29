@@ -769,7 +769,10 @@ def generate(
             center = pad_port.midpoint - normal * (pad_port.width / 2)
             orientation = (180 / np.pi) * np.atan2(normal[1], normal[0]) % 180
             label = experiment.add_label(
-                text=dut_port_name, position=center, rotation=orientation, layer=32767
+                text=str(dut_port_name),
+                position=center,
+                rotation=orientation,
+                layer=32767,
             )
 
     # get layer transitions for computing taper lengths (to allow addition of autotapers)
