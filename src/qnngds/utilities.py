@@ -49,6 +49,7 @@ def fill_grid(
         include_layers=include_layers,
         margin=margin,
         fill_layers=(0,),
+        merge_polygons=True,
         bbox=bbox,
     )
     D = Device("fill_grid")
@@ -77,6 +78,7 @@ def fill_solid(
     include_layers: None | LayerSpecs,
     margin: float,
     fill_layers: LayerSpecs,
+    merge_polygons: bool,
     bbox: tuple,
 ) -> Device:
     """Fill around a device.
@@ -87,6 +89,7 @@ def fill_solid(
         include_layers (LayerSpecs): layers to connect to
         margin (float): distance from avoid_layers
         fill_layers (LayerSpecs): layers to add fill to
+        merge_polygons (bool): if True, merge polygons after performing boolean operation
         bbox (tuple): bounding box to extend fill to
 
     Returns:
@@ -106,7 +109,11 @@ def fill_solid(
     AVOID_SIZED = pg.offset(AVOID_MASKED, distance=margin, join="bevel")
     FILL = Device("fill")
     fill_poly = pg.kl_boolean(
-        BBOX, AVOID_SIZED, operation="A-B", layer=0
+        BBOX,
+        AVOID_SIZED,
+        operation="A-B",
+        layer=0,
+        merge_after=merge_polygons,
     ).get_polygons()
     if len(fill_poly) > 0:
         for layer in fill_layers:

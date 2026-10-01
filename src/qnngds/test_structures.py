@@ -660,6 +660,7 @@ def via_chain(
     num_vias: int = 5,
     spacing: float = 10,
     tap_period: int = 1,
+    tap_same_side: bool = False,
 ) -> Device:
     """Makes a chain of vias, with optional taps along the length of the chain.
 
@@ -668,6 +669,7 @@ def via_chain(
         num_vias (int): number of vias to include in chain
         spacing (float): spacing between vias
         tap_period (int): number of vias between each tap. If zero, doesn't place any taps.
+        tap_same_side (bool): if True, put all taps on the same side
 
     Returns:
         (Device): the via chain
@@ -706,7 +708,7 @@ def via_chain(
 
     width = east_port.width
     if tap_period == 0:
-        connector = partial(pg.straight, size=(spacing, width))
+        connector = partial(pg.rectangle, size=(spacing, width))
     else:
         connector = partial(
             qg.geometries.tee,
@@ -746,7 +748,8 @@ def via_chain(
             )
             conn.movey(-width / 2)
             if odd:
-                conn.rotate(180)
+                if not tap_same_side:
+                    conn.rotate(180)
                 conn.movex(vias.xmin + 2 * via.xsize + spacing - conn.xmin)
             else:
                 conn.movex(vias.xmin + via.xsize - conn.xmin)
@@ -755,11 +758,17 @@ def via_chain(
         else:
             conn_ports.append([])
     ports = [end_ports[0]]
-    if len(conn_ports) > 0:
-        ports += conn_ports[0]
-    ports += [end_ports[1]]
-    if len(conn_ports) > 1:
-        ports += conn_ports[1]
+    if tap_same_side:
+        for port1, port2 in zip(conn_ports[0], conn_ports[1]):
+            ports.append(port1)
+            ports.append(port2)
+        ports += [end_ports[1]]
+    else:
+        if len(conn_ports) > 0:
+            ports += conn_ports[0]
+        ports += [end_ports[1]]
+        if len(conn_ports) > 1:
+            ports += conn_ports[1]
 
     for n, port in enumerate(ports):
         VC.add_port(name=f"{n + 1}", port=port)
@@ -802,6 +811,7 @@ def etch_test(
 @qg.device
 def cross_bridge_kelvin_resistor(
     size: float = 50,
+    via_undersize: float = 1,
     lead_length: float = 50,
     layer_top: LayerSpec = "PHOTO1",
     layer_bot: LayerSpec = "EBEAM_COARSE",
@@ -813,6 +823,7 @@ def cross_bridge_kelvin_resistor(
 
     Args:
         size (float): side length of square junction
+        via_undersize (float): via undersize amount
         lead_length (float): length of leads to junction
         layer_top (LayerSpec): layer specification of top conductor
         layer_bot (LayerSpec): layer specification of bottom conductor
@@ -825,7 +836,7 @@ def cross_bridge_kelvin_resistor(
     if layer_via is not None:
         center = qg.geometries.via(
             size=(size, size),
-            via_undersize=1,
+            via_undersize=via_undersize,
             layer_bottom=layer_bot,
             layer_via=layer_via,
             layer_top=layer_top,

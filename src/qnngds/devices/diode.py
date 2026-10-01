@@ -47,7 +47,7 @@ def basic(
         (-width, length / 2),
     ]
 
-    DIODE.add_polygon(points, layer=layer)
+    DIODE.add_polygon(points, layer=qg.get_layer(layer))
     DIODE.move((DIODE.x + width / 2 - notch_depth, DIODE.y), (0, 0))
 
     DIODE.add_port(
