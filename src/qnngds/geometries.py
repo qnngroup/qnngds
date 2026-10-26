@@ -621,6 +621,8 @@ def default_cross_section(
 def fine_to_coarse(
     width1: float = 2.0,
     width2: float = 20.0,
+    length1: float = 20.0,
+    length2: float = 20.0,
     layer1: LayerSpec = "EBEAM_FINE",
     layer2: LayerSpec = "EBEAM_COARSE",
 ) -> Device:
@@ -631,6 +633,8 @@ def fine_to_coarse(
     Args:
         width1 (float): starting width on first layer
         width2 (float): ending width on second layer
+        length1 (float): starting length on first layer
+        length2 (float): ending length on second layer (unused on positive tone layout)
         layer1 (LayerSpec): layer specification for first layer
         layer2 (LayerSpec): layer specification for second layer
 
@@ -650,14 +654,14 @@ def fine_to_coarse(
         outline = outline_layers[qg.get_layer(layer2).name]
         # positive tone
         t2 = qg.utilities.get_cross_section_with_layer(layer2).extrude(
-            pp.straight(length=2 * outline)
+            pp.straight(length=length2)
         )
         wide = 2 * outline + width2
         if wide < width1:
             wide = width2
         wide += 2 * outline
         t1 = qg.geometries.hyper_taper(
-            length=wide * 0.8,
+            length=length1,
             start_width=wide,
             end_width=width1,
             layer=layer1,
@@ -681,7 +685,7 @@ def fine_to_coarse(
             layer=qg.get_layer(layer2),
         )
         t1 = qg.geometries.hyper_taper(
-            length=t2.xsize * 0.7,
+            length=length1,
             start_width=(width2 + width1) / 2,
             end_width=width1,
             layer=layer1,
