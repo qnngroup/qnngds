@@ -621,7 +621,7 @@ def default_cross_section(
 def fine_to_coarse(
     width1: float = 2.0,
     width2: float = 20.0,
-    length1: float = 20.0,
+    length1: float = 25.0,
     length2: float = 20.0,
     layer1: LayerSpec = "EBEAM_FINE",
     layer2: LayerSpec = "EBEAM_COARSE",
