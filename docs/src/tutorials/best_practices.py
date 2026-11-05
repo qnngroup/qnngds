@@ -211,7 +211,7 @@ save_qp(__file__, snspd, plot_name="snspd")
 # Alignment markers
 # ^^^^^^^^^^^^^^^^^^^^^^^
 #
-# The alignment marks provided by ``qnngds.test_structures.alignment_mark`` and ``qnngds.test_structures.multilayer_alignment`` create vernier caliper comb(s) between two layers.
+# The alignment marks provided by ``qnngds.test_structures.alignment`` and ``qnngds.test_structures.multilayer_alignment`` create vernier caliper comb(s) between two layers.
 # This allows one to measure with an optical microscope sub-micron alignment errors.
 # The design is written with photolithography in mind, given the large area.
 # However, they can be adapted to be used to measure alignment between high and low-current e-beam exposure if the structures are appropriately outlined to limit the writing time.
@@ -226,7 +226,7 @@ PDK = qg.Pdk(
     layer_transitions={},
 )
 PDK.activate()
-p = qg.test_structures.alignment_mark()
+p = qg.test_structures.alignment()
 save_qp(__file__, p, plot_name="calipers")
 ## SKIPSTOP
 ## IMAGE_calipers
