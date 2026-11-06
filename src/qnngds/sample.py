@@ -96,6 +96,51 @@ def piece10mm(layer: LayerSpec = (1, 0)) -> Device:
     return P
 
 
+@qg.device
+def alignment_mark(
+    cross_outer_spec: DeviceSpec = pg.cross(200, 1.5, (1, 0)),
+    cross_inner_spec: DeviceSpec | None = pg.cross(10, 0.5, (1, 0)),
+    boxes: bool = True,
+) -> Device:
+    """Cross alignment mark with optional narrow inner cross
+
+    Args:
+        cross_outer_spec (DeviceSpec): cross spec for larger/outer cross.
+        cross_inner_spec (DeviceSpec): cross spec for inner cross. Bounding box
+            will be subtracted from instance of `cross_outer_spec`
+        boxes (bool): If True, include extra boxes adjacent to alignment mark
+            to assist with location
+
+    Returns:
+        (Device): the alignment mark structure
+    """
+    MARK = Device("alignment_mark")
+    cross_outer = qg.get_device(cross_outer_spec)
+    outer_layer = cross_outer.get_layers().pop()
+    if cross_inner_spec is not None:
+        cross_inner = qg.get_device(cross_inner_spec)
+        MARK << pg.kl_boolean(
+            A=cross_outer,
+            B=pg.bbox(cross_inner.get_bounding_box()),
+            operation="A-B",
+            layer=outer_layer,
+        )
+        MARK << cross_inner
+    else:
+        MARK << cross_outer
+    if boxes:
+        rects = MARK.add_array(
+            pg.rectangle(
+                size=(cross_outer.xsize / 2, cross_outer.ysize / 2), layer=outer_layer
+            ),
+            columns=2,
+            rows=2,
+            spacing=(cross_outer.xsize * 1.75, cross_outer.ysize * 1.75),
+        )
+        rects.center = cross_outer.center
+    return MARK
+
+
 class Sample(object):
     """Class for managing die/experiment area, with manual placement and basic autoplacement
 

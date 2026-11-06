@@ -26,7 +26,7 @@ def vernier_comb(
 ) -> Device:
     """Creates vernier caliper comb.
 
-    Helper method for alignment_mark.
+    Helper method for alignment.
 
     Args:
         pitch1 (int or float): pitch of top comb
@@ -79,10 +79,10 @@ def vernier_comb(
 
 
 @qg.device
-def alignment_mark(layer1: LayerSpec = (1, 0), layer2: LayerSpec = (10, 0)) -> Device:
+def alignment(layer1: LayerSpec = (1, 0), layer2: LayerSpec = (10, 0)) -> Device:
     """Creates vernier caliper comb between two layers.
 
-    Helper method for alignment_mark.
+    Helper method for alignment.
 
     Args:
         layer1 (LayerSpec): center comb GDS layer specification
@@ -181,22 +181,22 @@ def alignment_mark(layer1: LayerSpec = (1, 0), layer2: LayerSpec = (10, 0)) -> D
 def multilayer_alignment(
     layers: LayerSpecs = ["PHOTO1", "PHOTO2", "PHOTO3"],
 ) -> Device:
-    """Creates an alignment mark for each lithography layer.
+    """Creates an alignment caliper for each lithography layer.
 
     Args:
         layers (LayerSpecs): A list of GDS layer specifications
 
     Returns:
-        (Device): alignment marks between each layer pair
+        (Device): alignment calipers between each layer pair
     """
 
-    ALIGN = Device("alignment_marks")
+    ALIGN = Device("alignments")
     markers_pitch = 600
     for i, layer1 in enumerate(layers):
         n = len(layers) - i - 1
         if n != 0:
             for j, layer2 in enumerate(layers[-n:]):
-                mark = ALIGN << alignment_mark(layer1, layer2)
+                mark = ALIGN << alignment(layer1, layer2)
                 mark.move((j * markers_pitch, i * markers_pitch))
 
     num_layers = len(layers)
