@@ -18,6 +18,8 @@ def meander(
     pitch: float = 4,
     squares: float = 100,
     max_length: float | None = 20,
+    terminals_same_side: bool = False,
+    terminals_vertical: bool = True,
     layer: LayerSpec = (1, 0),
 ) -> Device:
     """Create resistor meander with specified number of squares.
@@ -30,6 +32,8 @@ def meander(
         pitch (float): desired pitch of meander in microns
         squares (float or None): desired number of squares
         max_length (float): desired length of device
+        terminals_same_side (bool): if True, make number of hairpins an odd number, putting ports on the same side.
+        terminals_vertical (bool): if True, add right angle terminals at either end of meander
         layer (LayerSpec): GDS layer specification
 
     Returns:
@@ -108,22 +112,31 @@ def meander(
     #   - meander pitch (pitch),
     #   - wire width (width)
     n_turn = int(np.ceil((max_length - 3 * width) / pitch))
+    if terminals_same_side:
+        n_turn = max(1, 2 * ((n_turn - 1) // 2) + 1)
     # calculate the hairpin length
     # correction of 1.09 is the total number of squares contributed by the two
     # corners of the hairpin
-    # ================+
-    #                 |
-    # ================+
-    # = : squares / n_turn squares
-    # | : (pitch - width) / width squares
-    # + : 1.09 squares
-    # squares - 3.09 for corners connecting meander to contacts
-    # these contributions lead to the following equation for the toal number of squares
-    # n_turn * (2*hp_length/width + 1.09 + (pitch - width) / width) = squares - 3.09
-    hp_length = (
-        (squares - 3.09) / n_turn - 1.09 - (pitch - width) / width
-    ) * width / 2 + width
-    # round to nearest 2nm, since gdsfactory rounds to nearest 1nm which can cause gaps between each hairpin
+    if terminals_vertical:
+        # ================+
+        #                 |
+        # ================+
+        # = : squares / n_turn squares
+        # | : (pitch - width) / width squares
+        # + : 1.09 squares
+        # squares - 3.09 for corners connecting meander to contacts
+        # these contributions lead to the following equation for the toal number of squares
+        # n_turn * (2*hp_length/width + 1.09 + (pitch - width) / width) = squares - 3.09
+        squares_adj = squares - 3.09
+        hp_length = (
+            squares_adj / n_turn - 1.09 - (pitch - width) / width
+        ) * width / 2 + width
+    else:
+        # include extra squares for extensions
+        # n_turn * (2*hp_length/width + 1.09 + (pitch - width) / width) + 2*hp_length/width = squares
+        hp_length = (
+            squares / (n_turn + 1) - 1.09 - (pitch - width) / width
+        ) * width / 2 + width
     hp_length = max(hp_length, width)
     hp = hairpin(hp_length)
     hp_prev = None
@@ -135,20 +148,34 @@ def meander(
                 destination=hp_prev.ports[2 - (i % 2)],
             )
         else:
-            stub_top = D << stub(0)
-            stub_top.connect(
-                port=stub_top.ports[1],
-                destination=hp_i.ports[2],
-            )
+            if terminals_vertical:
+                stub_top = D << stub(0)
+                stub_top.connect(
+                    port=stub_top.ports[1],
+                    destination=hp_i.ports[2],
+                )
+                port_top = stub_top.ports[2]
+            else:
+                rect = D << pg.straight(
+                    size=(width, hp_length), layer=qg.get_layer(layer)
+                )
+                rect.connect(rect.ports[1], hp_i.ports[2])
+                port_top = rect.ports[2]
         hp_prev = hp_i
-    stub_bot = D << stub(180 * (n_turn % 2))
-    stub_bot.connect(
-        port=stub_bot.ports[1], destination=hp_prev.ports[2 - (n_turn % 2)]
-    )
+    if terminals_vertical:
+        stub_bot = D << stub(180 * (n_turn % 2))
+        stub_bot.connect(
+            port=stub_bot.ports[1], destination=hp_prev.ports[2 - (n_turn % 2)]
+        )
+        port_bot = stub_bot.ports[2]
+    else:
+        rect = D << pg.straight(size=(width, hp_length), layer=qg.get_layer(layer))
+        rect.connect(rect.ports[1], hp_prev.ports[2 - (n_turn % 2)])
+        port_bot = rect.ports[2]
     Du = Device("resistor")
     Du << pg.union(D, layer=qg.get_layer(layer))
     Du.flatten()
-    for name, port in zip((1, 2), (stub_top.ports[2], stub_bot.ports[2])):
+    for name, port in zip((1, 2), (port_top, port_bot)):
         Du.add_port(name=name, port=port)
     return Du
 
