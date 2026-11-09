@@ -117,20 +117,26 @@ def meander(
     # calculate the hairpin length
     # correction of 1.09 is the total number of squares contributed by the two
     # corners of the hairpin
-    # ================+
-    #                 |
-    # ================+
-    # = : squares / n_turn squares
-    # | : (pitch - width) / width squares
-    # + : 1.09 squares
-    # squares - 3.09 for corners connecting meander to contacts
-    # these contributions lead to the following equation for the toal number of squares
-    # n_turn * (2*hp_length/width + 1.09 + (pitch - width) / width) = squares - 3.09
     if terminals_vertical:
-        squares_adj = squares - 3.09 if terminals_vertical else squares
-    hp_length = (
-        squares_adj / n_turn - 1.09 - (pitch - width) / width
-    ) * width / 2 + width
+        # ================+
+        #                 |
+        # ================+
+        # = : squares / n_turn squares
+        # | : (pitch - width) / width squares
+        # + : 1.09 squares
+        # squares - 3.09 for corners connecting meander to contacts
+        # these contributions lead to the following equation for the toal number of squares
+        # n_turn * (2*hp_length/width + 1.09 + (pitch - width) / width) = squares - 3.09
+        squares_adj = squares - 3.09
+        hp_length = (
+            squares_adj / n_turn - 1.09 - (pitch - width) / width
+        ) * width / 2 + width
+    else:
+        # include extra squares for extensions
+        # n_turn * (2*hp_length/width + 1.09 + (pitch - width) / width) + 2*hp_length/width = squares
+        hp_length = (
+            squares / (n_turn + 1) - 1.09 - (pitch - width) / width
+        ) * width / 2 + width
     hp_length = max(hp_length, width)
     hp = hairpin(hp_length)
     hp_prev = None
