@@ -250,7 +250,7 @@ class Sample(object):
             edge_exclusion=self.edge_exclusion,
             allow_cell_span=self.allow_cell_span,
         )
-        other.devices = Device("top")
+        other.devices = Device(self.devices.name)
         other.devices << self.devices
         other.open_cells = self.open_cells.copy()
         other.full_cells = self.full_cells.copy()
