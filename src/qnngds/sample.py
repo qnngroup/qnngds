@@ -195,6 +195,9 @@ class Sample(object):
         # save if cell spanning is allowed
         self.allow_cell_span = allow_cell_span
 
+        # save edge exclusion
+        self.edge_exclusion = edge_exclusion
+
         ##################################
         # Determine the legal cell regions
         # that do not fall within the
@@ -202,7 +205,7 @@ class Sample(object):
         ##################################
         self.sample = qg.get_device(sample)
         mask_region = pg.kl_offset(
-            self.sample, distance=-edge_exclusion, tile_size=None, layer=(1, 0)
+            self.sample, distance=-self.edge_exclusion, tile_size=None, layer=(1, 0)
         )
 
         # get number of rows/columns
@@ -237,6 +240,22 @@ class Sample(object):
                 if len(intersection_polygon) == 0:
                     self.open_cells.add((row, col))
         self.bounds = self.open_cells.copy()
+
+    def copy(self) -> Sample:
+        """Copy the Sample object"""
+        # Device containing all devices added to the sample
+        other = Sample(
+            cell_size=self.cell_size,
+            sample=self.sample,
+            edge_exclusion=self.edge_exclusion,
+            allow_cell_span=self.allow_cell_span,
+        )
+        other.devices = Device(self.devices.name)
+        other.devices << self.devices
+        other.open_cells = self.open_cells.copy()
+        other.full_cells = self.full_cells.copy()
+        other.bounds = self.open_cells.copy()
+        return other
 
     def visualize_open_cells(self, quickplot: bool = True) -> Device:
         """Visualize open cells
@@ -332,7 +351,7 @@ class Sample(object):
 
     def place_on_sample(
         self,
-        device: Device,
+        device: Device | Sample,
         cell_coordinate_bbox: tuple,
         ignore_collisions: bool = False,
     ) -> None:
@@ -341,7 +360,7 @@ class Sample(object):
         See also :py:meth:`place_multiple_on_sample`.
 
         Args:
-            device (Device): device to place
+            device (Device | Sample): device or sample to place
             cell_coordinate_bbox (tuple[int, int] | tuple[tuple[int, int], tuple[int, int]]):
                 bounding box of cell coordiantes within which the device should be placed.
                 If the device fits within a single cell, then a tuple[int, int] is
@@ -357,6 +376,14 @@ class Sample(object):
             Updates self.open_cells to remove newly allocated cells
             Updates self.full_cells to add newly allocated cells
         """
+        if isinstance(device, Sample):
+            device = device.devices
+        elif not isinstance(device, Device):
+            raise ValueError(
+                "qnngds.sample.place_on_sample was "
+                "passed an argument that was not a Device "
+                "or Sample, refusing to place it"
+            )
         spans_multiple = self._check_device_size(device)
         # check that device fits within specified bounding box
         if not isinstance(cell_coordinate_bbox[0], tuple) and spans_multiple:
@@ -405,7 +432,7 @@ class Sample(object):
 
     def place_multiple_on_sample(
         self,
-        devices: Sequence[Device],
+        devices: Sequence[Device | Sample],
         cell_coordinate_bbox: tuple,
         column_major: bool = True,
         ignore_collisions: bool = False,
@@ -415,7 +442,7 @@ class Sample(object):
         See also :py:meth:`place_on_sample`.
 
         Args:
-            devices (Sequence[Device]): sequence of devices to place
+            devices (Sequence[Device | Sample]): sequence of devices to place
             cell_coordinate_bbox (tuple[tuple[int, int], tuple[int, int]]):
                 bounding box of cell coordiantes within which the device should be placed.
             column_major (bool): If True, orders devices in column-major order within bbox.
@@ -505,12 +532,36 @@ class Sample(object):
             dcenter = np.array((2 * cell[1] + 1, -2 * cell[0] - 1)) * self.cell_size / 2
             marks.move(marks.center, np.array(self.origin) + dcenter)
 
+    def get_cell_label(
+        self,
+        cell_coordinate: tuple[int, int],
+    ) -> tuple[str, str]:
+        """Get a label for a cell based on its coordinates
+
+        Args:
+            cell_coordinate (tuple[int, int]): row, column of the cell
+
+        Returns:
+            (tuple[str, str]) unique row/column identifiers for the cell
+        """
+        # number of digits required to identify row/col
+        row_digits = int(np.ceil(np.log(self.n_rows) / np.log(26)))
+        col_digits = int(np.ceil(np.log(self.n_cols) / np.log(10)))
+        row = cell_coordinate[0]
+        row_str = ""
+        for _ in range(row_digits):
+            row_str = chr(65 + (row % 26)) + row_str
+            row = row // 26
+        col_str = f"{cell_coordinate[1]:0{col_digits}d}"
+        return row_str, col_str
+
     def write_cell_labels(
         self,
         size: float,
         layer: LayerSpec,
-        inset_dist: float,
+        inset_dist: tuple[float, float] | float,
         location: int,
+        prefix: str = "",
         separator: str = "",
     ) -> None:
         """Adds text label to all cells
@@ -518,8 +569,9 @@ class Sample(object):
         Args:
             size (float): text size
             layer (LayerSpec): text's layer specification
-            inset_dist (float): distance between label and corner
+            inset_dist (tuple[float,float] | float): distance between label and corner
             location (int): 0 -> NW, 1 -> NE, 2 -> SE, 3 -> SW
+            prefix (str): text to prepend label with
             separator (str): text to go between row and column string. Default "".
 
         Returns:
@@ -528,29 +580,26 @@ class Sample(object):
         Side Effects:
             Updates self.devices with the new labels
         """
-        row_digits = int(np.ceil(np.log(self.n_rows) / np.log(26)))
-        col_digits = int(np.ceil(np.log(self.n_cols) / np.log(10)))
+        inset = (
+            inset_dist if isinstance(inset_dist, tuple) else (inset_dist, inset_dist)
+        )
         for cell in self.full_cells:
-            col_str = f"{cell[1]:0{col_digits}d}"
-            row = cell[0]
-            row_str = ""
-            for _ in range(row_digits):
-                row_str = chr(65 + (row % 26)) + row_str
-                row = row // 26
+            row_str, col_str = self.get_cell_label(cell)
+            label_text = prefix + row_str + separator + col_str
             label = self.devices << pg.text(
-                text=row_str + separator + col_str,
+                text=label_text,
                 size=size,
                 layer=qg.get_layer(layer),
                 justify="center",
             )
             if ((location + 1) % 4) // 2 > 0:
-                label.movex(self.cell_size - inset_dist - label.xmax)
+                label.movex(self.cell_size - inset[0] - label.xmax)
             else:
-                label.movex(inset_dist - label.xmin)
+                label.movex(inset[0] - label.xmin)
             if location // 2 == 0:
-                label.movey(self.cell_size - inset_dist - label.ymax)
+                label.movey(self.cell_size - inset[1] - label.ymax)
             else:
-                label.movey(inset_dist - label.ymin)
+                label.movey(inset[1] - label.ymin)
             dcenter = np.array((2 * cell[1] + 1, -2 * cell[0] - 1)) * self.cell_size / 2
             label.move(
                 (self.cell_size / 2, self.cell_size / 2),
