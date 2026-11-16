@@ -3,7 +3,7 @@
 # can be removed in python 3.14, see https://peps.python.org/pep-0749/
 from __future__ import annotations
 
-from qnngds.typing import LayerSpecs, DeviceSpecs, DeviceSpec
+from qnngds.typing import LayerSpec, LayerSpecs, DeviceSpecs, DeviceSpec
 import numpy as np
 
 from qnngds import Device
@@ -17,6 +17,7 @@ import phidl.routing as pr
 def stack(
     size: tuple[float, float] = (200, 100),
     layers: LayerSpecs = ("EBEAM_COARSE",),
+    layer_undersize: dict[LayerSpec, float] = {},
     port_span: tuple[float, float] = (0, 1),
 ) -> Device:
     """Create pad stack for use in other pad arrays
@@ -27,6 +28,7 @@ def stack(
         size (tuple[float, float]): width, height of pad
         layers (LayerSpecs): One or more layers to stack. First layer will have a port,
             which is the layer that will be used for routing to the pad.
+        layer_undersize (dict[LayerSpec, float]): For any layers in layer_undersize, shrink by specified amount.
         port_span (tuple[float, float]): fraction on [0,1] for starting and ending point of port
 
 
@@ -39,14 +41,16 @@ def stack(
         error_msg += f"b on the unit interval and a < b. Got {a=} and {b=}."
         raise ValueError(error_msg)
     PAD = Device("pad_stack")
+    undersize_0 = 0 if layers[0] not in layer_undersize else layer_undersize[layers[0]]
     pad = PAD << pg.rectangle(
-        size=size,
+        size=(size[0] - undersize_0, size[1] - undersize_0),
         layer=qg.get_layer(layers[0]),
     )
     if len(layers) > 1:
         for layer in layers[1:]:
+            undersize = 0 if layer not in layer_undersize else layer_undersize[layer]
             extra_pad = PAD << pg.rectangle(
-                size=size,
+                size=(size[0] - undersize, size[1] - undersize),
                 layer=qg.get_layer(layer),
             )
             extra_pad.move(extra_pad.center, pad.center)

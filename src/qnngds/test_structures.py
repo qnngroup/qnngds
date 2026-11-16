@@ -512,11 +512,11 @@ def vdp_rect(
 @qg.device
 def rect_tlm(
     contact_l: float = 10,
-    spacings: List[float] = [10, 10, 20, 50, 80, 100, 200],
     contact_w: float = 100,
+    spacings: List[float] = [10, 10, 20, 50, 80, 100, 200],
     via_layer: LayerSpec | None = (1, 0),
     finger_layer: LayerSpec = (10, 0),
-    pad_layer: LayerSpec | None = (10, 0),
+    pad_layer: LayerSpec | None = None,
     mesa_layer: LayerSpec = (20, 0),
     pad_size: Tuple[float, float] = (80, 80),
 ) -> Device:
@@ -524,12 +524,12 @@ def rect_tlm(
 
     Args:
         contact_l (float): length of metal contact on semiconductor
-        spacings (List[float]): list of spacings between contacts
         contact_w (float): width of contact/semiconductor
+        spacings (List[float]): list of spacings between contacts
         via_layer (LayerSpec | None): layer specification for via between mesa and fingers.
             If None, don't include via.
         finger_layer (LayerSpec): layer for fingers that periodically contact mesa
-        pad_layer (LayerSpec | None): layer for probable pads. If None, don't include.
+        pad_layer (LayerSpec | None): layer for probable pads. If None, just uses finger layer.
         mesa_layer (LayerSpec): layer for semiconductor
         pad_size (tuple(float,float)): width, height of pad
 
@@ -538,48 +538,77 @@ def rect_tlm(
     """
     TLM = Device("rect_tlm")
     xoff = 0
+    FINGER = Device("FINGER")
+    straight = FINGER << pg.straight(
+        size=(contact_l, contact_w + 10), layer=qg.get_layer(finger_layer)
+    )
+    if via_layer is not None:
+        FINGER << pg.straight(
+            size=(contact_l, contact_w + 10), layer=qg.get_layer(via_layer)
+        )
+    tee = FINGER << pg.tee(
+        size=(3 * contact_l, contact_l),
+        stub_size=(contact_l, contact_l),
+        taper_type=None,
+        layer=qg.get_layer(finger_layer),
+    )
+    tee.connect(tee.ports[1], straight.ports[2])
+    FINGER.add_port(name="v", port=tee.ports[3])
+    FINGER.add_port(name="i", port=tee.ports[2])
+    pad_stack = [finger_layer]
+    if via_layer is not None:
+        pad_stack.append(via_layer)
+    if pad_layer is not None:
+        pad_stack.append(pad_layer)
+    v_pad_size = (pad_size[0], pad_size[1] + 2 * contact_l)
+    v_pad = qg.pads.stack(
+        size=v_pad_size,
+        layers=pad_stack,
+        port_span=(0, contact_l / v_pad_size[1]),
+        layer_undersize={via_layer: 10},
+    )
     for n, space in enumerate(spacings):
-        fp_w = space + 2 * contact_l
-        w = contact_w * 1.2 + 10
+        xmax = 0
+        # estimate xoff additional offset based on pad locations
+        extend = space / 2 - contact_l + contact_l / 2
+        pad_length = pad_size[0] + contact_l + max(pad_size[0], extend + contact_l)
+        xoff += max(0, (pad_length - (contact_l * 2 + space)) / 2)
         for i in range(2):
-            fp = TLM << pg.flagpole(
-                size=(fp_w, pad_size[1]),
-                stub_size=(contact_l, w),
-                shape=("d" if i % 2 else "p"),
-                taper_type=None,
-                layer=qg.get_layer(finger_layer),
-            )
-            if i % 2:
-                fp.movey(-fp.ymax + contact_w / 2 + 5)
-                fp.movex(xoff - fp.xmax)
+            finger = TLM << FINGER
+            if i % 2 == 0:
+                finger.movey(-finger.ymax + contact_w / 2 + 5)
+                finger.movex(xoff - finger.xmin)
             else:
-                fp.movey(-fp.ymin - contact_w / 2 - 5)
-                fp.movex(xoff - fp.xmin + 50)
-            xoff = fp.xmax
-            if via_layer is not None:
-                via = TLM << pg.rectangle(
-                    size=(contact_l, contact_w + 10), layer=qg.get_layer(via_layer)
+                finger.rotate(180)
+                finger.movey(-finger.ymin - contact_w / 2 - 5)
+                finger.movex(xoff - finger.xmax + space + 2 * contact_l)
+            # extend kelvin probe leads as needed
+            v_port = finger.ports["v"]
+            if extend > 0:
+                ext = TLM << pg.straight(
+                    size=(contact_l, extend), layer=qg.get_layer(finger_layer)
                 )
-                if i % 2:
-                    via.move((fp.xmax - contact_l / 2 - via.x, -via.y))
-                else:
-                    via.move((fp.xmin + contact_l / 2 - via.x, -via.y))
-                # add vias to lower metal pads
-                pad_via = TLM << pg.rectangle(
-                    size=(fp_w, pad_size[1]), layer=qg.get_layer(via_layer)
-                )
-                pad_via.movex(fp.xmax - pad_via.xmax)
-                if i % 2:
-                    pad_via.movey(fp.ymin - pad_via.ymin)
-                else:
-                    pad_via.movey(fp.ymax - pad_via.ymax)
-                top_pad = TLM << pg.rectangle(
-                    size=(fp_w + 2, pad_size[1] + 2), layer=qg.get_layer(pad_layer)
-                )
-                top_pad.move(top_pad.center, pad_via.center)
-        text = TLM << pg.text(str(space), size=20, layer=qg.get_layer(finger_layer))
+                ext.connect(ext.ports[1], finger.ports["v"])
+                v_port = ext.ports[2]
+            i_port = finger.ports["i"]
+            # add pads
+            v_pad_i = TLM << v_pad
+            v_pad_i.connect(v_pad_i.ports[1], v_port)
+            i_pad_size = (pad_size[1], max(pad_size[0], extend + contact_l))
+            i_pad_i = TLM << qg.pads.stack(
+                size=i_pad_size, layers=pad_stack, layer_undersize={via_layer: 10}
+            )
+            i_pad_i.connect(i_pad_i.ports[1], i_port)
+            if i % 2 == 0:
+                i_pad_i.movex(v_pad_i.xmin - i_pad_i.xmax - contact_l)
+            else:
+                i_pad_i.movex(v_pad_i.xmax - i_pad_i.xmin + contact_l)
+            xmax = max(max(xmax, v_pad_i.xmax), i_pad_i.xmax)
+        text = TLM << pg.text(str(space), size=25, layer=qg.get_layer(finger_layer))
         text.rotate(-90)
-        text.move((xoff - text.xmin + 5, -w / 2 - pad_size[1] + 10 - text.ymin))
+        text.move((xmax - text.xmin + 5, i_pad_i.ymin - 10 - text.ymin))
+        xoff = xmax
+        xoff += 50
     # add mesa
     center = (TLM.x, 0)
     mesa = TLM << pg.rectangle(
