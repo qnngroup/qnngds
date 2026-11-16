@@ -41,19 +41,16 @@ def stack(
         error_msg += f"b on the unit interval and a < b. Got {a=} and {b=}."
         raise ValueError(error_msg)
     PAD = Device("pad_stack")
-    undersize_0 = 0 if layers[0] not in layer_undersize else layer_undersize[layers[0]]
-    pad = PAD << pg.rectangle(
-        size=(size[0] - undersize_0, size[1] - undersize_0),
-        layer=qg.get_layer(layers[0]),
-    )
-    if len(layers) > 1:
-        for layer in layers[1:]:
-            undersize = 0 if layer not in layer_undersize else layer_undersize[layer]
-            extra_pad = PAD << pg.rectangle(
-                size=(size[0] - undersize, size[1] - undersize),
-                layer=qg.get_layer(layer),
-            )
-            extra_pad.move(extra_pad.center, pad.center)
+    for n, layer in enumerate(layers):
+        undersize = 0 if layer not in layer_undersize else layer_undersize[layer]
+        pad_i = PAD << pg.rectangle(
+            size=(size[0] - undersize, size[1] - undersize),
+            layer=qg.get_layer(layer),
+        )
+        if n == 0:
+            pad = pad_i
+        else:
+            pad_i.move(pad_i.center, pad.center)
     port_dcenter = (0, size[1] * ((port_span[0] + port_span[1]) / 2 - 0.5))
     port_center = np.array((pad.xmax, pad.y)) + np.array(port_dcenter)
     port_width = size[1] * (port_span[1] - port_span[0])
