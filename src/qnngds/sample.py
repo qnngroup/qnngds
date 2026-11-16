@@ -7,6 +7,7 @@ import numpy as np
 
 import qnngds as qg
 import phidl.geometry as pg
+from phidl import Device as phidlDevice
 
 from qnngds.typing import LayerSpec, DeviceSpec
 from qnngds import Device
@@ -378,7 +379,7 @@ class Sample(object):
         """
         if isinstance(device, Sample):
             device = device.devices
-        elif not isinstance(device, Device):
+        elif not isinstance(device, phidlDevice):
             raise ValueError(
                 "qnngds.sample.place_on_sample was "
                 "passed an argument that was not a Device "
