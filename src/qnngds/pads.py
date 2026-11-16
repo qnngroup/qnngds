@@ -3,7 +3,7 @@
 # can be removed in python 3.14, see https://peps.python.org/pep-0749/
 from __future__ import annotations
 
-from qnngds.typing import LayerSpecs, DeviceSpecs, DeviceSpec
+from qnngds.typing import LayerSpec, LayerSpecs, DeviceSpecs, DeviceSpec
 import numpy as np
 
 from qnngds import Device
@@ -17,6 +17,7 @@ import phidl.routing as pr
 def stack(
     size: tuple[float, float] = (200, 100),
     layers: LayerSpecs = ("EBEAM_COARSE",),
+    layer_undersize: dict[LayerSpec, float] = {},
     port_span: tuple[float, float] = (0, 1),
 ) -> Device:
     """Create pad stack for use in other pad arrays
@@ -27,6 +28,7 @@ def stack(
         size (tuple[float, float]): width, height of pad
         layers (LayerSpecs): One or more layers to stack. First layer will have a port,
             which is the layer that will be used for routing to the pad.
+        layer_undersize (dict[LayerSpec, float]): For any layers in layer_undersize, shrink by specified amount.
         port_span (tuple[float, float]): fraction on [0,1] for starting and ending point of port
 
 
@@ -39,17 +41,16 @@ def stack(
         error_msg += f"b on the unit interval and a < b. Got {a=} and {b=}."
         raise ValueError(error_msg)
     PAD = Device("pad_stack")
-    pad = PAD << pg.rectangle(
-        size=size,
-        layer=qg.get_layer(layers[0]),
-    )
-    if len(layers) > 1:
-        for layer in layers[1:]:
-            extra_pad = PAD << pg.rectangle(
-                size=size,
-                layer=qg.get_layer(layer),
-            )
-            extra_pad.move(extra_pad.center, pad.center)
+    for n, layer in enumerate(layers):
+        undersize = 0 if layer not in layer_undersize else layer_undersize[layer]
+        pad_i = PAD << pg.rectangle(
+            size=(size[0] - undersize, size[1] - undersize),
+            layer=qg.get_layer(layer),
+        )
+        if n == 0:
+            pad = pad_i
+        else:
+            pad_i.move(pad_i.center, pad.center)
     port_dcenter = (0, size[1] * ((port_span[0] + port_span[1]) / 2 - 0.5))
     port_center = np.array((pad.xmax, pad.y)) + np.array(port_dcenter)
     port_width = size[1] * (port_span[1] - port_span[0])
