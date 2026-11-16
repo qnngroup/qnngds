@@ -167,3 +167,7 @@ cython_debug/
 
 # direnv
 .direnv/
+
+# nix develop --profile
+profile
+profile-*-link
