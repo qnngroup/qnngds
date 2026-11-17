@@ -960,3 +960,72 @@ def dose_defocus(
             text.move((text.x, text.ymax), (star_i.x, star_i.ymin - 5))
     D.flatten()
     return D
+
+
+@qg.device
+def mim(
+    length_overlap: float = 20,
+    width_overlap: float = 50,
+    pad_size: tuple[float, float] = (100, 80),
+    via_undersize: float = 5,
+    layer_bot: LayerSpec = (10, 0),
+    layer_top: LayerSpec = (30, 0),
+    layer_via: LayerSpec | None = (20, 0),
+    cap_stack: LayerSpecs = ((10, 0), (30, 0)),
+) -> Device:
+    """
+    Metal-Insulator-Metal capacitor test structure for measuring leakage and breakdown
+
+    characteristics of dielectrics.
+
+    Args:
+        length_overlap (float): length of overlap (distance between contacts)
+        width_overlap (float): width of overlap
+        pad_size (tuple[float, float]): size of pad
+        via_undersize (float): amount to undersize via, has no effect if layer_via is None.
+        layer_bot (LayerSpec): layer of bottom contact/pad
+        layer_top (LayerSpec): layer of top contact/pad
+        layer_via (LayerSpec | None): if not None, layer to put via opening to bottom contact/pad
+        cap_stack (LayerSpecs): Allows specifying a capacitor with or without the dielectric to measure
+            properties of the native oxide of the bottom layer.
+
+    Returns:
+        (Device): MIM capacitor
+    """
+    MIM = Device("MIM")
+    ov_size = (length_overlap, width_overlap)
+    pad_bot = MIM << qg.pads.stack(size=pad_size, layers=(layer_bot,))
+    if layer_via is not None:
+        pad_bot_via = MIM << qg.pads.stack(
+            size=(pad_size[0] - via_undersize, pad_size[1] - via_undersize),
+            layers=(layer_via,),
+        )
+        pad_bot_via.center = pad_bot.center
+    pad_top = MIM << qg.pads.stack(size=pad_size, layers=(layer_top,))
+    pad_top.center = pad_bot.center
+    pad_top.movey(pad_bot.ymax - pad_top.ymin + 5)
+    OV = Device("overlap")
+    for n, layer in enumerate(cap_stack):
+        plate = pg.rectangle(size=ov_size, layer=qg.get_layer(layer))
+        p = OV << plate
+        p.center = (0, 0)
+    ov = MIM << OV
+    ov.center = 0.5 * (pad_bot.center + pad_top.center)
+    ov.movex(pad_bot.xmax + 10 - ov.xmin)
+    # add contacts between pads and overlap area
+    bot_conn = MIM << pg.straight(
+        size=(max(2 * (ov.ymin - pad_bot.y), 10), length_overlap + 10),
+        layer=qg.get_layer(layer_bot),
+    )
+    bot_conn.connect(bot_conn.ports[1], pad_bot.ports[1])
+    top_conn = MIM << pg.straight(
+        size=(max(2 * (pad_top.y - ov.ymax), 10), length_overlap + 10),
+        layer=qg.get_layer(layer_top),
+    )
+    top_conn.connect(top_conn.ports[1], pad_top.ports[1])
+    label_text = f"L={length_overlap}\nW={width_overlap}"
+    label = MIM << pg.text(label_text, size=25, layer=qg.get_layer(layer_bot))
+    label.movex(-label.xmin)
+    label.movey(pad_top.ymax - label.ymin + 5)
+    MIM = pg.union(MIM, by_layer=True)
+    return MIM
