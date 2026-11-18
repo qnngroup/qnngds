@@ -76,8 +76,6 @@ def smooth(
 
     k.move((c.xmin - k.xmax, choke_shift))
 
-    D = Device("ntron_smooth")
-
     for name, port in zip(("g", "s", "d"), (k.ports[1], s.ports[2], d.ports[1])):
         D.add_port(name=name, port=port)
 
