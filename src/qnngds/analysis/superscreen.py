@@ -113,8 +113,8 @@ def make_superscreen_device(
                 # if there are multiple intersecting polygons on the same layer that have ports, then
                 # this will almost definitely fail and produce an error
                 for n, polygon in enumerate(new_polygons):
-                    pmain = qg.Device()
-                    pport = qg.Device()
+                    pmain = qg.Device("main")
+                    pport = qg.Device("port")
                     pmain.add_polygon(polygon.points, layer=0)
                     pport.add_polygon(port.points, layer=0)
                     intersection = pg.kl_boolean(pmain, pport, "and").get_polygons()

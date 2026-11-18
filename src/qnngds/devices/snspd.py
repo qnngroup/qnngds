@@ -87,7 +87,7 @@ def basic(
     else:
         hairpin_length = xsize / 2
 
-    SNSPD = Device()
+    SNSPD = Device("snspd_basic")
     hairpin = qg.geometries.optimal_hairpin(
         width=wire_width,
         pitch=wire_pitch,
@@ -164,7 +164,7 @@ def vertical(
         )
         wire_pitch = 2 * wire_width
 
-    D = Device()
+    D = Device("snspd_vert")
 
     S = basic(
         wire_width=wire_width,

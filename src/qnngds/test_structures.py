@@ -96,7 +96,7 @@ def alignment(layer1: LayerSpec = (1, 0), layer2: LayerSpec = (10, 0)) -> Device
 
     # central part with cross
 
-    CROSS = Device()
+    CROSS = Device("alignment_cross")
     cross = CROSS << pg.cross(length=200, width=2, layer=qg.get_layer(layer1))
     rect = pg.rectangle(size=(45, 45), layer=qg.get_layer(layer2))
     window = CROSS.add_array(rect, rows=2, columns=2, spacing=(155, 155))
@@ -105,7 +105,7 @@ def alignment(layer1: LayerSpec = (1, 0), layer2: LayerSpec = (10, 0)) -> Device
 
     MARK << CROSS
 
-    VERNIER = Device()
+    VERNIER = Device("alignment_vernier")
     for n, pitches in enumerate(((0.5, 0.1), (0.2, 0.05))):
         p1, p2 = pitches
         for i in range(2):
@@ -134,7 +134,7 @@ def alignment(layer1: LayerSpec = (1, 0), layer2: LayerSpec = (10, 0)) -> Device
     MARK.move(MARK.center, (0, 0))
 
     # text
-    TEXT = Device()
+    TEXT = Device("alignment_text")
     layer1_str = qg.get_layer(layer1).name.split("_")[0]
     layer2_str = qg.get_layer(layer2).name.split("_")[0]
     bg_label = (
@@ -223,7 +223,7 @@ def resolution_waffle(res: float | int = 1, layer: LayerSpec = (1, 0)) -> Device
     W = pg.rectangle(size=(res * 80, res * 80), layer=qg.get_layer(layer))
 
     pattern = [(res * x, res * 80) for x in [2, 1, 1, 2, 3, 5, 8, 13, 21, 15]]
-    DUMMY = Device()
+    DUMMY = Device("resolution_dummy")
     WOut = DUMMY << pg.gridsweep(
         function=pg.rectangle, param_x={"size": pattern}, param_y={}, spacing=res
     )
@@ -257,7 +257,7 @@ def resolution_L(res: float | int = 1, layer: LayerSpec = (1, 0)) -> Device:
 
     deviation = [0.8, 1, 1.2]
     for i, percent in enumerate(deviation):
-        bars = Device()
+        bars = Device("resolution_L_bars")
         w = percent * res
         spacing = 2 * res
         bar = pg.rectangle(size=(min(100 * res, 100), w), layer=qg.get_layer(layer))
@@ -330,7 +330,7 @@ def resolution_steps(
         (Device): the test structure
     """
 
-    D = Device()
+    D = Device("resolution_steps")
 
     R1 = pg.rectangle(size=(width, spacing), layer=qg.get_layer(layer))
     r = D << R1
@@ -635,7 +635,7 @@ def circ_tlm(
     for r_i in int_radius:
         d = ext_radius - r_i
         r = (ext_radius + r_i) / 2
-        CUT = Device()
+        CUT = Device("circ_tlm_cut")
         r = CUT << pg.ring(
             radius=r, width=d, angle_resolution=2.5, layer=qg.get_layer(pad_layer)
         )
@@ -660,7 +660,7 @@ def circ_tlm(
             size=(c.xsize + 10, c.ysize + 10), layer=qg.get_layer(layer)
         )
         m.move(m.center, c.center)
-    DUMMY = Device()
+    DUMMY = Device("circ_tlm_dummy")
     p = DUMMY << pg.rectangle(
         size=(c.xsize + 10, c.ysize + 10), layer=qg.get_layer(pad_layer)
     )
@@ -862,7 +862,7 @@ def cross_bridge_kelvin_resistor(
             layer_top=layer_top,
         )
     else:
-        center = Device()
+        center = Device("cbkr_center")
         cbot = center << pg.compass(size=(size, size), layer=qg.get_layer(layer_bot))
         ctop = center << pg.compass(size=(size, size), layer=qg.get_layer(layer_top))
         for port_name in cbot.ports:

@@ -46,7 +46,7 @@ def _wafer(radius: float, flat: float, layer: LayerSpec = (1, 0)) -> Device:
     """
     flat_dist = (radius**2 - (flat / 2) ** 2) ** 0.5
     circ = pg.circle(radius=radius, angle_resolution=2.5)
-    FLAT = Device()
+    FLAT = Device("wafer_flat")
     flat = FLAT << pg.rectangle(size=(flat, radius - flat_dist))
     flat.move((flat.x, flat.ymin), (circ.x, circ.ymin))
     W = Device(f"wafer_{round(radius / 1e3)}")
@@ -214,7 +214,7 @@ class Sample(object):
         self.n_rows = int(np.floor(mask_region.ysize / cell_size))
 
         # create a device whose area defines which placements are legal
-        mask = Device()
+        mask = Device("sample_mask")
         mask.add_ref(mask_region)
         mask.move(mask.center, (0, 0))
 
@@ -223,7 +223,7 @@ class Sample(object):
         self.open_cells = set([])
         self.full_cells = set([])
         rect = pg.rectangle(size=(cell_size, cell_size), layer=(1, 0))
-        dummy = Device()
+        dummy = Device("sample_dummy")
         d = dummy << rect
         for row in range(self.n_rows):
             for col in range(self.n_cols):
@@ -267,7 +267,7 @@ class Sample(object):
         Returns:
             (Device): device used for visualization
         """
-        dies = Device()
+        dies = Device("sample_open_dies")
         rect = pg.rectangle(size=(self.cell_size, self.cell_size), layer=(1, 0))
         for cell in self.open_cells:
             d = dies << rect

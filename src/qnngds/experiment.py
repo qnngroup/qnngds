@@ -445,7 +445,7 @@ def _route_dut(
     """
     problem_groups = set([])
     # first add autotapers
-    autotapered = Device()
+    autotapered = Device("autotapered")
     autotapered << experiment
     for gid, route_group in enumerate(route_groups):
         if route_group.ground:
@@ -464,7 +464,7 @@ def _route_dut(
             ports=pad_groups[gid],
         )
     for _ in range((retries + 1) * len(route_groups)):
-        routed = Device()
+        routed = Device("routed")
         routed << autotapered
         # for each grouping, try route_bundle, if that fails use route_bundle_sbend
         complete = True
@@ -587,6 +587,7 @@ def generate(
     label_pads: bool = True,
     ignore_port_count_mismatch: bool = False,
     dut_bbox_keepout: float = 10,
+    kl_tile_size: int | None = None,
     retries: int = 10,
     debug: bool = False,
 ) -> Device:
@@ -607,6 +608,7 @@ def generate(
             only if route_groups defines a mapping to all pad ports, or lists all DUT ports.
         dut_bbox_keepout (float): if ignore_dut_bbox is False, distance to extend ports
             outside of DUT bounding box before performing routing.
+        kl_tile_size (int | None): if not None, break any boolean operations involved in outline/keepout into smaller tiles for improved performance.
         retries (int): how many times to try rerouting with s_bend (may need to be larger for many port groupings)
         debug (bool): if True, quickplot DUT + pads before throwing error when routing fails
 
@@ -688,16 +690,18 @@ def generate(
                 "did you remember to add ports to your DUT?"
             )
 
-    experiment = Device()
+    experiment = Device("experiment")
 
     # figure out which layers to outline
     outline_layers = qg.utilities.get_outline_layers(qg.get_active_pdk().layers)
     keepout_layers = qg.utilities.get_keepout_layers(qg.get_active_pdk().layers)
 
     # outline and add DUT
-    outlined = qg.utilities.outline(dut_i, outline_layers)
+    outlined = qg.utilities.outline(dut_i, outline_layers, kl_tile_size=kl_tile_size)
     dut_ref = experiment.add_ref(
-        qg.utilities.keepout(outlined, outline_layers, keepout_layers)
+        qg.utilities.keepout(
+            outlined, outline_layers, keepout_layers, kl_tile_size=kl_tile_size
+        )
     )
     dut_ref.move(dut_offset)
     if pad_array is None:
@@ -706,7 +710,7 @@ def generate(
     # add pads
     # don't outline, and add to dummy component.
     # after pad port adjustment, perform the outline
-    dummy_pads = Device()
+    dummy_pads = Device("pads")
     pads_ref = dummy_pads.add_ref(pads_i)
     pads_ref.move(pad_offset)
 
