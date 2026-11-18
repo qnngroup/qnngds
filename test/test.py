@@ -6,6 +6,7 @@ import pkgutil
 from functools import partial
 import phidl.path as pp
 import phidl.geometry as pg
+from phidl import Device
 
 helper_functions = [
     "compute_res_wavelength",
@@ -89,6 +90,19 @@ def get_all_factories():
                 else:
                     raise
     return factories
+
+
+class DevicesNonempty(unittest.TestCase):
+    """Verify that all functions that return a Device produce a non-empty Device"""
+
+    def test_nonempty(self):
+        """Check that, for each factory registered with the @qg.device
+
+        decorator that produces an output Device, the device has non-zero area"""
+        for name, factory in qnngds.decorator._devices.items():
+            device = factory()
+            if isinstance(device, Device):
+                self.assertTrue(device.area() > 0)
 
 
 class RegisteredDevices(unittest.TestCase):
