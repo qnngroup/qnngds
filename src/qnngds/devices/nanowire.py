@@ -79,13 +79,11 @@ def variable_length(
         bot.rotate(90)
         bot.move(bot.ports[1].center, (0, 0))
         top.connect(port=top.ports[1], destination=bot.ports[1])
-    NANOWIREu = Device("nw_smooth")
-    NANOWIREu << pg.union(NANOWIRE, layer=qg.get_layer(layer))
     for p, port in enumerate([top.ports[2], bot.ports[2]]):
-        NANOWIREu.add_port(name=p + 1, port=port)
-    qg.utilities.create_layered_ports(NANOWIREu, layer)
+        NANOWIRE.add_port(name=p + 1, port=port)
+    qg.utilities.create_layered_ports(NANOWIRE, layer)
 
-    return NANOWIREu
+    return NANOWIRE
 
 
 @qg.device
@@ -118,8 +116,6 @@ def sharp(
     for i in range(2):
         taps.append(NANOWIRE << tap)
     taps[0].connect(taps[0].ports[1], taps[1].ports[1])
-    NANOWIREu = Device("nw_sharp")
-    NANOWIREu << pg.union(NANOWIRE, qg.get_layer(layer))
     for n, tap in enumerate(taps):
-        NANOWIREu.add_port(name=n + 1, port=tap.ports[2])
-    return NANOWIREu
+        NANOWIRE.add_port(name=n + 1, port=tap.ports[2])
+    return NANOWIRE

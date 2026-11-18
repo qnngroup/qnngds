@@ -116,15 +116,13 @@ def heater(
             t_pads[i].ports["W"],
             heater.ports[i + 1],
         )
-    HEATERu = Device("heater")
-    HEATERu << pg.union(HEATER, by_layer=True)
     dir_lut = {1: "W", 2: "N", 3: "E", 4: "S"}
     for n, t_pad in enumerate(t_pads):
         for i in range(3):
-            HEATERu.add_port(
+            HEATER.add_port(
                 name=3 * n + i + 1, port=t_pad.ports[dir_lut[i + 2]], layer=pad_layer
             )
-    return HEATERu
+    return HEATER
 
 
 @qg.device

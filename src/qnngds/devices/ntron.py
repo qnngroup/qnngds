@@ -76,14 +76,12 @@ def smooth(
 
     k.move((c.xmin - k.xmax, choke_shift))
 
-    Du = Device("ntron_smooth")
-    Du << pg.union(D, layer=qg.get_layer(layer))
-    Du.flatten()
+    D = Device("ntron_smooth")
 
     for name, port in zip(("g", "s", "d"), (k.ports[1], s.ports[2], d.ports[1])):
-        Du.add_port(name=name, port=port)
+        D.add_port(name=name, port=port)
 
-    return Du
+    return D
 
 
 @qg.device
@@ -163,14 +161,10 @@ def sharp(
     s = D << source
     s.connect(port=s.ports[1], destination=c.ports["S"])
 
-    Du = Device("ntron_sharp")
-    Du << pg.union(D, layer=qg.get_layer(layer))
-    Du.flatten()
-
     for name, port in zip(("g", "s", "d"), (k.ports[1], s.ports[2], d.ports[2])):
-        Du.add_port(name=name, port=port)
+        D.add_port(name=name, port=port)
 
-    return Du
+    return D
 
 
 @qg.device

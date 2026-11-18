@@ -235,10 +235,7 @@ def resolution_waffle(res: float | int = 1, layer: LayerSpec = (1, 0)) -> Device
     text = WAFFLE << pg.text(str(res), size=20, layer=qg.get_layer(layer))
     text.move((text.xmin, text.ymax), (W.xmin, W.ymin - min(10, 10 * res)))
 
-    WAFFLEu = Device()
-    WAFFLEu << pg.union(WAFFLE, by_layer=True)
-    WAFFLEu.flatten()
-    return WAFFLEu
+    return WAFFLE
 
 
 @qg.device
@@ -275,10 +272,7 @@ def resolution_L(res: float | int = 1, layer: LayerSpec = (1, 0)) -> Device:
     text = LLL << pg.text(str(res), size=20, layer=qg.get_layer(layer))
     start = (text.xmin, text.ymin)
     text.move(start, [(len(deviation) + 0.5) * offset for offset in grid_spacing])
-    LLLu = Device()
-    LLLu << pg.union(LLL, by_layer=True)
-    LLLu.flatten()
-    return LLLu
+    return LLL
 
 
 @qg.device
@@ -312,10 +306,7 @@ def resolution_test(
         else:
             RES_TEST = qg.utilities.invert(RES_TEST, {layer: 5})
 
-    RES_TESTu = Device()
-    RES_TESTu << pg.union(RES_TEST, by_layer=True)
-    RES_TESTu.flatten()
-    return RES_TESTu
+    return RES_TEST
 
 
 @qg.device
@@ -1027,5 +1018,4 @@ def mim(
     label = MIM << pg.text(label_text, size=25, layer=qg.get_layer(layer_bot))
     label.movex(-label.xmin)
     label.movey(pad_top.ymax - label.ymin + 5)
-    MIM = pg.union(MIM, by_layer=True)
     return MIM

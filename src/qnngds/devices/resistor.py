@@ -172,12 +172,9 @@ def meander(
         rect = D << pg.straight(size=(width, hp_length), layer=qg.get_layer(layer))
         rect.connect(rect.ports[1], hp_prev.ports[2 - (n_turn % 2)])
         port_bot = rect.ports[2]
-    Du = Device("resistor")
-    Du << pg.union(D, layer=qg.get_layer(layer))
-    Du.flatten()
     for name, port in zip((1, 2), (port_top, port_bot)):
-        Du.add_port(name=name, port=port)
-    return Du
+        D.add_port(name=name, port=port)
+    return D
 
 
 @qg.device
@@ -263,9 +260,6 @@ def meander_sc_contacts(
             if i == 0:
                 ports.append(c_sc.ports[dir_lut[2 + 2 * (p % 2)]])
 
-    Du = Device("resistor_contacts")
-    Du << pg.union(D, by_layer=True)
-    Du.flatten()
     for name, port in zip((1, 2), ports):
-        Du.add_port(name=name, port=port, layer=layer_contacts[0])
-    return Du
+        D.add_port(name=name, port=port, layer=layer_contacts[0])
+    return D

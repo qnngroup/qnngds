@@ -127,12 +127,8 @@ def basic(
     SNSPD.info["area"] = xsize * ysize
     SNSPD.info["xsize"] = xsize
     SNSPD.info["ysize"] = ysize
-    SNSPD.flatten()
-    SNSPDu = Device("snspd_basic")
-    SNSPDu << pg.union(SNSPD, layer=qg.get_layer(layer))
-    SNSPDu.add_ports(SNSPD.ports)
-    SNSPDu.move(SNSPDu.center, (0, 0))
-    return SNSPDu
+    SNSPD.move(SNSPD.center, (0, 0))
+    return SNSPD
 
 
 @qg.device
@@ -204,13 +200,10 @@ def vertical(
     else:
         ports.append(t1.ports[1])
         ports.append(t2.ports[1])
-    Du = Device("snspd_vert")
-    Du << pg.union(D, layer=qg.get_layer(layer))
-    Du.flatten()
     for p, port in enumerate(ports):
-        Du.add_port(
+        D.add_port(
             name=p + 1,
             port=port,
             layer=layer,
         )
-    return Du
+    return D
