@@ -505,6 +505,7 @@ def rect_tlm(
     contact_l: float = 10,
     contact_w: float = 100,
     spacings: List[float] = [10, 10, 20, 50, 80, 100, 200],
+    via_undersize: float = 1,
     via_layer: LayerSpec | None = (1, 0),
     finger_layer: LayerSpec = (10, 0),
     pad_layer: LayerSpec | None = None,
@@ -517,6 +518,8 @@ def rect_tlm(
         contact_l (float): length of metal contact on semiconductor
         contact_w (float): width of contact/semiconductor
         spacings (List[float]): list of spacings between contacts
+        via_undersize (float): amount to decrease size of via to account for overetching.
+            Can be made negative to expand via beyond finger metal.
         via_layer (LayerSpec | None): layer specification for via between mesa and fingers.
             If None, don't include via.
         finger_layer (LayerSpec): layer for fingers that periodically contact mesa
@@ -534,9 +537,12 @@ def rect_tlm(
         size=(contact_l, contact_w + 10), layer=qg.get_layer(finger_layer)
     )
     if via_layer is not None:
-        FINGER << pg.straight(
-            size=(contact_l, contact_w + 10), layer=qg.get_layer(via_layer)
+        center = FINGER.center
+        via = FINGER << pg.straight(
+            size=(contact_l - via_undersize, contact_w + 10),
+            layer=qg.get_layer(via_layer),
         )
+        via.center = center
     tee = FINGER << pg.tee(
         size=(3 * contact_l, contact_l),
         stub_size=(contact_l, contact_l),
@@ -556,7 +562,7 @@ def rect_tlm(
         size=v_pad_size,
         layers=pad_stack,
         port_span=(0, contact_l / v_pad_size[1]),
-        layer_undersize={via_layer: 10},
+        layer_undersize={via_layer: via_undersize},
     )
     for n, space in enumerate(spacings):
         xmax = 0
@@ -587,7 +593,9 @@ def rect_tlm(
             v_pad_i.connect(v_pad_i.ports[1], v_port)
             i_pad_size = (pad_size[1], max(pad_size[0], extend + contact_l))
             i_pad_i = TLM << qg.pads.stack(
-                size=i_pad_size, layers=pad_stack, layer_undersize={via_layer: 10}
+                size=i_pad_size,
+                layers=pad_stack,
+                layer_undersize={via_layer: via_undersize},
             )
             i_pad_i.connect(i_pad_i.ports[1], i_port)
             if i % 2 == 0:
