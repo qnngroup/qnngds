@@ -65,9 +65,7 @@
               rm -rf .venv
               uv venv --python=3.12
               source .venv/bin/activate
-              uv pip install pre-commit
               uv pip install -r requirements.txt
-              uv pip install -e .
               pre-commit install
               pre-commit run
               patch=$(autoPatchelf ~/.cache/pre-commit/)

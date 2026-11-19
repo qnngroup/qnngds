@@ -83,7 +83,7 @@ def array_single(
         (Device): linear pad array
     """
     PADS = Device("pad_array_single")
-    sub_pad = Device()
+    sub_pad = Device("pad_subarray")
     offset = 0
     port_i = 0
     for n, pad_spec in enumerate(pad_specs):

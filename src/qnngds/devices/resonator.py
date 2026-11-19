@@ -236,7 +236,7 @@ def pad(
     Returns:
         (Device): pad
     """
-    PAD = Device()
+    PAD = Device("resonator_pad")
     sc = PAD << pg.straight(size=(width, length), layer=qg.get_layer(sc_layer))
     sc.move(sc.center, (0, 0))
     for metal_layer in metal_layers:
@@ -350,12 +350,12 @@ def transmission_line_resonator(
     is_cpw = res_cpw
     layers = res_layers
 
-    R = Device()
+    R = Device("resonator")
     res = resonator_spec(res_xc)
     R << res
     R.add_ports(res.ports)
     # create new cross-section for taper using transitions
-    T = Device()
+    T = Device("taper")
     trans_length = sum(section["width"] for section in tl_xc.sections)
     trans_layer = res_xc.sections[0]["layer"]
     transition = taper(

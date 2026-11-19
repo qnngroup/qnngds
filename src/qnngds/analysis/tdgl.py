@@ -4,6 +4,8 @@ import numpy as np
 import qnngds as qg
 from qnngds.typing import LayerSpec
 
+import phidl.geometry as pg
+
 try:
     import tdgl
 except ImportError:
@@ -43,7 +45,9 @@ def make_tdgl_device(
     )
     length_units = "um"
     resample_points = int(max(device.xsize, device.ysize) / coherence_length * 10)
-    pp = device.get_polygons(by_spec=qg.get_layer(layer).tuple)[0]
+    # union
+    device_u = pg.union(device, by_layer=True)
+    pp = device_u.get_polygons(by_spec=qg.get_layer(layer).tuple)[0]
     film = tdgl.Polygon("film", points=pp).resample(resample_points).buffer(0)
     terminals = []
     probe_points = []

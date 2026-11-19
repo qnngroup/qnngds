@@ -76,14 +76,10 @@ def smooth(
 
     k.move((c.xmin - k.xmax, choke_shift))
 
-    Du = Device("ntron_smooth")
-    Du << pg.union(D, layer=qg.get_layer(layer))
-    Du.flatten()
-
     for name, port in zip(("g", "s", "d"), (k.ports[1], s.ports[2], d.ports[1])):
-        Du.add_port(name=name, port=port)
+        D.add_port(name=name, port=port)
 
-    return Du
+    return D
 
 
 @qg.device
@@ -163,14 +159,10 @@ def sharp(
     s = D << source
     s.connect(port=s.ports[1], destination=c.ports["S"])
 
-    Du = Device("ntron_sharp")
-    Du << pg.union(D, layer=qg.get_layer(layer))
-    Du.flatten()
-
     for name, port in zip(("g", "s", "d"), (k.ports[1], s.ports[2], d.ports[2])):
-        Du.add_port(name=name, port=port)
+        D.add_port(name=name, port=port)
 
-    return Du
+    return D
 
 
 @qg.device
@@ -214,7 +206,7 @@ def slotted(
         num_pts=num_pts,
         layer=(1, 0),
     )
-    slot_inv = Device()
+    slot_inv = Device("slot_inv")
     hp1 = slot_inv.add_ref(hairpin)
     hp2 = slot_inv.add_ref(hairpin)
     hp2.mirror()
@@ -222,11 +214,11 @@ def slotted(
     slot_inv.rotate(90)
     slot_inv.move(slot_inv.center, (0, 0))
     box = pg.bbox(slot_inv.bbox, layer=(1, 0))
-    slot = Device()
+    slot = Device("slot")
     slot.add_ref(pg.kl_boolean(A=box, B=slot_inv, operation="A-B", layer=(1, 0)))
 
     # array slots
-    slots = Device()
+    slots = Device("slot_array")
     slots.add_array(slot, columns=n_slot, rows=1, spacing=(slot_pitch, 0))
     slots.move(slots.center, (0, 0))
     D.add_ref(

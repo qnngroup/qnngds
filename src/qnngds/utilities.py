@@ -150,7 +150,7 @@ def extend_ports(
     Returns:
         (Device): the original device with ports extended
     """
-    dev_extended = Device()
+    dev_extended = Device(f"extended_{device.name}")
     dev_i = dev_extended << device
 
     ext_ports = [1, 2]
@@ -296,9 +296,10 @@ def outline(
         (Device): the outlined device
     """
     tile_size = None if kl_tile_size is None else (kl_tile_size, kl_tile_size)
-    dev_outlined = Device()
+    merge_after = kl_tile_size is None
+    dev_outlined = Device(f"outlined_{device.name}")
     # extend ports
-    dev_extended = Device()
+    dev_extended = Device(f"extended_{device.name}")
     dev = dev_extended.add_ref(device)
     if outline_layers is None:
         outline_layers = {}
@@ -337,7 +338,7 @@ def outline(
         if layer not in outline_layers:
             dev_outlined.add_polygon(poly, layer=layer)
         else:
-            dummy = Device()
+            dummy = Device(f"dummy_{device.name}")
             dummy.add_polygon(poly, layer=layer)
             bloated = pg.kl_offset(
                 dummy,
@@ -345,8 +346,9 @@ def outline(
                 precision=kl_precision,
                 tile_size=tile_size,
                 layer=layer,
+                merge_after=merge_after,
             )
-            dummy = Device()
+            dummy = Device(f"dummy_{device.name}")
             dummy.add_polygon(extended_polygons[layer], layer=layer)
             outlined = pg.kl_boolean(
                 A=bloated,
@@ -355,6 +357,7 @@ def outline(
                 precision=kl_precision,
                 tile_size=tile_size,
                 layer=layer,
+                merge_after=merge_after,
             )
             dev_outlined << outlined
     # add ports
@@ -384,7 +387,8 @@ def invert(
         (Device): the inverted device
     """
     tile_size = None if kl_tile_size is None else (kl_tile_size, kl_tile_size)
-    dev_inverted = Device()
+    merge_after = kl_tile_size is None
+    dev_inverted = Device(f"inverted_{device.name}")
     ext_bbox_distance = {qg.get_layer_tuple(k): v for k, v in ext_bbox_distance.items()}
     polygons = device.get_polygons(by_spec=True)
     for layer, poly in polygons.items():
@@ -392,14 +396,14 @@ def invert(
         if layer not in ext_bbox_distance:
             dev_inverted.add_polygon(poly, layer=layer)
         else:
-            dummy = Device()
+            dummy = Device(f"dummy_{device.name}")
             dummy.add_polygon(poly, layer=layer)
             bbox = dummy.bbox
             ext = ext_bbox_distance[layer]
             bbox[0] -= [ext, ext]
             bbox[1] += [ext, ext]
             bloated = pg.bbox(bbox, layer=layer)
-            dummy = Device()
+            dummy = Device(f"dummy_{device.name}")
             dummy.add_polygon(polygons[layer], layer=layer)
             inverted = pg.kl_boolean(
                 A=bloated,
@@ -407,6 +411,7 @@ def invert(
                 operation="A-B",
                 precision=kl_precision,
                 tile_size=tile_size,
+                merge_after=merge_after,
                 layer=layer,
             )
             dev_inverted << inverted
@@ -439,7 +444,8 @@ def keepout(
         (Device): device with keepout applied
     """
     tile_size = None if kl_tile_size is None else (kl_tile_size, kl_tile_size)
-    dev_keepout = Device()
+    merge_after = kl_tile_size is None
+    dev_keepout = Device(f"keepout_{device.name}")
     if keepout_layers is None:
         return device
     if outline_layers is None:
@@ -457,7 +463,7 @@ def keepout(
         for mapped_layer in mapped_layers:
             mapped_layer = qg.get_layer_tuple(mapped_layer)
             neg_tone = mapped_layer not in outline_layers
-            d_keepout = Device()
+            d_keepout = Device(f"keeout_{device.name}")
             d_keepout.add_polygon(keepout_poly, layer=mapped_layer)
             if mapped_layer not in polygons:
                 if neg_tone:
@@ -470,7 +476,7 @@ def keepout(
                     processed_layers.add(mapped_layer)
                     continue
             mapped_poly = polygons[mapped_layer]
-            d_mapped = Device()
+            d_mapped = Device(f"keepout_mapped_{device.name}")
             d_mapped.add_polygon(mapped_poly, layer=mapped_layer)
             if neg_tone:
                 # neg-tone, subtract
@@ -481,6 +487,7 @@ def keepout(
                     precision=kl_precision,
                     tile_size=tile_size,
                     layer=mapped_layer,
+                    merge_after=merge_after,
                 )
             else:
                 # pos-tone, add/union
@@ -491,6 +498,7 @@ def keepout(
                     precision=kl_precision,
                     tile_size=tile_size,
                     layer=mapped_layer,
+                    merge_after=merge_after,
                 )
             processed_layers.add(mapped_layer)
     # add remaining layers

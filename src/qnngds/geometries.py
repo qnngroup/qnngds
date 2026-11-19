@@ -641,7 +641,7 @@ def fine_to_coarse(
     Returns:
         (Device): transition between fine and coarse layers
     """
-    taper = Device()
+    taper = Device("layer_trans_taper")
     outline_layers = qg.utilities.get_outline_layers(qg.get_active_pdk().layers)
     pos_tone = False
     for layer in outline_layers.keys():
