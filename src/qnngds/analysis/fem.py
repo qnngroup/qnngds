@@ -6,6 +6,8 @@ from itertools import combinations
 
 import numpy as np
 
+import phidl.geometry as pg
+
 from qnngds.typing import LayerSpec
 import qnngds as qg
 
@@ -195,7 +197,8 @@ def make_mesh(device: qg.Device, layer: LayerSpec, tolerance: float = 0.01):
     Returns:
         (MeshTri1) mesh of the device
     """
-    pp = device.get_polygons(by_spec=qg.get_layer(layer).tuple)[0]
+    device_u = pg.union(device, by_layer=True)
+    pp = device_u.get_polygons(by_spec=qg.get_layer(layer).tuple)[0]
     pp_simplified = np.asarray(LineString(pp).simplify(tolerance=tolerance).coords)
     component = Polygon(pp_simplified)
     # create boundaries for each port
