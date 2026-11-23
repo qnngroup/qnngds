@@ -699,8 +699,8 @@ def via_chain_meandered(
         spacing (float): spacing between vias
         terminals_same_side (bool): if True, make the terminals start and end on the same
             side of the meander.
-        size (tuple[float | None, float | None]): width, height of meander. Meander will start at the top
-            left and end at the bottom (left if terminals_same_side else right).
+        size (tuple[float | None, float | None]): width, height of meander. Meander will start at the bottom
+            left and end at the right (bottom if terminals_same_side else top).
             If one or both elements are None, automatically determines a size that will
             give approximately the number of vias.
 
@@ -713,10 +713,14 @@ def via_chain_meandered(
         area = (via.xsize + spacing) * (via.ysize + spacing) * num_vias
         size = (np.sqrt(area), np.sqrt(area))
     columns = (
-        int(np.floor(size[0] / (via.xsize + spacing))) if size[0] is not None else None
+        min(num_vias, int(np.floor(size[0] / (via.xsize + spacing))))
+        if size[0] is not None
+        else None
     )
     rows = (
-        int(np.floor(size[1] / (via.ysize + spacing))) if size[1] is not None else None
+        min(num_vias, int(np.floor(size[1] / (via.ysize + spacing))))
+        if size[1] is not None
+        else None
     )
     # at most one of rows, columns is None
     if rows is None:
@@ -724,9 +728,9 @@ def via_chain_meandered(
     if columns is None:
         columns = num_vias // rows
     if terminals_same_side:
-        rows = max(2, 2 * (rows // 2))
+        columns = max(2, 2 * (columns // 2))
     else:
-        rows = max(1, 2 * ((rows + 1) // 2) - 1)
+        columns = max(1, 2 * ((columns + 1) // 2) - 1)
     VIAS = Device("via_chain_meander")
     via_array = VIAS.add_array(
         device=via,
@@ -735,7 +739,7 @@ def via_chain_meandered(
         spacing=(via.xsize + spacing, via.ysize + spacing),
     )
     # route
-    last_layer = 0
+    last_layer = 1
     for col in range(columns):
         row_list = range(rows) if col % 2 == 0 else range(rows - 1, -1, -1)
         for row in row_list:
@@ -751,13 +755,16 @@ def via_chain_meandered(
                 p2 = via_array.ports[row, col + 1][f"{route_layer + 1}W"]
                 VIAS << pr.route_quad(port1=p1, port2=p2, layer=qg.get_layer(p1.layer))
                 last_layer = route_layer
-    VIAS.add_port(name="1", port=via_array.ports[0, 0]["2W"])
     out_layer = (last_layer + 1) % 2
-    out_dir = "W" if terminals_same_side else "E"
-    VIAS.add_port(
-        name="2",
-        port=via_array.ports[rows - 1, columns - 1][f"{out_layer + 1}{out_dir}"],
-    )
+    out_row = 0 if columns % 2 == 0 else rows - 1
+    for direction in ("W", "S"):
+        VIAS.add_port(name=f"1{direction}", port=via_array.ports[0, 0][f"1{direction}"])
+    out_directions = ("S", "E") if terminals_same_side else ("N", "E")
+    for out_dir in out_directions:
+        VIAS.add_port(
+            name=f"2{out_dir}",
+            port=via_array.ports[out_row, columns - 1][f"{out_layer + 1}{out_dir}"],
+        )
     return VIAS
 
 
