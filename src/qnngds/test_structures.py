@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import qnngds as qg
 import phidl.geometry as pg
+import phidl.routing as pr
 
 from typing import List, Tuple
 
@@ -729,6 +730,84 @@ def circ_tlm(
         layer=qg.get_layer(pad_layer),
     )
     return TLM
+
+
+@qg.device
+def via_chain_meandered(
+    via_spec: DeviceSpec | Device = qg.geometries.via,
+    num_vias: int = 5,
+    spacing: float = 1,
+    terminals_same_side: bool = False,
+    size: tuple[float | None, float | None] = (30, 20),
+) -> Device:
+    """Makes a meandered chain of vias.
+
+    Args:
+        via_spec (DeviceSpec | Device): function, component name, or component for the via
+        num_vias (int): approximate number of vias to include in chain
+        spacing (float): spacing between vias
+        terminals_same_side (bool): if True, make the terminals start and end on the same
+            side of the meander.
+        size (tuple[float | None, float | None]): width, height of meander. Meander will start at the top
+            left and end at the bottom (left if terminals_same_side else right).
+            If one or both elements are None, automatically determines a size that will
+            give approximately the number of vias.
+
+    Returns:
+        (Device): the via chain
+    """
+    via = qg.get_device(via_spec)
+    # calculate number of rows/columns.
+    if size[0] is None and size[1] is None:
+        area = (via.xsize + spacing) * (via.ysize + spacing) * num_vias
+        size = (np.sqrt(area), np.sqrt(area))
+    columns = (
+        int(np.floor(size[0] / (via.xsize + spacing))) if size[0] is not None else None
+    )
+    rows = (
+        int(np.floor(size[1] / (via.ysize + spacing))) if size[1] is not None else None
+    )
+    # at most one of rows, columns is None
+    if rows is None:
+        rows = num_vias // columns
+    if columns is None:
+        columns = num_vias // rows
+    if terminals_same_side:
+        rows = max(2, 2 * (rows // 2))
+    else:
+        rows = max(1, 2 * ((rows + 1) // 2) - 1)
+    VIAS = Device("via_chain_meander")
+    via_array = VIAS.add_array(
+        device=via,
+        columns=columns,
+        rows=rows,
+        spacing=(via.xsize + spacing, via.ysize + spacing),
+    )
+    # route
+    last_layer = 0
+    for col in range(columns):
+        row_list = range(rows) if col % 2 == 0 else range(rows - 1, -1, -1)
+        for row in row_list:
+            if row > 0:
+                route_layer = (last_layer + 1) % 2
+                p1 = via_array.ports[row - 1, col][f"{route_layer + 1}N"]
+                p2 = via_array.ports[row, col][f"{route_layer + 1}S"]
+                VIAS << pr.route_quad(port1=p1, port2=p2, layer=qg.get_layer(p1.layer))
+                last_layer = route_layer
+            if row == row_list[-1] and (col < columns - 1):
+                route_layer = (last_layer + 1) % 2
+                p1 = via_array.ports[row, col][f"{route_layer + 1}E"]
+                p2 = via_array.ports[row, col + 1][f"{route_layer + 1}W"]
+                VIAS << pr.route_quad(port1=p1, port2=p2, layer=qg.get_layer(p1.layer))
+                last_layer = route_layer
+    VIAS.add_port(name="1", port=via_array.ports[0, 0]["2W"])
+    out_layer = (last_layer + 1) % 2
+    out_dir = "W" if terminals_same_side else "E"
+    VIAS.add_port(
+        name="2",
+        port=via_array.ports[rows - 1, columns - 1][f"{out_layer + 1}{out_dir}"],
+    )
+    return VIAS
 
 
 @qg.device
