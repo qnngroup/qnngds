@@ -6,7 +6,7 @@ from __future__ import annotations
 import qnngds as qg
 import phidl.geometry as pg
 
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 import numpy as np
 
@@ -206,13 +206,22 @@ def multilayer_alignment(
 
 
 @qg.device
-def resolution_waffle(res: float | int = 1, layer: LayerSpec = (1, 0)) -> Device:
+def resolution_waffle(
+    min_width: float = 0.4,
+    spacing: float = 4,
+    size: Tuple[float, float] = (50, 50),
+    invert: bool = False,
+    layer: LayerSpec = (1, 0),
+) -> Device:
     """Creates resolution_waffle test structures for determining process resolution.
 
     Helper method for resolution_test.
 
     Args:
-        res (float or int): Resolution (in µm) to be tested.
+        min_width (float or int): Minimum resolution (in µm) to be tested.
+        spacing (float or int): spacing between lines
+        size (tuple[float, float]): width, height of resolution test
+        invert (bool): if True, invert the waffle
         layer (LayerSpec): GDS layer specification
 
     Returns:
@@ -220,93 +229,77 @@ def resolution_waffle(res: float | int = 1, layer: LayerSpec = (1, 0)) -> Device
     """
 
     WAFFLE = Device("resolution_waffle")
-    W = pg.rectangle(size=(res * 80, res * 80), layer=qg.get_layer(layer))
+    MASK = pg.rectangle(size=size, layer=qg.get_layer(layer))
 
-    pattern = [(res * x, res * 80) for x in [2, 1, 1, 2, 3, 5, 8, 13, 21, 15]]
-    DUMMY = Device("resolution_dummy")
-    WOut = DUMMY << pg.gridsweep(
-        function=pg.rectangle, param_x={"size": pattern}, param_y={}, spacing=res
+    n_cols = int(np.ceil(size[0] / spacing))
+    width_factor = np.exp(np.log((spacing / 3) / min_width) / n_cols)
+
+    LINES = Device("lines")
+    lines = pg.gridsweep(
+        function=lambda n: pg.rectangle(
+            size=(round(min_width * (width_factor**n), 2), size[1]),
+            layer=qg.get_layer(layer),
+        ),
+        param_x={"n": range(n_cols)},
+        param_y={},
+        spacing=(spacing, spacing),
+        align_x="xmin",
+        align_y="ymin",
+        edge_x="xmin",
+        edge_y="ymin",
+        separation=False,
     )
-    WOut.move(WOut.center, W.center)
-    WAFFLE << pg.kl_boolean(A=W, B=WOut, operation="A-B", layer=qg.get_layer(layer))
-    WOut.rotate(90, center=WOut.center)
-    WAFFLE << pg.kl_boolean(A=W, B=WOut, operation="A-B", layer=qg.get_layer(layer))
+    vert = LINES << lines
+    horz = LINES << lines
+    horz.rotate(90)
+    horz.move((vert.xmin - horz.xmin, vert.ymin - horz.ymin))
+    LINES.move((MASK.xmin - LINES.xmin, MASK.ymin - LINES.ymin))
+    waffle = pg.kl_boolean(A=MASK, B=LINES, operation="and", layer=qg.get_layer(layer))
+    if invert:
+        waffle = qg.utilities.invert(waffle, ext_bbox_distance={layer: spacing})
+    waffle = WAFFLE << waffle
 
-    text = WAFFLE << pg.text(str(res), size=20, layer=qg.get_layer(layer))
-    text.move((text.xmin, text.ymax), (W.xmin, W.ymin - min(10, 10 * res)))
+    # markers
+    marks = []
+    for n, size_i in enumerate(size):
+        MARKS = Device("marks")
+        for w, d in zip((spacing / 2, spacing), (1, 5)):
+            n_marks = int(np.ceil(size_i / (spacing * d)))
+            marks_i = MARKS.add_array(
+                pg.rectangle(size=(1, w), layer=qg.get_layer(layer)),
+                columns=n_marks,
+                rows=1,
+                spacing=(spacing * d, 0),
+            )
+            marks_i.movey(-w)
+            # add text
+            if d == 5:
+                for i in range(n_marks):
+                    w = round(min_width * (width_factor ** (i * d)), 2)
+                    label = MARKS << pg.text(f"{w}", size=4, layer=qg.get_layer(layer))
+                    if n == 1:
+                        label.mirror((0, 0), (0, 1))
+                    label.rotate(-90)
+                    label.move(
+                        (
+                            marks_i.xmin + d * spacing * i - label.xmin,
+                            marks_i.ymin - spacing / 2 - label.ymax,
+                        )
+                    )
+
+        MARKS = pg.union(MARKS, by_layer=True)
+
+        marks.append(WAFFLE << MARKS)
+        if n == 1:
+            marks[-1].rotate(90)
+            marks[-1].mirror((0, 0), (0, 1))
+    marks[0].move((waffle.xmin - marks[0].xmin, waffle.ymin - spacing - marks[0].ymax))
+    marks[1].move((waffle.xmin - spacing - marks[1].xmax, waffle.ymin - marks[1].ymin))
+    if invert:
+        marks[0].movex(spacing)
+        marks[1].movey(spacing)
 
     return WAFFLE
-
-
-@qg.device
-def resolution_L(res: float | int = 1, layer: LayerSpec = (1, 0)) -> Device:
-    """Creates L-shaped test structures for determining process resolution.
-
-    Helper method for resolution_test.
-
-    Args:
-        res (float or int): Resolution (in µm) to be tested.
-        layer (LayerSpec): GDS layer specification
-
-    Returns:
-        (Device): the resolution test structure
-    """
-
-    LLL = Device("LLL")
-    grid_spacing = (15 * res, 15 * res)
-
-    deviation = [0.8, 1, 1.2]
-    for i, percent in enumerate(deviation):
-        bars = Device("resolution_L_bars")
-        w = percent * res
-        spacing = 2 * res
-        bar = pg.rectangle(size=(min(100 * res, 100), w), layer=qg.get_layer(layer))
-        h_bars = bars.add_array(bar, columns=1, rows=5, spacing=(0, spacing))
-        v_bars = bars.add_array(bar, columns=1, rows=5, spacing=(0, spacing))
-        h_bars.rotate(90)
-        h_bars.move((h_bars.xmin, h_bars.ymin), (0, 0))
-        v_bars.move((v_bars.xmin, v_bars.ymin), (0, 0))
-        lll = LLL << bars
-        lll.move([i * offset for offset in grid_spacing])
-
-    text = LLL << pg.text(str(res), size=20, layer=qg.get_layer(layer))
-    start = (text.xmin, text.ymin)
-    text.move(start, [(len(deviation) + 0.5) * offset for offset in grid_spacing])
-    return LLL
-
-
-@qg.device
-def resolution_test(
-    resolutions: List[float] = [0.6, 0.8, 1.0],
-    outline: Optional[float] = None,
-    layer: LayerSpec = (1, 0),
-) -> Device:
-    """Creates L and waffle structures for determining process resolution.
-
-    Args:
-        resolutions (List[float]): List of resolutions (in µm) to be tested.
-        outline (Optional[float]): If none, do not invert. If zero, invert the device, otherwise outline the device by this width.
-        layer (LayerSpec): GDS layer specification
-
-    Returns:
-        (Device): the resolution test structures
-    """
-
-    RES_TEST = Device("resolution_test")
-    for test_fn in [resolution_L, resolution_waffle]:
-        for res in resolutions:
-            RES_TEST << test_fn(res, layer)
-    RES_TEST.distribute(direction="y", spacing=0, separation=False, edge="ymin")
-    RES_TEST.distribute(direction="x", spacing=10, edge="ymin")
-    RES_TEST.move(RES_TEST.center, (0, 0))
-
-    if outline is not None:
-        if outline > 0:
-            RES_TEST = qg.utilities.outline(RES_TEST, {layer: outline})
-        else:
-            RES_TEST = qg.utilities.invert(RES_TEST, {layer: 5})
-
-    return RES_TEST
 
 
 @qg.device
@@ -412,6 +405,62 @@ def resolution_checkerboard(
         tick.move((tick.xmin, tick.y), (label_size / 2, offset - resolution / 2))
 
     return D
+
+
+@qg.device
+def dose_defocus(
+    waffle_min_res: float = 0.4,
+    layers: LayerSpec = ("PHOTO1", "PHOTO2", "PHOTO3", "PHOTO4"),
+) -> Device:
+    """Generate a test structure for doing dose/defocus tests
+
+    Contains a lithographic checkerboard, stars, crossed lines, and waffles.
+
+    Args:
+        layer (LayerSpec): layer to put pattern on
+        resolutions (tuple[float]): resolutions to use for star, crossed lines and waffles.
+            Resolution for litho checkerboard is determined automatically from maximum element.
+
+    Returns:
+        (Device): dose defocus test structure.
+    """
+    LITHO = Device("dose_defocus")
+    CHECKERBOARDS = Device("litho_checkerboards")
+    min_checkerboard_res = 10 ** np.floor(np.log10(waffle_min_res))
+    for layer in layers:
+        checkerboard = CHECKERBOARDS << resolution_checkerboard(
+            resolutions=np.linspace(
+                min_checkerboard_res, 10 * min_checkerboard_res, 10
+            ),
+            layer=layer,
+            label_interval=0,
+        )
+        checkerboard.movey(CHECKERBOARDS.ymin - 10 - checkerboard.ymax)
+    ch_horz = LITHO << CHECKERBOARDS
+    ch_vert = LITHO << CHECKERBOARDS
+    ch_vert.rotate(90)
+    ch_vert.move((ch_horz.xmin - ch_vert.xmin, ch_horz.ymax + 10 - ch_vert.ymin))
+    # waffles
+    WAFFLES = Device("litho_waffles")
+    dy = 0
+    for layer in layers:
+        dx = 0
+        for invert in (True, False):
+            waffle_i = WAFFLES << resolution_waffle(
+                min_width=waffle_min_res,
+                spacing=40 * min_checkerboard_res,
+                size=(50, 50),
+                invert=invert,
+                layer=layer,
+            )
+            waffle_i.movex(dx)
+            waffle_i.movey(dy)
+            dx += 90
+        dy -= 80
+    x, y = LITHO.xmax, LITHO.ymax
+    waffles = LITHO << WAFFLES
+    waffles.move((x - waffles.xmax, y - waffles.ymax))
+    return LITHO
 
 
 @qg.device
@@ -894,71 +943,6 @@ def cross_bridge_kelvin_resistor(
     for n, port in enumerate(ports):
         CBKR.add_port(name=n + 1, port=port)
     return CBKR
-
-
-@qg.device
-def dose_defocus(
-    resolutions: tuple[float] = (0.7, 0.8, 0.9, 1.0),
-    layer: LayerSpec = "PHOTO1",
-) -> Device:
-    """Generate a test structure for doing dose/defocus tests
-
-    Contains a lithographic checkerboard, stars, crossed lines, and waffles.
-
-    Args:
-        layer (LayerSpec): layer to put pattern on
-        resolutions (tuple[float]): resolutions to use for star, crossed lines and waffles.
-            Resolution for litho checkerboard is determined automatically from maximum element.
-
-    Returns:
-        (Device): dose defocus test structure.
-    """
-    D = Device("dose_defocus")
-    res_test = Device("res_test")
-    for i in range(2):
-        rt = res_test << qg.test_structures.resolution_test(
-            resolutions=resolutions, layer=layer, outline=None if i == 0 else 0
-        )
-        rt.movey((rt.ysize + 10) * i)
-    D << res_test
-    # checkerboards
-    maxres = 10 ** np.round(np.log10(np.max(resolutions)))
-    minres = 10 ** np.round(np.log10(np.min(resolutions)))
-    minres = min(minres, 0.1 * maxres)
-    maxres = min(maxres, 10 * minres)
-    line_widths = tuple(np.linspace(minres, maxres, 10))
-    checkerboard = qg.test_structures.resolution_checkerboard(
-        resolutions=line_widths,
-        layer=layer,
-        label_interval=5,
-        label_size=10,
-    )
-    y = D.ymin
-    ch_horz = D << checkerboard
-    ch_horz.move((ch_horz.xmin, ch_horz.ymax), (res_test.xmin, y - 50))
-    ch_vert = D << checkerboard
-    ch_vert.rotate(90)
-    ch_vert.move((ch_vert.xmax, ch_vert.ymax), (res_test.xmin - 30, res_test.ymax))
-    # litho stars
-    x = ch_horz.xmax + 20
-    y = ch_horz.y
-    for i in range(2):
-        for width in np.linspace(0.4 * maxres, maxres, 4):
-            star = pg.litho_star(
-                num_lines=20,
-                line_width=width,
-                diameter=40,
-                layer=qg.get_layer(layer),
-            )
-            if i == 1:
-                star = qg.utilities.invert(device=star, ext_bbox_distance={layer: 2})
-            star_i = D << star
-            star_i.move((star_i.xmin, star_i.y), (x, y))
-            x = star_i.xmax + 10
-            text = D << pg.text(str(width), size=15, layer=qg.get_layer(layer))
-            text.move((text.x, text.ymax), (star_i.x, star_i.ymin - 5))
-    D.flatten()
-    return D
 
 
 @qg.device
