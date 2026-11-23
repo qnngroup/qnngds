@@ -689,26 +689,36 @@ def via_chain_meandered(
     num_vias: int = 5,
     spacing: float = 1,
     terminals_same_side: bool = False,
-    size: tuple[float, float] = (30, 20),
+    size: tuple[float | None, float | None] = (30, 20),
 ) -> Device:
     """Makes a meandered chain of vias.
 
     Args:
         via_spec (DeviceSpec | Device): function, component name, or component for the via
-        num_vias (int): number of vias to include in chain
+        num_vias (int): approximate number of vias to include in chain
         spacing (float): spacing between vias
         terminals_same_side (bool): if True, make the terminals start and end on the same
             side of the meander.
-        size (tuple[float, float]): width, height of meander. Meander will start at the top
-            left and end at the bottom (left if terminals_same_side else right)
+        size (tuple[float | None, float | None]): width, height of meander. Meander will start at the top
+            left and end at the bottom (left if terminals_same_side else right).
+            If one or both elements are None, automatically determines a size that will
+            give approximately the number of vias.
 
     Returns:
         (Device): the via chain
     """
     via = qg.get_device(via_spec)
     # calculate number of rows/columns.
-    columns = int(np.floor(size[0] / (via.xsize + spacing)))
-    rows = int(np.floor(size[1] / (via.ysize + spacing)))
+    if size[0] is None and size[1] is None:
+        area = (via.xsize + spacing) * (via.ysize + spacing) * num_vias
+        size = (np.sqrt(area), np.sqrt(area))
+    if size[0] is not None:
+        columns = int(np.floor(size[0] / (via.xsize + spacing)))
+        if size[1] is None:
+            rows = num_vias // columns
+    else:
+        rows = int(np.floor(size[1] / (via.ysize + spacing)))
+        columns = num_vias // rows
     if terminals_same_side:
         rows = max(2, 2 * (rows // 2))
     else:
@@ -737,10 +747,12 @@ def via_chain_meandered(
                 p2 = via_array.ports[row, col + 1][f"{route_layer + 1}W"]
                 VIAS << pr.route_quad(port1=p1, port2=p2, layer=qg.get_layer(p1.layer))
                 last_layer = route_layer
-    VIAS.add_port(name=1, port=via_array.ports[0, 0]["1W"])
+    VIAS.add_port(name="1", port=via_array.ports[0, 0]["2W"])
     out_layer = (last_layer + 1) % 2
+    out_dir = "W" if terminals_same_side else "E"
     VIAS.add_port(
-        name=2, port=via_array.ports[rows - 1, columns - 1][f"{out_layer + 1}E"]
+        name="2",
+        port=via_array.ports[rows - 1, columns - 1][f"{out_layer + 1}{out_dir}"],
     )
     return VIAS
 
