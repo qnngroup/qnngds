@@ -458,9 +458,9 @@ def dose_defocus(
             waffle_i.movey(dy)
             dx += 90
         dy -= 80
-    x, y = LITHO.xmax, LITHO.ymax
+    x, y = ch_vert.xmax, ch_horz.ymax
     waffles = LITHO << WAFFLES
-    waffles.move((x - waffles.xmax, y - waffles.ymax))
+    waffles.move((x + 10 - waffles.xmin, y + 10 - waffles.ymin))
     return LITHO
 
 
