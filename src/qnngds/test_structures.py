@@ -712,12 +712,16 @@ def via_chain_meandered(
     if size[0] is None and size[1] is None:
         area = (via.xsize + spacing) * (via.ysize + spacing) * num_vias
         size = (np.sqrt(area), np.sqrt(area))
-    if size[0] is not None:
-        columns = int(np.floor(size[0] / (via.xsize + spacing)))
-        if size[1] is None:
-            rows = num_vias // columns
-    else:
-        rows = int(np.floor(size[1] / (via.ysize + spacing)))
+    columns = (
+        int(np.floor(size[0] / (via.xsize + spacing))) if size[0] is not None else None
+    )
+    rows = (
+        int(np.floor(size[1] / (via.ysize + spacing))) if size[1] is not None else None
+    )
+    # at most one of rows, columns is None
+    if rows is None:
+        rows = num_vias // columns
+    if columns is None:
         columns = num_vias // rows
     if terminals_same_side:
         rows = max(2, 2 * (rows // 2))
