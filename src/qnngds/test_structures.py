@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import qnngds as qg
 import phidl.geometry as pg
+import phidl.routing as pr
 
 from typing import List, Optional, Tuple
 
@@ -688,7 +689,7 @@ def via_chain_meandered(
     num_vias: int = 5,
     spacing: float = 1,
     terminals_same_side: bool = False,
-    size: tuple[float, float] = (100, 100),
+    size: tuple[float, float] = (30, 20),
 ) -> Device:
     """Makes a meandered chain of vias.
 
@@ -720,9 +721,27 @@ def via_chain_meandered(
         spacing=(via.xsize + spacing, via.ysize + spacing),
     )
     # route
-    # for row in rows:
-    #    for col in columns:
-    print(via_array.ports[0, 1])
+    last_layer = 0
+    for col in range(columns):
+        row_list = range(rows) if col % 2 == 0 else range(rows - 1, -1, -1)
+        for row in row_list:
+            if row > 0:
+                route_layer = (last_layer + 1) % 2
+                p1 = via_array.ports[row - 1, col][f"{route_layer + 1}N"]
+                p2 = via_array.ports[row, col][f"{route_layer + 1}S"]
+                VIAS << pr.route_quad(port1=p1, port2=p2, layer=qg.get_layer(p1.layer))
+                last_layer = route_layer
+            if row == row_list[-1] and (col < columns - 1):
+                route_layer = (last_layer + 1) % 2
+                p1 = via_array.ports[row, col][f"{route_layer + 1}E"]
+                p2 = via_array.ports[row, col + 1][f"{route_layer + 1}W"]
+                VIAS << pr.route_quad(port1=p1, port2=p2, layer=qg.get_layer(p1.layer))
+                last_layer = route_layer
+    VIAS.add_port(name=1, port=via_array.ports[0, 0]["1W"])
+    out_layer = (last_layer + 1) % 2
+    VIAS.add_port(
+        name=2, port=via_array.ports[rows - 1, columns - 1][f"{out_layer + 1}E"]
+    )
     return VIAS
 
 
