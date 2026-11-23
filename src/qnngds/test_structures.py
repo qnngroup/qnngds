@@ -683,6 +683,50 @@ def circ_tlm(
 
 
 @qg.device
+def via_chain_meandered(
+    via_spec: DeviceSpec | Device = qg.geometries.via,
+    num_vias: int = 5,
+    spacing: float = 1,
+    terminals_same_side: bool = False,
+    size: tuple[float, float] = (100, 100),
+) -> Device:
+    """Makes a meandered chain of vias.
+
+    Args:
+        via_spec (DeviceSpec | Device): function, component name, or component for the via
+        num_vias (int): number of vias to include in chain
+        spacing (float): spacing between vias
+        terminals_same_side (bool): if True, make the terminals start and end on the same
+            side of the meander.
+        size (tuple[float, float]): width, height of meander. Meander will start at the top
+            left and end at the bottom (left if terminals_same_side else right)
+
+    Returns:
+        (Device): the via chain
+    """
+    via = qg.get_device(via_spec)
+    # calculate number of rows/columns.
+    columns = int(np.floor(size[0] / (via.xsize + spacing)))
+    rows = int(np.floor(size[1] / (via.ysize + spacing)))
+    if terminals_same_side:
+        rows = max(2, 2 * (rows // 2))
+    else:
+        rows = max(1, 2 * ((rows + 1) // 2) - 1)
+    VIAS = Device("via_chain_meander")
+    via_array = VIAS.add_array(
+        device=via,
+        columns=columns,
+        rows=rows,
+        spacing=(via.xsize + spacing, via.ysize + spacing),
+    )
+    # route
+    # for row in rows:
+    #    for col in columns:
+    print(via_array.ports[0, 1])
+    return VIAS
+
+
+@qg.device
 def via_chain(
     via_spec: DeviceSpec | Device = qg.geometries.via,
     num_vias: int = 5,
