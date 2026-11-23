@@ -250,7 +250,7 @@ save_qp(__file__, p, plot_name="calipers")
 # features, ``resolution_waffle`` and ``resolution_checkerboard`` may be more useful.
 # ``litho_stars`` can be helpful as well for non-manhattan oriented features, as well as for wires joining at a shallow angle.
 ## SKIPSTART
-p = qg.test_structures.dose_defocus()
+p = qg.test_structures.dose_defocus(layers=("PHOTO1", "PHOTO2"))
 save_qp(__file__, p, plot_name="dosedefoc")
 ## SKIPSTOP
 ## IMAGE_dosedefoc
