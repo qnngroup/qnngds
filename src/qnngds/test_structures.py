@@ -807,7 +807,7 @@ def via_chain_meandered(
     out_layer = (last_layer + 1) % 2
     out_row = 0 if columns % 2 == 0 else rows - 1
     for direction in ("W", "S"):
-        VIAS.add_port(name=f"1{direction}", port=via_array.ports[0, 0][f"1{direction}"])
+        VIAS.add_port(name=f"1{direction}", port=via_array.ports[0, 0][f"2{direction}"])
     out_directions = ("S", "E") if terminals_same_side else ("N", "E")
     for out_dir in out_directions:
         VIAS.add_port(
