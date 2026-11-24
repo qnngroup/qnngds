@@ -216,8 +216,6 @@ def resolution_waffle(
 ) -> Device:
     """Creates resolution_waffle test structures for determining process resolution.
 
-    Helper method for resolution_test.
-
     Args:
         min_width (float or int): Minimum resolution (in µm) to be tested.
         spacing (float or int): spacing between lines
