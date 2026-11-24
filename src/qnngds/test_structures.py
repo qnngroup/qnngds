@@ -463,6 +463,137 @@ def dose_defocus(
 
 
 @qg.device
+def comb_overlap(
+    pitch: float = 4,
+    width: float = 2,
+    size: Tuple[float, float] = (50, 50),
+    layer_top: LayerSpec = (10, 0),
+    layer_bot: LayerSpec = (20, 0),
+) -> Device:
+    """Creates a comb overlap test device
+
+    Args:
+        pitch (float): pitch of fingers
+        width (float): width of fingers
+        size (Tuple[float, float]): size of structure
+        layer_top (LayerSpec): top layer
+        layer_bot (LayerSpec): bottom layer
+
+    Returns:
+        (Device): comb overlap test structure
+    """
+    COMB_OV = Device("comb_overlap")
+    lines_vert = COMB_OV.add_array(
+        device=pg.rectangle(size=(width, 0.9 * size[1]), layer=qg.get_layer(layer_bot)),
+        columns=int(np.floor(size[0] * 0.9 / pitch)),
+        rows=1,
+        spacing=(pitch, 0),
+    )
+    contact_vert = COMB_OV << pg.rectangle(
+        size=(0.9 * size[0] - width, 0.1 * size[1]), layer=qg.get_layer(layer_bot)
+    )
+    contact_vert.move(
+        (lines_vert.xmin - contact_vert.xmin, lines_vert.ymax - contact_vert.ymin)
+    )
+    lines_horz = COMB_OV.add_array(
+        device=pg.rectangle(size=(0.9 * size[0], width), layer=qg.get_layer(layer_top)),
+        columns=1,
+        rows=int(np.floor(size[1] * 0.9 / pitch)),
+        spacing=(0, pitch),
+    )
+    contact_horz = COMB_OV << pg.rectangle(
+        size=(0.1 * size[0], size[1]), layer=qg.get_layer(layer_top)
+    )
+    contact_horz.move(
+        (lines_horz.xmax - contact_horz.xmin, lines_horz.ymin - contact_horz.ymin)
+    )
+    COMB_OV.add_port(
+        name=1,
+        midpoint=(contact_vert.x, contact_vert.ymax),
+        width=contact_vert.xsize,
+        orientation=90,
+        layer=layer_bot,
+    )
+    COMB_OV.add_port(
+        name=2,
+        midpoint=(contact_horz.x, contact_horz.ymax),
+        width=contact_horz.xsize,
+        orientation=90,
+        layer=layer_top,
+    )
+    return COMB_OV
+
+
+@qg.device
+def comb_interdigitated(
+    pitch: float = 3,
+    width: float = 2,
+    size: Tuple[float, float] = (50, 50),
+    layer: LayerSpec = (10, 0),
+) -> Device:
+    """Creates an interdigitated etch test device
+
+    Args:
+        pitch (float): pitch of fingers
+        width (float): width of fingers
+        size (Tuple[float, float]): size of structure
+        layer (LayerSpec): layer
+
+    Returns:
+        (Device): comb etch test structure
+    """
+    COMB_INT = Device("comb_interdigitated")
+    rows = int(np.floor(size[1] / (2 * pitch)))
+    lines_left = COMB_INT.add_array(
+        device=pg.rectangle(
+            size=(0.8 * size[0] - (pitch - width), width), layer=qg.get_layer(layer)
+        ),
+        columns=1,
+        rows=rows,
+        spacing=(0, 2 * pitch),
+    )
+    lines_right = COMB_INT.add_array(
+        device=pg.rectangle(
+            size=(0.8 * size[0] - (pitch - width), width), layer=qg.get_layer(layer)
+        ),
+        columns=1,
+        rows=rows,
+        spacing=(0, 2 * pitch),
+    )
+    lines_right.movey(pitch)
+    lines_right.movex(pitch - width)
+    contact_left = COMB_INT << pg.rectangle(
+        size=(0.1 * size[0], 2 * rows * pitch - (pitch - width)),
+        layer=qg.get_layer(layer),
+    )
+    contact_left.move(
+        (lines_left.xmin - contact_left.xmax, lines_left.ymin - contact_left.ymin)
+    )
+    contact_right = COMB_INT << pg.rectangle(
+        size=(0.1 * size[0], 2 * rows * pitch - (pitch - width)),
+        layer=qg.get_layer(layer),
+    )
+    contact_right.move(
+        (lines_right.xmax - contact_right.xmin, lines_right.ymax - contact_right.ymax)
+    )
+    COMB_INT.add_port(
+        name=1,
+        midpoint=(contact_left.x, contact_left.ymax),
+        width=contact_left.xsize,
+        orientation=90,
+        layer=layer,
+    )
+    COMB_INT.add_port(
+        name=2,
+        midpoint=(contact_right.x, contact_right.ymax),
+        width=contact_right.xsize,
+        orientation=90,
+        layer=layer,
+    )
+    return COMB_INT
+
+
+@qg.device
 def vdp(
     diagonal: float = 100,
     diameter: float = 500,
