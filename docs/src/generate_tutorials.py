@@ -47,6 +47,25 @@ for submodule in pkgutil.walk_packages(tutorials.__path__):
                         contents += code
                         contents += "\n"
                     blocks.append(["comment", [image_rst]])
+            elif line.startswith("## TEXT"):
+                text_name = ""
+                if "_" in line:
+                    text_name = line.split("_")[-1].strip()
+                filename = submodule.name + text_name + ".txt"
+                text_rst = "::\n\n"
+                with open(filename, "r") as file:
+                    text_rst += "    ".join(file.readlines())
+                text_rst += "\n\n"
+                if len(blocks) > 0 and blocks[-1][0] == "comment":
+                    blocks[-1][1].append(text_rst)
+                else:
+                    # write out code
+                    code = "".join(blocks[-1][1])
+                    if len(code) > 0:
+                        contents += "\n.. code-block:: python\n   :linenos:\n\n"
+                        contents += code
+                        contents += "\n"
+                    blocks.append(["comment", [text_rst]])
             elif line.startswith("## STOP"):
                 code = "".join(blocks[-1][1])
                 if len(code) > 0:
