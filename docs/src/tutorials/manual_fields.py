@@ -84,12 +84,11 @@ save_qp(
 ## IMAGE_snspds_ZOOM
 
 sample.export_manual_fields(field_layer="field", save_path="fields.txt")
-## SKIPSTART
 ## TEXT_fields
-## SKIPSTOP
 
 # We can also visualize the fields
 fields = sample.visualize_fields(field_layer="field")
+qp(fields)
 ## SKIPSTART
 save_qp(__file__, sample.devices, plot_name="fields")
 ## SKIPSTOP

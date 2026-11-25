@@ -649,6 +649,7 @@ class Sample(object):
             r0 = np.round(bbox[0] * 1e3)
             bbox = np.array([r0 / 1e3, (r0 + dr) / 1e3])
             bboxes[f"R{f + 1}"] = bbox
+        return bboxes
 
     def visualize_fields(
         self,
