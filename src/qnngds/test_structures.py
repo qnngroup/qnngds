@@ -19,22 +19,28 @@ from qnngds import Device
 
 @qg.device
 def vernier_comb(
+    tick_size: tuple[float, float] = (2, 8),
+    num_ticks: int = 10,
     pitch1: int | float = 0.5,
     pitch2: int | float = 0.1,
     layer1: LayerSpec = (1, 0),
     layer2: LayerSpec = (10, 0),
     text_angle: int | float = 0,
+    label: bool = True,
 ) -> Device:
     """Creates vernier caliper comb.
 
     Helper method for alignment.
 
     Args:
+        tick_size (tuple[float, float]): width, height of tick marks
+        num_ticks (int): number of ticks in each direction
         pitch1 (int or float): pitch of top comb
         pitch2 (int or float): pitch of bottom comb
         layer1 (LayerSpec): center comb GDS layer specification
         layer2 (LayerSpec): top/bottom comb GDS layer specification
         text_angle (int or float): angle to rotate text labels
+        label (bool): if False, don't include labels.
 
     Returns:
         (Device): alignment vernier calipers
@@ -43,37 +49,74 @@ def vernier_comb(
     COMB = Device("comb")
 
     # middle comb (made of layer1), pitch = 10
-    rect1 = pg.rectangle(size=(5, 30), layer=qg.get_layer(layer1))
-    middle_comb = COMB.add_array(rect1, columns=21, rows=1, spacing=(10, 0))
+    rect1 = pg.rectangle(size=tick_size, layer=qg.get_layer(layer1))
+    middle_comb = COMB.add_array(
+        rect1, columns=1 + 2 * num_ticks, rows=1, spacing=(tick_size[0] * 2, 0)
+    )
     middle_comb.move(COMB.center, (0, 0))
 
     # top and bottom combs (made of layer2), pitchs = 10+pitch1, 10+pitch2
-    rect2 = pg.rectangle(size=(5, 30), layer=qg.get_layer(layer2))
-    top_comb = COMB.add_array(rect2, columns=21, rows=1, spacing=(10 + pitch1, 0))
-    top_comb.move(top_comb.center, (middle_comb.center[0], middle_comb.center[1] + 30))
-    top_text = COMB.add_ref(
-        pg.text(f"{round(pitch1 * 1e3)}NM", size=10, layer=qg.get_layer(layer2))
+    rect2 = pg.rectangle(size=tick_size, layer=qg.get_layer(layer2))
+    top_comb = COMB.add_array(
+        rect2, columns=1 + 2 * num_ticks, rows=1, spacing=(tick_size[0] * 2 + pitch1, 0)
     )
-    top_text.rotate(-text_angle)
-    top_text.move(top_text.center, (140, 30))
+    top_comb.move(
+        top_comb.center, (middle_comb.center[0], middle_comb.center[1] + tick_size[1])
+    )
 
-    bottom_comb = COMB.add_array(rect2, columns=21, rows=1, spacing=(10 + pitch2, 0))
+    bottom_comb = COMB.add_array(
+        rect2, columns=1 + 2 * num_ticks, rows=1, spacing=(tick_size[0] * 2 + pitch2, 0)
+    )
     bottom_comb.move(
-        bottom_comb.center, (middle_comb.center[0], middle_comb.center[1] - 30)
+        bottom_comb.center,
+        (middle_comb.center[0], middle_comb.center[1] - tick_size[1]),
     )
-    bottom_text = COMB.add_ref(
-        pg.text(f"{round(pitch2 * 1e3)}NM", size=10, layer=qg.get_layer(layer2))
-    )
-    bottom_text.rotate(-text_angle)
-    bottom_text.move(bottom_text.center, (140, -30))
+    if label:
+        top_text = COMB.add_ref(
+            pg.text(f"{round(pitch1, 2)}", size=7, layer=qg.get_layer(layer2))
+        )
+        top_text.rotate(-text_angle)
+        top_text.move(
+            (top_comb.xmax + 2 * tick_size[0] - top_text.xmin, top_comb.y - top_text.y)
+        )
+        bottom_text = COMB.add_ref(
+            pg.text(f"{round(pitch2, 2)}", size=7, layer=qg.get_layer(layer2))
+        )
+        bottom_text.rotate(-text_angle)
+        bottom_text.move(
+            (
+                bottom_comb.xmax + 2 * tick_size[0] - bottom_text.xmin,
+                bottom_comb.y - bottom_text.y,
+            )
+        )
+
+        # move 'top' text if needed
+        if text_angle % 180 == 90:
+            top_text.movex(bottom_text.xmax + 2 - top_text.xmin)
 
     # additional markers (made of layer1), for clarity
-    rect1a = pg.rectangle(size=(5, 20), layer=qg.get_layer(layer1))
-    marksa = COMB.add_array(rect1a, columns=3, rows=2, spacing=(100, 110))
+    num_coarse = (1 + 2 * num_ticks) // 10 + 1
+    num_coarse = 2 * ((num_coarse - 1) // 2) + 1
+    rect1a = pg.rectangle(tick_size, layer=qg.get_layer(layer1))
+    marksa = COMB.add_array(
+        rect1a,
+        columns=num_coarse,
+        rows=2,
+        spacing=(tick_size[0] * 2 * 10, 3 * tick_size[1] + tick_size[1]),
+    )
     marksa.move(marksa.center, middle_comb.center)
 
-    rect1b = pg.rectangle(size=(5, 10), layer=qg.get_layer(layer1))
-    marksb = COMB.add_array(rect1b, columns=2, rows=2, spacing=(100, 100))
+    num_fine = (1 + 2 * num_ticks) // 5 + 1
+    num_fine = 2 * ((num_fine + 1) // 2) - 1
+    rect1b = pg.rectangle(
+        size=(tick_size[0], tick_size[1] / 2), layer=qg.get_layer(layer1)
+    )
+    marksb = COMB.add_array(
+        rect1b,
+        columns=num_fine,
+        rows=2,
+        spacing=(tick_size[0] * 2 * 5, 3 * tick_size[1] + tick_size[1] / 2),
+    )
     marksb.move(marksb.center, middle_comb.center)
 
     return COMB
@@ -98,9 +141,9 @@ def alignment(layer1: LayerSpec = (1, 0), layer2: LayerSpec = (10, 0)) -> Device
     # central part with cross
 
     CROSS = Device("alignment_cross")
-    cross = CROSS << pg.cross(length=200, width=2, layer=qg.get_layer(layer1))
-    rect = pg.rectangle(size=(45, 45), layer=qg.get_layer(layer2))
-    window = CROSS.add_array(rect, rows=2, columns=2, spacing=(155, 155))
+    cross = CROSS << pg.cross(length=35, width=2, layer=qg.get_layer(layer1))
+    rect = pg.rectangle(size=(5, 5), layer=qg.get_layer(layer2))
+    window = CROSS.add_array(rect, rows=2, columns=2, spacing=(30, 30))
     window.move(window.center, cross.center)
     CROSS.flatten()
 
@@ -112,22 +155,39 @@ def alignment(layer1: LayerSpec = (1, 0), layer2: LayerSpec = (10, 0)) -> Device
         for i in range(2):
             index = n * 2 + i
             comb = vernier_comb(
+                tick_size=(2, 8),
+                num_ticks=5,
                 pitch1=p1,
                 pitch2=p2,
                 layer1=layer1,
                 layer2=layer2,
-                text_angle=index * 90,
+                label=False,
             )
             v = VERNIER.add_ref(comb)
             v.rotate(index * 90)
+            dr = (1 + 2 * 5) * 4
             if index == 0:
-                v.move((0, 0), (0, 200))
+                v.move((0, 0), (0, dr))
             elif index == 1:
-                v.move((0, 0), (-200, 0))
+                v.move((0, 0), (-dr, 0))
             elif index == 2:
-                v.move((0, 0), (0, -200))
+                v.move((0, 0), (0, -dr))
             elif index == 3:
-                v.move((0, 0), (200, 0))
+                v.move((0, 0), (dr, 0))
+            # add labels
+            if i == 1:
+                top_text = VERNIER.add_ref(
+                    pg.text(f"{round(p1, 2)}", size=7, layer=qg.get_layer(layer2))
+                )
+                bot_text = VERNIER.add_ref(
+                    pg.text(f"{round(p2, 2)}", size=7, layer=qg.get_layer(layer2))
+                )
+                if index == 1:
+                    bot_text.move((-dr + 8 - bot_text.x, dr - 8 - bot_text.y))
+                    top_text.move((-dr - 2 - top_text.x, dr + 2 - top_text.y))
+                elif index == 3:
+                    bot_text.move((dr - 8 - bot_text.x, -dr + 8 - bot_text.y))
+                    top_text.move((dr + 2 - top_text.x, -dr - 2 - top_text.y))
 
     VERNIER.flatten()
     MARK << VERNIER
@@ -138,9 +198,6 @@ def alignment(layer1: LayerSpec = (1, 0), layer2: LayerSpec = (10, 0)) -> Device
     TEXT = Device("alignment_text")
     layer1_str = qg.get_layer(layer1).name.split("_")[0]
     layer2_str = qg.get_layer(layer2).name.split("_")[0]
-    bg_label = (
-        layer2_str[:3] if len(layer2_str) < 4 else layer2_str[:2] + layer2_str[-1]
-    )
     sm_label = ""
     if len(layer2_str) < 5:
         sm_label += layer2_str
@@ -151,10 +208,7 @@ def alignment(layer1: LayerSpec = (1, 0), layer2: LayerSpec = (10, 0)) -> Device
         sm_label += layer1_str
     else:
         sm_label += f"{layer1_str[:4]}{layer1_str[-1]}"
-    for layer in (layer1, layer2):
-        text1 = TEXT << pg.text(bg_label, size=50, layer=qg.get_layer(layer))
-        text1.move(text1.center, (-200, 190))
-    text2 = TEXT << pg.text(sm_label, size=10, layer=qg.get_layer(layer2))
+    text2 = TEXT << pg.text(sm_label, size=5, layer=qg.get_layer(layer2))
     text2.move(text2.center, (-200, 250))
     if isinstance(layer1, tuple):
         layer1_numeric = f"{layer1[0]}/{layer1[1]}"
@@ -168,7 +222,7 @@ def alignment(layer1: LayerSpec = (1, 0), layer2: LayerSpec = (10, 0)) -> Device
         layer2_numeric = f"{layer2_enum[0]}/{layer2_enum[1]}"
     text3 = TEXT << pg.text(
         layer2_numeric + " ON " + layer1_numeric,
-        size=10,
+        size=5,
         layer=qg.get_layer(layer2),
     )
     text3.move(text3.center, (-200, 235))

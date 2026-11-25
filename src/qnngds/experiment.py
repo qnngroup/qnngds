@@ -60,7 +60,7 @@ class RouteGroup:
             if ground:
                 raise ValueError(
                     f"{ground=}, but a dictionary port mapping was specified. "
-                    "Please set ground=True or list the dut ports you wish to "
+                    "Please set ground=False or list the dut ports you wish to "
                     "ground in a tuple."
                 )
         elif isinstance(port_mapping, tuple):
@@ -654,6 +654,8 @@ def generate(
         mapped_dut_ports = set([])
         for route_group in route_groups:
             if route_group.ground:
+                for dut_port in route_group.port_mapping:
+                    mapped_dut_ports.add(dut_port)
                 continue
             for dut_port, pad_port in route_group.port_mapping.items():
                 mapped_dut_ports.add(dut_port)
@@ -767,6 +769,8 @@ def generate(
 
     # add labels to pads
     for route_group in route_groups:
+        if route_group.ground:
+            continue
         for dut_port_name in route_group.port_mapping:
             pad_port = dut_pad_map[dut_port_name]
             normal = pad_port.normal[1] - pad_port.normal[0]
@@ -785,6 +789,8 @@ def generate(
     dut_groups = []
     pad_groups = []
     for route_group in route_groups:
+        if route_group.ground:
+            continue
         dut_groups.append([dut_ref.ports[p] for p in route_group.port_mapping])
         pad_groups.append([dut_pad_map[p] for p in route_group.port_mapping])
     # actually do routing
