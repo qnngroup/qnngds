@@ -97,7 +97,7 @@ sample.export_manual_fields(field_layer="field", save_path="fields.txt")
 fields = sample.visualize_fields(field_layer="field")
 qp(fields)
 ## SKIPSTART
-save_qp(__file__, sample.devices, plot_name="fields")
+save_qp(__file__, fields, plot_name="fields")
 ## SKIPSTOP
 ## IMAGE_fields
 ## STOP
