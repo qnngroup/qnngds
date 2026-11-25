@@ -244,16 +244,18 @@ save_qp(__file__, p, plot_name="calipers")
 #
 # In order to calibrate the correct dose (and defocus for optical lithography), it's useful to have a variety of
 # lithographic test structures for analyzing failure modes for smaller features.
-# The ``qnngds.test_structures.dose_defocus`` test structure provides a fairly comprehensive set of structures.
-# Depending on the particular structure being fabricated, some structures may be more relevant than others.
-# For example, for long wires, ``resolution_L`` and ``resolution_checkerboard`` may be most useful, whereas for dense
-# features, ``resolution_waffle`` and ``resolution_checkerboard`` may be more useful.
-# ``litho_stars`` can be helpful as well for non-manhattan oriented features, as well as for wires joining at a shallow angle.
+# The ``qnngds.test_structures.dose_defocus`` test structure provides two structures that are useful for determining
+# minimum linewidth and spacing.
 ## SKIPSTART
-p = qg.test_structures.dose_defocus()
-save_qp(__file__, p, plot_name="dosedefoc")
+p = qg.test_structures.dose_defocus(layers=("PHOTO1", "PHOTO2"))
+save_qp(__file__, p, plot_name="dosedefoc", xlim=(-300, -150), ylim=(50, 150))
 ## SKIPSTOP
 ## IMAGE_dosedefoc
+# The ``qnngds.test_structures.litho_checkerboard`` makes it easy to check if the dose/develop is well-calibrated
+# by comparing the line width of the inverted and non-inverted lines. The ``qnngds.test_structures.resolution_waffle``
+# presents a grid of lins of incresing width that can be useful for determining the minimum resolution achievable
+# with the lithographic process.
+## IMAGE_dosedefoc_ZOOM
 #
 # Device arrays
 # ---------------------------
