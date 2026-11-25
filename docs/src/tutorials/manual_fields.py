@@ -7,7 +7,7 @@
 # field placement. This is important when writing large
 # devices, since fracturing in beamer will tend to put
 # field boundaries in the middle of large devices.
-
+#
 # First, we can set up our PDK:
 import qnngds as qg
 from qnngds import Device
@@ -60,10 +60,18 @@ snspd = D << qg.utilities.extend_ports(
     ext_mirror=((0, 0), (0, 1)),
     auto_width=True,
 )
+qp(snspd)
+## SKIPSTART
+from ._save_qp import save_qp  # noqa: E402
+
+save_qp(__file__, snspd, plot_name="snspd", xlim=(-520, -470), ylim=(480, 500))
+## SKIPSTOP
+## IMAGE_snspd
+## IMAGE_snspd_ZOOM
+#
 # Now we can place a square millimeter field around the SNSPD
 field = D << pg.rectangle(size=(1e3, 1e3), layer=qg.get_layer("field"))
 field.move((snspd.xmax + 0.3 - field.xmax, snspd.y - field.y))
-
 # Lets place a bunch of them on a single 10x10 chip.
 sample = qg.sample.Sample(
     cell_size=2e3, sample=qg.sample.piece10mm, edge_exclusion=1e3, allow_cell_span=False
@@ -74,19 +82,17 @@ sample.place_multiple_on_sample(
 )
 qp(sample.devices)
 ## SKIPSTART
-from ._save_qp import save_qp  # noqa: E402
-
 save_qp(
     __file__, sample.devices, plot_name="snspds", xlim=(-1600, -400), ylim=(400, 1600)
 )
 ## SKIPSTOP
 ## IMAGE_snspds
 ## IMAGE_snspds_ZOOM
-
-# We can export the fields to a file named fields.txt:
+#
+# We can export the fields to a file named ``fields.txt``:
 sample.export_manual_fields(field_layer="field", save_path="fields.txt")
+# The output will look like this:
 ## TEXT_fields
-
 # We can also visualize the writing fields:
 fields = sample.visualize_fields(field_layer="field")
 qp(fields)
@@ -94,3 +100,4 @@ qp(fields)
 save_qp(__file__, sample.devices, plot_name="fields")
 ## SKIPSTOP
 ## IMAGE_fields
+## STOP
