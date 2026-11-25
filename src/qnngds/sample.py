@@ -636,7 +636,14 @@ class Sample(object):
         self,
         field_layer: LayerSpec,
     ) -> dict[str, np.ndarray]:
-        """Returns a mapping of field names to bounding boxes for fields in the sample"""
+        """Get mapping of field names to bounding boxes for manually-defiend fields
+
+        Args:
+            field_layer (LayerSpec): layer on which to look for fields
+
+        Returns:
+            (dict[str, np.ndarray]): Mapping of field name to bounding box ndarray.
+        """
         fields = self.devices.get_polygons(by_spec=qg.get_layer(field_layer).tuple)
         bboxes = {}
         for f, field in enumerate(fields):
@@ -655,7 +662,14 @@ class Sample(object):
         self,
         field_layer: LayerSpec,
     ) -> Device:
-        """Returns a device with field labels"""
+        """Visualize manually-defined fields
+
+        Args:
+            field_layer (LayerSpec): layer on which to look for fields
+
+        Returns:
+            (Device): a device with field bounding boxes and labels
+        """
         field_dict = self._get_fields(field_layer)
         FIELDS = Device("fields")
         for name, bbox in field_dict.items():
