@@ -60,11 +60,11 @@ snspd = D << qg.utilities.extend_ports(
     ext_mirror=((0, 0), (0, 1)),
     auto_width=True,
 )
-# Now we can place a square millimeter field.
+# Now we can place a square millimeter field around the SNSPD
 field = D << pg.rectangle(size=(1e3, 1e3), layer=qg.get_layer("field"))
 field.move((snspd.xmax + 0.3 - field.xmax, snspd.y - field.y))
 
-# place the device in the middle of the sample
+# Lets place a bunch of them on a single 10x10 chip.
 sample = qg.sample.Sample(
     cell_size=2e3, sample=qg.sample.piece10mm, edge_exclusion=1e3, allow_cell_span=False
 )
@@ -83,10 +83,11 @@ save_qp(
 ## IMAGE_snspds
 ## IMAGE_snspds_ZOOM
 
+# We can export the fields to a file named fields.txt:
 sample.export_manual_fields(field_layer="field", save_path="fields.txt")
 ## TEXT_fields
 
-# We can also visualize the fields
+# We can also visualize the writing fields:
 fields = sample.visualize_fields(field_layer="field")
 qp(fields)
 ## SKIPSTART
