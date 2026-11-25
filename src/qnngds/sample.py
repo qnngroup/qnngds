@@ -8,6 +8,7 @@ import numpy as np
 import qnngds as qg
 import phidl.geometry as pg
 from phidl import Device as phidlDevice
+from phidl.device_layout import Polygon
 
 from qnngds.typing import LayerSpec, DeviceSpec
 from qnngds import Device
@@ -630,6 +631,78 @@ class Sample(object):
             spacing=(2 * location[0], 2 * location[1]),
         )
         marker_refs.center = (0, 0)
+
+    def _get_fields(
+        self,
+        field_layer: LayerSpec,
+    ) -> dict[str, np.ndarray]:
+        """Get mapping of field names to bounding boxes for manually-defiend fields
+
+        Args:
+            field_layer (LayerSpec): layer on which to look for fields
+
+        Returns:
+            (dict[str, np.ndarray]): Mapping of field name to bounding box ndarray.
+        """
+        fields = self.devices.get_polygons(by_spec=qg.get_layer(field_layer).tuple)
+        bboxes = {}
+        for f, field in enumerate(fields):
+            bbox = Polygon(
+                field, gds_layer=1, gds_datatype=0, parent=None
+            ).get_bounding_box()
+            # round bottom left to nearest nm
+            dr = bbox[1] - bbox[0]
+            dr = np.round(dr * 1e3)
+            r0 = np.round(bbox[0] * 1e3)
+            bbox = np.array([r0 / 1e3, (r0 + dr) / 1e3])
+            bboxes[f"R{f + 1}"] = bbox
+        return bboxes
+
+    def visualize_fields(
+        self,
+        field_layer: LayerSpec,
+    ) -> Device:
+        """Visualize manually-defined fields
+
+        Args:
+            field_layer (LayerSpec): layer on which to look for fields
+
+        Returns:
+            (Device): a device with field bounding boxes and labels
+        """
+        field_dict = self._get_fields(field_layer)
+        FIELDS = Device("fields")
+        for name, bbox in field_dict.items():
+            field = FIELDS << pg.bbox(bbox, layer=1)
+            text = FIELDS << pg.text(text=name, size=field.ysize / 2, layer=2)
+            text.center = field.center
+        return FIELDS
+
+    def export_manual_fields(
+        self,
+        field_layer: LayerSpec,
+        save_path: str,
+    ) -> None:
+        """Exports manually-placed ebeam fields into a file readable by beamer
+
+        Args:
+            field_layer (LayerSpec): layerspec for fields
+            save_path (str): path of .txt file to save the fields in
+
+        Returns:
+            None
+
+        Side Effects:
+            Writes .txt file with field definitions
+        """
+        field_defs = "# MANUAL FIELD CONTROL FILE"
+        field_dict = self._get_fields(field_layer)
+        for name, bbox in field_dict.items():
+            field_defs += "\n" + "\t".join(str(x) for x in bbox.flatten())
+            field_defs += f"\t{name}"
+        field_defs += "\n"
+        with open(save_path, "w") as f:
+            f.write(field_defs)
 
     def num_full_cells(self) -> int:
         """Get number of cells in sample that are filled"""

@@ -16,3 +16,4 @@ See the following pages for tutorials for getting started with project setup and
     tutorials/generated/custom_circuit
     tutorials/generated/best_practices
     tutorials/generated/qg_analysis
+    tutorials/generated/manual_fields
