@@ -248,9 +248,14 @@ save_qp(__file__, p, plot_name="calipers")
 # minimum linewidth and spacing.
 ## SKIPSTART
 p = qg.test_structures.dose_defocus(layers=("PHOTO1", "PHOTO2"))
-save_qp(__file__, p, plot_name="dosedefoc")
+save_qp(__file__, p, plot_name="dosedefoc", xlim=(-300, -150), ylim=(50, 150))
 ## SKIPSTOP
 ## IMAGE_dosedefoc
+# The ``qnngds.test_structures.litho_checkerboard`` makes it easy to check if the dose/develop is well-calibrated
+# by comparing the line width of the inverted and non-inverted lines. The ``qnngds.test_structures.resolution_waffle``
+# presents a grid of lins of incresing width that can be useful for determining the minimum resolution achievable
+# with the lithographic process.
+## IMAGE_ZOOM_dosedefoc
 #
 # Device arrays
 # ---------------------------
