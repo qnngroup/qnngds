@@ -660,7 +660,7 @@ class Sample(object):
         FIELDS = Device("fields")
         for name, bbox in field_dict.items():
             field = FIELDS << pg.bbox(bbox, layer=1)
-            text = FIELDS << pg.text(text=name, size=200, layer=2)
+            text = FIELDS << pg.text(text=name, size=field.ysize / 2, layer=2)
             text.center = field.center
         return FIELDS
 
